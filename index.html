@@ -1252,6 +1252,8 @@
      jinak by pořád svítily a vypadaly jako stav, který platí. */
   /* 100 % má vlastní barvu, ať se neplete s ručními značkami. */
   .rarity-chip.r-H { background: var(--status-good); color: #fff; }
+  /* Lucky je ve hře oranžové třpytky — tmavý text, na oranžové je bílá nečitelná. */
+  .rarity-chip.r-L2 { background: #f08a24; color: #2a1600; }
   /* Stejná velikost jako přepínače vedle: ty jsou <button> s `font: inherit`,
      takže si berou písmo z titulku. Značky jsou <span>, musí to dostat taky —
      jinak byly LEG a MYT viditelně menší než DMAX, CUTE, SHINY a 100 %. */
@@ -2525,6 +2527,7 @@
     <label><input type="checkbox" data-znacka="C" /> CUTE</label>
     <label><input type="checkbox" data-znacka="H" /> 100&nbsp;%</label>
     <label><input type="checkbox" data-znacka="S" /> Shiny</label>
+    <label><input type="checkbox" data-znacka="K" /> Lucky</label>
     <label class="typ-filtr-rezim"><input type="checkbox" id="znackaFiltrVse" />
       musí mít <b>všechny</b> zaškrtnuté značky</label>
     <button id="znackaFiltrReset">Zrušit filtr</button>
@@ -2885,7 +2888,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-06 21:10";
+  var BUILD = "2026-09-06 22:37";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4417,6 +4420,7 @@
     if (c.cute) z.push("C");
     if (c.stoProcent) z.push("H");
     if (c.shiny) z.push("S");
+    if (c.lucky) z.push("K");
     return z;
   }
 
@@ -6444,6 +6448,8 @@
         ivUncertain: ivUncertain,
         ivRange: ivUncertain ? (Math.round(ivMin * 10) / 10 + "–" + Math.round(ivMax * 10) / 10 + " %") : null,
         specialForm: ["Shadow", "Lucky", "Purified"].indexOf(r.forma) !== -1,
+        // Lucky se vylepšuje za poloviční prach a má minimum 12/12/12 IV.
+        lucky: r.forma === "Lucky" || /\blucky\b/i.test(r.pokemon || ""),
         dynamax: r.dynamax === "Ano",
         // Ryze osobní značka: „tenhle se mi líbí". Do žádného výpočtu
         // nevstupuje, jen na konci zabrání tomu, aby ho appka poslala pryč.
@@ -6721,6 +6727,23 @@
           }
         });
       }
+      // Nejlepší pořadí, jakého ten kus VŮBEC může dosáhnout — přes všechny
+      // ligy a včetně vyvinuté formy. `listedRank` výš se dívá jen na druh,
+      // který držíš teď, takže u Dusclopse viděl GL #45 a o Dusknoirovi
+      // v UL na #24 nevěděl; důvod zahození pak tvrdil něco jiného, než
+      // co bylo vidět v tabulce lig hned vedle.
+      var nejlepsiRank = null, nejlepsiLiga = null, nejlepsiPoEvo = false;
+      (b.ligyVse || []).forEach(function (L) {
+        [[L.ted, false], [L.po, true]].forEach(function (par) {
+          var v = par[0];
+          if (!v || !v.rank) return;
+          if (nejlepsiRank === null || v.rank < nejlepsiRank) {
+            nejlepsiRank = v.rank;
+            nejlepsiLiga = L.nazev || L.liga;
+            nejlepsiPoEvo = par[1];
+          }
+        });
+      });
       // Práh se bere ten posunutý podle pořadí, jinak by "těsně pod prahem"
       // znamenalo u špičkového druhu něco jiného než v samotném verdiktu.
       var nearMiss = listedPot !== null && listedPot >= (listedPrah - 0.02);
@@ -6956,10 +6979,12 @@
         keepLabel = "Zahodit";
         keepTone = "critical";
         var lepsi = b.bestOfSpecies;
+        // O tom, jestli je druh „moc nízko", rozhoduje nejlepší dosažitelné
+        // pořadí — ne to dnešní.
+        var prilisNizko = nejlepsiRank !== null && nejlepsiRank > s.rankLimit;
         keepSubLate = lepsi
           ? "lepší máš: " + (lepsi.row.cp ? lepsi.row.cp + " CP" : lepsi.row.pokemon)
-          : (listedRank !== null && listedRank > s.rankLimit
-              ? "druh je až #" + listedRank : "mimo šestku do ligy");
+          : (prilisNizko ? "druh je až #" + nejlepsiRank : "mimo šestku do ligy");
         keepTitle = "Ten druh do ligy patří, jen tenhle kus je pod prahem ("
           + (listedPot !== null ? Math.round(listedPot * 1000) / 10 + " %" : "?")
           + " z maxima druhu). "
@@ -6971,12 +6996,16 @@
             // Bez lepší kopie jsou možné dvě příčiny a nesmí se plést: buď je
             // ten druh v lize tak nízko, že ho appka vůbec nebere vážně, nebo
             // je v žebříčku dost vysoko, ale šestku do ligy plní lepší druhy.
-            : (listedRank !== null && listedRank > s.rankLimit
-                ? "Druh je v " + (listedLiga || "lize") + " až #" + listedRank
+            : (prilisNizko
+                ? "Nejlíp je na tom v " + (nejlepsiLiga || "lize") + " na #"
+                  + nejlepsiRank + (nejlepsiPoEvo ? " (až po evoluci)" : "")
                   + ", a ty bereš vážně jen prvních #" + s.rankLimit
                   + ". Pod tou hranicí je liga ztráta času i s dobrým kusem."
-                : "Do ligy potřebuješ " + SLOTU_NA_LIGU + " druhů a na tenhle"
-                  + " se nedostalo — lepší druhy máš.") + " Pusť ho.");
+                : "Nejlíp je na tom v " + (nejlepsiLiga || "lize") + " na #"
+                  + nejlepsiRank + (nejlepsiPoEvo ? " (až po evoluci)" : "")
+                  + ", což by stačilo — jenže do ligy jde " + SLOTU_NA_LIGU
+                  + " druhů a na tenhle se nedostalo, lepší už máš.")
+              + " Pusť ho.");
       } else {
         keepGood = false;
         keepLabel = "Zahodit";
@@ -7934,6 +7963,7 @@
         dynamax: b.dynamax,
         cute: b.cute,
         stoProcent: b.stoProcent,
+        lucky: !!b.lucky,
         shiny: b.shiny,
         cpMax: b.cpMax,
         strongTypes: b.strongTypes,
@@ -9608,6 +9638,12 @@
     if (c.stoProcent) {
       chips += '<span class="rarity-chip r-H sto-znacka" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
     }
+    if (c.lucky) {
+      chips += '<span class="rarity-chip r-L2 sto-znacka" title="Lucky —'
+        + ' vylepšení stojí poloviční prach a IV má zaručeně aspoň 12/12/12.'
+        + ' Nejlevnější kus na dotažení do ligy; z výměny se lucky nedělá'
+        + ' znovu, takže tenhle je nenahraditelný.">LUCKY</span>';
+    }
     h += '<div class="detail-title"><span class="d-name">' + r.pokemon + "</span>" + chips
       + '<button class="detail-close" title="Zavřít">✕</button></div>';
 
@@ -10194,7 +10230,8 @@
               + " CP je jen jejich slepenec; v souboji rozhoduje tohle.";
           }
           if (col.key === "pokemon"
-              && (c.rarity || c.dynamax || c.cute || c.stoProcent || c.shiny)) {
+              && (c.rarity || c.dynamax || c.cute || c.stoProcent || c.shiny
+                  || c.lucky)) {
             var chips = "";
             if (c.rarity) {
               var lbl = { L: "LEG", M: "MYT", U: "UB" }[c.rarity];
@@ -10214,6 +10251,11 @@
             if (c.shiny) {
               chips += '<span class="rarity-chip r-S" title="Shiny — hra ho nepustí'
                 + ' do hromadného výběru, vyplatí se spíš vytradovat">SHINY</span>';
+            }
+            if (c.lucky) {
+              chips += '<span class="rarity-chip r-L2" title="Lucky — vylepšení'
+                + ' stojí poloviční prach a IV má zaručeně aspoň 12/12/12.'
+                + ' Nejlevnější kus na dotažení do ligy.">LUCKY</span>';
             }
             td.innerHTML = '<span class="poke-name">' + escHtml(td.textContent) + "</span>"
               + '<span class="poke-tagy">' + chips + "</span>";
@@ -17727,6 +17769,16 @@
       + "<b>zeleně</b> — úleva, ne překážka. "
       + "Sloupec <b>Evolvovat</b> podmínku nezná: říká, jestli se evoluce "
       + "vyplatí, ne jestli na ni máš splněno.</td></tr>"
+      + "<tr><td><b>Značka LUCKY</b></td><td>nasadí se sama: lucky kus má "
+      + "„Lucky“ ve jméně ze skenu, nebo vyplněnou formu. <b>Co s ním:</b> "
+      + "vylepšení stojí <b>poloviční prach</b> a IV má zaručeně aspoň "
+      + "<b>12/12/12</b>, takže je to nejlevnější cesta k dotaženému kusu do "
+      + "ligy — u lucky se vyplatí investovat i tam, kde by se u obyčejného "
+      + "kusu čekalo na lepší. Lucky se navíc <b>nedá vyrobit znovu</b>: "
+      + "vzniká jen výměnou a jestli z ní lucky bude, se dopředu neví. "
+      + "Proto ho pouštěj až jako poslední z kopií. Do verdiktu značka "
+      + "nevstupuje jako zámek (na rozdíl od CUTE a 100%) — je to informace "
+      + "o ceně vylepšení, ne důvod držet odpad.</td></tr>"
       + "<tr><td><b>Značka 100%</b></td><td>nasadí se sama každému kusu "
       + "s <b>15/15/15</b>. Chová se stejně jako CUTE — uplatní se až za "
       + "rozhodováním a kus, který by šel pryč, dostane <b>Ponechat · Protože "
@@ -18270,7 +18322,9 @@
       + (c.keepTitle || "") + "</div>"
       // Změna verdiktu uprostřed čištění vypadá jako rozmar appky, dokud
       // se neřekne, že ji způsobilo předchozí rozhodnutí uživatele.
-      + (bmPuvodni[r.id] !== undefined && bmPuvodni[r.id] !== c.keep
+      // Hlásí se jen PŘEKLOPENÍ nechat/pustit — přeformulování téhož
+      // rozhodnutí („Zahodit – kopie" -> „Zahodit") žádná zpráva není.
+      + (bmZmenaRozhodnuti(r.id, c.keep)
           ? '<div class="bm-prepocet">Přepočítáno: původně <b>'
             + escHtml(bmPuvodni[r.id]) + "</b>, teď <b>" + escHtml(c.keep || "?")
             + "</b> — uvolnilo se místo po kusu, který jsi pustil.</div>"
@@ -18351,6 +18405,12 @@
       for (var i = 0; i < bmList.length; i++) {
         if (bmList[i].row.id === idPredtim) { bmIndex = i; break; }
       }
+      // Tohle volá ruční změna (DMAX, CUTE, útoky). Příčinou je uživatel,
+      // ne uvolněné místo — hláška o přepočtu by tu lhala, tak se
+      // výchozí stav posune na to, co platí teď.
+      if (bmIndex < bmList.length && bmList[bmIndex].row.id === idPredtim) {
+        delete bmPuvodni[idPredtim];
+      }
     }
     bmVykreslit();
   }
@@ -18423,7 +18483,7 @@
       var id = k.x.row.id;
       var pokus = analyze(zbyle.concat([k.x.row]));
       var nc = pokus[id];
-      if (!nc || String(nc.keep || "").indexOf("Zahodit") === 0) return;
+      if (!nc || bmJeZahodit(nc.keep)) return;
       var nb = null;
       pomocnyBase.forEach(function (b3) { if (b3.row.id === id) nb = b3; });
       bmVratitSe[id] = { row: k.x.row, c: nc, b: nb || k.x.b, drive: k.x.c.keep };
@@ -18482,6 +18542,18 @@
         bmVykreslitVraceni();
       });
     });
+  }
+
+  /** Znamená „Zahodit"? Verdiktů je víc znění, rozhodnutí jsou dvě. */
+  function bmJeZahodit(verdikt) {
+    return String(verdikt || "").indexOf("Zahodit") === 0;
+  }
+
+  /** Překlopil přepočet rozhodnutí nechat/pustit? Jiné znění téhož
+   *  rozhodnutí se za změnu nepočítá. */
+  function bmZmenaRozhodnuti(id, ted) {
+    var drive = bmPuvodni[id];
+    return drive !== undefined && bmJeZahodit(drive) !== bmJeZahodit(ted);
   }
 
   /** Držel ten kus nějaké místo v rozpočtu? Bez slotu se puštěním nic
