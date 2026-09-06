@@ -1,0 +1,7 @@
+# Do repozitáře jde JEN složka publish/ — hotová appka pro GitHub Pages.
+# Všechno ostatní (nástroje, stažená data, testy, zálohy) zůstává na disku:
+# co se nezveřejní, to nemůže uniknout.
+*
+!publish/
+!publish/**
+!.gitignore

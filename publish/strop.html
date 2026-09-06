@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0d0d0d" />
+<title>Pokémon — kapesní</title>
+<style>
+  :root {
+    --page: #f9f9f7; --karta: #ffffff; --text: #0b0b0b; --text2: #52514e;
+    --tlum: #898781; --cara: rgba(11,11,11,.10); --pole: #fffef8;
+    --polekraj: #d8d6cc; --zluta: #b9790a; --zlutabg: #fdf3e0;
+    --zelena: #0ca30c; --zelenabg: #e6f6e6; --cerv: #c05a34; --cervbg: #fbe9e2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d; --karta: #171716; --text: #ffffff; --text2: #c3c2b7;
+      --tlum: #898781; --cara: rgba(255,255,255,.10); --pole: #232320;
+      --polekraj: #3a3a37; --zluta: #fab219; --zlutabg: #362b0e;
+      --zelena: #4cd04c; --zelenabg: #14301a; --cerv: #ec835a; --cervbg: #3a2119;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; padding: 10px 10px 76px; background: var(--page); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-size: 16px; margin: 0; }
+  .hlava { display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 10px; }
+  .hlava .kdy { font-size: 11px; color: var(--tlum); text-align: right; }
+  button, input, select { font-family: inherit; }
+  .btn { padding: 9px 12px; font-size: 13px; border: 1px solid var(--polekraj);
+    border-radius: 10px; background: var(--pole); color: var(--text); }
+  .btn.hlavni { background: var(--zlutabg); border-color: var(--zluta); color: var(--text); }
+  label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  input[type=text], input[type=search], select { width: 100%; padding: 11px 12px;
+    font-size: 16px; border: 1px solid var(--polekraj); border-radius: 10px;
+    background: var(--pole); color: var(--text); }
+  .karta { background: var(--karta); border: 1px solid var(--cara); border-radius: 13px;
+    padding: 11px 12px; margin-bottom: 9px; }
+
+  /* --- záložky dole, aby na ně dosáhl palec --- */
+  .zalozky { position: fixed; left: 0; right: 0; bottom: 0; display: flex;
+    background: var(--karta); border-top: 1px solid var(--cara);
+    padding-bottom: env(safe-area-inset-bottom); z-index: 5; }
+  .zalozky button { flex: 1 1 0; min-width: 0; border: 0; background: none;
+    color: var(--text2); padding: 11px 2px 12px; font-size: 11.5px; }
+  .zalozky button b { display: block; font-size: 17px; line-height: 1.1; font-weight: 400; }
+  .zalozky button.on { color: var(--zluta); }
+  .zalozky button.on b { transform: translateY(-1px); }
+
+  /* --- roster --- */
+  .filtry { display: flex; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
+  .filtry button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 12px;
+    border: 1px solid var(--polekraj); border-radius: 9px; background: var(--pole);
+    color: var(--text2); }
+  .filtry button.on { background: var(--zlutabg); border-color: var(--zluta); color: var(--text); }
+  .kus { background: var(--karta); border: 1px solid var(--cara); border-radius: 12px;
+    padding: 9px 11px; margin-bottom: 7px; }
+  .kus .r1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .kus .jm { font-size: 15px; font-weight: 600; }
+  .kus .cp { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  .kus .verdikt { font-size: 12.5px; margin-top: 3px; }
+  .kus.ano .verdikt { color: var(--zelena); }
+  .kus.ne .verdikt { color: var(--cerv); }
+  .kus ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .kus li { font-size: 12px; color: var(--text2); padding: 3px 8px; border-radius: 7px;
+    background: var(--zlutabg); margin-bottom: 3px; }
+  .prazdno { color: var(--text2); font-size: 13.5px; padding: 20px 4px; text-align: center; }
+
+  /* --- raid --- */
+  .typy { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 8px; }
+  .typy button { padding: 8px 2px; font-size: 11.5px; border: 1px solid var(--polekraj);
+    border-radius: 8px; background: var(--pole); color: var(--text2); }
+  .typy button.on { background: var(--zlutabg); border-color: var(--zluta); color: var(--text); }
+  .parta { counter-reset: p; }
+  .parta .kus { position: relative; padding-left: 34px; }
+  .parta .kus::before { counter-increment: p; content: counter(p);
+    position: absolute; left: 10px; top: 9px; font-size: 15px; font-weight: 700;
+    color: var(--zluta); }
+
+  .pozn { font-size: 12px; color: var(--text2); line-height: 1.6;
+    border-top: 1px solid var(--cara); margin-top: 16px; padding-top: 11px; }
+  .chyba { color: var(--zluta); font-size: 13.5px; margin-top: 12px; }
+
+  /* --- strop CP --- */
+  .iv-mrizka { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .iv { background: var(--karta); border: 1px solid var(--cara); border-radius: 12px;
+    padding: 7px 5px; text-align: center; min-width: 0; }
+  .iv .jm { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .03em; }
+  .iv .radek { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .iv button { flex: 0 0 34px; height: 38px; font-size: 20px; line-height: 1; padding: 0;
+    border: 1px solid var(--polekraj); border-radius: 10px; background: var(--pole);
+    color: var(--text); }
+  .iv .hod { font-size: 21px; font-weight: 700; min-width: 22px; }
+  .liga h2 { font-size: 15px; margin: 0; display: flex; justify-content: space-between;
+    align-items: baseline; gap: 8px; }
+  .liga h2 span { font-size: 12px; color: var(--tlum); font-weight: 400; }
+  .stupne { list-style: none; margin: 10px 0 0; padding: 0; }
+  .stupne li { display: flex; justify-content: space-between; align-items: baseline;
+    padding: 7px 10px; border-radius: 9px; background: var(--zlutabg); margin-bottom: 5px; }
+  .stupne li.fin { background: var(--zelenabg); }
+  .stupne li .c { font-size: 19px; font-weight: 700; color: var(--zluta); }
+  .stupne li.fin .c { color: var(--zelena); }
+  .stupne li .po { font-size: 11px; color: var(--text2); display: block; }
+  .nevejde { color: var(--text2); font-size: 13px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+
+<div class="hlava">
+  <h1 id="nadpis">Kapesní</h1>
+  <div class="kdy" id="kdy"></div>
+</div>
+
+<div id="obsah"></div>
+
+<nav class="zalozky" id="zalozky">
+  <button data-z="roster"><b>★</b>Roster</button>
+  <button data-z="raid"><b>⚔</b>Do raidu</button>
+  <button data-z="evo"><b>⇗</b>Evolvovat</button>
+  <button data-z="strop"><b>#</b>Strop CP</button>
+  <button data-z="data"><b>⤓</b>Data</button>
+</nav>
+
+<input type="file" id="souborSnimek" style="display:none" />
+
+<script>
+var DEX = {"s":{"bulbasaur":["Bulbasaur",118,111,128],"ivysaur":["Ivysaur",151,143,155],"venusaur":["Venusaur",198,189,190],"charmander":["Charmander",116,93,118],"charmeleon":["Charmeleon",158,126,151],"charizard":["Charizard",223,173,186],"squirtle":["Squirtle",94,121,127],"wartortle":["Wartortle",126,155,153],"blastoise":["Blastoise",171,207,188],"caterpie":["Caterpie",55,55,128],"metapod":["Metapod",45,80,137],"butterfree":["Butterfree",167,137,155],"weedle":["Weedle",63,50,120],"kakuna":["Kakuna",46,75,128],"beedrill":["Beedrill",169,130,163],"pidgey":["Pidgey",85,73,120],"pidgeotto":["Pidgeotto",117,105,160],"pidgeot":["Pidgeot",166,154,195],"rattata-alola":["Rattata",103,70,102],"rattata":["Rattata",103,70,102],"raticate-alola":["Raticate",135,154,181],"raticate":["Raticate",161,139,146],"spearow":["Spearow",112,60,120],"fearow":["Fearow",182,133,163],"ekans":["Ekans",110,97,111],"arbok":["Arbok",167,153,155],"pikachu":["Pikachu",112,96,111],"raichu-alola":["Raichu",201,154,155],"raichu":["Raichu",193,151,155],"sandshrew-alola":["Sandshrew",125,129,137],"sandshrew":["Sandshrew",126,120,137],"sandslash-alola":["Sandslash",177,195,181],"sandslash":["Sandslash",182,175,181],"nidoranf":["Nidoran♀",86,89,146],"nidorina":["Nidorina",117,120,172],"nidoqueen":["Nidoqueen",180,173,207],"nidoranm":["Nidoran♂",105,76,130],"nidorino":["Nidorino",137,111,156],"nidoking":["Nidoking",204,156,191],"clefairy":["Clefairy",107,108,172],"clefable":["Clefable",178,162,216],"vulpix-alola":["Vulpix",96,109,116],"vulpix":["Vulpix",96,109,116],"ninetales-alola":["Ninetales",170,193,177],"ninetales":["Ninetales",169,190,177],"jigglypuff":["Jigglypuff",80,41,251],"wigglytuff":["Wigglytuff",156,90,295],"zubat":["Zubat",83,73,120],"golbat":["Golbat",161,150,181],"oddish":["Oddish",131,112,128],"gloom":["Gloom",153,136,155],"vileplume":["Vileplume",202,167,181],"paras":["Paras",121,99,111],"parasect":["Parasect",165,146,155],"venonat":["Venonat",100,100,155],"venomoth":["Venomoth",179,143,172],"diglett-alola":["Diglett",108,81,67],"diglett":["Diglett",109,78,67],"dugtrio-alola":["Dugtrio",201,142,111],"dugtrio":["Dugtrio",167,136,111],"meowth-alola":["Meowth",99,78,120],"meowth-galar":["Meowth",115,92,137],"meowth":["Meowth",92,78,120],"persian-alola":["Persian",158,136,163],"persian":["Persian",150,136,163],"psyduck":["Psyduck",122,95,137],"golduck":["Golduck",191,162,190],"mankey":["Mankey",148,82,120],"primeape":["Primeape",207,138,163],"growlithe-hisui":["Growlithe",142,92,155],"growlithe":["Growlithe",136,93,146],"arcanine-hisui":["Arcanine",232,165,216],"arcanine":["Arcanine",227,166,207],"poliwag":["Poliwag",101,82,120],"poliwhirl":["Poliwhirl",130,123,163],"poliwrath":["Poliwrath",182,184,207],"abra":["Abra",195,82,93],"kadabra":["Kadabra",232,117,120],"alakazam":["Alakazam",271,167,146],"machop":["Machop",137,82,172],"machoke":["Machoke",177,125,190],"machamp":["Machamp",234,159,207],"bellsprout":["Bellsprout",139,61,137],"weepinbell":["Weepinbell",172,92,163],"victreebel":["Victreebel",207,135,190],"tentacool":["Tentacool",97,149,120],"tentacruel":["Tentacruel",166,209,190],"geodude-alola":["Geodude",132,132,120],"geodude":["Geodude",132,132,120],"graveler-alola":["Graveler",164,164,146],"graveler":["Graveler",164,164,146],"golem-alola":["Golem",211,198,190],"golem":["Golem",211,198,190],"ponyta-galar":["Ponyta",170,127,137],"ponyta":["Ponyta",170,127,137],"rapidash-galar":["Rapidash",207,162,163],"rapidash":["Rapidash",207,162,163],"slowpoke-galar":["Slowpoke",109,98,207],"slowpoke":["Slowpoke",109,98,207],"slowbro-galar":["Slowbro",182,156,216],"slowbro":["Slowbro",177,180,216],"magnemite":["Magnemite",165,121,93],"magneton":["Magneton",223,169,137],"farfetchd-galar":["Farfetch’d",174,114,141],"farfetchd":["Farfetch’d",124,115,141],"doduo":["Doduo",158,83,111],"dodrio":["Dodrio",218,140,155],"seel":["Seel",85,121,163],"dewgong":["Dewgong",139,177,207],"grimer-alola":["Grimer",135,90,190],"grimer":["Grimer",135,90,190],"muk-alola":["Muk",190,172,233],"muk":["Muk",190,172,233],"shellder":["Shellder",116,134,102],"cloyster":["Cloyster",186,256,137],"gastly":["Gastly",186,67,102],"haunter":["Haunter",223,107,128],"gengar":["Gengar",261,149,155],"onix":["Onix",85,232,111],"drowzee":["Drowzee",89,136,155],"hypno":["Hypno",144,193,198],"krabby":["Krabby",181,124,102],"kingler":["Kingler",240,181,146],"voltorb-hisui":["Voltorb",109,111,120],"voltorb":["Voltorb",109,111,120],"electrode-hisui":["Electrode",176,176,155],"electrode":["Electrode",173,173,155],"exeggcute":["Exeggcute",107,125,155],"exeggutor-alola":["Exeggutor",230,153,216],"exeggutor":["Exeggutor",233,149,216],"cubone":["Cubone",90,144,137],"marowak-alola":["Marowak",144,186,155],"marowak":["Marowak",144,186,155],"hitmonlee":["Hitmonlee",224,181,137],"hitmonchan":["Hitmonchan",193,197,137],"lickitung":["Lickitung",108,137,207],"koffing":["Koffing",119,141,120],"weezing-galar":["Weezing",174,197,163],"weezing":["Weezing",174,197,163],"rhyhorn":["Rhyhorn",140,127,190],"rhydon":["Rhydon",222,171,233],"chansey":["Chansey",60,128,487],"tangela":["Tangela",183,169,163],"kangaskhan":["Kangaskhan",181,165,233],"horsea":["Horsea",129,103,102],"seadra":["Seadra",187,156,146],"goldeen":["Goldeen",123,110,128],"seaking":["Seaking",175,147,190],"staryu":["Staryu",137,112,102],"starmie":["Starmie",210,184,155],"mrmime-galar":["Mr. Mime",183,169,137],"mrmime":["Mr. Mime",192,205,120],"scyther":["Scyther",218,170,172],"jynx":["Jynx",223,151,163],"electabuzz":["Electabuzz",198,158,163],"magmar":["Magmar",206,154,163],"pinsir":["Pinsir",238,182,163],"tauros":["Tauros",198,183,181],"tauros-paldeaaqua":["Tauros",210,193,181],"tauros-paldeablaze":["Tauros",210,193,181],"tauros-paldeacombat":["Tauros",210,193,181],"magikarp":["Magikarp",29,85,85],"gyarados":["Gyarados",237,186,216],"lapras":["Lapras",165,174,277],"ditto":["Ditto",91,91,134],"eevee":["Eevee",104,114,146],"vaporeon":["Vaporeon",205,161,277],"jolteon":["Jolteon",232,182,163],"flareon":["Flareon",246,179,163],"porygon":["Porygon",153,136,163],"omanyte":["Omanyte",155,153,111],"omastar":["Omastar",207,201,172],"kabuto":["Kabuto",148,140,102],"kabutops":["Kabutops",220,186,155],"aerodactyl":["Aerodactyl",221,159,190],"snorlax":["Snorlax",190,169,330],"articuno-galar":["Articuno",250,197,207],"articuno":["Articuno",192,236,207],"zapdos-galar":["Zapdos",252,189,207],"zapdos":["Zapdos",253,185,207],"moltres-galar":["Moltres",202,231,207],"moltres":["Moltres",251,181,207],"dratini":["Dratini",119,91,121],"dragonair":["Dragonair",163,135,156],"dragonite":["Dragonite",263,198,209],"mewtwo-a":["Mewtwo",182,278,214],"mewtwo":["Mewtwo",300,182,214],"mew":["Mew",210,210,225],"chikorita":["Chikorita",92,122,128],"bayleef":["Bayleef",122,155,155],"meganium":["Meganium",168,202,190],"cyndaquil":["Cyndaquil",116,93,118],"quilava":["Quilava",158,126,151],"typhlosion-hisui":["Typhlosion",238,172,177],"typhlosion":["Typhlosion",223,173,186],"totodile":["Totodile",117,109,137],"croconaw":["Croconaw",150,142,163],"feraligatr":["Feraligatr",205,188,198],"sentret":["Sentret",79,73,111],"furret":["Furret",148,125,198],"hoothoot":["Hoothoot",67,88,155],"noctowl":["Noctowl",145,156,225],"ledyba":["Ledyba",72,118,120],"ledian":["Ledian",107,179,146],"spinarak":["Spinarak",105,73,120],"ariados":["Ariados",161,124,172],"crobat":["Crobat",194,178,198],"chinchou":["Chinchou",106,97,181],"lanturn":["Lanturn",146,137,268],"pichu":["Pichu",77,53,85],"cleffa":["Cleffa",75,79,137],"igglybuff":["Igglybuff",69,32,207],"togepi":["Togepi",67,116,111],"togetic":["Togetic",139,181,146],"natu":["Natu",134,89,120],"xatu":["Xatu",192,146,163],"mareep":["Mareep",114,79,146],"flaaffy":["Flaaffy",145,109,172],"ampharos":["Ampharos",211,169,207],"bellossom":["Bellossom",169,186,181],"marill":["Marill",37,93,172],"azumarill":["Azumarill",112,152,225],"sudowoodo":["Sudowoodo",167,176,172],"politoed":["Politoed",174,179,207],"hoppip":["Hoppip",67,94,111],"skiploom":["Skiploom",91,120,146],"jumpluff":["Jumpluff",118,183,181],"aipom":["Aipom",136,112,146],"sunkern":["Sunkern",55,55,102],"sunflora":["Sunflora",185,135,181],"yanma":["Yanma",154,94,163],"wooper":["Wooper",75,66,146],"wooper-paldea":["Wooper",75,66,146],"quagsire":["Quagsire",152,143,216],"espeon":["Espeon",261,175,163],"umbreon":["Umbreon",126,240,216],"murkrow":["Murkrow",175,87,155],"slowking-galar":["Slowking",190,180,216],"slowking":["Slowking",177,180,216],"misdreavus":["Misdreavus",167,154,155],"unown-a":["Unown",136,91,134],"unown-b":["Unown",136,91,134],"unown-c":["Unown",136,91,134],"unown-d":["Unown",136,91,134],"unown-e":["Unown",136,91,134],"unown-exclamationpoint":["Unown",136,91,134],"unown-f":["Unown",136,91,134],"unown-g":["Unown",136,91,134],"unown-h":["Unown",136,91,134],"unown-i":["Unown",136,91,134],"unown-j":["Unown",136,91,134],"unown-k":["Unown",136,91,134],"unown-l":["Unown",136,91,134],"unown-m":["Unown",136,91,134],"unown-n":["Unown",136,91,134],"unown-o":["Unown",136,91,134],"unown-p":["Unown",136,91,134],"unown-q":["Unown",136,91,134],"unown-questionmark":["Unown",136,91,134],"unown-r":["Unown",136,91,134],"unown-s":["Unown",136,91,134],"unown-t":["Unown",136,91,134],"unown-u":["Unown",136,91,134],"unown-v":["Unown",136,91,134],"unown-w":["Unown",136,91,134],"unown-x":["Unown",136,91,134],"unown-y":["Unown",136,91,134],"unown-z":["Unown",136,91,134],"wobbuffet":["Wobbuffet",60,106,382],"girafarig":["Girafarig",182,133,172],"pineco":["Pineco",108,122,137],"forretress":["Forretress",161,205,181],"dunsparce":["Dunsparce",131,128,225],"gligar":["Gligar",143,184,163],"steelix":["Steelix",148,272,181],"snubbull":["Snubbull",137,85,155],"granbull":["Granbull",212,131,207],"qwilfish-hisui":["Qwilfish",184,151,163],"qwilfish":["Qwilfish",184,138,163],"scizor":["Scizor",236,181,172],"shuckle":["Shuckle",17,396,85],"heracross":["Heracross",234,179,190],"sneasel-hisui":["Sneasel",189,146,146],"sneasel":["Sneasel",189,146,146],"teddiursa":["Teddiursa",142,93,155],"ursaring":["Ursaring",236,144,207],"slugma":["Slugma",118,71,120],"magcargo":["Magcargo",139,191,137],"swinub":["Swinub",90,69,137],"piloswine":["Piloswine",181,138,225],"corsola-galar":["Corsola",116,182,155],"corsola":["Corsola",118,156,146],"remoraid":["Remoraid",127,69,111],"octillery":["Octillery",197,141,181],"delibird":["Delibird",128,90,128],"mantine":["Mantine",148,226,163],"skarmory":["Skarmory",148,226,163],"houndour":["Houndour",152,83,128],"houndoom":["Houndoom",224,144,181],"kingdra":["Kingdra",194,194,181],"phanpy":["Phanpy",107,98,207],"donphan":["Donphan",214,185,207],"porygon2":["Porygon2",198,180,198],"stantler":["Stantler",192,131,177],"smeargle":["Smeargle",40,83,146],"tyrogue":["Tyrogue",64,64,111],"hitmontop":["Hitmontop",173,207,137],"smoochum":["Smoochum",153,91,128],"elekid":["Elekid",135,101,128],"magby":["Magby",151,99,128],"miltank":["Miltank",157,193,216],"blissey":["Blissey",129,169,496],"raikou":["Raikou",241,195,207],"entei":["Entei",235,171,251],"suicune":["Suicune",180,235,225],"larvitar":["Larvitar",115,93,137],"pupitar":["Pupitar",155,133,172],"tyranitar":["Tyranitar",251,207,225],"lugia":["Lugia",193,310,235],"hooh":["Ho-Oh",239,244,214],"celebi":["Celebi",210,210,225],"treecko":["Treecko",124,94,120],"grovyle":["Grovyle",172,120,137],"sceptile":["Sceptile",223,169,172],"torchic":["Torchic",130,87,128],"combusken":["Combusken",163,115,155],"blaziken":["Blaziken",240,141,190],"mudkip":["Mudkip",126,93,137],"marshtomp":["Marshtomp",156,133,172],"swampert":["Swampert",208,175,225],"poochyena":["Poochyena",96,61,111],"mightyena":["Mightyena",171,132,172],"zigzagoon-galar":["Zigzagoon",58,80,116],"zigzagoon":["Zigzagoon",58,80,116],"linoone-galar":["Linoone",142,128,186],"linoone":["Linoone",142,128,186],"wurmple":["Wurmple",75,59,128],"silcoon":["Silcoon",60,77,137],"beautifly":["Beautifly",189,98,155],"cascoon":["Cascoon",60,77,137],"dustox":["Dustox",98,162,155],"lotad":["Lotad",71,77,120],"lombre":["Lombre",112,119,155],"ludicolo":["Ludicolo",173,176,190],"seedot":["Seedot",71,77,120],"nuzleaf":["Nuzleaf",134,78,172],"shiftry":["Shiftry",200,121,207],"taillow":["Taillow",106,61,120],"swellow":["Swellow",185,124,155],"wingull":["Wingull",106,61,120],"pelipper":["Pelipper",175,174,155],"ralts":["Ralts",79,59,99],"kirlia":["Kirlia",117,90,116],"gardevoir":["Gardevoir",237,195,169],"surskit":["Surskit",93,87,120],"masquerain":["Masquerain",192,150,172],"shroomish":["Shroomish",74,110,155],"breloom":["Breloom",241,144,155],"slakoth":["Slakoth",104,92,155],"vigoroth":["Vigoroth",159,145,190],"slaking":["Slaking",290,166,284],"nincada":["Nincada",80,126,104],"ninjask":["Ninjask",199,112,156],"shedinja":["Shedinja",153,73,1],"whismur":["Whismur",92,42,162],"loudred":["Loudred",134,81,197],"exploud":["Exploud",179,137,232],"makuhita":["Makuhita",99,54,176],"hariyama":["Hariyama",209,114,302],"azurill":["Azurill",36,71,137],"nosepass":["Nosepass",82,215,102],"skitty":["Skitty",84,79,137],"delcatty":["Delcatty",132,127,172],"sableye":["Sableye",141,136,137],"mawile":["Mawile",155,141,137],"aron":["Aron",121,141,137],"lairon":["Lairon",158,198,155],"aggron":["Aggron",198,257,172],"meditite":["Meditite",78,107,102],"medicham":["Medicham",121,152,155],"electrike":["Electrike",123,78,120],"manectric":["Manectric",215,127,172],"plusle":["Plusle",167,129,155],"minun":["Minun",147,150,155],"volbeat":["Volbeat",143,166,163],"illumise":["Illumise",143,166,163],"roselia":["Roselia",186,131,137],"gulpin":["Gulpin",80,99,172],"swalot":["Swalot",140,159,225],"carvanha":["Carvanha",171,39,128],"sharpedo":["Sharpedo",243,83,172],"wailmer":["Wailmer",136,68,277],"wailord":["Wailord",175,87,347],"numel":["Numel",119,79,155],"camerupt":["Camerupt",194,136,172],"torkoal":["Torkoal",151,203,172],"spoink":["Spoink",125,122,155],"grumpig":["Grumpig",171,188,190],"spinda-00":["Spinda",116,116,155],"spinda-01":["Spinda",116,116,155],"spinda-02":["Spinda",116,116,155],"spinda-03":["Spinda",116,116,155],"spinda-04":["Spinda",116,116,155],"spinda-05":["Spinda",116,116,155],"spinda-06":["Spinda",116,116,155],"spinda-07":["Spinda",116,116,155],"spinda-08":["Spinda",116,116,155],"spinda-09":["Spinda",116,116,155],"spinda-10":["Spinda",116,116,155],"spinda-11":["Spinda",116,116,155],"spinda-12":["Spinda",116,116,155],"spinda-13":["Spinda",116,116,155],"spinda-14":["Spinda",116,116,155],"spinda-15":["Spinda",116,116,155],"spinda-16":["Spinda",116,116,155],"spinda-17":["Spinda",116,116,155],"spinda-18":["Spinda",116,116,155],"spinda-19":["Spinda",116,116,155],"trapinch":["Trapinch",162,78,128],"vibrava":["Vibrava",134,99,137],"flygon":["Flygon",205,168,190],"cacnea":["Cacnea",156,74,137],"cacturne":["Cacturne",221,115,172],"swablu":["Swablu",76,132,128],"altaria":["Altaria",141,201,181],"zangoose":["Zangoose",222,124,177],"seviper":["Seviper",196,118,177],"lunatone":["Lunatone",178,153,207],"solrock":["Solrock",178,153,207],"barboach":["Barboach",93,82,137],"whiscash":["Whiscash",151,141,242],"corphish":["Corphish",141,99,125],"crawdaunt":["Crawdaunt",224,142,160],"baltoy":["Baltoy",77,124,120],"claydol":["Claydol",140,229,155],"lileep":["Lileep",105,150,165],"cradily":["Cradily",152,194,200],"anorith":["Anorith",176,100,128],"armaldo":["Armaldo",222,174,181],"feebas":["Feebas",29,85,85],"milotic":["Milotic",192,219,216],"castform":["Castform",139,139,172],"castform-rainy":["Castform",139,139,172],"castform-snowy":["Castform",139,139,172],"castform-sunny":["Castform",139,139,172],"kecleon":["Kecleon",161,189,155],"shuppet":["Shuppet",138,65,127],"banette":["Banette",218,126,162],"duskull":["Duskull",70,162,85],"dusclops":["Dusclops",124,234,120],"tropius":["Tropius",136,163,223],"chimecho":["Chimecho",175,170,181],"absol":["Absol",246,120,163],"wynaut":["Wynaut",41,86,216],"snorunt":["Snorunt",95,95,137],"glalie":["Glalie",162,162,190],"spheal":["Spheal",95,90,172],"sealeo":["Sealeo",137,132,207],"walrein":["Walrein",182,176,242],"clamperl":["Clamperl",133,135,111],"huntail":["Huntail",197,179,146],"gorebyss":["Gorebyss",211,179,146],"relicanth":["Relicanth",162,203,225],"luvdisc":["Luvdisc",81,128,125],"bagon":["Bagon",134,93,128],"shelgon":["Shelgon",172,155,163],"salamence":["Salamence",277,168,216],"beldum":["Beldum",96,132,120],"metang":["Metang",138,176,155],"metagross":["Metagross",257,228,190],"regirock":["Regirock",179,309,190],"regice":["Regice",179,309,190],"registeel":["Registeel",143,285,190],"latias":["Latias",228,246,190],"latios":["Latios",268,212,190],"kyogre":["Kyogre",270,228,205],"groudon":["Groudon",270,228,205],"rayquaza":["Rayquaza",284,170,213],"jirachi":["Jirachi",210,210,225],"deoxys-attack":["Deoxys",414,46,137],"deoxys-defense":["Deoxys",144,330,137],"deoxys":["Deoxys",345,115,137],"deoxys-speed":["Deoxys",230,218,137],"turtwig":["Turtwig",119,110,146],"grotle":["Grotle",157,143,181],"torterra":["Torterra",202,188,216],"chimchar":["Chimchar",113,86,127],"monferno":["Monferno",158,105,162],"infernape":["Infernape",222,151,183],"piplup":["Piplup",112,102,142],"prinplup":["Prinplup",150,139,162],"empoleon":["Empoleon",210,186,197],"starly":["Starly",101,58,120],"staravia":["Staravia",142,94,146],"staraptor":["Staraptor",234,140,198],"bidoof":["Bidoof",80,73,153],"bibarel":["Bibarel",162,119,188],"kricketot":["Kricketot",45,74,114],"kricketune":["Kricketune",160,100,184],"shinx":["Shinx",117,64,128],"luxio":["Luxio",159,95,155],"luxray":["Luxray",232,156,190],"budew":["Budew",91,109,120],"roserade":["Roserade",243,185,155],"cranidos":["Cranidos",218,71,167],"rampardos":["Rampardos",295,109,219],"shieldon":["Shieldon",76,195,102],"bastiodon":["Bastiodon",94,286,155],"burmy-plant":["Burmy",53,83,120],"burmy-sandy":["Burmy",53,83,120],"burmy-trash":["Burmy",53,83,120],"wormadam-plant":["Wormadam",141,180,155],"wormadam-sandy":["Wormadam",141,180,155],"wormadam-trash":["Wormadam",127,175,155],"mothim":["Mothim",185,98,172],"combee":["Combee",59,83,102],"vespiquen":["Vespiquen",149,190,172],"pachirisu":["Pachirisu",94,172,155],"buizel":["Buizel",132,67,146],"floatzel":["Floatzel",221,114,198],"cherubi":["Cherubi",108,92,128],"cherrim-overcast":["Cherrim",170,153,172],"cherrim-sunny":["Cherrim",170,153,172],"shellos-eastsea":["Shellos",103,105,183],"shellos-westsea":["Shellos",103,105,183],"gastrodon-eastsea":["Gastrodon",169,143,244],"gastrodon-westsea":["Gastrodon",169,143,244],"ambipom":["Ambipom",205,143,181],"drifloon":["Drifloon",117,80,207],"drifblim":["Drifblim",180,102,312],"buneary":["Buneary",130,105,146],"lopunny":["Lopunny",156,194,163],"mismagius":["Mismagius",211,187,155],"honchkrow":["Honchkrow",243,103,225],"glameow":["Glameow",109,82,135],"purugly":["Purugly",172,133,174],"chingling":["Chingling",114,94,128],"stunky":["Stunky",121,90,160],"skuntank":["Skuntank",184,132,230],"bronzor":["Bronzor",43,154,149],"bronzong":["Bronzong",161,213,167],"bonsly":["Bonsly",124,133,137],"mimejr":["Mime Jr.",125,142,85],"happiny":["Happiny",25,77,225],"chatot":["Chatot",183,91,183],"spiritomb":["Spiritomb",169,199,137],"gible":["Gible",124,84,151],"gabite":["Gabite",172,125,169],"garchomp":["Garchomp",261,193,239],"munchlax":["Munchlax",137,117,286],"riolu":["Riolu",127,78,120],"lucario":["Lucario",236,144,172],"hippopotas":["Hippopotas",124,118,169],"hippowdon":["Hippowdon",201,191,239],"skorupi":["Skorupi",93,151,120],"drapion":["Drapion",180,202,172],"croagunk":["Croagunk",116,76,134],"toxicroak":["Toxicroak",211,133,195],"carnivine":["Carnivine",187,136,179],"finneon":["Finneon",96,116,135],"lumineon":["Lumineon",142,170,170],"mantyke":["Mantyke",105,179,128],"snover":["Snover",115,105,155],"abomasnow":["Abomasnow",178,158,207],"weavile":["Weavile",243,171,172],"magnezone":["Magnezone",238,205,172],"lickilicky":["Lickilicky",161,181,242],"rhyperior":["Rhyperior",241,190,251],"tangrowth":["Tangrowth",207,184,225],"electivire":["Electivire",249,163,181],"magmortar":["Magmortar",247,172,181],"togekiss":["Togekiss",225,217,198],"yanmega":["Yanmega",231,156,200],"leafeon":["Leafeon",216,219,163],"glaceon":["Glaceon",238,205,163],"gliscor":["Gliscor",185,222,181],"mamoswine":["Mamoswine",247,146,242],"porygonz":["Porygon-Z",264,150,198],"gallade":["Gallade",237,195,169],"probopass":["Probopass",135,275,155],"dusknoir":["Dusknoir",180,254,128],"froslass":["Froslass",171,150,172],"rotom-fan":["Rotom",204,219,137],"rotom-frost":["Rotom",204,219,137],"rotom-heat":["Rotom",204,219,137],"rotom-mow":["Rotom",204,219,137],"rotom":["Rotom",185,159,137],"rotom-wash":["Rotom",204,219,137],"uxie":["Uxie",156,270,181],"mesprit":["Mesprit",212,212,190],"azelf":["Azelf",270,151,181],"dialga":["Dialga",275,211,205],"dialga-origin":["Dialga",270,225,205],"palkia":["Palkia",280,215,189],"palkia-origin":["Palkia",286,223,189],"heatran":["Heatran",251,213,209],"regigigas":["Regigigas",287,210,221],"giratina-altered":["Giratina",187,225,284],"giratina-origin":["Giratina",225,187,284],"cresselia":["Cresselia",152,258,260],"phione":["Phione",162,162,190],"manaphy":["Manaphy",210,210,225],"darkrai":["Darkrai",285,198,172],"shaymin-land":["Shaymin",210,210,225],"shaymin-sky":["Shaymin",261,166,225],"arceus-bug":["Arceus",238,238,237],"arceus-dark":["Arceus",238,238,237],"arceus-dragon":["Arceus",238,238,237],"arceus-electric":["Arceus",238,238,237],"arceus-fairy":["Arceus",238,238,237],"arceus-fighting":["Arceus",238,238,237],"arceus-fire":["Arceus",238,238,237],"arceus-flying":["Arceus",238,238,237],"arceus-ghost":["Arceus",238,238,237],"arceus-grass":["Arceus",238,238,237],"arceus-ground":["Arceus",238,238,237],"arceus-ice":["Arceus",238,238,237],"arceus":["Arceus",238,238,237],"arceus-poison":["Arceus",238,238,237],"arceus-psychic":["Arceus",238,238,237],"arceus-rock":["Arceus",238,238,237],"arceus-steel":["Arceus",238,238,237],"arceus-water":["Arceus",238,238,237],"victini":["Victini",210,210,225],"snivy":["Snivy",88,107,128],"servine":["Servine",122,152,155],"serperior":["Serperior",161,204,181],"tepig":["Tepig",115,85,163],"pignite":["Pignite",173,106,207],"emboar":["Emboar",235,127,242],"oshawott":["Oshawott",117,85,146],"dewott":["Dewott",159,116,181],"samurott-hisui":["Samurott",218,152,207],"samurott":["Samurott",212,157,216],"patrat":["Patrat",98,73,128],"watchog":["Watchog",165,139,155],"lillipup":["Lillipup",107,86,128],"herdier":["Herdier",145,126,163],"stoutland":["Stoutland",206,182,198],"purrloin":["Purrloin",98,73,121],"liepard":["Liepard",187,106,162],"pansage":["Pansage",104,94,137],"simisage":["Simisage",206,133,181],"pansear":["Pansear",104,94,137],"simisear":["Simisear",206,133,181],"panpour":["Panpour",104,94,137],"simipour":["Simipour",206,133,181],"munna":["Munna",111,92,183],"musharna":["Musharna",183,166,253],"pidove":["Pidove",98,80,137],"tranquill":["Tranquill",144,107,158],"unfezant":["Unfezant",226,146,190],"blitzle":["Blitzle",118,64,128],"zebstrika":["Zebstrika",211,136,181],"roggenrola":["Roggenrola",121,110,146],"boldore":["Boldore",174,143,172],"gigalith":["Gigalith",226,201,198],"woobat":["Woobat",107,85,163],"swoobat":["Swoobat",161,119,167],"drilbur":["Drilbur",154,85,155],"excadrill":["Excadrill",255,129,242],"audino":["Audino",114,163,230],"timburr":["Timburr",134,87,181],"gurdurr":["Gurdurr",180,134,198],"conkeldurr":["Conkeldurr",243,158,233],"tympole":["Tympole",98,78,137],"palpitoad":["Palpitoad",128,109,181],"seismitoad":["Seismitoad",188,150,233],"throh":["Throh",172,160,260],"sawk":["Sawk",231,153,181],"sewaddle":["Sewaddle",96,124,128],"swadloon":["Swadloon",115,162,146],"leavanny":["Leavanny",205,165,181],"venipede":["Venipede",83,99,102],"whirlipede":["Whirlipede",100,173,120],"scolipede":["Scolipede",203,175,155],"cottonee":["Cottonee",71,111,120],"whimsicott":["Whimsicott",164,176,155],"petilil":["Petilil",119,91,128],"lilligant-hisui":["Lilligant",208,159,172],"lilligant":["Lilligant",214,155,172],"basculin-bluestriped":["Basculin",189,129,172],"basculin-redstriped":["Basculin",189,129,172],"basculin-whitestriped":["Basculin",189,129,172],"sandile":["Sandile",132,69,137],"krokorok":["Krokorok",155,90,155],"krookodile":["Krookodile",229,158,216],"darumaka-galar":["Darumaka",153,86,172],"darumaka":["Darumaka",153,86,172],"darmanitan-galarianstandard":["Darmanitan",263,114,233],"darmanitan-galarianzen":["Darmanitan",323,123,233],"darmanitan-standard":["Darmanitan",263,114,233],"darmanitan-zen":["Darmanitan",243,202,233],"maractus":["Maractus",201,130,181],"dwebble":["Dwebble",118,128,137],"crustle":["Crustle",188,200,172],"scraggy":["Scraggy",132,132,137],"scrafty":["Scrafty",163,222,163],"sigilyph":["Sigilyph",204,167,176],"yamask-galar":["Yamask",95,141,116],"yamask":["Yamask",95,141,116],"cofagrigus":["Cofagrigus",163,237,151],"tirtouga":["Tirtouga",134,146,144],"carracosta":["Carracosta",192,197,179],"archen":["Archen",213,89,146],"archeops":["Archeops",292,139,181],"trubbish":["Trubbish",96,122,137],"garbodor":["Garbodor",181,164,190],"zorua-hisui":["Zorua",162,79,111],"zorua":["Zorua",153,78,120],"zoroark-hisui":["Zoroark",261,128,146],"zoroark":["Zoroark",250,127,155],"minccino":["Minccino",98,80,146],"cinccino":["Cinccino",198,130,181],"gothita":["Gothita",98,112,128],"gothorita":["Gothorita",137,153,155],"gothitelle":["Gothitelle",176,205,172],"solosis":["Solosis",170,83,128],"duosion":["Duosion",208,103,163],"reuniclus":["Reuniclus",214,148,242],"ducklett":["Ducklett",84,96,158],"swanna":["Swanna",182,132,181],"vanillite":["Vanillite",118,106,113],"vanillish":["Vanillish",151,138,139],"vanilluxe":["Vanilluxe",218,184,174],"deerling-autumn":["Deerling",115,100,155],"deerling-spring":["Deerling",115,100,155],"deerling-summer":["Deerling",115,100,155],"deerling-winter":["Deerling",115,100,155],"sawsbuck-autumn":["Sawsbuck",198,146,190],"sawsbuck-spring":["Sawsbuck",198,146,190],"sawsbuck-summer":["Sawsbuck",198,146,190],"sawsbuck-winter":["Sawsbuck",198,146,190],"emolga":["Emolga",158,127,146],"karrablast":["Karrablast",137,87,137],"escavalier":["Escavalier",223,187,172],"foongus":["Foongus",97,91,170],"amoonguss":["Amoonguss",155,139,249],"frillish":["Frillish",115,134,146],"jellicent":["Jellicent",159,178,225],"alomomola":["Alomomola",138,131,338],"joltik":["Joltik",110,98,137],"galvantula":["Galvantula",201,128,172],"ferroseed":["Ferroseed",82,155,127],"ferrothorn":["Ferrothorn",158,223,179],"klink":["Klink",98,121,120],"klang":["Klang",150,174,155],"klinklang":["Klinklang",199,214,155],"tynamo":["Tynamo",105,78,111],"eelektrik":["Eelektrik",156,130,163],"eelektross":["Eelektross",217,152,198],"elgyem":["Elgyem",148,100,146],"beheeyem":["Beheeyem",221,163,181],"litwick":["Litwick",108,98,137],"lampent":["Lampent",169,115,155],"chandelure":["Chandelure",271,182,155],"axew":["Axew",154,101,130],"fraxure":["Fraxure",212,123,165],"haxorus":["Haxorus",284,172,183],"cubchoo":["Cubchoo",128,74,146],"beartic":["Beartic",233,152,216],"cryogonal":["Cryogonal",190,218,190],"shelmet":["Shelmet",72,140,137],"accelgor":["Accelgor",220,120,190],"stunfisk-galar":["Stunfisk",144,171,240],"stunfisk":["Stunfisk",144,171,240],"mienfoo":["Mienfoo",160,98,128],"mienshao":["Mienshao",258,127,163],"druddigon":["Druddigon",213,170,184],"golett":["Golett",127,92,153],"golurk":["Golurk",222,154,205],"pawniard":["Pawniard",154,114,128],"bisharp":["Bisharp",232,176,163],"bouffalant":["Bouffalant",195,182,216],"rufflet":["Rufflet",150,97,172],"braviary-hisui":["Braviary",213,137,242],"braviary":["Braviary",232,152,225],"vullaby":["Vullaby",105,139,172],"mandibuzz":["Mandibuzz",129,205,242],"heatmor":["Heatmor",204,129,198],"durant":["Durant",217,188,151],"deino":["Deino",116,93,141],"zweilous":["Zweilous",159,135,176],"hydreigon":["Hydreigon",256,188,211],"larvesta":["Larvesta",156,107,146],"volcarona":["Volcarona",264,189,198],"cobalion":["Cobalion",192,229,209],"terrakion":["Terrakion",260,192,209],"virizion":["Virizion",192,229,209],"tornadus-incarnate":["Tornadus",266,164,188],"tornadus-therian":["Tornadus",238,189,188],"thundurus-incarnate":["Thundurus",266,164,188],"thundurus-therian":["Thundurus",295,161,188],"reshiram":["Reshiram",275,211,205],"zekrom":["Zekrom",275,211,205],"landorus-incarnate":["Landorus",261,182,205],"landorus-therian":["Landorus",289,179,205],"kyurem-black":["Kyurem",310,183,245],"kyurem":["Kyurem",246,170,245],"kyurem-white":["Kyurem",310,183,245],"keldeo-ordinary":["Keldeo",260,192,209],"keldeo-resolute":["Keldeo",260,192,209],"meloetta-aria":["Meloetta",250,225,225],"meloetta-pirouette":["Meloetta",269,188,225],"genesect":["Genesect",252,199,174],"chespin":["Chespin",110,106,148],"quilladin":["Quilladin",146,156,156],"chesnaught":["Chesnaught",201,204,204],"fennekin":["Fennekin",116,102,120],"braixen":["Braixen",171,130,153],"delphox":["Delphox",230,189,181],"froakie":["Froakie",122,84,121],"frogadier":["Frogadier",168,114,144],"greninja":["Greninja",223,152,176],"bunnelby":["Bunnelby",68,72,116],"diggersby":["Diggersby",112,155,198],"fletchling":["Fletchling",95,80,128],"fletchinder":["Fletchinder",145,110,158],"talonflame":["Talonflame",176,155,186],"scatterbug-archipelago":["Scatterbug",63,63,116],"scatterbug-continental":["Scatterbug",63,63,116],"scatterbug-elegant":["Scatterbug",63,63,116],"scatterbug-fancy":["Scatterbug",63,63,116],"scatterbug-garden":["Scatterbug",63,63,116],"scatterbug-highplains":["Scatterbug",63,63,116],"scatterbug-icysnow":["Scatterbug",63,63,116],"scatterbug-jungle":["Scatterbug",63,63,116],"scatterbug-marine":["Scatterbug",63,63,116],"scatterbug-meadow":["Scatterbug",63,63,116],"scatterbug-modern":["Scatterbug",63,63,116],"scatterbug-monsoon":["Scatterbug",63,63,116],"scatterbug-ocean":["Scatterbug",63,63,116],"scatterbug-pokeball":["Scatterbug",63,63,116],"scatterbug-polar":["Scatterbug",63,63,116],"scatterbug-river":["Scatterbug",63,63,116],"scatterbug-sandstorm":["Scatterbug",63,63,116],"scatterbug-savanna":["Scatterbug",63,63,116],"scatterbug-sun":["Scatterbug",63,63,116],"scatterbug-tundra":["Scatterbug",63,63,116],"spewpa-archipelago":["Spewpa",48,89,128],"spewpa-continental":["Spewpa",48,89,128],"spewpa-elegant":["Spewpa",48,89,128],"spewpa-fancy":["Spewpa",48,89,128],"spewpa-garden":["Spewpa",48,89,128],"spewpa-highplains":["Spewpa",48,89,128],"spewpa-icysnow":["Spewpa",48,89,128],"spewpa-jungle":["Spewpa",48,89,128],"spewpa-marine":["Spewpa",48,89,128],"spewpa-meadow":["Spewpa",48,89,128],"spewpa-modern":["Spewpa",48,89,128],"spewpa-monsoon":["Spewpa",48,89,128],"spewpa-ocean":["Spewpa",48,89,128],"spewpa-pokeball":["Spewpa",48,89,128],"spewpa-polar":["Spewpa",48,89,128],"spewpa-river":["Spewpa",48,89,128],"spewpa-sandstorm":["Spewpa",48,89,128],"spewpa-savanna":["Spewpa",48,89,128],"spewpa-sun":["Spewpa",48,89,128],"spewpa-tundra":["Spewpa",48,89,128],"vivillon-archipelago":["Vivillon",176,103,190],"vivillon-continental":["Vivillon",176,103,190],"vivillon-elegant":["Vivillon",176,103,190],"vivillon-fancy":["Vivillon",176,103,190],"vivillon-garden":["Vivillon",176,103,190],"vivillon-highplains":["Vivillon",176,103,190],"vivillon-icysnow":["Vivillon",176,103,190],"vivillon-jungle":["Vivillon",176,103,190],"vivillon-marine":["Vivillon",176,103,190],"vivillon-meadow":["Vivillon",176,103,190],"vivillon-modern":["Vivillon",176,103,190],"vivillon-monsoon":["Vivillon",176,103,190],"vivillon-ocean":["Vivillon",176,103,190],"vivillon-pokeball":["Vivillon",176,103,190],"vivillon-polar":["Vivillon",176,103,190],"vivillon-river":["Vivillon",176,103,190],"vivillon-sandstorm":["Vivillon",176,103,190],"vivillon-savanna":["Vivillon",176,103,190],"vivillon-sun":["Vivillon",176,103,190],"vivillon-tundra":["Vivillon",176,103,190],"litleo":["Litleo",139,112,158],"pyroar":["Pyroar",221,149,200],"flabebe-blue":["Flabebe",108,120,127],"flabebe-orange":["Flabebe",108,120,127],"flabebe-red":["Flabebe",108,120,127],"flabebe-white":["Flabebe",108,120,127],"flabebe-yellow":["Flabebe",108,120,127],"floette-blue":["Floette",136,151,144],"floette-orange":["Floette",136,151,144],"floette-red":["Floette",136,151,144],"floette-white":["Floette",136,151,144],"floette-yellow":["Floette",136,151,144],"florges-blue":["Florges",212,244,186],"florges-orange":["Florges",212,244,186],"florges-red":["Florges",212,244,186],"florges-white":["Florges",212,244,186],"florges-yellow":["Florges",212,244,186],"skiddo":["Skiddo",123,102,165],"gogoat":["Gogoat",196,146,265],"pancham":["Pancham",145,107,167],"pangoro":["Pangoro",226,146,216],"furfrou-dandy":["Furfrou",164,167,181],"furfrou-debutante":["Furfrou",164,167,181],"furfrou-diamond":["Furfrou",164,167,181],"furfrou-heart":["Furfrou",164,167,181],"furfrou-kabuki":["Furfrou",164,167,181],"furfrou-lareine":["Furfrou",164,167,181],"furfrou-matron":["Furfrou",164,167,181],"furfrou-natural":["Furfrou",164,167,181],"furfrou-pharaoh":["Furfrou",164,167,181],"furfrou-star":["Furfrou",164,167,181],"espurr":["Espurr",120,114,158],"meowstic":["Meowstic",166,167,179],"honedge":["Honedge",135,139,128],"doublade":["Doublade",188,206,153],"aegislash-blade":["Aegislash",272,97,155],"aegislash-shield":["Aegislash",97,272,155],"spritzee":["Spritzee",110,113,186],"aromatisse":["Aromatisse",173,150,226],"swirlix":["Swirlix",109,119,158],"slurpuff":["Slurpuff",168,163,193],"inkay":["Inkay",98,95,142],"malamar":["Malamar",177,165,200],"binacle":["Binacle",96,120,123],"barbaracle":["Barbaracle",194,205,176],"skrelp":["Skrelp",109,109,137],"dragalge":["Dragalge",177,207,163],"clauncher":["Clauncher",108,117,137],"clawitzer":["Clawitzer",221,171,174],"helioptile":["Helioptile",115,78,127],"heliolisk":["Heliolisk",219,168,158],"tyrunt":["Tyrunt",158,123,151],"tyrantrum":["Tyrantrum",227,191,193],"amaura":["Amaura",124,109,184],"aurorus":["Aurorus",186,163,265],"sylveon":["Sylveon",203,205,216],"hawlucha":["Hawlucha",195,153,186],"dedenne":["Dedenne",164,134,167],"carbink":["Carbink",95,285,137],"goomy":["Goomy",101,112,128],"sliggoo":["Sliggoo",159,176,169],"goodra":["Goodra",220,242,207],"klefki":["Klefki",160,179,149],"phantump":["Phantump",125,103,125],"trevenant":["Trevenant",201,154,198],"pumpkaboo-average":["Pumpkaboo",121,123,135],"pumpkaboo-large":["Pumpkaboo",120,122,144],"pumpkaboo-small":["Pumpkaboo",122,124,127],"pumpkaboo-super":["Pumpkaboo",118,120,153],"gourgeist-average":["Gourgeist",175,213,163],"gourgeist-large":["Gourgeist",179,206,181],"gourgeist-small":["Gourgeist",171,219,146],"gourgeist-super":["Gourgeist",182,200,198],"bergmite":["Bergmite",117,120,146],"avalugg-hisui":["Avalugg",214,238,216],"avalugg":["Avalugg",196,240,216],"noibat":["Noibat",83,73,120],"noivern":["Noivern",205,175,198],"xerneas":["Xerneas",250,185,246],"yveltal":["Yveltal",250,185,246],"zygarde-complete":["Zygarde",184,207,389],"zygarde-completefiftypercent":["Zygarde",203,232,239],"zygarde-completetenpercent":["Zygarde",205,173,144],"zygarde-fiftypercent":["Zygarde",203,232,239],"zygarde-tenpercent":["Zygarde",205,173,144],"diancie":["Diancie",190,285,137],"hoopa-confined":["Hoopa",261,187,173],"hoopa-unbound":["Hoopa",311,191,173],"volcanion":["Volcanion",252,216,190],"rowlet":["Rowlet",102,99,169],"dartrix":["Dartrix",142,139,186],"decidueye-hisui":["Decidueye",213,174,204],"decidueye":["Decidueye",210,179,186],"litten":["Litten",128,79,128],"torracat":["Torracat",174,103,163],"incineroar":["Incineroar",214,175,216],"popplio":["Popplio",120,103,137],"brionne":["Brionne",168,145,155],"primarina":["Primarina",232,195,190],"pikipek":["Pikipek",136,59,111],"trumbeak":["Trumbeak",159,100,146],"toucannon":["Toucannon",222,146,190],"yungoos":["Yungoos",122,56,134],"gumshoos":["Gumshoos",194,113,204],"grubbin":["Grubbin",115,85,132],"charjabug":["Charjabug",145,161,149],"vikavolt":["Vikavolt",254,158,184],"crabrawler":["Crabrawler",150,104,132],"crabominable":["Crabominable",231,138,219],"oricorio-baile":["Oricorio",196,145,181],"oricorio-pau":["Oricorio",196,145,181],"oricorio-pompom":["Oricorio",196,145,181],"oricorio-sensu":["Oricorio",196,145,181],"cutiefly":["Cutiefly",110,81,120],"ribombee":["Ribombee",198,146,155],"rockruff":["Rockruff",117,78,128],"lycanroc-dusk":["Lycanroc",234,139,181],"lycanroc-midday":["Lycanroc",231,140,181],"lycanroc-midnight":["Lycanroc",218,152,198],"wishiwashi-school":["Wishiwashi",255,242,128],"wishiwashi-solo":["Wishiwashi",46,43,128],"mareanie":["Mareanie",98,110,137],"toxapex":["Toxapex",114,273,137],"mudbray":["Mudbray",175,121,172],"mudsdale":["Mudsdale",214,174,225],"dewpider":["Dewpider",72,117,116],"araquanid":["Araquanid",126,219,169],"fomantis":["Fomantis",100,64,120],"lurantis":["Lurantis",192,169,172],"morelull":["Morelull",108,119,120],"shiinotic":["Shiinotic",154,168,155],"salandit":["Salandit",136,80,134],"salazzle":["Salazzle",228,130,169],"stufful":["Stufful",136,95,172],"bewear":["Bewear",226,141,260],"bounsweet":["Bounsweet",55,69,123],"steenee":["Steenee",78,94,141],"tsareena":["Tsareena",222,195,176],"comfey":["Comfey",165,215,139],"oranguru":["Oranguru",168,192,207],"passimian":["Passimian",222,160,225],"wimpod":["Wimpod",67,74,93],"golisopod":["Golisopod",218,226,181],"sandygast":["Sandygast",120,118,146],"palossand":["Palossand",178,178,198],"pyukumuku":["Pyukumuku",97,224,146],"typenull":["Type: Null",184,184,216],"silvally-bug":["Silvally",198,198,216],"silvally-dark":["Silvally",198,198,216],"silvally-dragon":["Silvally",198,198,216],"silvally-electric":["Silvally",198,198,216],"silvally-fairy":["Silvally",198,198,216],"silvally-fighting":["Silvally",198,198,216],"silvally-fire":["Silvally",198,198,216],"silvally-flying":["Silvally",198,198,216],"silvally-ghost":["Silvally",198,198,216],"silvally-grass":["Silvally",198,198,216],"silvally-ground":["Silvally",198,198,216],"silvally-ice":["Silvally",198,198,216],"silvally":["Silvally",198,198,216],"silvally-poison":["Silvally",198,198,216],"silvally-psychic":["Silvally",198,198,216],"silvally-rock":["Silvally",198,198,216],"silvally-steel":["Silvally",198,198,216],"silvally-water":["Silvally",198,198,216],"minior-blue":["Minior",218,131,155],"minior-green":["Minior",218,131,155],"minior-indigo":["Minior",218,131,155],"minior-orange":["Minior",218,131,155],"minior-red":["Minior",218,131,155],"minior-violet":["Minior",218,131,155],"minior-yellow":["Minior",218,131,155],"komala":["Komala",216,165,163],"turtonator":["Turtonator",165,215,155],"togedemaru":["Togedemaru",190,145,163],"mimikyu-busted":["Mimikyu",177,199,146],"mimikyu-disguised":["Mimikyu",177,199,146],"bruxish":["Bruxish",208,145,169],"drampa":["Drampa",231,164,186],"dhelmise":["Dhelmise",233,179,172],"jangmoo":["Jangmo-o",102,108,128],"hakamoo":["Hakamo-o",145,162,146],"kommoo":["Kommo-o",222,240,181],"tapukoko":["Tapu Koko",250,181,172],"tapulele":["Tapu Lele",259,208,172],"tapubulu":["Tapu Bulu",249,215,172],"tapufini":["Tapu Fini",189,254,172],"cosmog":["Cosmog",54,57,125],"cosmoem":["Cosmoem",54,242,125],"solgaleo":["Solgaleo",255,191,264],"lunala":["Lunala",255,191,264],"nihilego":["Nihilego",249,210,240],"buzzwole":["Buzzwole",236,196,216],"pheromosa":["Pheromosa",316,85,174],"xurkitree":["Xurkitree",330,144,195],"celesteela":["Celesteela",207,199,219],"kartana":["Kartana",323,182,139],"guzzlord":["Guzzlord",188,99,440],"necrozma-dawnwings":["Necrozma",277,220,200],"necrozma-duskmane":["Necrozma",277,220,200],"necrozma":["Necrozma",251,195,219],"necrozma-ultra":["Necrozma",337,196,200],"magearna":["Magearna",246,225,190],"marshadow":["Marshadow",265,190,207],"poipole":["Poipole",145,133,167],"naganadel":["Naganadel",263,159,177],"stakataka":["Stakataka",213,298,156],"blacephalon":["Blacephalon",315,148,142],"zeraora":["Zeraora",252,177,204],"meltan":["Meltan",118,99,130],"melmetal":["Melmetal",226,190,264],"grookey":["Grookey",122,91,137],"thwackey":["Thwackey",165,134,172],"rillaboom":["Rillaboom",239,168,225],"scorbunny":["Scorbunny",132,79,137],"raboot":["Raboot",170,125,163],"cinderace":["Cinderace",238,163,190],"sobble":["Sobble",132,79,137],"drizzile":["Drizzile",186,113,163],"inteleon":["Inteleon",262,142,172],"skwovet":["Skwovet",95,86,172],"greedent":["Greedent",160,156,260],"rookidee":["Rookidee",88,67,116],"corvisquire":["Corvisquire",129,110,169],"corviknight":["Corviknight",163,192,221],"blipbug":["Blipbug",46,67,93],"dottler":["Dottler",87,157,137],"orbeetle":["Orbeetle",156,240,155],"nickit":["Nickit",85,82,120],"thievul":["Thievul",172,164,172],"gossifleur":["Gossifleur",70,104,120],"eldegoss":["Eldegoss",148,211,155],"wooloo":["Wooloo",76,97,123],"dubwool":["Dubwool",159,198,176],"chewtle":["Chewtle",114,85,137],"drednaw":["Drednaw",213,164,207],"yamper":["Yamper",80,90,153],"boltund":["Boltund",197,131,170],"rolycoly":["Rolycoly",73,91,102],"carkol":["Carkol",114,157,190],"coalossal":["Coalossal",146,198,242],"applin":["Applin",71,116,120],"flapple":["Flapple",214,144,172],"appletun":["Appletun",178,146,242],"silicobra":["Silicobra",103,123,141],"sandaconda":["Sandaconda",202,207,176],"cramorant":["Cramorant",173,163,172],"arrokuda":["Arrokuda",118,72,121],"barraskewda":["Barraskewda",258,127,156],"toxel":["Toxel",97,65,120],"toxtricity-amped":["Toxtricity",224,140,181],"toxtricity-lowkey":["Toxtricity",224,140,181],"sizzlipede":["Sizzlipede",118,90,137],"centiskorch":["Centiskorch",220,158,225],"clobbopus":["Clobbopus",121,103,137],"grapploct":["Grapploct",209,162,190],"sinistea-antique":["Sinistea",134,96,120],"sinistea-phony":["Sinistea",134,96,120],"polteageist-antique":["Polteageist",248,189,155],"polteageist-phony":["Polteageist",248,189,155],"hatenna":["Hatenna",98,93,123],"hattrem":["Hattrem",153,133,149],"hatterene":["Hatterene",237,182,149],"impidimp":["Impidimp",103,69,128],"morgrem":["Morgrem",145,102,163],"grimmsnarl":["Grimmsnarl",227,139,216],"obstagoon-galar":["Obstagoon",180,194,212],"perrserker-galar":["Perrserker",195,162,172],"cursola":["Cursola",253,182,155],"sirfetchd-galar":["Sirfetch’d",248,176,158],"mrrime-galar":["Mr. Rime",212,179,190],"runerigus-galar":["Runerigus",163,237,151],"milcery":["Milcery",90,97,128],"alcremie":["Alcremie",203,203,163],"falinks":["Falinks",193,170,163],"pincurchin":["Pincurchin",176,161,134],"snom":["Snom",76,59,102],"frosmoth":["Frosmoth",230,155,172],"stonjourner":["Stonjourner",222,182,225],"eiscue-ice":["Eiscue",148,195,181],"eiscue-noice":["Eiscue",173,139,181],"indeedee-female":["Indeedee",184,184,172],"indeedee-male":["Indeedee",208,166,155],"morpeko-fullbelly":["Morpeko",192,121,151],"morpeko-hangry":["Morpeko",192,121,151],"cufant":["Cufant",140,91,176],"copperajah":["Copperajah",226,126,263],"dracozolt":["Dracozolt",195,165,207],"arctozolt":["Arctozolt",190,166,207],"dracovish":["Dracovish",175,185,207],"arctovish":["Arctovish",171,185,207],"duraludon":["Duraludon",239,185,172],"dreepy":["Dreepy",117,61,99],"drakloak":["Drakloak",163,105,169],"dragapult":["Dragapult",266,170,204],"zacian-crownedsword":["Zacian",332,240,192],"zacian-hero":["Zacian",254,236,192],"zamazenta-crownedshield":["Zamazenta",250,292,192],"zamazenta-hero":["Zamazenta",254,236,192],"eternatus":["Eternatus",278,192,268],"kubfu":["Kubfu",170,112,155],"urshifu-rapidstrike":["Urshifu",254,177,225],"urshifu-singlestrike":["Urshifu",254,177,225],"zarude":["Zarude",242,215,233],"regieleki":["Regieleki",250,125,190],"regidrago":["Regidrago",202,101,400],"glastrier":["Glastrier",246,223,225],"spectrier":["Spectrier",273,146,205],"calyrex-icerider":["Calyrex",268,246,205],"calyrex":["Calyrex",162,162,225],"calyrex-shadowrider":["Calyrex",324,194,205],"wyrdeer":["Wyrdeer",206,145,230],"kleavor":["Kleavor",253,174,172],"ursaluna":["Ursaluna",243,181,277],"sneasler":["Sneasler",259,158,190],"overqwil":["Overqwil",222,171,198],"enamorus-incarnate":["Enamorus",281,162,179],"enamorus-therian":["Enamorus",250,201,179],"sprigatito":["Sprigatito",116,99,120],"floragato":["Floragato",157,128,156],"meowscarada":["Meowscarada",233,153,183],"fuecoco":["Fuecoco",112,96,167],"crocalor":["Crocalor",162,134,191],"skeledirge":["Skeledirge",207,178,232],"quaxly":["Quaxly",120,86,146],"quaxwell":["Quaxwell",162,123,172],"quaquaval":["Quaquaval",236,159,198],"lechonk":["Lechonk",81,79,144],"oinkologne-female":["Oinkologne",169,162,251],"oinkologne":["Oinkologne",186,153,242],"tarountula":["Tarountula",70,77,111],"spidops":["Spidops",139,166,155],"nymble":["Nymble",81,65,107],"lokix":["Lokix",199,144,174],"pawmi":["Pawmi",95,45,128],"pawmo":["Pawmo",147,82,155],"pawmot":["Pawmot",232,141,172],"tandemaus":["Tandemaus",98,90,137],"maushold-familyoffour":["Maushold",159,157,179],"maushold-familyofthree":["Maushold",159,157,179],"fidough":["Fidough",102,126,114],"dachsbun":["Dachsbun",159,212,149],"smoliv":["Smoliv",100,89,121],"dolliv":["Dolliv",137,131,141],"arboliva":["Arboliva",219,189,186],"squawkabilly-blue":["Squawkabilly",185,105,193],"squawkabilly-green":["Squawkabilly",185,105,193],"squawkabilly-white":["Squawkabilly",185,105,193],"squawkabilly-yellow":["Squawkabilly",185,105,193],"nacli":["Nacli",95,108,146],"naclstack":["Naclstack",105,160,155],"garganacl":["Garganacl",171,212,225],"charcadet":["Charcadet",92,74,120],"armarouge":["Armarouge",234,185,198],"ceruledge":["Ceruledge",239,189,181],"tadbulb":["Tadbulb",104,73,156],"bellibolt":["Bellibolt",184,165,240],"wattrel":["Wattrel",105,75,120],"kilowattrel":["Kilowattrel",221,132,172],"maschiff":["Maschiff",140,108,155],"mabosstiff":["Mabosstiff",230,168,190],"shroodle":["Shroodle",124,70,120],"grafaiai":["Grafaiai",199,149,160],"bramblin":["Bramblin",121,64,120],"brambleghast":["Brambleghast",228,144,146],"toedscool":["Toedscool",97,149,120],"toedscruel":["Toedscruel",166,209,190],"klawf":["Klawf",184,185,172],"capsakid":["Capsakid",118,76,137],"scovillain":["Scovillain",216,130,163],"rellor":["Rellor",86,108,121],"rabsca":["Rabsca",201,178,181],"flittle":["Flittle",105,60,102],"espathra":["Espathra",204,127,216],"tinkatink":["Tinkatink",85,110,137],"tinkatuff":["Tinkatuff",109,145,163],"tinkaton":["Tinkaton",155,196,198],"wiglett":["Wiglett",109,52,67],"wugtrio":["Wugtrio",205,136,111],"bombirdier":["Bombirdier",198,172,172],"finizen":["Finizen",90,80,172],"palafin-hero":["Palafin",322,196,225],"palafin-zero":["Palafin",143,144,225],"varoom":["Varoom",123,107,128],"revavroom":["Revavroom",229,168,190],"cyclizar":["Cyclizar",205,142,172],"orthworm":["Orthworm",161,219,172],"glimmet":["Glimmet",187,104,134],"glimmora":["Glimmora",246,177,195],"greavard":["Greavard",105,106,137],"houndstone":["Houndstone",186,195,176],"flamigo":["Flamigo",227,145,193],"cetoddle":["Cetoddle",119,80,239],"cetitan":["Cetitan",208,123,347],"veluza":["Veluza",196,139,207],"dondozo":["Dondozo",176,178,312],"tatsugiri-curly":["Tatsugiri",226,166,169],"tatsugiri-droopy":["Tatsugiri",226,166,169],"tatsugiri-stretchy":["Tatsugiri",226,166,169],"annihilape":["Annihilape",220,178,242],"clodsire":["Clodsire",127,151,277],"farigiraf":["Farigiraf",209,136,260],"dudunsparce-three":["Dudunsparce",188,150,268],"dudunsparce-two":["Dudunsparce",188,150,268],"kingambit":["Kingambit",238,203,225],"greattusk":["Great Tusk",249,209,251],"screamtail":["Scream Tail",139,234,251],"brutebonnet":["Brute Bonnet",232,190,244],"fluttermane":["Flutter Mane",280,235,146],"slitherwing":["Slither Wing",261,193,198],"sandyshocks":["Sandy Shocks",244,195,198],"irontreads":["Iron Treads",227,216,207],"ironbundle":["Iron Bundle",266,211,148],"ironhands":["Iron Hands",245,177,319],"ironjugulis":["Iron Jugulis",249,179,214],"ironmoth":["Iron Moth",281,196,190],"ironthorns":["Iron Thorns",250,200,225],"frigibax":["Frigibax",134,86,163],"arctibax":["Arctibax",173,128,207],"baxcalibur":["Baxcalibur",254,168,229],"gimmighoul":["Gimmighoul",140,76,128],"gholdengo":["Gholdengo",252,190,202],"wochien":["Wo-Chien",186,242,198],"chienpao":["Chien-Pao",261,167,190],"tinglu":["Ting-Lu",194,203,321],"chiyu":["Chi-Yu",269,221,146],"roaringmoon":["Roaring Moon",280,196,233],"ironvaliant":["Iron Valiant",279,171,179],"koraidon-apex":["Koraidon",263,223,205],"miraidon-ultimate":["Miraidon",263,223,205],"walkingwake":["Walking Wake",233,171,203],"ironleaves":["Iron Leaves",236,194,189],"dipplin":["Dipplin",173,184,190],"poltchageist-artisan":["Poltchageist",134,96,120],"poltchageist-counterfeit":["Poltchageist",134,96,120],"sinistcha-masterpiece":["Sinistcha",225,191,174],"sinistcha-unremarkable":["Sinistcha",225,191,174],"okidogi":["Okidogi",220,191,186],"munkidori":["Munkidori",238,157,186],"fezandipiti":["Fezandipiti",169,208,186],"ogerpon":["Ogerpon",219,178,173],"archaludon":["Archaludon",250,215,207],"hydrapple":["Hydrapple",216,186,235],"gougingfire":["Gouging Fire",205,208,213],"ragingbolt":["Raging Bolt",235,165,245],"ironboulder":["Iron Boulder",227,195,189],"ironcrown":["Iron Crown",221,200,189],"terapagos":["Terapagos",126,165,207],"pecharunt":["Pecharunt",164,248,186],"unown":["Unown",136,91,134],"spinda":["Spinda",116,116,155],"burmy":["Burmy",53,83,120],"wormadam":["Wormadam",141,180,155],"cherrim":["Cherrim",170,153,172],"shellos":["Shellos",103,105,183],"gastrodon":["Gastrodon",169,143,244],"giratina":["Giratina",187,225,284],"shaymin":["Shaymin",210,210,225],"basculin":["Basculin",189,129,172],"darmanitan":["Darmanitan",263,114,233],"deerling":["Deerling",115,100,155],"sawsbuck":["Sawsbuck",198,146,190],"tornadus":["Tornadus",266,164,188],"thundurus":["Thundurus",266,164,188],"landorus":["Landorus",261,182,205],"keldeo":["Keldeo",260,192,209],"meloetta":["Meloetta",250,225,225],"scatterbug":["Scatterbug",63,63,116],"spewpa":["Spewpa",48,89,128],"vivillon":["Vivillon",176,103,190],"flabebe":["Flabebe",108,120,127],"floette":["Floette",136,151,144],"florges":["Florges",212,244,186],"furfrou":["Furfrou",164,167,181],"aegislash":["Aegislash",272,97,155],"pumpkaboo":["Pumpkaboo",121,123,135],"gourgeist":["Gourgeist",175,213,163],"zygarde":["Zygarde",203,232,239],"hoopa":["Hoopa",261,187,173],"oricorio":["Oricorio",196,145,181],"lycanroc":["Lycanroc",234,139,181],"wishiwashi":["Wishiwashi",46,43,128],"minior":["Minior",218,131,155],"mimikyu":["Mimikyu",177,199,146],"toxtricity":["Toxtricity",224,140,181],"sinistea":["Sinistea",134,96,120],"polteageist":["Polteageist",248,189,155],"obstagoon":["Obstagoon",180,194,212],"perrserker":["Perrserker",195,162,172],"sirfetchd":["Sirfetch’d",248,176,158],"mrrime":["Mr. Rime",212,179,190],"runerigus":["Runerigus",163,237,151],"eiscue":["Eiscue",148,195,181],"indeedee":["Indeedee",184,184,172],"morpeko":["Morpeko",192,121,151],"zacian":["Zacian",332,240,192],"zamazenta":["Zamazenta",250,292,192],"urshifu":["Urshifu",254,177,225],"enamorus":["Enamorus",281,162,179],"maushold":["Maushold",159,157,179],"squawkabilly":["Squawkabilly",185,105,193],"palafin":["Palafin",143,144,225],"tatsugiri":["Tatsugiri",226,166,169],"dudunsparce":["Dudunsparce",188,150,268],"koraidon":["Koraidon",263,223,205],"miraidon":["Miraidon",263,223,205],"poltchageist":["Poltchageist",134,96,120],"sinistcha":["Sinistcha",225,191,174]},"evo":{"abra":["kadabra"],"aipom":["ambipom"],"amaura":["aurorus"],"anorith":["armaldo"],"applin":["appletun","dipplin","flapple"],"archen":["archeops"],"arctibax":["baxcalibur"],"aron":["lairon"],"arrokuda":["barraskewda"],"axew":["fraxure"],"azurill":["marill"],"bagon":["shelgon"],"baltoy":["claydol"],"barboach":["whiscash"],"bayleef":["meganium"],"beldum":["metang"],"bellsprout":["weepinbell"],"bergmite":["avalugg"],"bidoof":["bibarel"],"binacle":["barbaracle"],"bisharp":["kingambit"],"blipbug":["dottler"],"blitzle":["zebstrika"],"boldore":["gigalith"],"bonsly":["sudowoodo"],"bounsweet":["steenee"],"braixen":["delphox"],"bramblin":["brambleghast"],"brionne":["primarina"],"bronzor":["bronzong"],"budew":["roselia"],"buizel":["floatzel"],"bulbasaur":["ivysaur"],"buneary":["lopunny"],"bunnelby":["diggersby"],"burmy-plant":["mothim","wormadam-plant"],"burmy-sandy":["mothim","wormadam-sandy"],"burmy-trash":["mothim","wormadam-trash"],"cacnea":["cacturne"],"capsakid":["scovillain"],"carkol":["coalossal"],"carvanha":["sharpedo"],"cascoon":["dustox"],"caterpie":["metapod"],"cetoddle":["cetitan"],"chansey":["blissey"],"charcadet":["armarouge","ceruledge"],"charjabug":["vikavolt"],"charmander":["charmeleon"],"charmeleon":["charizard"],"cherubi":["cherrim-overcast","cherrim-sunny"],"chespin":["quilladin"],"chewtle":["drednaw"],"chikorita":["bayleef"],"chimchar":["monferno"],"chinchou":["lanturn"],"chingling":["chimecho"],"clamperl":["gorebyss","huntail"],"clauncher":["clawitzer"],"clefairy":["clefable"],"cleffa":["clefairy"],"clobbopus":["grapploct"],"combee":["vespiquen"],"combusken":["blaziken"],"corphish":["crawdaunt"],"corsola-galar":["cursola"],"corvisquire":["corviknight"],"cosmoem":["lunala","solgaleo"],"cosmog":["cosmoem"],"cottonee":["whimsicott"],"crabrawler":["crabominable"],"cranidos":["rampardos"],"croagunk":["toxicroak"],"crocalor":["skeledirge"],"croconaw":["feraligatr"],"cubchoo":["beartic"],"cubone":["marowak"],"cufant":["copperajah"],"cutiefly":["ribombee"],"cyndaquil":["quilava"],"dartrix":["decidueye"],"darumaka":["darmanitan-standard"],"darumaka-galar":["darmanitan-galarianstandard"],"deerling-autumn":["sawsbuck-autumn"],"deerling-spring":["sawsbuck-spring"],"deerling-summer":["sawsbuck-summer"],"deerling-winter":["sawsbuck-winter"],"deino":["zweilous"],"dewott":["samurott"],"dewpider":["araquanid"],"diglett":["dugtrio"],"diglett-alola":["dugtrio-alola"],"dipplin":["hydrapple"],"doduo":["dodrio"],"dolliv":["arboliva"],"dottler":["orbeetle"],"doublade":["aegislash-shield"],"dragonair":["dragonite"],"drakloak":["dragapult"],"dratini":["dragonair"],"dreepy":["drakloak"],"drifloon":["drifblim"],"drilbur":["excadrill"],"drizzile":["inteleon"],"drowzee":["hypno"],"ducklett":["swanna"],"dunsparce":["dudunsparce-three","dudunsparce-two"],"duosion":["reuniclus"],"dusclops":["dusknoir"],"duskull":["dusclops"],"dwebble":["crustle"],"eelektrik":["eelektross"],"eevee":["espeon","flareon","glaceon","jolteon","leafeon","sylveon","umbreon","vaporeon"],"ekans":["arbok"],"electabuzz":["electivire"],"electrike":["manectric"],"elekid":["electabuzz"],"elgyem":["beheeyem"],"espurr":["meowstic"],"exeggcute":["exeggutor"],"farfetchd-galar":["sirfetchd-galar"],"feebas":["milotic"],"fennekin":["braixen"],"ferroseed":["ferrothorn"],"fidough":["dachsbun"],"finizen":["palafin"],"finneon":["lumineon"],"flaaffy":["ampharos"],"flabebe-blue":["floette-blue"],"flabebe-orange":["floette-orange"],"flabebe-red":["floette-red"],"flabebe-white":["floette-white"],"flabebe-yellow":["floette-yellow"],"fletchinder":["talonflame"],"fletchling":["fletchinder"],"flittle":["espathra"],"floette-blue":["florges-blue"],"floette-orange":["florges-orange"],"floette-red":["florges-red"],"floette-white":["florges-white"],"floette-yellow":["florges-yellow"],"floragato":["meowscarada"],"fomantis":["lurantis"],"foongus":["amoonguss"],"fraxure":["haxorus"],"frigibax":["arctibax"],"frillish":["jellicent"],"froakie":["frogadier"],"frogadier":["greninja"],"fuecoco":["crocalor"],"gabite":["garchomp"],"gastly":["haunter"],"geodude":["graveler"],"geodude-alola":["graveler-alola"],"gible":["gabite"],"glameow":["purugly"],"gligar":["gliscor"],"glimmet":["glimmora"],"gloom":["bellossom","vileplume"],"golbat":["crobat"],"goldeen":["seaking"],"golett":["golurk"],"goomy":["sliggoo"],"gossifleur":["eldegoss"],"gothita":["gothorita"],"gothorita":["gothitelle"],"graveler":["golem"],"graveler-alola":["golem-alola"],"greavard":["houndstone"],"grimer":["muk"],"grimer-alola":["muk-alola"],"grookey":["thwackey"],"grotle":["torterra"],"grovyle":["sceptile"],"growlithe":["arcanine"],"growlithe-hisui":["arcanine-hisui"],"grubbin":["charjabug"],"gulpin":["swalot"],"gurdurr":["conkeldurr"],"hakamoo":["kommoo"],"happiny":["chansey"],"hatenna":["hattrem"],"hattrem":["hatterene"],"haunter":["gengar"],"helioptile":["heliolisk"],"herdier":["stoutland"],"hippopotas":["hippowdon"],"honedge":["doublade"],"hoothoot":["noctowl"],"hoppip":["skiploom"],"horsea":["seadra"],"houndour":["houndoom"],"igglybuff":["jigglypuff"],"impidimp":["morgrem"],"inkay":["malamar"],"ivysaur":["venusaur"],"jangmoo":["hakamoo"],"jigglypuff":["wigglytuff"],"joltik":["galvantula"],"kabuto":["kabutops"],"kadabra":["alakazam"],"kakuna":["beedrill"],"karrablast":["escavalier"],"kirlia":["gallade","gardevoir"],"klang":["klinklang"],"klink":["klang"],"koffing":["weezing"],"krabby":["kingler"],"kricketot":["kricketune"],"krokorok":["krookodile"],"kubfu":["urshifu-rapidstrike","urshifu-singlestrike"],"lairon":["aggron"],"lampent":["chandelure"],"larvesta":["volcarona"],"larvitar":["pupitar"],"lechonk":["oinkologne","oinkologne-female"],"ledyba":["ledian"],"lickitung":["lickilicky"],"lileep":["cradily"],"lillipup":["herdier"],"linoone-galar":["obstagoon-galar"],"litleo":["pyroar"],"litten":["torracat"],"litwick":["lampent"],"lombre":["ludicolo"],"lotad":["lombre"],"loudred":["exploud"],"luxio":["luxray"],"machoke":["machamp"],"machop":["machoke"],"magby":["magmar"],"magikarp":["gyarados"],"magmar":["magmortar"],"magnemite":["magneton"],"magneton":["magnezone"],"makuhita":["hariyama"],"mankey":["primeape"],"mantyke":["mantine"],"mareanie":["toxapex"],"mareep":["flaaffy"],"marill":["azumarill"],"marshtomp":["swampert"],"maschiff":["mabosstiff"],"meditite":["medicham"],"meltan":["melmetal"],"meowth":["persian"],"meowth-alola":["persian-alola"],"meowth-galar":["perrserker-galar"],"metang":["metagross"],"metapod":["butterfree"],"mienfoo":["mienshao"],"milcery":["alcremie"],"mimejr":["mrmime"],"minccino":["cinccino"],"misdreavus":["mismagius"],"monferno":["infernape"],"morelull":["shiinotic"],"morgrem":["grimmsnarl"],"mrmime-galar":["mrrime"],"mudbray":["mudsdale"],"mudkip":["marshtomp"],"munchlax":["snorlax"],"munna":["musharna"],"murkrow":["honchkrow"],"nacli":["naclstack"],"naclstack":["garganacl"],"natu":["xatu"],"nickit":["thievul"],"nidoranf":["nidorina"],"nidoranm":["nidorino"],"nidorina":["nidoqueen"],"nidorino":["nidoking"],"nincada":["ninjask"],"noibat":["noivern"],"nosepass":["probopass"],"numel":["camerupt"],"nuzleaf":["shiftry"],"nymble":["lokix"],"oddish":["gloom"],"omanyte":["omastar"],"onix":["steelix"],"oshawott":["dewott"],"palpitoad":["seismitoad"],"pancham":["pangoro"],"panpour":["simipour"],"pansage":["simisage"],"pansear":["simisear"],"paras":["parasect"],"patrat":["watchog"],"pawmi":["pawmo"],"pawmo":["pawmot"],"pawniard":["bisharp"],"petilil":["lilligant"],"phanpy":["donphan"],"phantump":["trevenant"],"pichu":["pikachu"],"pidgeotto":["pidgeot"],"pidgey":["pidgeotto"],"pidove":["tranquill"],"pignite":["emboar"],"pikachu":["raichu"],"pikipek":["trumbeak"],"piloswine":["mamoswine"],"pineco":["forretress"],"piplup":["prinplup"],"poipole":["naganadel"],"poliwag":["poliwhirl"],"poliwhirl":["politoed","poliwrath"],"poltchageist-artisan":["sinistcha-masterpiece"],"poltchageist-counterfeit":["sinistcha-unremarkable"],"ponyta":["rapidash"],"ponyta-galar":["rapidash-galar"],"poochyena":["mightyena"],"popplio":["brionne"],"porygon":["porygon2"],"porygon2":["porygonz"],"primeape":["annihilape"],"prinplup":["empoleon"],"psyduck":["golduck"],"pumpkaboo-average":["gourgeist-average"],"pumpkaboo-large":["gourgeist-large"],"pumpkaboo-small":["gourgeist-small"],"pumpkaboo-super":["gourgeist-super"],"pupitar":["tyranitar"],"purrloin":["liepard"],"quaxly":["quaxwell"],"quaxwell":["quaquaval"],"quilava":["typhlosion"],"quilladin":["chesnaught"],"qwilfish-hisui":["overqwil"],"raboot":["cinderace"],"ralts":["kirlia"],"rattata":["raticate"],"rattata-alola":["raticate-alola"],"rellor":["rabsca"],"remoraid":["octillery"],"rhydon":["rhyperior"],"rhyhorn":["rhydon"],"riolu":["lucario"],"rockruff":["lycanroc-dusk","lycanroc-midday","lycanroc-midnight"],"roggenrola":["boldore"],"rolycoly":["carkol"],"rookidee":["corvisquire"],"roselia":["roserade"],"rowlet":["dartrix"],"rufflet":["braviary"],"salandit":["salazzle"],"sandile":["krokorok"],"sandshrew":["sandslash"],"sandshrew-alola":["sandslash-alola"],"sandygast":["palossand"],"scatterbug-archipelago":["spewpa-archipelago"],"scatterbug-continental":["spewpa-continental"],"scatterbug-elegant":["spewpa-elegant"],"scatterbug-fancy":["spewpa-fancy"],"scatterbug-garden":["spewpa-garden"],"scatterbug-highplains":["spewpa-highplains"],"scatterbug-icysnow":["spewpa-icysnow"],"scatterbug-jungle":["spewpa-jungle"],"scatterbug-marine":["spewpa-marine"],"scatterbug-meadow":["spewpa-meadow"],"scatterbug-modern":["spewpa-modern"],"scatterbug-monsoon":["spewpa-monsoon"],"scatterbug-ocean":["spewpa-ocean"],"scatterbug-pokeball":["spewpa-pokeball"],"scatterbug-polar":["spewpa-polar"],"scatterbug-river":["spewpa-river"],"scatterbug-sandstorm":["spewpa-sandstorm"],"scatterbug-savanna":["spewpa-savanna"],"scatterbug-sun":["spewpa-sun"],"scatterbug-tundra":["spewpa-tundra"],"scorbunny":["raboot"],"scraggy":["scrafty"],"scyther":["scizor"],"seadra":["kingdra"],"sealeo":["walrein"],"seedot":["nuzleaf"],"seel":["dewgong"],"sentret":["furret"],"servine":["serperior"],"sewaddle":["swadloon"],"shelgon":["salamence"],"shellder":["cloyster"],"shellos-eastsea":["gastrodon-eastsea"],"shellos-westsea":["gastrodon-westsea"],"shelmet":["accelgor"],"shieldon":["bastiodon"],"shinx":["luxio"],"shroodle":["grafaiai"],"shroomish":["breloom"],"shuppet":["banette"],"silcoon":["beautifly"],"silicobra":["sandaconda"],"sinistea-antique":["polteageist-antique"],"sinistea-phony":["polteageist-phony"],"sizzlipede":["centiskorch"],"skiddo":["gogoat"],"skiploom":["jumpluff"],"skitty":["delcatty"],"skorupi":["drapion"],"skrelp":["dragalge"],"skwovet":["greedent"],"slakoth":["vigoroth"],"sliggoo":["goodra"],"slowpoke":["slowbro","slowking"],"slowpoke-galar":["slowbro-galar","slowking-galar"],"slugma":["magcargo"],"smoliv":["dolliv"],"smoochum":["jynx"],"sneasel":["weavile"],"sneasel-hisui":["sneasler"],"snivy":["servine"],"snom":["frosmoth"],"snorunt":["froslass","glalie"],"snover":["abomasnow"],"snubbull":["granbull"],"sobble":["drizzile"],"solosis":["duosion"],"spearow":["fearow"],"spewpa-archipelago":["vivillon-archipelago"],"spewpa-continental":["vivillon-continental"],"spewpa-elegant":["vivillon-elegant"],"spewpa-fancy":["vivillon-fancy"],"spewpa-garden":["vivillon-garden"],"spewpa-highplains":["vivillon-highplains"],"spewpa-icysnow":["vivillon-icysnow"],"spewpa-jungle":["vivillon-jungle"],"spewpa-marine":["vivillon-marine"],"spewpa-meadow":["vivillon-meadow"],"spewpa-modern":["vivillon-modern"],"spewpa-monsoon":["vivillon-monsoon"],"spewpa-ocean":["vivillon-ocean"],"spewpa-pokeball":["vivillon-pokeball"],"spewpa-polar":["vivillon-polar"],"spewpa-river":["vivillon-river"],"spewpa-sandstorm":["vivillon-sandstorm"],"spewpa-savanna":["vivillon-savanna"],"spewpa-sun":["vivillon-sun"],"spewpa-tundra":["vivillon-tundra"],"spheal":["sealeo"],"spinarak":["ariados"],"spoink":["grumpig"],"sprigatito":["floragato"],"spritzee":["aromatisse"],"squirtle":["wartortle"],"staravia":["staraptor"],"starly":["staravia"],"staryu":["starmie"],"steenee":["tsareena"],"stufful":["bewear"],"stunky":["skuntank"],"sunkern":["sunflora"],"surskit":["masquerain"],"swablu":["altaria"],"swadloon":["leavanny"],"swinub":["piloswine"],"swirlix":["slurpuff"],"tadbulb":["bellibolt"],"taillow":["swellow"],"tandemaus":["maushold-familyoffour","maushold-familyofthree"],"tangela":["tangrowth"],"tarountula":["spidops"],"teddiursa":["ursaring"],"tentacool":["tentacruel"],"tepig":["pignite"],"thwackey":["rillaboom"],"timburr":["gurdurr"],"tinkatink":["tinkatuff"],"tinkatuff":["tinkaton"],"tirtouga":["carracosta"],"toedscool":["toedscruel"],"togepi":["togetic"],"togetic":["togekiss"],"torchic":["combusken"],"torracat":["incineroar"],"totodile":["croconaw"],"toxel":["toxtricity-amped","toxtricity-lowkey"],"tranquill":["unfezant"],"trapinch":["vibrava"],"treecko":["grovyle"],"trubbish":["garbodor"],"trumbeak":["toucannon"],"turtwig":["grotle"],"tympole":["palpitoad"],"tynamo":["eelektrik"],"typenull":["silvally"],"tyrogue":["hitmonchan","hitmonlee","hitmontop"],"tyrunt":["tyrantrum"],"ursaring":["ursaluna"],"vanillish":["vanilluxe"],"vanillite":["vanillish"],"varoom":["revavroom"],"venipede":["whirlipede"],"venonat":["venomoth"],"vibrava":["flygon"],"vigoroth":["slaking"],"voltorb":["electrode"],"voltorb-hisui":["electrode-hisui"],"vullaby":["mandibuzz"],"vulpix":["ninetales"],"vulpix-alola":["ninetales-alola"],"wailmer":["wailord"],"wartortle":["blastoise"],"wattrel":["kilowattrel"],"weedle":["kakuna"],"weepinbell":["victreebel"],"whirlipede":["scolipede"],"whismur":["loudred"],"wiglett":["wugtrio"],"wimpod":["golisopod"],"wingull":["pelipper"],"woobat":["swoobat"],"wooloo":["dubwool"],"wooper":["quagsire"],"wooper-paldea":["clodsire"],"wurmple":["cascoon","silcoon"],"wynaut":["wobbuffet"],"yamask":["cofagrigus"],"yamask-galar":["runerigus-galar"],"yamper":["boltund"],"yanma":["yanmega"],"yungoos":["gumshoos"],"zigzagoon":["linoone"],"zigzagoon-galar":["linoone-galar"],"zorua":["zoroark"],"zorua-hisui":["zoroark-hisui"],"zubat":["golbat"],"zweilous":["hydreigon"],"farfetchd":["sirfetchd-galar"],"mrmime":["mrrime"],"qwilfish":["overqwil"],"corsola":["cursola"],"linoone":["obstagoon-galar"],"burmy":["mothim","wormadam-plant"],"shellos":["gastrodon-eastsea"],"deerling":["sawsbuck-autumn"],"scatterbug":["spewpa-archipelago"],"spewpa":["vivillon-archipelago"],"flabebe":["floette-blue"],"floette":["florges-blue"],"pumpkaboo":["gourgeist-average"],"sinistea":["polteageist-antique"],"poltchageist":["sinistcha-masterpiece"]},"cpm":{"1":0.094,"1.5":0.13513743,"2":0.16639787,"2.5":0.19265091,"3":0.21573247,"3.5":0.23657265,"4":0.25572005,"4.5":0.27353038,"5":0.29024988,"5.5":0.30605738,"6":0.3210876,"6.5":0.33544503,"7":0.34921268,"7.5":0.36245774,"8":0.37523559,"8.5":0.38759241,"9":0.39956728,"9.5":0.41119355,"10":0.42250001,"10.5":0.43292641,"11":0.44310755,"11.5":0.45305995,"12":0.46279839,"12.5":0.47233608,"13":0.48168495,"13.5":0.49085581,"14":0.49985844,"14.5":0.50870176,"15":0.51739395,"15.5":0.52594251,"16":0.53435433,"16.5":0.54263576,"17":0.55079269,"17.5":0.5588306,"18":0.56675452,"18.5":0.57456915,"19":0.58227891,"19.5":0.58988791,"20":0.59740001,"20.5":0.60482366,"21":0.61215729,"21.5":0.61940411,"22":0.62656713,"22.5":0.63364918,"23":0.64065295,"23.5":0.64758097,"24":0.65443563,"24.5":0.66121927,"25":0.667934,"25.5":0.6745819,"26":0.68116492,"26.5":0.68768491,"27":0.69414365,"27.5":0.7005429,"28":0.70688421,"28.5":0.7131691,"29":0.71939909,"29.5":0.72557561,"30":0.7317,"30.5":0.73474102,"31":0.73776948,"31.5":0.74078558,"32":0.74378943,"32.5":0.74678122,"33":0.74976104,"33.5":0.7527291,"34":0.75568551,"34.5":0.75863037,"35":0.76156384,"35.5":0.76448607,"36":0.76739717,"36.5":0.77029727,"37":0.7731865,"37.5":0.77606495,"38":0.77893275,"38.5":0.78179006,"39":0.78463697,"39.5":0.78747358,"40":0.79030001,"40.5":0.79280001,"41":0.79530001,"41.5":0.79780001,"42":0.8003,"42.5":0.8028,"43":0.8053,"43.5":0.8078,"44":0.81029999,"44.5":0.81279999,"45":0.81529999,"45.5":0.81779999,"46":0.82029999,"46.5":0.82279999,"47":0.82529999,"47.5":0.82779999,"48":0.83029999,"48.5":0.83279999,"49":0.83529999,"49.5":0.83779999,"50":0.84029999}};
+var LIGY = [["Little Cup", 500], ["Great League", 1500], ["Ultra League", 2500]];
+var TYPY = ["Normal", "Fire", "Water", "Electric", "Grass", "Ice", "Fighting",
+  "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon",
+  "Dark", "Steel", "Fairy"];
+var CPM = Object.keys(DEX.cpm).map(function (k) { return [parseFloat(k), DEX.cpm[k]]; })
+  .sort(function (x, y) { return x[0] - y[0]; });
+
+var SNIMEK = null;             // co přišlo z počítače
+var zalozka = "roster";
+var hledani = "", filtr = "vse";
+var raidTypy = [];
+var IV = { a: 15, d: 15, s: 15 }, stropDruh = "", stropZRosteru = null;
+
+/* ---------- úložiště ---------- */
+function nacistUlozene() {
+  try {
+    var t = localStorage.getItem("kapesni_snimek");
+    if (t) SNIMEK = JSON.parse(t);
+    var s = JSON.parse(localStorage.getItem("kapesni_stav") || "null");
+    if (s) { IV = s.iv || IV; stropDruh = s.druh || ""; zalozka = s.z || "roster"; }
+  } catch (e) { }
+}
+function ulozitStav() {
+  try {
+    localStorage.setItem("kapesni_stav",
+      JSON.stringify({ iv: IV, druh: stropDruh, z: zalozka }));
+  } catch (e) { }
+}
+
+/* ---------- výpočet stropu (jediné, co telefon počítá sám) ---------- */
+var PODLE_JMENA = {};
+Object.keys(DEX.s).forEach(function (k) {
+  var jm = DEX.s[k][0];
+  if (!PODLE_JMENA[jm] || k.length < PODLE_JMENA[jm].length) PODLE_JMENA[jm] = k;
+});
+
+function cpAt(st, a, d, s, m) {
+  var cp = Math.floor((st[1] + a) * Math.sqrt(st[2] + d) * Math.sqrt(st[3] + s) * m * m / 10);
+  return cp < 10 ? 10 : cp;
+}
+function nejvyssiLevel(st, a, d, s, cap) {
+  for (var i = CPM.length - 1; i >= 0; i--) {
+    if (cpAt(st, a, d, s, CPM[i][1]) <= cap) return i;
+  }
+  return -1;
+}
+function koren(klic) {
+  var k = klic, zmena = true, i = 0;
+  while (zmena && i++ < 6) {
+    zmena = false;
+    Object.keys(DEX.evo).forEach(function (x) {
+      if (DEX.evo[x].indexOf(k) !== -1) { k = x; zmena = true; }
+    });
+  }
+  return k;
+}
+function terminalni(klic) {
+  var videl = {}, fronta = [koren(klic)], out = [];
+  while (fronta.length) {
+    var k = fronta.shift();
+    if (videl[k]) continue;
+    videl[k] = true;
+    var d = DEX.evo[k] || [];
+    if (!d.length) out.push(k); else d.forEach(function (n) { fronta.push(n); });
+  }
+  return out;
+}
+function cesta(odKlic, cilKlic) {
+  var fronta = [[odKlic]];
+  for (var i = 0; i < 200 && fronta.length; i++) {
+    var c = fronta.shift(), posl = c[c.length - 1];
+    if (posl === cilKlic) return c;
+    (DEX.evo[posl] || []).forEach(function (n) { fronta.push(c.concat([n])); });
+  }
+  return [cilKlic];
+}
+
+/* ---------- pomůcky ---------- */
+function el(html) {
+  var d = document.createElement("div");
+  d.innerHTML = html;
+  return d;
+}
+function esc(t) {
+  return String(t === undefined || t === null ? "" : t)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function kusHtml(k) {
+  return '<div class="kus ' + (k.ok ? "ano" : "ne") + '">'
+    + '<div class="r1"><span class="jm">' + esc(k.n)
+    + (k.f ? " <small>" + esc(k.f) + "</small>" : "") + "</span>"
+    + '<span class="cp">CP ' + (k.cp || "?") + (k.p !== null ? " · " + k.p + " %" : "")
+    + "</span></div>"
+    + '<div class="verdikt">' + esc(k.v) + (k.vs ? " · " + esc(k.vs) : "") + "</div>"
+    + ((k.r || []).length
+      ? "<ul>" + k.r.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"
+      : "")
+    + "</div>";
+}
+
+/* ---------- karty ---------- */
+function vykresliRoster() {
+  if (!SNIMEK) return bezSnimku();
+  var h = '<input type="search" id="hled" placeholder="Hledat pokémona…" value="'
+    + esc(hledani) + '" autocomplete="off" />'
+    + '<div class="filtry">'
+    + [["vse", "Vše"], ["ano", "Nechat"], ["ne", "Pustit"], ["role", "Drží roli"]]
+      .map(function (f) {
+        return '<button data-f="' + f[0] + '"' + (filtr === f[0] ? ' class="on"' : "")
+          + ">" + f[1] + "</button>";
+      }).join("") + "</div>";
+  var sez = SNIMEK.kusy.filter(function (k) {
+    if (hledani && k.n.toLowerCase().indexOf(hledani.toLowerCase()) === -1) return false;
+    if (filtr === "ano") return k.ok;
+    if (filtr === "ne") return !k.ok;
+    if (filtr === "role") return (k.r || []).length > 0;
+    return true;
+  });
+  h += sez.length
+    ? sez.map(kusHtml).join("")
+    : '<p class="prazdno">Nic nesedí na filtr ani hledání.</p>';
+  document.getElementById("obsah").innerHTML = h;
+  var vstup = document.getElementById("hled");
+  vstup.addEventListener("input", function () {
+    hledani = vstup.value;
+    var poz = vstup.selectionStart;
+    vykresliRoster();
+    var n = document.getElementById("hled");
+    n.focus(); n.setSelectionRange(poz, poz);
+  });
+  document.querySelector(".filtry").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-f]");
+    if (!b) return;
+    filtr = b.dataset.f;
+    vykresliRoster();
+  });
+}
+
+function vykresliRaid() {
+  if (!SNIMEK) return bezSnimku();
+  var h = '<div class="karta"><label for="boss">Boss z aktuálních raidů</label>'
+    + '<select id="boss"><option value="">— vyber, nebo zvol typy níž —</option>'
+    + (SNIMEK.bossove || []).map(function (b, i) {
+        return '<option value="' + i + '">' + esc(b.n) + " · " + esc(b.tier)
+          + " · " + b.t.join("/") + "</option>";
+      }).join("")
+    + "</select></div>";
+  h += '<div class="karta"><label>…nebo rovnou typy bosse (max 2)</label>'
+    + '<div class="typy">' + TYPY.map(function (t) {
+        return '<button data-t="' + t + '"' + (raidTypy.indexOf(t) > -1 ? ' class="on"' : "")
+          + ">" + t + "</button>";
+      }).join("") + "</div></div>";
+
+  if (raidTypy.length) {
+    var klic = raidTypy.join("|");
+    var idx = (SNIMEK.counters || {})[klic];
+    if (!idx && raidTypy.length === 2) idx = (SNIMEK.counters || {})[raidTypy[1] + "|" + raidTypy[0]];
+    h += '<div class="karta"><h2 style="margin:0 0 2px;font-size:15px;">Tvoje šestka na '
+      + raidTypy.join(" / ") + "</h2>"
+      + '<p style="margin:0;font-size:12px;color:var(--text2)">Řazeno podle toho, kolik'
+      + " toho udělají a jak dlouho vydrží. Kusy, kterým boss odolává, tu nejsou.</p></div>";
+    h += (idx && idx.length)
+      ? '<div class="parta">' + idx.map(function (i) { return kusHtml(SNIMEK.kusy[i]); }).join("") + "</div>"
+      : '<p class="prazdno">Na tuhle kombinaci nemáš v rosteru nikoho, komu by boss neodolával.</p>';
+  }
+  document.getElementById("obsah").innerHTML = h;
+
+  document.getElementById("boss").addEventListener("change", function (e) {
+    var b = SNIMEK.bossove[+e.target.value];
+    if (b) { raidTypy = b.t.slice(0, 2); vykresliRaid(); }
+  });
+  document.querySelector(".typy").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-t]");
+    if (!b) return;
+    var t = b.dataset.t, i = raidTypy.indexOf(t);
+    if (i > -1) raidTypy.splice(i, 1);
+    else { raidTypy.push(t); if (raidTypy.length > 2) raidTypy.shift(); }
+    vykresliRaid();
+  });
+}
+
+function vykresliEvo() {
+  if (!SNIMEK) return bezSnimku();
+  var sez = SNIMEK.kusy.filter(function (k) {
+    return k.e && k.e !== "Ne" && k.e !== "Nevyvíjí se" && k.e !== "Finální";
+  });
+  document.getElementById("obsah").innerHTML = sez.length
+    ? '<p style="margin:0 0 10px;font-size:12.5px;color:var(--text2)">Co appka'
+      + " doporučuje vyvinout. U každého je i to, proč se drží.</p>"
+      + sez.map(function (k) {
+          return kusHtml(k)
+            .replace('<div class="verdikt">',
+              '<div class="verdikt" style="color:var(--zluta)">' + esc(k.e) + " · ");
+        }).join("")
+    : '<p class="prazdno">Teď není co vyvíjet.</p>';
+}
+
+function vykresliStrop() {
+  var zRosteru = SNIMEK && SNIMEK.kusy.length;
+  var h = "";
+  if (zRosteru) {
+    h += '<div class="karta"><label for="zRost">Z mého rosteru</label>'
+      + '<select id="zRost"><option value="">— vyber kus —</option>'
+      + SNIMEK.kusy.map(function (k, i) {
+          return '<option value="' + i + '"' + (stropZRosteru === i ? " selected" : "")
+            + ">" + esc(k.n) + " · CP " + (k.cp || "?")
+            + (k.iv && k.iv[0] !== null ? " · " + k.iv.join("/") : "") + "</option>";
+        }).join("") + "</select></div>";
+  }
+  h += '<div class="karta"><label for="druh">…nebo libovolný druh</label>'
+    + '<input type="text" id="druh" list="druhy" autocomplete="off" placeholder="Mankey" value="'
+    + esc(stropDruh) + '" /><datalist id="druhy"></datalist>'
+    + '<div id="cilObal" style="display:none;margin-top:10px;">'
+    + '<label for="cil">Vyvinout na</label><select id="cil"></select></div>'
+    + '<div class="iv-mrizka" id="ivMrizka"></div></div>'
+    + '<div id="stropVysledek"></div>';
+  document.getElementById("obsah").innerHTML = h;
+  document.getElementById("druhy").innerHTML = Object.keys(PODLE_JMENA).sort()
+    .map(function (n) { return '<option value="' + esc(n) + '"></option>'; }).join("");
+  vykresliIv();
+  document.getElementById("druh").addEventListener("input", function (e) {
+    stropDruh = e.target.value; stropZRosteru = null; ulozitStav(); spocitatStrop();
+  });
+  if (zRosteru) {
+    document.getElementById("zRost").addEventListener("change", function (e) {
+      var i = e.target.value === "" ? null : +e.target.value;
+      stropZRosteru = i;
+      if (i !== null) {
+        var k = SNIMEK.kusy[i];
+        stropDruh = k.n;
+        document.getElementById("druh").value = k.n;
+        if (k.iv && k.iv[0] !== null) { IV.a = k.iv[0]; IV.d = k.iv[1]; IV.s = k.iv[2]; }
+        vykresliIv();
+      }
+      ulozitStav(); spocitatStrop();
+    });
+  }
+  spocitatStrop();
+}
+
+function vykresliIv() {
+  var m = document.getElementById("ivMrizka");
+  if (!m) return;
+  if (m.dataset.hotovo) {
+    ["a", "d", "s"].forEach(function (k) {
+      m.querySelector('[data-hod="' + k + '"]').textContent = IV[k];
+    });
+    return;
+  }
+  m.dataset.hotovo = "1";
+  m.innerHTML = [["a", "Útok"], ["d", "Obrana"], ["s", "HP"]].map(function (p) {
+    return '<div class="iv"><div class="jm">' + p[1] + "</div>"
+      + '<div class="radek"><button type="button" data-krok="-1" data-k="' + p[0] + '">−</button>'
+      + '<span class="hod" data-hod="' + p[0] + '">' + IV[p[0]] + "</span>"
+      + '<button type="button" data-krok="1" data-k="' + p[0] + '">+</button></div></div>';
+  }).join("");
+  m.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-k]");
+    if (!b) return;
+    IV[b.dataset.k] = Math.max(0, Math.min(15, IV[b.dataset.k] + (+b.dataset.krok)));
+    vykresliIv(); ulozitStav(); spocitatStrop();
+  });
+}
+
+function spocitatStrop() {
+  var out = document.getElementById("stropVysledek");
+  if (!out) return;
+  var jm = (document.getElementById("druh") || {}).value || "";
+  jm = jm.trim();
+  var klic = PODLE_JMENA[jm];
+  if (!klic) {
+    var shoda = Object.keys(PODLE_JMENA).filter(function (n) {
+      return n.toLowerCase() === jm.toLowerCase();
+    })[0];
+    klic = shoda ? PODLE_JMENA[shoda] : null;
+  }
+  var cilObal = document.getElementById("cilObal");
+  if (!klic) {
+    cilObal.style.display = "none";
+    out.innerHTML = jm ? '<p class="chyba">Druh „' + esc(jm) + "“ neznám.</p>" : "";
+    return;
+  }
+  var finale = terminalni(klic);
+  var sel = document.getElementById("cil");
+  if (finale.length > 1) {
+    cilObal.style.display = "";
+    if (sel.dataset.pro !== klic) {
+      sel.dataset.pro = klic;
+      sel.innerHTML = finale.map(function (f) {
+        return '<option value="' + f + '">' + esc(DEX.s[f][0]) + "</option>";
+      }).join("");
+      sel.onchange = spocitatStrop;
+    }
+  } else { cilObal.style.display = "none"; sel.dataset.pro = ""; }
+  var cil = finale.length > 1 ? (sel.value || finale[0]) : (finale[0] || klic);
+  var retez = cesta(koren(klic), cil);
+  var stFin = DEX.s[cil];
+  var h = "";
+  LIGY.forEach(function (lg) {
+    var idx = nejvyssiLevel(stFin, IV.a, IV.d, IV.s, lg[1]);
+    h += '<div class="karta liga"><h2>' + lg[0] + "<span>do " + lg[1] + " CP</span></h2>";
+    if (idx < 0) {
+      h += '<p class="nevejde">' + esc(DEX.s[cil][0]) + " se pod " + lg[1]
+        + " CP nevejde ani na nejnižším levelu.</p></div>";
+      return;
+    }
+    var lvl = CPM[idx][0], m = CPM[idx][1];
+    h += '<ul class="stupne">' + retez.map(function (k, i) {
+      var jeFin = i === retez.length - 1;
+      return "<li" + (jeFin ? ' class="fin"' : "") + "><span>" + esc(DEX.s[k][0])
+        + (jeFin ? '<span class="po">po evoluci · L' + String(lvl).replace(".", ",")
+          + "</span>" : "")
+        + '</span><span class="c">' + cpAt(DEX.s[k], IV.a, IV.d, IV.s, m) + "</span></li>";
+    }).join("") + "</ul></div>";
+  });
+  out.innerHTML = h;
+}
+
+function vykresliData() {
+  var h = '<div class="karta"><p style="margin:0 0 10px;font-size:13px;">'
+    + (SNIMEK
+      ? "Snímek z <b>" + esc(SNIMEK.kdy || "?") + "</b>, profil <b>"
+        + esc(SNIMEK.profil || "?") + "</b>, <b>" + SNIMEK.kusy.length + "</b> kusů."
+      : "Zatím nemáš načtený žádný snímek.")
+    + '</p><button class="btn hlavni" id="nacti">Načíst snímek z počítače…</button>'
+    + ' <button class="btn" id="vlozit">Vložit ze schránky…</button>'
+    + (SNIMEK ? ' <button class="btn" id="smaz">Smazat</button>' : "")
+    + "</div>"
+    + '<p class="pozn">Snímek dělá appka na počítači — v kartě „Vyměňovat si rostery“'
+    + " → <b>Snímek do mobilu</b>. Zapisuje se sám při každé změně rosteru, takže"
+    + " stačí ten soubor v telefonu občas načíst znovu."
+    + " <b>Na soubor v OneDrivu neťukej</b> — otevřel by ho ten, kdo si .json"
+    + " zabral (třeba ChatGPT). Jdi vždycky přes tlačítko nahoře; otevře se"
+    + " výběr souborů, kde si OneDrive najdeš."
+    + " Telefon nic nepočítá kromě stropu CP; verdikty a role jsou hotové z počítače,"
+    + " proto se nemůžou rozejít.</p>";
+  document.getElementById("obsah").innerHTML = h;
+  document.getElementById("nacti").addEventListener("click", function () {
+    document.getElementById("souborSnimek").click();
+  });
+  var vloz = document.getElementById("vlozit");
+  if (vloz) vloz.addEventListener("click", function () {
+    var t = window.prompt("Vlož sem obsah snímku (dlouhý stisk → Vložit):", "");
+    if (t) nactiText(t, "vložený text");
+  });
+  var sm = document.getElementById("smaz");
+  if (sm) sm.addEventListener("click", function () {
+    if (!window.confirm("Smazat načtený snímek?")) return;
+    SNIMEK = null;
+    try { localStorage.removeItem("kapesni_snimek"); } catch (e) { }
+    vykresli();
+  });
+}
+
+function bezSnimku() {
+  document.getElementById("obsah").innerHTML =
+    '<p class="prazdno">Nejdřív načti snímek rosteru — záložka <b>Data</b> dole vpravo.</p>';
+}
+
+/* ---------- kostra ---------- */
+function vykresli() {
+  document.querySelectorAll("#zalozky button").forEach(function (b) {
+    b.classList.toggle("on", b.dataset.z === zalozka);
+  });
+  document.getElementById("kdy").innerHTML = SNIMEK
+    ? esc(SNIMEK.profil || "") + "<br>snímek " + esc(SNIMEK.kdy || "")
+    : "bez snímku";
+  ({ roster: vykresliRoster, raid: vykresliRaid, evo: vykresliEvo,
+     strop: vykresliStrop, data: vykresliData }[zalozka] || vykresliRoster)();
+  window.scrollTo(0, 0);
+}
+
+document.getElementById("zalozky").addEventListener("click", function (e) {
+  var b = e.target.closest("button[data-z]");
+  if (!b) return;
+  zalozka = b.dataset.z;
+  ulozitStav();
+  vykresli();
+});
+
+document.getElementById("souborSnimek").addEventListener("change", function (e) {
+  var f = e.target.files && e.target.files[0];
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function () { nactiText(r.result, f.name); };
+  r.readAsText(f);
+  e.target.value = "";
+});
+
+/** Načte snímek z textu — jedno, jestli přišel ze souboru nebo z vložení. */
+function nactiText(text, odkud) {
+  try {
+    var d = JSON.parse(text);
+    if (!d || !d.kusy) throw new Error("nejsou v něm kusy — tohle není snímek");
+    SNIMEK = d;
+    localStorage.setItem("kapesni_snimek", text);
+    zalozka = "roster";
+    vykresli();
+  } catch (err) {
+    window.alert("Nepodařilo se načíst (" + odkud + "): " + (err.message || err));
+  }
+}
+
+nacistUlozene();
+if (!SNIMEK && zalozka !== "strop") zalozka = "data";
+vykresli();
+</script>
+</body>
+</html>
