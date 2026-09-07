@@ -980,6 +980,14 @@
   #rosterTable.compact tbody td { white-space: normal; }
   #rosterTable.compact .badge { white-space: nowrap; display: inline-block; line-height: 1.3;
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+  /* Jediný verdikt, u kterého nese smysl až konec věty: „Zahodit – ale je
+     Lucky". Ellipsis by z něj udělala „Zahodit – ale je…" a celá ta brzda by
+     zmizela. Ostatní verdikty se zkracovat smí — „Zahodit – k…" pořád říká
+     zahodit. Zlomený odznak je proto výjimka pro tenhle jediný případ a má
+     stlačené řádkování, aby řádek vyrostl co nejmíň. */
+  #rosterTable.compact td[data-col="keep"] .badge.b-lucky { white-space: normal;
+    overflow: visible; text-overflow: clip; border-radius: 10px; text-align: center;
+    padding: 2px 8px; line-height: 1.2; }
 
   /* roster je nejdůležitější karta — dostane víc místa i důraz */
   .card.roster { padding: 16px 14px; border-color: color-mix(in srgb, var(--series-1) 35%, var(--border)); }
@@ -2888,11 +2896,11 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-06 22:37";
+  var BUILD = "2026-09-07 09:26";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
-  var DATA_INFO = {"pokedex":"2026-09-05","meta":"2026-09-02","metaTop":200,"reference":"2026-08","moves":"2026-08-25","events":"2026-09-06"};
+  var DATA_INFO = {"pokedex":"2026-09-05","meta":"2026-09-02","metaTop":200,"reference":"2026-08","moves":"2026-08-25","events":"2026-09-07"};
   // === DATA INFO END ===
 
   // ---------- pomocné ----------
@@ -6424,6 +6432,10 @@
       // „hraje v lize" se proto posuzuje jen podle Great/Ultra ligy
       var listedCapped = !!(metaLC || metaGL || metaUL);
 
+      // Lucky se vylepšuje za poloviční prach a má minimum 12/12/12 IV.
+      // Calcy ho píše do příznaku, ruční řádek často jen do jména.
+      var jeLucky = r.forma === "Lucky" || /\blucky\b/i.test(r.pokemon || "");
+
       var ivExact = (!ivUncertain && atk !== null && def !== null && sta !== null
         && atk % 1 === 0 && def % 1 === 0 && sta % 1 === 0) ? (atk + "/" + def + "/" + sta) : null;
 
@@ -6447,9 +6459,11 @@
           && ivPct < s.ivThresh && ivPurified >= s.ivThresh,
         ivUncertain: ivUncertain,
         ivRange: ivUncertain ? (Math.round(ivMin * 10) / 10 + "–" + Math.round(ivMax * 10) / 10 + " %") : null,
-        specialForm: ["Shadow", "Lucky", "Purified"].indexOf(r.forma) !== -1,
-        // Lucky se vylepšuje za poloviční prach a má minimum 12/12/12 IV.
-        lucky: r.forma === "Lucky" || /\blucky\b/i.test(r.pokemon || ""),
+        specialForm: ["Shadow", "Lucky", "Purified"].indexOf(r.forma) !== -1 || jeLucky,
+        lucky: jeLucky,
+        // Název formy do vět. `row.forma` bývá u lucky ze jména prázdný
+        // a bez téhle náhrady by se psalo " forma zůstane" s dírou na začátku.
+        formaText: r.forma || (jeLucky ? "Lucky" : ""),
         dynamax: r.dynamax === "Ano",
         // Ryze osobní značka: „tenhle se mi líbí". Do žádného výpočtu
         // nevstupuje, jen na konci zabrání tomu, aby ho appka poslala pryč.
@@ -6860,7 +6874,7 @@
         keepGood = true;
         keepLabel = "Ponechat";
         keepTone = "good";
-        keepTitle = (r.forma || "Dynamax") + " forma se jinak nezíská a v nastavení"
+        keepTitle = (b.formaText || "Dynamax") + " forma se jinak nezíská a v nastavení"
           + " máš zapnuté „Shadow a Lucky držet vždy“." + nadLimitemVeta;
       } else if (sameMonWarning) {
         keepGood = true;
@@ -7114,7 +7128,7 @@
         if (goodPvp) proc.push("v lize hraje už tenhle druh");
         if (b.raidTypes.length) proc.push("je to raidový útočník");
         if (b.isGymRef) proc.push("je to gymový obránce");
-        if (b.specialForm) proc.push(r.forma + " forma zůstane i po evoluci");
+        if (b.specialForm) proc.push(b.formaText + " forma zůstane i po evoluci");
         if (b.highIV && b.ivPct !== null) {
           proc.push("IV " + Math.round(b.ivPct * 100) + " %"
             + (b.highIVAzPoPurifikaci
@@ -7636,6 +7650,26 @@
           + " k vyhození. Jiný důvod ho tu nedrží — bez té značky by šel pryč.";
       }
 
+      // Lucky, který má jít pryč, se nesmí ztratit v červené hromadě.
+      // Rozhodnutí se ale NEMĚNÍ: keepGood zůstává false, kus jde do transferu
+      // i do všech seznamů jako každý jiný odpad. Mění se jenom barva a nadpis
+      // — lucky se vylepšuje za poloviční prach, IV má aspoň 12/12/12 a znovu
+      // ho nevyrobíš (vzniká jen výměnou a jestli z ní lucky bude, se dopředu
+      // neví). Ať se u něj člověk aspoň jednou zastaví. Důvod k puštění
+      // zůstává v podtitulku i v tooltipu beze změny.
+      var luckyVarovani = false;
+      if (b.lucky && !keepGood) {
+        luckyVarovani = true;
+        // Slovo „kopie" žilo jen v nadpisu a ten se tady přepisuje. Bez téhle
+        // záchrany by u třetího Pidgeye nezbylo nikde napsané, PROČ jde pryč.
+        if (!keepSubLate && keepLabel.indexOf("kopie") > -1) keepSubLate = "horší kopie";
+        keepLabel = "Zahodit – ale je Lucky";
+        keepTone = "warning";
+        keepTitle = (keepTitle || "Nedrží žádnou roli.")
+          + " Žlutě proto, že je LUCKY: vylepšení stojí poloviční prach"
+          + " a znovu ho nevyrobíš. Rozhodnutí to nemění.";
+      }
+
       // --- tradování ---
       //
       // Sloupec musí ctít verdikt. Dřív u kusu, který appka sama drží jako
@@ -7977,7 +8011,7 @@
         copiesTone: b.copies === 1 ? "" : (b.dupIndex === 1 ? "best" : "worse"),
         raid: b.raidTypes.length ? ("Ano – " + b.raidTypes.filter(function (t, i, a) { return a.indexOf(t) === i; }).join(", ")) : "Ne",
         gym: b.isGymRef ? "Ano" : "Ne",
-        keep: keepLabel, keepGood: keepGood, keepTone: keepTone, keepTitle: keepTitle, worseCopy: worseCopy, keepSub: keepSub,
+        keep: keepLabel, keepGood: keepGood, keepTone: keepTone, luckyVarovani: luckyVarovani, keepTitle: keepTitle, worseCopy: worseCopy, keepSub: keepSub,
         // Drží roli, ale jen jako náplast — dlaždice i filtr „Díry v pokrytí"
         // z toho dělají seznam toho, co se má při chytání hledat.
         jeMezera: keepGood && !!b.jenMezera,
@@ -8558,6 +8592,11 @@
     }
     if (col.key === "keep") {
       td.innerHTML = badgeSub(c.keep, c.keepTone, c.keepSub);
+      // Jediný odznak, který se smí zlomit do dvou řádků — viz CSS .b-lucky.
+      if (c.luckyVarovani) {
+        var odznakL = td.querySelector(".badge");
+        if (odznakL) odznakL.classList.add("b-lucky");
+      }
       td.title = c.keepTitle || "";
       return;
     }
@@ -10880,7 +10919,7 @@
         }
         var lvA = num(b.row.level), lvB = num(druhy.row.level);
         if (lvA !== null && lvB !== null && lvA > lvB) duvody.push("vyšší level (L" + lvA + " vs L" + lvB + ")");
-        if (b.specialForm && !druhy.specialForm) duvody.push(b.row.forma + " forma");
+        if (b.specialForm && !druhy.specialForm) duvody.push(b.formaText + " forma");
         if ((b.pvpLigyPocet || 0) > (druhy.pvpLigyPocet || 0)) duvody.push("hraje víc lig");
         if (b.maElitni && !druhy.maElitni) {
           duvody.push("má elitní útok (" + b.moveRating.current.charged.name
@@ -10895,7 +10934,7 @@
     }
     var l1 = num(b.row.level), l2 = num(nej.row.level);
     if (l1 !== null && l2 !== null && l2 > l1) duvody2.push("level L" + l1 + " vs L" + l2);
-    if (!b.specialForm && nej.specialForm) duvody2.push(nej.row.forma + " forma u lepšího");
+    if (!b.specialForm && nej.specialForm) duvody2.push(nej.formaText + " forma u lepšího");
     if (!duvody2.length) duvody2.push("stejné parametry, rozhodlo pořadí");
     // Slabší kopie, která ale drží elitní útok, se nezahazuje — a musí být
     // vidět proč, jinak to vypadá jako chyba („horší, a přesto ponechat?").
@@ -10938,7 +10977,7 @@
       if (b.out.rarity) mark(b.row, "Legendární a mytičtí", b.out.keepSub || "");
       if (b.out.dynamax && b.formaStojiZa) mark(b.row, "Dynamax", "Max Battles");
       if (b.specialForm && b.formaStojiZa) {
-        mark(b.row, "Speciální formy", b.row.forma + (b.out.keepSub ? " · " + b.out.keepSub : ""));
+        mark(b.row, "Speciální formy", b.formaText + (b.out.keepSub ? " · " + b.out.keepSub : ""));
       }
       if (b.out.mega.indexOf("Ne") !== 0 && b.megaEntry && b.dupIndex === 1) {
         mark(b.row, "Mega evoluce", b.megaEntry.raidPriority.toLowerCase() + " priorita");
@@ -10953,7 +10992,7 @@
     // u boxu je potřeba vidět, že tenhle Tyranitar je shadow
     base.forEach(function (b) {
       if (b.specialForm && reason[b.row.id] && reason[b.row.id][0] !== "Speciální formy") {
-        reason[b.row.id][1] = (reason[b.row.id][1] ? reason[b.row.id][1] + " · " : "") + b.row.forma;
+        reason[b.row.id][1] = (reason[b.row.id][1] ? reason[b.row.id][1] + " · " : "") + b.formaText;
       }
     });
 
@@ -13854,7 +13893,7 @@
         poradi = 1000 + b.evoMeta.pct * 100 - b.evoMeta.rank / 1000;
       } else {
         var d = [];
-        if (b.specialForm) d.push(b.row.forma + " forma zůstane");
+        if (b.specialForm) d.push(b.formaText + " forma zůstane");
         if (b.strongPvp || b.elitePvp) d.push("hraje v lize");
         if (b.raidTypes.length) d.push("raidový útočník");
         if (b.isGymRef) d.push("gymový obránce");
@@ -14755,7 +14794,8 @@
    *  označit 145 kusů z 225 — skoro u každého je někde něco zeleného
    *  („Přeučit", „Doskenovat", „Zvážit"), takže z hromadné akce zbyl šum. */
   function jeZajimavy(c) {
-    return !!c && (c.keepTone === "good" || c.keepTone === "warning");
+    return !!c && !!c.keepGood
+      && (c.keepTone === "good" || c.keepTone === "warning");
   }
 
   function renderStarKeepersBtn() {
@@ -17778,7 +17818,12 @@
       + "vzniká jen výměnou a jestli z ní lucky bude, se dopředu neví. "
       + "Proto ho pouštěj až jako poslední z kopií. Do verdiktu značka "
       + "nevstupuje jako zámek (na rozdíl od CUTE a 100%) — je to informace "
-      + "o ceně vylepšení, ne důvod držet odpad.</td></tr>"
+      + "o ceně vylepšení, ne důvod držet odpad. Když má lucky kus jít pryč, "
+      + "verdikt zní <b>Zahodit – ale je Lucky</b> a je <b>žlutý</b> místo "
+      + "červeného. Rozhodnutí to nemění — v transferu i ve všech seznamech "
+      + "je jako každý jiný odpad a důvod k puštění zůstává v podtitulku "
+      + "beze změny. Je to jen brzda, ať se u něj aspoň jednou zastavíš."
+      + "</td></tr>"
       + "<tr><td><b>Značka 100%</b></td><td>nasadí se sama každému kusu "
       + "s <b>15/15/15</b>. Chová se stejně jako CUTE — uplatní se až za "
       + "rozhodováním a kus, který by šel pryč, dostane <b>Ponechat · Protože "
@@ -18304,6 +18349,7 @@
       + (c.cute ? '<span class="rarity-chip r-C">CUTE</span>' : "")
       + (c.stoProcent ? '<span class="rarity-chip r-H">100%</span>' : "")
       + (c.shiny ? '<span class="rarity-chip r-S">SHINY</span>' : "")
+      + (c.lucky ? '<span class="rarity-chip r-L2">LUCKY</span>' : "")
       + "</div>"
       // Typy na vlastní řádek pod jménem: za jménem jsou značky (LEG, DMAX,
       // CUTE, SHINY), tady typy druhu. Kdyby to bylo v jedné řadě, dlouhá
