@@ -2774,6 +2774,14 @@
 
   <details class="card share-box" id="mobilCard">
     <summary><b>Snímek do mobilu</b> — roster a rady do kapesní stránky</summary>
+    <p class="plan-intro"><b>Od té doby, co appka běží na
+      <code>lukas-riha.github.io/pokemon-go-app</code>, je tohle náhradní cesta.</b>
+      V telefonu se dá otevřít celá appka včetně počítání. Roster se do ní dostane
+      zálohou: v liště dej <b>Zálohovat do složky…</b> a vyber složku v OneDrivu
+      (vlastní, ne sdílenou). Do ní se pak sám píše <code>roster.csv</code> —
+      pořád ten nejnovější — a v telefonu ho načteš přes <b>Importovat data</b>
+      → <b>Nahradit roster</b>. Kapesní stránka zůstává pro případ, kdy chceš
+      jen nahlédnout a nic nepočítat.</p>
     <p class="plan-intro">Vyber <b>jednou</b> soubor (klidně ve sdílené složce v OneDrivu)
       a appka do něj bude při každé změně zapisovat <b>hotové závěry</b> — verdikt, role,
       co evolvovat a nejlepší šestku na každou kombinaci typů bosse. V telefonu pak ten
@@ -2896,7 +2904,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-07 09:26";
+  var BUILD = "2026-09-07 10:06";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4714,7 +4722,9 @@
         + " jiný prohlížeč i otevření appky z jiné složky znamená, že je neuvidíš."
         + (umiSlozku
             ? " Vyber si složku na disku a od té chvíle se do ní roster ukládá sám,"
-              + " jedna generace na den."
+              + " jedna generace na den. Dej ji do OneDrivu — vlastní složku,"
+              + " ne sdílenou — a dostaneš se k ní i z telefonu: soubor"
+              + " roster.csv je tam vždycky ten nejnovější."
             : " Vyber si soubor na disku a od té chvíle se do něj roster ukládá sám.")
       : "Tenhle prohlížeč neumí ukládat na disk — aspoň si pravidelně dávej"
         + " Exportovat CSV, jinak o roster přijdeš.";
@@ -4742,7 +4752,17 @@
       b.textContent = "Záloha: složka " + (dirHandle.name || "");
       st.className = "backup-state" + (backupErr ? " warn" : " on");
       st.textContent = backupErr ? "Záloha selhala: " + backupErr
-        : (rucniStav || "Zálohuje se do složky, jedna generace na den ✓");
+        : (rucniStav || "Zálohuje se do složky, jedna generace na den ✓"
+            + (vSynchronizovane(dirHandle)
+                ? " — v telefonu otevři roster.csv a dej Nahradit roster" : ""));
+      // Sdílená složka je jediná, kam tahle záloha nesmí: veze celý roster
+      // včetně poznámek a tu složku vidí i druhá strana.
+      if (jeSdilena(dirHandle)) {
+        st.className = "backup-state warn";
+        st.textContent = "Tohle je SDÍLENÁ složka — uvidí ji i druhá strana."
+          + " Přepni zálohu do vlastní; na výměnu rosteru je samostatné"
+          + " tlačítko, které posílá jen jméno, CP, IV a útoky.";
+      }
     } else if (zalCekaSlozka) {
       b.textContent = "Obnovit zálohu do složky " + (zalCekaSlozka.name || "");
       b.dataset.slozka = "1";
@@ -4908,6 +4928,21 @@
         return true;
       })
       .catch(function () { return false; });
+  }
+
+  /** Složky, které z appky dělají cestu do telefonu. Jméno je jediné, co
+   *  prohlížeč o vybrané složce prozradí — celou cestu schválně nedá. */
+  var SYNC_SLOZKY = /^(onedrive|dropbox|google drive|disk google|icloud|nextcloud)/i;
+  /** Sdílená složka s kamarádkou. Tam patří jen roster na výměnu (jméno, CP,
+   *  IV, útoky), ne celá záloha i s poznámkami. */
+  var SDILENE_SLOZKY = /share$/i;
+
+  function vSynchronizovane(h) {
+    return !!h && SYNC_SLOZKY.test(String(h.name || ""));
+  }
+
+  function jeSdilena(h) {
+    return !!h && SDILENE_SLOZKY.test(String(h.name || ""));
   }
 
   function pripojitSlozku() {
@@ -5081,7 +5116,12 @@
     });
   }
 
-  function pripojitSlozku() {
+  /** Složka, ze které se čte roster KAMARÁDA — jen pro čtení a nic nezapisuje.
+   *  Jmenovala se stejně jako ta zálohovací o dvě stě řádků výš, a protože
+   *  deklarace funkcí se vytahují nahoru, přebila ji: tlačítko „Zálohovat do
+   *  složky" pak otevíralo tenhle výběr v režimu jen pro čtení a záloha se
+   *  nikdy nepřipojila. */
+  function pripojitSlozkuKamarada() {
     if (typeof window.showDirectoryPicker !== "function") {
       shareErr = "tenhle prohlížeč neumí vybrat složku (jde to v Chrome a Edge)";
       renderShare();
@@ -5302,7 +5342,7 @@
       : "…nebo sledovat celou složku";
     b2b.title = "Appka si z té složky vezme vždycky nejnovější CSV —"
       + " nezáleží pak na tom, jak kamarád soubor pojmenuje.";
-    b2b.addEventListener("click", pripojitSlozku);
+    b2b.addEventListener("click", pripojitSlozkuKamarada);
     radek.appendChild(b2b);
 
     if (shareHis || shareHisDir) {
