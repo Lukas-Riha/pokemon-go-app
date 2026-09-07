@@ -1,5 +1,5 @@
 /* Generováno tools/build_publish.py — needitovat ručně. */
-var VERZE = "pgo-748278c4f03a";
+var VERZE = "pgo-ec0c21f490f3";
 var SOUBORY = ["./", "index.html", "manifest.webmanifest",
   "ikona-192.png", "ikona-512.png", "strop.html"];
 
@@ -24,13 +24,20 @@ self.addEventListener("activate", function (e) {
 
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
+  // Cizí původ se NEKEŠUJE. Bez tohohle by v cache skončily i odpovědi
+  // z Microsoft Graphu, tedy roster stažený z OneDrivu — ten by pak ležel
+  // v prohlížeči navíc a přežil by i odhlášení.
+  var vlastni = e.request.url.indexOf(self.location.origin) === 0;
   e.respondWith(
     fetch(e.request).then(function (odp) {
       // Povedlo se stáhnout — ulož a vrať to čerstvé.
-      var kopie = odp.clone();
-      caches.open(VERZE).then(function (c) { c.put(e.request, kopie); });
+      if (vlastni) {
+        var kopie = odp.clone();
+        caches.open(VERZE).then(function (c) { c.put(e.request, kopie); });
+      }
       return odp;
     })["catch"](function () {
+      if (!vlastni) throw new Error("offline");
       return caches.match(e.request).then(function (z) {
         return z || caches.match("index.html");
       });
