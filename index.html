@@ -1110,6 +1110,8 @@
   .d-verdict.critical { border-left-color: var(--status-critical);
     background: color-mix(in srgb, var(--status-critical) 12%, var(--surface-1)); }
   .d-verdict .d-sub { font-size: 13px; color: var(--text-muted); }
+  .tip-pozn { margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--grid);
+    font-size: 11px; line-height: 1.45; color: var(--text-muted); }
   /* Vysvětlivky, které na počítači visí v bublině. Na telefonu se vypíšou. */
   .d-bubliny { display: grid; gap: 8px; margin: 0 0 14px; }
   .d-bublina { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
@@ -2499,6 +2501,15 @@
       Normal v seznamu není — proti žádnému z těch 192 není správná odpověď.
       <span class="rozp-mezera-vzor">Žlutě</span> je <b>díra</b>: roli něco drží,
       ale jen proto, že lepší nemáš. Ta se pouští, až chytíš náhradu.</p>
+    <p class="plan-intro"><b>Podle čeho se vybírá, kdo slot dostane:</b> podle
+      <b>síly v té roli</b>, ne podle IV. U raidů je to podíl na DPS špičky
+      daného typu, u ligy pořadí druhu v žebříčku, u gymu výdrž obránce.
+      <b>IV rozhoduje až mezi kusy, které jsou na tom jinak stejně.</b>
+      Proto může slot Electric držet Ampharos s 62 % IV: otázka nezní „kdo má
+      hezká IV“, ale „koho z toho, co máš, postavíš na Water bosse“ —
+      a stopětadevadesátiprocentní Rattata tam nepomůže. Když je nejlepší,
+      co máš, přesto slabý, je slot <span class="rozp-mezera-vzor">žlutý</span>
+      jako díra: drží se jen do doby, než chytíš lepšího.</p>
     <div id="rozpocetBody"></div>
   </details>
 
@@ -3130,7 +3141,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-07 20:34";
+  var BUILD = "2026-09-07 21:17";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -7494,7 +7505,17 @@
         ? " Je to " + b.dupIndex + ". kopie a strop máš " + s.keepCopies
           + " — zůstává navíc, protože drží roli, kterou lepší kopie nepokrývá."
         : "";
-      if (nejdeTransfer) {
+      // Řádek bez jména vznikl tlačítkem „+ Přidat pokémona" a nedovyplnil se.
+      // Není to kus, o kterém se má rozhodovat — je to rozdělaná práce.
+      if (!String(r.pokemon || "").trim()) {
+        keepGood = true;          // ať nespadne mezi „k puštění"
+        keepLabel = "Nevyplněné";
+        keepTone = "muted";
+        keepSubLate = "doplň jméno";
+        keepTitle = "Tenhle řádek nemá jméno pokémona, takže se o něm nedá nic"
+          + " spočítat. Vznikl tlačítkem „+ Přidat pokémona“ — buď ho dovyplň"
+          + " (v zobrazení „Vše“), nebo ho smaž košem na konci řádku.";
+      } else if (nejdeTransfer) {
         keepGood = true;
         keepLabel = "Ponechat";
         keepTone = "good";
@@ -8780,6 +8801,20 @@
   function renderUnknown() {
     var el = document.getElementById("unknownWarn");
     if (!el) return;
+    // Prázdné řádky mají přednost: nejsou to neznámé druhy, je to rozdělaná
+    // práce, kterou stačí dovyplnit nebo smazat.
+    var prazdnych = rows.filter(function (r) {
+      return !String(r.pokemon || "").trim();
+    }).length;
+    if (prazdnych) {
+      el.style.display = "";
+      el.innerHTML = "<b>" + sklonuj(prazdnych, "řádek", "řádky", "řádků")
+        + " bez jména pokémona.</b> Vznikly tlačítkem „+ Přidat pokémona“"
+        + " a nedovyplnily se — nedá se o nich nic spočítat. Dovyplň je"
+        + " v zobrazení „Vše“, nebo je smaž košem na konci řádku."
+        + " V čištění boxu se na ně appka neptá.";
+      return;
+    }
     var list = neznameDruhy();
     if (!list.length) { el.style.display = "none"; el.innerHTML = ""; return; }
     el.style.display = "";
@@ -9930,7 +9965,11 @@
       var p = ligovePoradi(klic, lg.meta);
       if (!p) return;
       maLigu = true;
-      h += radek(lg.nazev, "#" + p.rank + " · " + p.pct + " %", p.jeMeta ? "dobre" : "");
+      // POZOR na význam: tohle je skóre DRUHU z PvPoke (0–100), ne procento
+      // tvého kusu. Psalo se to jako „91,6 %" a v rozboru kusu vedle stálo
+      // „96,2 %" — dvě různé věci stejným zápisem u téhož pokémona.
+      h += radek(lg.nazev, "#" + p.rank + " · síla " + p.pct,
+        p.jeMeta ? "dobre" : "");
     });
     if (!maLigu) h += radek("Ligy", "nehraje žádnou", "slabe");
 
@@ -9987,7 +10026,10 @@
           + ' data-druh="' + escHtml(d.name) + '"'
           + ' data-tip="' + escHtml('<div class="tip-hlava">' + escHtml(d.name)
               + (jsemJa ? ' <em>tenhle kus</em>' : "") + "</div>"
-              + evoStupenPopis(k, d)) + '">'
+              + evoStupenPopis(k, d)
+              + '<div class="tip-pozn">Čísla jsou o DRUHU: pořadí v lize'
+              + " a síla podle PvPoke (0–100). Jak dobrý je zrovna tvůj kus,"
+              + " říká tabulka „Ligy podrobně“ v rozboru.</div>") + '">'
           + obrazekHtml(d.name, d, "")
           + "<b>" + escHtml(d.name) + "</b>"
           + (cena ? '<i>' + cena + " bonbónů</i>" : "")
@@ -10409,7 +10451,11 @@
       });
       // Bez evoluce se třetí sloupec nevypisuje vůbec — prázdný by si vzal
       // svůj díl šířky a řádek by končil v půlce.
-      h += '<table class="d-ligy-tab"><tr><th>Liga</th><th>Teď</th>'
+      h += '<table class="d-ligy-tab"><tr><th>Liga</th>'
+        + '<th title="Procento je kvalita TOHOHLE kusu: jeho staty proti'
+        + ' nejlepšímu možnému kusu téhož druhu pro ten CP limit. Číslo'
+        + ' v Evoluční řadě je něco jiného — síla druhu podle PvPoke.'
+        + '">Teď</th>'
         + (maEvoluci
             ? "<th>" + (cilEvo ? "Po evoluci na " + cilEvo : "Po evoluci") + "</th>"
             : "")
@@ -10455,11 +10501,11 @@
               if (vse) {
                 // Delší vysvětlení do bubliny — řádek musí mít pořád
                 // stejnou výšku.
-                return '<td class="d-lg-x d-lg-mimo" title="' + escHtml(vse.pct
-                    + " % nejlepšího v lize"
+                return '<td class="d-lg-x d-lg-mimo" title="' + escHtml("síla druhu "
+                    + vse.pct + " ze 100 podle PvPoke"
                     + (vse.jeMeta ? "" : " — mimo metu, do rozpočtu se nepočítá"))
                   + '"><div class="d-lg-in"><b>#' + vse.rank + "</b>"
-                  + '<span class="d-lg-cena">' + vse.pct + " % nejlepšího</span>"
+                  + '<span class="d-lg-cena">síla druhu ' + vse.pct + "</span>"
                   + "</div></td>";
               }
             }
@@ -19421,6 +19467,24 @@
       + "se ale test, který ji hýbe mezi 20 a 40 % a hlídá, že se špička žebříčku "
       + "nerozsype — takže na tom nestojí nic zásadního. U druhů kolem prahu to roli "
       + "hraje.</li>"
+      + "<li><b>Dvě různá procenta.</b> V tabulce <b>Ligy podrobně</b> je "
+      + "procento <b>kvalita toho kusu</b>: jeho staty proti nejlepšímu možnému "
+      + "kusu téhož druhu pro ten CP limit. V <b>Evoluční řadě</b> je u ligy "
+      + "<b>síla druhu</b> — skóre z PvPoke (0–100) o tom, jak silný je ten "
+      + "DRUH v metě, bez ohledu na tvůj kus. Dřív se obojí psalo jako „%“ "
+      + "a u téhož pokémona pak stálo 96,2 a 91,6; skóre se proto už jako "
+      + "procento nepíše.</li>"
+      + "<li><b>Slot v rozpočtu se dává podle síly v roli, ne podle IV.</b> "
+      + "U raidů rozhoduje podíl na DPS špičky daného typu, u ligy pořadí "
+      + "druhu v žebříčku, u gymu výdrž obránce; IV je až tiebreak mezi kusy, "
+      + "které jsou na tom jinak stejně. Proto může Electric slot držet "
+      + "Ampharos s 62 % IV — otázka nezní „kdo má hezká IV“, ale „koho "
+      + "postavíš na Water bosse“. Když je i ten nejlepší slabý, je slot "
+      + "žlutý jako <b>díra</b> a drží se jen do chycení náhrady.</li>"
+      + "<li><b>Řádek bez jména</b> (vznikne tlačítkem „+ Přidat pokémona“ "
+      + "a nedovyplní se) dostane verdikt <b>Nevyplněné</b>, ne „Zahodit“, "
+      + "a v čištění boxu se na něj appka neptá — rozhodovat o kusu, který "
+      + "neexistuje, nedává smysl.</li>"
       + "<li><b>Kolik bonbónů máš, appka neví</b> — v exportu ta informace není, takže "
       + "ti neřekne „na tuhle evoluci ti chybí 40“. Co spočítat umí: kolik bonbónů "
       + "<b>získáš čištěním</b> (jeden za transfer) — píše se to v souhrnu na konci "
@@ -19583,6 +19647,8 @@
       var r = rowById[id];
       if (!r || !computed[id]) return;
       var b = baseById[id];
+      // Nevyplněný řádek se v čištění boxu neptá — není o čem rozhodovat.
+      if (!String(r.pokemon || "").trim()) return;
       out.push({ row: r, c: computed[id], b: b, blok: proNejdeHromadne(b) });
     });
     // Napřed všechno, co půjde poslat jedním hromadným výběrem, pak zbytek.
