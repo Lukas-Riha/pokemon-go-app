@@ -606,26 +606,29 @@
     #rosterTable thead { display: none; }
     .table-wrap { overflow: visible; }
     #rosterTable tbody tr:not(.detail-row) {
-      position: relative; margin: 0 0 10px; padding: 10px 12px;
+      position: relative; margin: 0 0 8px; padding: 8px 11px;
       border: 1px solid var(--grid); border-radius: 12px;
       background: var(--surface-1); }
+    /* Celá karta otevírá rozbor — klepací cíl bylo dřív jen samotné jméno. */
+    #rosterTable tbody tr:not(.detail-row) { cursor: pointer; }
     #rosterTable tbody tr:nth-child(even of :not(.detail-row)) > td { background: none; }
     #rosterTable tbody td { position: static !important; padding: 0; border: 0;
       white-space: normal; }
 
-    /* co se na kartě ukazuje */
+    /* Co se na kartě ukazuje.
+     *
+     * Dřív jich bylo jedenáct a karta měřila v průměru 243 px — při 450 kusech
+     * 130 obrazovek scrollování. Role (raid, gym, liga, vylepšit, evolvovat)
+     * se z karty stěhují do detailu: verdikt je stejně shrnuje v podtitulku
+     * („díra: Fighting 1/6“) a venku se roluje kvůli rozhodnutí, ne kvůli
+     * rozpisu. Typy jdou pryč taky — na kartě zabíraly celý řádek a při
+     * rozhodování „nechat/pustit“ neříkají nic, co by verdikt neuměl. */
     #rosterTable tbody td[data-col] { display: none; }
     #rosterTable tbody td[data-col="star"],
     #rosterTable tbody td[data-col="pokemon"],
     #rosterTable tbody td[data-col="cp"],
     #rosterTable tbody td[data-col="ivPct"],
-    #rosterTable tbody td[data-col="types"],
-    #rosterTable tbody td[data-col="keep"],
-    #rosterTable tbody td[data-col="raidRec"],
-    #rosterTable tbody td[data-col="gymRec"],
-    #rosterTable tbody td[data-col="pvpRec"],
-    #rosterTable tbody td[data-col="powerup"],
-    #rosterTable tbody td[data-col="evolve"] { display: block; }
+    #rosterTable tbody td[data-col="keep"] { display: block; }
 
     /* rozvržení karty: flex, ať se buňky nepřekrývají a samy zalomí */
     #rosterTable tbody tr:not(.detail-row) {
@@ -638,35 +641,13 @@
       font-size: 15px; font-weight: 600; text-align: right; }
     #rosterTable tbody td[data-col="ivPct"] { order: 4; flex: 0 0 auto;
       color: var(--text-secondary); }
-    #rosterTable tbody td[data-col="types"] { order: 5; flex: 1 1 100%; }
-    #rosterTable tbody td[data-col="types"] .typ-text { display: inline-block;
-      margin-right: 8px; font-size: 11.5px; }
-    #rosterTable tbody td[data-col="keep"] { order: 6; flex: 1 1 100%; }
-    #rosterTable tbody td[data-col="raidRec"] { order: 7; }
-    #rosterTable tbody td[data-col="gymRec"] { order: 8; }
-    #rosterTable tbody td[data-col="pvpRec"] { order: 9; }
-    #rosterTable tbody td[data-col="powerup"] { order: 10; }
-    #rosterTable tbody td[data-col="evolve"] { order: 11; }
-    #rosterTable tbody td[data-col="raidRec"],
-    #rosterTable tbody td[data-col="gymRec"],
-    #rosterTable tbody td[data-col="pvpRec"],
-    #rosterTable tbody td[data-col="powerup"],
-    #rosterTable tbody td[data-col="evolve"] { flex: 0 0 auto; font-size: 11.5px; }
-    /* role bez obsahu (křížek) na kartě nemají co dělat */
-    #rosterTable tbody td[data-col$="Rec"]:has(.badge.no),
-    #rosterTable tbody td[data-col="powerup"]:has(.badge.no),
-    #rosterTable tbody td[data-col="evolve"]:has(.badge.no) { display: none; }
-    /* popisek k roli, ať se pozná, co to je */
-    #rosterTable tbody td[data-col$="Rec"]::before,
-    #rosterTable tbody td[data-col="powerup"]::before,
-    #rosterTable tbody td[data-col="evolve"]::before {
-      content: attr(data-popis) " "; color: var(--text-muted); font-size: 10.5px;
-      text-transform: uppercase; letter-spacing: .03em; }
+    #rosterTable tbody td[data-col="keep"] { order: 6; flex: 1 1 auto; }
     #rosterTable tbody td .cell-sub { display: inline; margin-left: 4px;
       font-size: 11px; }
-    /* koš je poslední a drobný — mazat se na telefonu bude výjimečně */
-    #rosterTable tbody tr:not(.detail-row) > td:last-child { order: 20;
-      margin-left: auto; }
+    /* Koš je drobný a jede na řádku s verdiktem — na vlastním řádku z něj byla
+       prázdná třetina karty. Mazat se na telefonu bude stejně výjimečně. */
+    #rosterTable tbody tr:not(.detail-row) > td:last-child { order: 7;
+      flex: 0 0 auto; margin-left: auto; opacity: .55; }
     #rosterTable tbody tr.detail-row > td { padding: 0; }
     #rosterTable tbody tr.detail-row { margin-bottom: 12px; }
 
@@ -1129,6 +1110,11 @@
   .d-verdict.critical { border-left-color: var(--status-critical);
     background: color-mix(in srgb, var(--status-critical) 12%, var(--surface-1)); }
   .d-verdict .d-sub { font-size: 13px; color: var(--text-muted); }
+  /* Vysvětlivky, které na počítači visí v bublině. Na telefonu se vypíšou. */
+  .d-bubliny { display: grid; gap: 8px; margin: 0 0 14px; }
+  .d-bublina { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+  .d-bublina b { display: block; font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .03em; color: var(--text-muted); margin-bottom: 1px; }
   .d-why { font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 5px; }
 
   .d-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px;
@@ -1417,6 +1403,9 @@
     border-color: var(--grid); box-shadow: inset 0 2px 0 var(--series-1); }
   .zal-btn .zal-pocet { display: inline-block; margin-left: 6px; font-size: 11px;
     font-weight: 700; color: var(--text-muted); }
+  /* Rozbalovátko zbylých záložek. Na počítači se všech patnáct vejde, takže
+     tam nemá co dělat — ukáže se až pod 700 px. */
+  .zal-vic { display: none; }
 
   /* Karta pod záložkou už není rozbalovací — je buď vidět celá, nebo vůbec. */
   body.zalozky .card.zal-skryta { display: none; }
@@ -1430,7 +1419,18 @@
 
   @media (max-width: 700px) {
     .zal-lista { overflow-x: auto; flex-wrap: nowrap; }
-    .zal-btn { padding: 8px 10px; font-size: 12.5px; }
+    /* 33 px byl cíl pro myš. Prst potřebuje 44. */
+    .zal-btn { padding: 11px 12px; font-size: 12.5px; min-height: 44px; }
+    /* Na telefonu se rozhoduje venku a v pohybu. Z patnácti záložek jsou tam
+       k něčemu čtyři; zbytek je referenční čtení (dokumentace má 24 obrazovek,
+       žebříčky 9) a nastavení, které se dělá jednou u počítače. Schovají se
+       za „Další…“ — nezmizí, jen nezabírají lištu, po které se jezdí prstem. */
+    .zal-lista.sbaleno .zal-navic { display: none; }
+    .zal-vic { display: inline-block; border: 1px dashed var(--grid);
+      border-bottom: 0; background: none; cursor: pointer; padding: 11px 12px;
+      border-radius: 8px 8px 0 0; font-size: 12.5px; font-weight: 600;
+      color: var(--text-muted); white-space: nowrap; min-height: 44px;
+      position: relative; top: 1px; }
   }
 
 
@@ -2904,7 +2904,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-07 10:06";
+  var BUILD = "2026-09-07 10:47";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -8344,6 +8344,13 @@
   }
 
   /** Verdikt + drobný druhý řádek s detailem (cena, cílový moveset…). */
+  /** Telefonní režim. Stejná hranice jako v CSS (700 px) — kdyby se rozešly,
+   *  chovala by se appka jinak, než jak vypadá. */
+  function jeMobil() {
+    return typeof window.matchMedia === "function"
+      && window.matchMedia("(max-width: 700px)").matches;
+  }
+
   function badgeSub(text, tone, sub) {
     var html = badge(text, tone);
     if (sub) html += '<span class="cell-sub">' + sub + "</span>";
@@ -10003,15 +10010,44 @@
   var cellIndex = {}; // rowId -> { colKey: td }
   var otevrenyDetail = null;   // id řádku s rozbaleným popisem
 
+  /* Bubliny, které jsou jen návod k ovládání. Do rozboru nepatří — na telefonu
+     se nic „nenajíždí myší" a „edituj v zobrazení Vše" je rada pro počítač. */
+  var TIPY_JEN_UI = /^(Klikni |Podrž |Editovat se dá|Označit hvězdičkou|Seřadit)/;
+
+  /** Co z řádku umí říct jen bublina.
+   *
+   *  Na počítači stačí najet myší. Na telefonu není kam najet, takže se ty
+   *  texty vypíšou do rozboru — jinak je ta informace v appce sice napsaná,
+   *  ale nedostupná. Bere se to z živých buněk, ne z ručního seznamu, aby
+   *  to nezastaralo, kdykoli se nějaká bublina přepíše. */
+  function bublinyZRadku(tr) {
+    if (!tr) return "";
+    var kusy = [];
+    Array.prototype.forEach.call(tr.children, function (td) {
+      var text = td.title || td.dataset.tip || "";
+      var popis = td.dataset.popis || "";
+      if (text.length < 30 || TIPY_JEN_UI.test(text)) return;
+      // Co už rozbor říká ve vlastní sekci, se sem netahá podruhé.
+      if (["keep", "powerup", "gymRec", "raidRec", "pvpRec", "moves"]
+          .indexOf(td.dataset.col) !== -1) return;
+      kusy.push('<div class="d-bublina"><b>' + escHtml(popis || td.dataset.col || "")
+        + "</b> " + escHtml(text) + "</div>");
+    });
+    if (!kusy.length) return "";
+    return '<div class="d-box-h d-sec-h">Co je za tím</div>'
+      + '<div class="d-bubliny">' + kusy.join("") + "</div>";
+  }
+
   /** Postaví <tr> s detailem pro daný řádek. */
-  function detailRadek(item, c) {
+  function detailRadek(item, c, tr) {
     var trD = document.createElement("tr");
     trD.className = "detail-row";
     var tdD = document.createElement("td");
     tdD.colSpan = visibleCols().length + 1;
     var inner = document.createElement("div");
     inner.className = "detail-inner";
-    inner.innerHTML = detailHtml(item.b || null, c);
+    inner.innerHTML = detailHtml(item.b || null, c)
+      + (jeMobil() ? bublinyZRadku(tr) : "");
     vystreditVse(inner);
     napojitDetail(inner, item.row, {
       zavrit: function () { zavritDetail(); },
@@ -10044,7 +10080,7 @@
     zavritDetail();
     if (byl) return;
     otevrenyDetail = item.row.id;
-    var trD = detailRadek(item, c);
+    var trD = detailRadek(item, c, tr);
     tr.parentNode.insertBefore(trD, tr.nextSibling);
     dopocitatDetail(trD);
   }
@@ -10248,6 +10284,22 @@
       // Identita řádku přímo v DOMu. Bez toho se dá řádek zpětně najít jen
       // podle jména pokémona — a tři Gyaradosové jsou pak k nerozeznání.
       tr.dataset.rowId = r.id;
+      // Na telefonu je karta vysoká přes devadesát pixelů a aktivní na ní bylo
+      // jen samotné jméno — malý cíl, o kterém nic neříká, že se dá klepnout.
+      // Klepnout jde proto kamkoli, kromě ovládacích prvků (hvězdička, koš,
+      // odkaz na PvPoke, editační pole), ty si svůj klik nechávají.
+      // Na počítači se nemění nic: tam se v zobrazení „Vše“ edituje v buňkách
+      // a klik na řádek by tam překážel.
+      if (r.pokemon) {
+        (function (tr, item, c) {
+          tr.addEventListener("click", function (e) {
+            if (!jeMobil()) return;
+            if (e.target.closest("button, a, input, select, textarea, label")) return;
+            if (e.target.closest('td[data-col="pokemon"]')) return;   // má vlastní
+            prepnoutDetail(tr, item, c);
+          });
+        })(tr, item, c);
+      }
       cellIndex[r.id] = {};
 
       visibleCols().forEach(function (col) {
@@ -17985,7 +18037,30 @@
       + "umí naučit. Elitní útoky se počítají zvlášť — přeučením bys o ně přišel.</td></tr>"
       + "</table>";
 
-    h += "<h3>7. Kde model končí</h3>"
+    h += "<h3>7. Na telefonu je appka jinak poskládaná</h3>"
+      + "<div class=\"docs-vzorec\"><ul>"
+      + "<li><b>V liště je pět záložek</b> — Roster, Role, Tahák, Události "
+      + "a Konkrétní pokémon. To jsou ty, které se používají venku. Zbytek "
+      + "(dokumentace, žebříčky, výměna, nastavení, gym, typová tabulka) je "
+      + "pod <b>Další…</b> a nikam nezmizel; když je některá z nich otevřená, "
+      + "lišta se rozbalí sama.</li>"
+      + "<li><b>Karta kusu nese jen rozhodnutí</b>: hvězdičku, jméno se "
+      + "značkami, CP s IV a verdikt. Role (raid, gym, liga, vylepšit, "
+      + "evolvovat) se přesunuly do rozboru — verdikt je stejně shrnuje "
+      + "v podtitulku. Karta tím spadla z 243 na 93 pixelů, což je u rosteru "
+      + "o 450 kusech rozdíl mezi 130 a 50 obrazovkami rolování.</li>"
+      + "<li><b>Rozbor otevře klepnutí kamkoli na kartu</b>, ne jenom na jméno. "
+      + "Hvězdička, koš a odkazy si svůj klik nechávají.</li>"
+      + "<li><b>Vysvětlivky z bublin jsou v rozboru</b>, v sekci "
+      + "<b>Co je za tím</b>. Na počítači visí na buňkách a ukážou se po najetí "
+      + "myší; na telefonu není kam najet, takže by ta informace v appce sice "
+      + "byla napsaná, ale nedostupná. Bere se to z živých buněk, ne z ručního "
+      + "seznamu, takže to nezastará.</li>"
+      + "<li><b>Na počítači se nemění nic.</b> Hranice je 700 pixelů šířky okna "
+      + "a je stejná v CSS i v kódu.</li>"
+      + "</ul></div>";
+
+    h += "<h3>8. Kde model končí</h3>"
       + "<div class=\"docs-vzorec docs-limit\"><ul>"
       + "<li><b>Raidové skóre nezná konkrétního bosse ani uhýbání.</b> Výdrž se "
       + "započítává obecně, ne proti tomu, co ten boss zrovna hází. Když si nahoře "
@@ -19269,6 +19344,12 @@
       Array.prototype.forEach.call(lista.children, function (b) {
         b.classList.toggle("aktivni", b.dataset.klic === klic);
       });
+      // Aktivní záložka musí být v liště vidět. Kdyby zůstala schovaná pod
+      // „Další…“, tvářilo by se menu, že je otevřené něco jiného.
+      if (!MOBILNI[klic] && lista.classList.contains("sbaleno")) {
+        lista.classList.remove("sbaleno");
+        prekreslitVic();
+      }
       try { window.localStorage.setItem("pgo_zalozka", klic); } catch (e) { /* nevadí */ }
       if (!tiche) window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -19306,6 +19387,37 @@
       lista.appendChild(b);
     });
 
+    /* Na telefonu se lišta zkrátí na to, co se používá venku.
+     *
+     * Schované záložky nezmizí — jsou za „Další…“. A když je zrovna některá
+     * z nich otevřená (uložená z počítače, nebo tam uživatele poslala appka),
+     * lišta se rozbalí sama; jinak by aktivní záložka nebyla v menu vidět
+     * a vypadalo by to jako chyba. */
+    var MOBILNI = { roster: 1, rozpocetCard: 1, cheatCard: 1, eventsCard: 1,
+      prohlidkaCard: 1 };
+    var vicBtn = document.createElement("button");
+    vicBtn.type = "button";
+    vicBtn.className = "zal-vic";
+    vicBtn.textContent = "Další…";
+    vicBtn.title = "Zbylé záložky — dokumentace, žebříčky, nastavení a výměna";
+    lista.appendChild(vicBtn);
+
+    function prekreslitVic() {
+      var sbaleno = lista.classList.contains("sbaleno");
+      vicBtn.textContent = sbaleno ? "Další…" : "Míň";
+      vicBtn.setAttribute("aria-expanded", sbaleno ? "false" : "true");
+    }
+    vicBtn.addEventListener("click", function () {
+      lista.classList.toggle("sbaleno");
+      prekreslitVic();
+    });
+    Array.prototype.forEach.call(lista.children, function (b) {
+      if (!b.dataset.klic) return;
+      b.classList.toggle("zal-navic", !MOBILNI[b.dataset.klic]);
+    });
+    lista.classList.add("sbaleno");
+    prekreslitVic();
+
     /* Přeskládání záložek podržením a tažením.
      *
      * Reorder se v appce dělá tažením (stejně jako sloupce), ne šipkami —
@@ -19316,9 +19428,11 @@
     (function presouvaniZalozek() {
       var tazene = null, casovac = null, drzi = false;
       function ulozPoradi() {
-        var poradi = Array.prototype.map.call(lista.children, function (b) {
-          return b.dataset.klic;
-        });
+        // „Další…“ je v liště taky, ale záložka to není — do pořadí nepatří,
+        // jinak by se ukládalo undefined a při načtení by se to nespárovalo.
+        var poradi = Array.prototype.filter.call(lista.children, function (b) {
+          return !!b.dataset.klic;
+        }).map(function (b) { return b.dataset.klic; });
         try { localStorage.setItem(ULOZENE_PORADI, JSON.stringify(poradi)); }
         catch (e) { /* soukromé okno, nevadí — pořadí prostě nepřežije */ }
       }
