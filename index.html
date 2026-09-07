@@ -1390,6 +1390,62 @@
   .docs-limit { border-left-color: var(--status-warning); }
 
 
+  /* ---------- kalendář akcí (Ganttův diagram) ---------- */
+  .gantt { border: 1px solid var(--grid); border-radius: 10px; overflow: hidden;
+    background: var(--surface-1); margin-bottom: 10px; }
+  .gantt-lista { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 8px 10px; border-bottom: 1px solid var(--grid); }
+  .gantt-lista .hint { margin: 0; flex: 1 1 200px; }
+  .gantt-zoom { border: 1px solid var(--grid); background: none; border-radius: 999px;
+    padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer;
+    color: var(--text-secondary); }
+  .gantt-zoom.aktivni { background: var(--series-1); border-color: var(--series-1);
+    color: #fff; }
+  .gantt-plocha { overflow-x: auto; }
+  .gantt-mrizka { position: relative; display: grid;
+    grid-template-columns: 152px var(--sirka); align-items: stretch; }
+  /* Jména musí zůstat na očích i po odscrollování doprava — jinak se u pruhu
+     na konci týdne nedá poznat, ke které akci patří. */
+  .gantt-jmeno { position: sticky; left: 0; z-index: 3; background: var(--surface-1);
+    border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid-weak, var(--grid));
+    padding: 5px 8px; font-size: 11.5px; line-height: 1.25; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+  .gantt-jmeno.vybrano { background: color-mix(in srgb, var(--series-1) 14%, transparent);
+    font-weight: 700; }
+  /* Druhý a další pruh téže akce — jméno nese jen ten první. */
+  .gantt-jmeno.pokracovani { border-bottom-color: transparent; }
+  .gantt-roh { position: sticky; left: 0; z-index: 4; }
+  .gantt-osa { position: relative; height: 26px;
+    border-bottom: 1px solid var(--grid); }
+  .gantt-tick { position: absolute; top: 0; bottom: 0; padding-left: 4px;
+    border-left: 1px solid var(--grid); font-size: 10px; color: var(--text-muted);
+    display: flex; align-items: center; white-space: nowrap; }
+  .gantt-tick.den { border-left-color: var(--text-muted); font-weight: 700; }
+  .gantt-radek { position: relative; height: 28px;
+    border-bottom: 1px solid var(--grid-weak, var(--grid)); }
+  .gantt-bar { position: absolute; top: 4px; height: 20px; border: 0; cursor: pointer;
+    border-radius: 5px; padding: 0 6px; font-size: 10.5px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left;
+    background: color-mix(in srgb, var(--bar) 30%, transparent);
+    color: var(--text-primary); box-shadow: inset 2px 0 0 var(--bar); }
+  .gantt-bar.bezi { background: color-mix(in srgb, var(--bar) 55%, transparent);
+    box-shadow: inset 3px 0 0 var(--bar), 0 0 0 1px var(--bar); }
+  .gantt-bar:hover { filter: brightness(1.08); }
+  .gantt-ted { position: absolute; top: 0; bottom: 0; width: 2px; z-index: 2;
+    background: var(--status-critical); margin-left: 152px; pointer-events: none; }
+  .gantt-detail { display: grid; gap: 8px; }
+  .gantt-detail-h { display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    font-size: 14px; font-weight: 700; }
+  .gantt-detail-h a { font-size: 12px; font-weight: 600; }
+  .gantt-detail-h button { border: 1px solid var(--grid); background: none;
+    border-radius: 999px; padding: 3px 10px; font-size: 11.5px; cursor: pointer;
+    color: var(--text-secondary); }
+  @media (max-width: 700px) {
+    .gantt-mrizka { grid-template-columns: 104px var(--sirka); }
+    .gantt-ted { margin-left: 104px; }
+    .gantt-jmeno { font-size: 10.5px; padding: 4px 6px; }
+  }
+
   /* ---------- časová osa akcí ---------- */
   .osa { display: grid; gap: 10px; margin: 0 0 14px; }
   .osa-okno { border: 1px solid var(--grid); border-left: 4px solid var(--grid);
@@ -2741,7 +2797,10 @@
     <div class="import-box" id="importBox">
       <div class="dropzone" id="dropzone">
         Přetáhni sem <strong>CSV/TSV export</strong> z Poké Genie nebo Calcy IV — nebo klikni a vyber soubor.
-        <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="display:none" />
+        <span class="hint">Sem patří i <code>nastaveni.json</code> ze zálohovací složky —
+          tím se do druhého zařízení (telefonu) přenesou prahy, aby tam vycházely
+          stejné verdikty.</span>
+        <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.json" style="display:none" />
       </div>
       <textarea id="importArea" placeholder="…nebo sem vlož data přes Ctrl+V (CSV, středníky, nebo tab-oddělené řádky zkopírované z Excelu). Sloupce se rozpoznají podle hlavičky automaticky, ruční mapování dostaneš na potvrzení."></textarea>
       <div class="actions">
@@ -2933,7 +2992,7 @@
   // === MOVES END ===
 
   // === EVENTS START
-  var EVENTS = {"events":[["Forever Forward","season","Season","2026-06-02T10:00","2026-09-08T10:00","https://leekduck.com/events/season-23-forever-forward/",[],[["2026-06-02T10:00","2026-09-08T10:00",{"bonus":[["Rank 1",-1],["One additional Candy for trading Pokémon",0],["Rank 25",-1],["Increased limits on opening, receiving from PokéStop and Gym Photo Discs, and storing Gifts",0],["Rank 50",-1],["2× Daily Adventure Incense duration",0],["Rank 75",-1],["Increased XP and Stardust from hatching Eggs",0]],"vejce":[["In 2 km Eggs",-1],["Exeggcute",1],["Pichu",1],["Cleffa",1],["Togepi",1],["Corphish",1],["Wynaut",1],["Larvesta",1],["In 5 km Eggs",-1],["Riolu",1],["Mantyke",1],["Snom",0],["Indeedee (Male)",1],["Indeedee (Female)",1],["Flittle",0],["In 5 km Eggs from Adventure Sync Rewards",-1],["Tyrogue",1],["Sableye",1],["Budew",1],["Chingling",1],["Happiny",1],["In 7 km Eggs",-1],["Alolan Diglett",1],["Galarian Meowth",1],["Alolan Geodude",1],["Galarian Corsola",1],["Galarian Zigzagoon",1],["Galarian Darumaka",1],["Galarian Stunfisk",0],["In 7 km Eggs From Route Rewards",-1],["Hisuian Growlithe",1],["Galarian Slowpoke",1],["Hisuian Sneasel",1],["Basculin (White Striped)",1],["In 10 km Eggs",-1],["Mawile",1],["Absol",1],["Honedge",1],["Charcadet",1],["Tinkatink",1],["Frigibax",1],["In 10 km Eggs from Adventure Sync Rewards",-1],["Bagon",1],["Gible",1],["Druddigon",1],["Drampa",1],["Toxel",1]]}]]],["LEGO Stores and Pokémon GO","event","Event","2026-08-03T10:00","2026-09-30T23:59","https://leekduck.com/events/lego-pokemon-go-2026/",[],[["2026-08-03T10:00","2026-09-30T23:59",{"raid":[["Appearing in 1-Star Raids",-1],["Pikachu",1]]}]]],["Shadow Giratina (Altered Forme) in Shadow Raids","raid-battles","Raid Battles","2026-08-05T06:00","2026-09-08T22:00","https://leekduck.com/events/shadow-giratina-altered-in-shadow-raids-august-2026/",[],[["2026-08-05T06:00","2026-09-08T22:00",{"raid":[["Appearing in 5-Star Shadow Raids",-1],["Giratina (Altered)",1]],"shiny":[["Giratina (Altered)",0]]}]]],["10th Anniversary Celebration - Perfect Mewtwo Timed Research","event","Event","2026-08-12T16:00","2026-09-06T23:59","https://leekduck.com/events/10th-anniversary-celebration/",[],[]],["Mega Gyarados in Mega Raids","raid-battles","Raid Battles","2026-08-26T06:00","2026-09-08T22:00","https://leekduck.com/events/mega-gyarados-in-mega-raids-august-2026/",[],[["2026-08-26T06:00","2026-09-08T22:00",{"raid":[["Mega Gyarados",1]],"shiny":[["Gyarados",0],["Mega Gyarados",0]]}]]],["Regirock, Regice, and Registeel in 5-star Raid Battles","raid-battles","Raid Battles","2026-08-26T06:00","2026-09-08T22:00","https://leekduck.com/events/regirock-regice-registeel-in-5-star-raid-battles-august-2026/",[],[["2026-08-26T06:00","2026-09-08T22:00",{"raid":[["Regirock",1],["Regice",1],["Registeel",1]],"shiny":[["Regirock",0],["Regice",0],["Registeel",0]]}]]],["Pokémon GO Fest 2026: Mega Finale","pokemon-go-fest","Pokémon GO Fest","2026-09-05T10:00","2026-09-06T18:00","https://leekduck.com/events/pokemon-go-fest-2026-mega-finale/",[],[["2026-09-05T10:00","2026-09-06T18:00",{"bonus":[["No limit on Remote Raids from Saturday, September 5, to Sunday, September 6, 2026",0],["Premier Balls have an increased catch rate",0],["All Mega-Evolved Pokémon will receive an extra CP boost from Saturday, September 5, to Sunday, September 6, 2026",0],["Up to two additional free Raid Passes for all Trainers on Day 2 (Sunday, September 6)",0],["Bonus Candy, Candy XL, and XP from Mega Raids",0],["Increased chance of encountering Shiny Pokémon from certain Mega Raids and event Pokémon encounters",0]],"spawn":[["Chespin",1],["Fennekin",1],["Froakie",1]],"raid":[["Five-star Raids",-1],["Armored Mewtwo",0],["Saturday",-1],["Mega Mewtwo X",1],["Sunday",-1],["Mega Mewtwo Y",1],["Verdant Overgrowth",-1],["Mega Beedrill",1],["Mega Victreebel",1],["Mega Pinsir",1],["Mega Abomasnow",1],["Mindworks Canal",-1],["Mega Alakazam",1],["Mega Slowbro",1],["Mega Starmie",1],["Mega Medicham",1],["Eerie Alley",-1],["Mega Gengar",1],["Mega Houndoom",1],["Mega Banette",1],["Mega Malamar",1],["Circuit Plaza",-1],["Mega Raichu X",1],["Mega Ampharos",1],["Mega Manectric",1],["Iron Frostworks",-1],["Mega Steelix",1],["Mega Skarmory",1],["Mega Aggron",1],["Mega Glalie",1],["Battle District",-1],["Mega Sharpedo",1],["Mega Camerupt",1],["Mega Lopunny",1],["Mega Falinks",1],["Skyline Roosts",-1],["Mega Gyarados",1],["Mega Aerodactyl",1],["Mega Dragonite",1],["Mega Altaria",1],["Prism Promenade",-1],["Mega Raichu Y",1],["Mega Sableye",1],["Mega Mawile",1],["Mega Audino",1]],"shiny":[["Mega Chesnaught",0],["Mega Delphox",0],["Mega Greninja",0],["Super Mega Raids",-1],["Mega Mewtwo X",0],["Verdant Overgrowth",-1],["Mega Beedrill",0],["Mega Victreebel",0],["Mega Pinsir",0],["Mega Abomasnow",0],["Mindworks Canal",-1],["Mega Alakazam",0],["Mega Slowbro",0],["Mega Starmie",0],["Mega Medicham",0],["Eerie Alley",-1],["Mega Gengar",0],["Mega Houndoom",0],["Mega Banette",0],["Mega Malamar",0],["Circuit Plaza",-1],["Mega Raichu X",0],["Mega Ampharos",0],["Mega Manectric",0],["Super Mega Raids",-1],["Mega Mewtwo Y",0],["Iron Frostworks",-1],["Mega Steelix",0],["Mega Skarmory",0],["Mega Aggron",0],["Mega Glalie",0],["Battle District",-1],["Mega Sharpedo",0],["Mega Camerupt",0],["Mega Lopunny",0],["Mega Falinks",0],["Skyline Roosts",-1],["Mega Gyarados",0],["Mega Aerodactyl",0],["Mega Dragonite",0],["Mega Altaria",0],["Prism Promenade",-1],["Mega Raichu Y",0],["Mega Sableye",0],["Mega Mawile",0],["Mega Audino",0]]}],["2026-09-05T10:00","2026-09-06T18:00",{"spawn":[["Verdant Overgrowth",-1],["Weedle",1],["Bellsprout",1],["Scyther",1],["Pinsir",1],["Roselia",1],["Snover",1],["Venipede",1],["Chespin",1],["Fennekin",1],["Froakie",1],["Skiddo",1],["Mindworks Canal",-1],["Abra",1],["Slowpoke",1],["Staryu",1],["Ralts",1],["Meditite",1],["Espurr",1],["Binacle",1],["Clauncher",1],["Eerie Alley",-1],["Gastly",1],["Houndour",1],["Shuppet",1],["Zorua",1],["Litwick",1],["Inkay",1],["Phantump",1],["Pumpkaboo (Medium)",1],["Circuit Plaza",-1],["Pikachu",1],["Mareep",1],["Electrike",1],["Emolga",1],["Tynamo",1],["Stunfisk",1],["Helioptile",1],["Dedenne",1]]}],["2026-09-06T00:00","2026-09-06T18:00",{"spawn":[["Iron Frostworks",-1],["Onix",1],["Skarmory",1],["Aron",1],["Snorunt",1],["Beldum",1],["Drilbur",1],["Chespin",1],["Fennekin",1],["Froakie",1],["Amaura",1],["Bergmite",1],["Battle District",-1],["Machop",1],["Carvanha",1],["Numel",1],["Buneary",1],["Sandile",1],["Scraggy",1],["Pancham",1],["Falinks",1],["Skyline Roosts",-1],["Magikarp",1],["Aerodactyl",1],["Dratini",1],["Swablu",1],["Bagon",1],["Fletchling",1],["Tyrunt",1],["Noibat",1],["Prism Promenade",-1],["Pikachu",1],["Clefairy",1],["Sableye",1],["Mawile",1],["Audino",1],["Furfrou (Natural)",1],["Spritzee",1],["Carbink",1]]}]]],["Armored Mewtwo in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-05T10:00","2026-09-06T18:00","https://leekduck.com/events/armored-mewtwo-in-5-star-raid-battles-september-2026/",[],[["2026-09-05T10:00","2026-09-06T18:00",{"raid":[["Armored Mewtwo",0]]}]]],["Dynamax Ralts during Max Monday","max-mondays","Max Mondays","2026-09-07T06:00","2026-09-07T21:00","https://leekduck.com/events/max-mondays-2026-09-07/",[],[["2026-09-07T06:00","2026-09-07T21:00",{"raid":[["Ralts",1]]}]]],["Mega Beedrill in Mega Raids","raid-battles","Raid Battles","2026-09-08T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-beedrill-in-mega-raids-september-2026/",[],[["2026-09-08T06:00","2026-09-15T22:00",{"raid":[["Mega Beedrill",1]],"shiny":[["Beedrill",0],["Mega Beedrill",0]]}]]],["Mega Squads","event","Event","2026-09-08T10:00","2026-09-14T20:00","https://leekduck.com/events/mega-squads/",[],[["2026-09-08","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Beedrill",1]]}],["2026-09-08T10:00","2026-09-11T10:00",{"spawn":[["Pidgey",1],["Rookidee",1]],"vejce":[["In 5 km Eggs",-1],["Emolga",1],["Fletchling",1],["Rookidee",1],["Flamigo",1]],"vyzkum":[["Field Research Encounters",-1],["Weedle",1],["Pidgey",1],["Fletchling",1],["Flamigo",1]]}],["2026-09-08T10:00","2026-09-14T20:00",{"bonus":[["Tier 1 Bonus – Starting at Rank 1",-1],["Chance to obtain Mega Energy when catching Weedle, Pidgey, Houndour, Carvanha, or their Evolutions",0],["Tier 2 Bonus – Starting at Rank 15",-1],["2× Hatch Stardust",0],["GO Pass Deluxe: 1/2 Egg Hatch Distance when Eggs are placed in an Incubator during the event period",0]],"spawn":[["Throughout the Event",-1],["Weedle",1],["Flamigo",1]],"shiny":[["Shiny Debut",-1],["Flamigo",0],["Increased Shiny Chance",-1],["Pidgey",0],["Carvanha",0]]}],["2026-09-11","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Houndoom",1]]}],["2026-09-11T10:00","2026-09-14T20:00",{"spawn":[["Houndour",1],["Carvanha",1]],"vejce":[["In 5 km Eggs",-1],["Sandile",1],["Pancham",1],["Maschiff",0],["Flamigo",1]],"vyzkum":[["Field Research Encounters",-1],["Houndour",1],["Carvanha",1],["Nickit",0],["Maschiff",0],["Flamigo",1]]}]]],["Twilight Trails","season","Season","2026-09-08T10:00","2026-12-01T10:00","https://leekduck.com/events/season-24-twilight-trails/",[],[["2026-09-08T10:00","2026-12-01T10:00",{"bonus":[["Rank 1",-1],["One guaranteed Candy XL when trading Pokémon for Trainers level 31 and above",0],["One additional Candy for trading Pokémon",0],["Rank 25",-1],["Increased limits on opening Gifts, receiving Gifts from PokéStop and Gym Photo Discs, and storing Gifts",0],["Rank 50",-1],["2× Daily Adventure Incense duration",0],["Rank 75",-1],["Increased XP and Stardust from hatching Eggs",0]],"vejce":[["In 2 km Eggs",-1],["Elekid",1],["Magby",1],["Azurill",1],["In 5 km Eggs",-1],["Munchlax",1],["Sizzlipede",1],["Fidough",1],["In 5 km Eggs from Adventure Sync Rewards",-1],["Tyrogue",1],["Sableye",1],["Budew",1],["In 7 km Eggs",-1],["Galarian Meowth",1],["Galarian Zigzagoon",1],["Galarian Stunfisk",0],["In 7 km Eggs From Route Rewards",-1],["Galarian Slowpoke",1],["Hisuian Sneasel",1],["Galarian Corsola",1],["In 10 km Eggs",-1],["Dratini",1],["Honedge",1],["Impidimp",1],["In 10 km Eggs from Adventure Sync Rewards",-1],["Bagon",1],["Druddigon",1],["Drampa",1]]}]]],["Zacian (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-09T06:00","2026-09-15T22:00","https://leekduck.com/events/zacian-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-09T06:00","2026-09-15T22:00",{"raid":[["Zacian (Hero of Many Battles)",1]],"shiny":[["Zacian (Hero of Many Battles)",0]]}]]],["Shadow Thundurus (Incarnate Forme) in Shadow Raids","raid-battles","Raid Battles","2026-09-09T06:00","2026-10-06T22:00","https://leekduck.com/events/shadow-thundurus-incarnate-forme-in-shadow-raids-september-2026/",[],[["2026-09-09T06:00","2026-10-06T22:00",{"raid":[["Appearing in 5-Star Shadow Raids",-1],["Thundurus (Incarnate)",1]],"shiny":[["Thundurus (Incarnate)",0]]}]]],["Zacian (Hero of Many Battles) Raid Hour","raid-hour","Raid Hour","2026-09-09T18:00","2026-09-09T19:00","https://leekduck.com/events/raidhour20260909/",[],[]],["Weedle, Kakuna, and Beedrill Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-10T18:00","2026-09-10T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-10/",[["Weedle",1],["Kakuna",1],["Beedrill",1]],[["2026-09-10T18:00","2026-09-10T19:00",{"spawn":[["Weedle",1],["Kakuna",1],["Beedrill",1]]}]]],["Mega Houndoom in Mega Raids","raid-battles","Raid Battles","2026-09-11T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-houndoom-in-mega-raids-september-2026/",[],[["2026-09-11T06:00","2026-09-15T22:00",{"raid":[["Mega Houndoom",1]],"shiny":[["Houndoom",0],["Mega Houndoom",0]]}]]],["Gible Community Day Classic","community-day","Community Day","2026-09-12T14:00","2026-09-12T17:00","https://leekduck.com/events/september-communitydayclassic2026/",[],[["2026-09-12T14:00","2026-09-12T17:00",{"bonus":[["Increased Spawns",0],["3x Catch XP",0],["3-hour Incense*",0],["1-hour Lures**",0]],"spawn":[["Gible",1]],"shiny":[["Gible",0],["Gabite",0],["Garchomp",0]]}]]],["Houndour and Houndoom Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-13T18:00","2026-09-13T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-13/",[["Houndour",1],["Houndoom",1]],[["2026-09-13T18:00","2026-09-13T19:00",{"spawn":[["Houndour",1],["Houndoom",1]]}]]],["Dynamax Rhyhorn during Max Monday","max-mondays","Max Mondays","2026-09-14T06:00","2026-09-14T21:00","https://leekduck.com/events/max-mondays-2026-09-14/",[],[["2026-09-14T06:00","2026-09-14T21:00",{"raid":[["Rhyhorn",1]]}]]],["Mega Venusaur in Mega Raids","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/mega-venusaur-in-mega-raids-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Mega Venusaur",1]],"shiny":[["Venusaur",0],["Mega Venusaur",0]]}]]],["Zamazenta (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/zamazenta-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Zamazenta (Hero of Many Battles)",1]],"shiny":[["Zamazenta (Hero of Many Battles)",0]]}]]],["Pokémon Horizons: The Series Celebration Event","event","Event","2026-09-16T10:00","2026-09-22T20:00","https://leekduck.com/events/pokemon-horizons-the-series-celebration-event-2026/",[],[["2026-09-16T10:00","2026-09-22T20:00",{"bonus":[["Increased chance to encounter Kecleon at PokéStops",0],["Tier 1 Bonus – Starting at Rank 1",-1],["2× Candy for catching Pokémon",0],["GO Pass Deluxe: 3× Candy for catching Pokémon",0],["Tier 2 Bonus – Starting at Rank 10",-1],["Regular Lure Modules will last for one hour and may attract the featured Pokémon",0],["Tier 3 Bonus – Starting at Rank 20",-1],["Additional Stardust for catching Hatenna and Wattrel",0]],"spawn":[["Wild Encounters",-1],["Charmander wearing Friede's goggles",1],["Captain's Cap Pikachu",1],["From 5:00 a.m. to 5:00 p.m.",-1],["Fidough",1],["Wattrel",0],["Chansey",1],["From 5:00 p.m. to 5:00 a.m.",-1],["Eevee",1],["Hatenna",1],["Rockruff",1]],"raid":[["One-Star Raids",-1],["Captain's Cap Pikachu",1],["Three-Star Raids",-1],["Charizard wearing Friede's goggles",1],["Meowscarada",1],["Skeledirge",1],["Quaquaval",1]],"shiny":[["Charmander wearing Friede's goggles",0],["Charmeleon wearing Friede's goggles",0],["Charizard wearing Friede's goggles",0]]}]]],["Zamazenta (Hero of Many Battles) Raid Hour","raid-hour","Raid Hour","2026-09-16T18:00","2026-09-16T19:00","https://leekduck.com/events/raidhour20260916/",[],[]],["Mystery Pokémon Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-17T18:00","2026-09-17T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-17/",[],[]],["Staraptor Super Mega Raid Day","raid-day","Raid Day","2026-09-19T14:00","2026-09-19T17:00","https://leekduck.com/events/staraptor-super-mega-raid-day-2026/",[],[["2026-09-19T14:00","2026-09-19T17:00",{"bonus":[["Remote Raid limit increased to 20 from Friday, September 18, at 5:00 p.m. to Saturday, September 19, 2026, at 8:00 p.m. PDT",0],["Receive up to six free Raid Passes from spinning Gym Photo Discs",0],["Staraptor caught from Super Mega Raids will have Mega Level 1 unlocked",0],["Increased chance of encountering Shiny Staraptor from Super Mega Raids",0],["Event Ticket",-1],["Receive up to 14 Raid Passes from spinning Gym Photo Discs",0],["Increased chance to get Rare Candy XL from Raid Battles",0],["An additional 5,000 XP from Super Mega Raid Battles",0],["An additional 5,000 Stardust from Super Mega Raid Battles",0]],"shiny":[["Staraptor",0]]}]]],["Dynamax Articuno, Zapdos, and Moltres during Max Monday","max-mondays","Max Mondays","2026-09-21T06:00","2026-09-21T21:00","https://leekduck.com/events/max-mondays-2026-09-21/",[],[["2026-09-21T06:00","2026-09-21T21:00",{"raid":[["Articuno",1],["Zapdos",1],["Moltres",1]]}]]],["Mega Malamar in Mega Raids","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/mega-malamar-in-mega-raids-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Mega Malamar",1]],"shiny":[["Malamar",0],["Mega Malamar",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/xurkitree-pheromosa-buzzwole-in-5-star-raid-battles-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Buzzwole",1],["Pheromosa",1],["Xurkitree",1]],"shiny":[["Buzzwole",0],["Pheromosa",0],["Xurkitree",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole Raid Hour","raid-hour","Raid Hour","2026-09-23T18:00","2026-09-23T19:00","https://leekduck.com/events/raidhour20260923/",[],[]],["Rattata Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-24T18:00","2026-09-24T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-24/",[["Rattata",1]],[["2026-09-24T18:00","2026-09-24T19:00",{"spawn":[["Rattata",1]]}]]],["Phantump Catch Mastery","event","Event","2026-09-26T10:00","2026-09-26T20:00","https://leekduck.com/events/catch-mastery-phantump-2026/",[],[["2026-09-26T10:00","2026-09-26T20:00",{"bonus":[["2× XP for successfully catching Pokémon with Nice Throws or better",0],["Increased Candy for successfully catching Pokémon with Nice Throws or better",0]],"spawn":[["Wild Encounters",-1],["Cherubi",1],["Drifloon",1]],"shiny":[["Increased Shiny Chance",-1],["Cherubi",0],["Drifloon",0],["Phantump",0]]}]]],["Dynamax Sobble during Max Monday","max-mondays","Max Mondays","2026-09-28T06:00","2026-09-28T21:00","https://leekduck.com/events/max-mondays-2026-09-28/",[],[["2026-09-28T06:00","2026-09-28T21:00",{"raid":[["Sobble",1]]}]]],["Harvest Festival","event","Event","2026-09-29T10:00","2026-10-05T20:00","https://leekduck.com/events/harvest-festival-2026/",[],[]],["Mega Victreebel in Mega Raids","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/mega-victreebel-in-mega-raids-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Mega Victreebel",1]],"shiny":[["Victreebel",0],["Mega Victreebel",0]]}]]],["Xerneas in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/xerneas-in-5-star-raid-battles-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Xerneas",1]],"shiny":[["Xerneas",0]]}]]],["Xerneas Raid Hour","raid-hour","Raid Hour","2026-09-30T18:00","2026-09-30T19:00","https://leekduck.com/events/raidhour20260930/",[],[]],["Max Battle Day","max-battles","Max Battles","2026-10-03T14:00","2026-10-03T17:00","https://leekduck.com/events/max-battle-day-october-2026/",[],[]],["October Community Day","community-day","Community Day","2026-10-10T14:00","2026-10-10T17:00","https://leekduck.com/events/october-communityday2026/",[],[]],["Hatch Day","event","Event","2026-10-17T11:00","2026-10-17T17:00","https://leekduck.com/events/hatch-day-october-2026/",[],[]],["Max Battle Day","max-battles","Max Battles","2026-10-24T14:00","2026-10-24T17:00","https://leekduck.com/events/max-battle-day-october-24-2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-10-31T14:00","2026-10-31T17:00","https://leekduck.com/events/super-mega-raid-day-october-2026/",[],[]],["November Community Day","community-day","Community Day","2026-11-21T14:00","2026-11-21T17:00","https://leekduck.com/events/november-communityday2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-11-28T14:00","2026-11-28T17:00","https://leekduck.com/events/super-mega-raid-day-november-2026/",[],[]]],"raids":[["Mega Mewtwo Y","Super Mega Raids",["Psychic"],[2294,2387],[2868,2984],1],["Mega Steelix","Mega Raids",["Steel","Ground"],[1308,1379],[1635,1724],1],["Mega Skarmory","Mega Raids",["Steel","Flying"],[1139,1204],[1424,1506],1],["Mega Aggron","Mega Raids",["Steel"],[1636,1714],[2045,2143],1],["Mega Glalie","Mega Raids",["Ice"],[1138,1203],[1423,1504],1],["Armored Mewtwo","5-Star Raids",["Psychic"],[1740,1821],[2175,2276],0],["Shadow Slowpoke","1-Star Raids",["Water","Psychic"],[610,700],[763,876],1],["Shadow Aipom","1-Star Raids",["Normal"],[678,770],[848,963],1],["Shadow Croagunk","1-Star Raids",["Poison","Fighting"],[466,544],[583,680],1],["Shadow Grubbin","1-Star Raids",["Bug"],[483,562],[604,703],1],["Shadow Snorlax","3-Star Raids",["Normal"],[1696,1843],[2120,2304],1],["Shadow Hitmontop","3-Star Raids",["Fighting"],[1114,1232],[1393,1540],1],["Shadow Lampent","3-Star Raids",["Ghost","Fire"],[871,976],[1089,1220],1],["Shadow Giratina (Altered)","5-Star Raids",["Ghost","Dragon"],[1782,1931],[2228,2414],1]],"ligy":[["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-09-08T20:00","2026-09-15T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-1/"],["Great League, Ultra League: Mega Edition, and Willpower Cup: Great League Edition | Twili…","2026-09-15T20:00","2026-09-22T20:00",["GL","UL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_willpower-cup-great-league-edition/"],["Ultra League, Master League: Mega Edition, and Retro Cup: Great League Edition | Twilight…","2026-09-22T20:00","2026-09-29T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_retro-cup-great-league-edition/"],["Master League and Mega Color Cup: Great League Edition | Twilight Trails","2026-09-29T20:00","2026-10-06T20:00",["GL","ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-color-cup-great-league-edition/"],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-10-06T20:00","2026-10-13T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-2/"],["Great League, Ultra League: Mega Edition, and Little Cup | Twilight Trails","2026-10-13T20:00","2026-10-20T20:00",["LC","GL","UL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_little-cup/"],["Ultra League, Master League: Mega Edition, and Fantasy Cup: Great League Edition | Twilig…","2026-10-20T20:00","2026-10-27T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_fantasy-cup-great-league-edition/"],["Master League and Mega Halloween Cup: Great League Edition | Twilight Trails","2026-10-27T21:00","2026-11-03T21:00",["GL","ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-halloween-cup-great-league-edition/"],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-11-03T21:00","2026-11-10T21:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-3/"],["Great League, Ultra League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-10T21:00","2026-11-17T21:00",["GL","UL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_2026-go-laic-cup/"],["Ultra League, Master League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-18T21:00","2026-11-25T21:00",["UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_2026-go-laic-cup/"],["Master League and Mega Catch Cup: Great League Edition | Twilight Trails","2026-11-24T21:00","2026-12-01T21:00",["GL","ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-catch-cup-great-league-edition/"]]};
+  var EVENTS = {"events":[["Forever Forward","season","Season","2026-06-02T10:00","2026-09-08T10:00","https://leekduck.com/events/season-23-forever-forward/",[],[["2026-06-02T10:00","2026-09-08T10:00",{"bonus":[["Rank 1",-1],["One additional Candy for trading Pokémon",0],["Rank 25",-1],["Increased limits on opening, receiving from PokéStop and Gym Photo Discs, and storing Gifts",0],["Rank 50",-1],["2× Daily Adventure Incense duration",0],["Rank 75",-1],["Increased XP and Stardust from hatching Eggs",0]],"vejce":[["In 2 km Eggs",-1],["Exeggcute",1],["Pichu",1],["Cleffa",1],["Togepi",1],["Corphish",1],["Wynaut",1],["Larvesta",1],["In 5 km Eggs",-1],["Riolu",1],["Mantyke",1],["Snom",0],["Indeedee (Male)",1],["Indeedee (Female)",1],["Flittle",0],["In 5 km Eggs from Adventure Sync Rewards",-1],["Tyrogue",1],["Sableye",1],["Budew",1],["Chingling",1],["Happiny",1],["In 7 km Eggs",-1],["Alolan Diglett",1],["Galarian Meowth",1],["Alolan Geodude",1],["Galarian Corsola",1],["Galarian Zigzagoon",1],["Galarian Darumaka",1],["Galarian Stunfisk",0],["In 7 km Eggs From Route Rewards",-1],["Hisuian Growlithe",1],["Galarian Slowpoke",1],["Hisuian Sneasel",1],["Basculin (White Striped)",1],["In 10 km Eggs",-1],["Mawile",1],["Absol",1],["Honedge",1],["Charcadet",1],["Tinkatink",1],["Frigibax",1],["In 10 km Eggs from Adventure Sync Rewards",-1],["Bagon",1],["Gible",1],["Druddigon",1],["Drampa",1],["Toxel",1]]}]]],["LEGO Stores and Pokémon GO","event","Event","2026-08-03T10:00","2026-09-30T23:59","https://leekduck.com/events/lego-pokemon-go-2026/",[],[["2026-08-03T10:00","2026-09-30T23:59",{"raid":[["Appearing in 1-Star Raids",-1],["Pikachu",1]]}]]],["Shadow Giratina (Altered Forme) in Shadow Raids","raid-battles","Raid Battles","2026-08-05T06:00","2026-09-08T22:00","https://leekduck.com/events/shadow-giratina-altered-in-shadow-raids-august-2026/",[],[["2026-08-05T06:00","2026-09-08T22:00",{"raid":[["Appearing in 5-Star Shadow Raids",-1],["Giratina (Altered)",1]],"shiny":[["Giratina (Altered)",0]]}]]],["10th Anniversary Celebration - Perfect Mewtwo Timed Research","event","Event","2026-08-12T16:00","2026-09-06T23:59","https://leekduck.com/events/10th-anniversary-celebration/",[],[]],["Mega Gyarados in Mega Raids","raid-battles","Raid Battles","2026-08-26T06:00","2026-09-08T22:00","https://leekduck.com/events/mega-gyarados-in-mega-raids-august-2026/",[],[["2026-08-26T06:00","2026-09-08T22:00",{"raid":[["Mega Gyarados",1]],"shiny":[["Gyarados",0],["Mega Gyarados",0]]}]]],["Regirock, Regice, and Registeel in 5-star Raid Battles","raid-battles","Raid Battles","2026-08-26T06:00","2026-09-08T22:00","https://leekduck.com/events/regirock-regice-registeel-in-5-star-raid-battles-august-2026/",[],[["2026-08-26T06:00","2026-09-08T22:00",{"raid":[["Regirock",1],["Regice",1],["Registeel",1]],"shiny":[["Regirock",0],["Regice",0],["Registeel",0]]}]]],["Dynamax Ralts during Max Monday","max-mondays","Max Mondays","2026-09-07T06:00","2026-09-07T21:00","https://leekduck.com/events/max-mondays-2026-09-07/",[],[["2026-09-07T06:00","2026-09-07T21:00",{"raid":[["Ralts",1]]}]]],["Mega Beedrill in Mega Raids","raid-battles","Raid Battles","2026-09-08T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-beedrill-in-mega-raids-september-2026/",[],[["2026-09-08T06:00","2026-09-15T22:00",{"raid":[["Mega Beedrill",1]],"shiny":[["Beedrill",0],["Mega Beedrill",0]]}]]],["Mega Squads","event","Event","2026-09-08T10:00","2026-09-14T20:00","https://leekduck.com/events/mega-squads/",[],[["2026-09-08","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Beedrill",1]]}],["2026-09-08T10:00","2026-09-11T10:00",{"spawn":[["Pidgey",1],["Rookidee",1]],"vejce":[["In 5 km Eggs",-1],["Emolga",1],["Fletchling",1],["Rookidee",1],["Flamigo",1]],"vyzkum":[["Field Research Encounters",-1],["Weedle",1],["Pidgey",1],["Fletchling",1],["Flamigo",1]]}],["2026-09-08T10:00","2026-09-14T20:00",{"bonus":[["Tier 1 Bonus – Starting at Rank 1",-1],["Chance to obtain Mega Energy when catching Weedle, Pidgey, Houndour, Carvanha, or their Evolutions",0],["Tier 2 Bonus – Starting at Rank 15",-1],["2× Hatch Stardust",0],["GO Pass Deluxe: 1/2 Egg Hatch Distance when Eggs are placed in an Incubator during the event period",0]],"spawn":[["Throughout the Event",-1],["Weedle",1],["Flamigo",1]],"shiny":[["Shiny Debut",-1],["Flamigo",0],["Increased Shiny Chance",-1],["Pidgey",0],["Carvanha",0]]}],["2026-09-11","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Houndoom",1]]}],["2026-09-11T10:00","2026-09-14T20:00",{"spawn":[["Houndour",1],["Carvanha",1]],"vejce":[["In 5 km Eggs",-1],["Sandile",1],["Pancham",1],["Maschiff",0],["Flamigo",1]],"vyzkum":[["Field Research Encounters",-1],["Houndour",1],["Carvanha",1],["Nickit",0],["Maschiff",0],["Flamigo",1]]}]]],["Twilight Trails","season","Season","2026-09-08T10:00","2026-12-01T10:00","https://leekduck.com/events/season-24-twilight-trails/",[],[["2026-09-08T10:00","2026-12-01T10:00",{"bonus":[["Rank 1",-1],["One guaranteed Candy XL when trading Pokémon for Trainers level 31 and above",0],["One additional Candy for trading Pokémon",0],["Rank 25",-1],["Increased limits on opening Gifts, receiving Gifts from PokéStop and Gym Photo Discs, and storing Gifts",0],["Rank 50",-1],["2× Daily Adventure Incense duration",0],["Rank 75",-1],["Increased XP and Stardust from hatching Eggs",0]],"vejce":[["In 2 km Eggs",-1],["Elekid",1],["Magby",1],["Azurill",1],["In 5 km Eggs",-1],["Munchlax",1],["Sizzlipede",1],["Fidough",1],["In 5 km Eggs from Adventure Sync Rewards",-1],["Tyrogue",1],["Sableye",1],["Budew",1],["In 7 km Eggs",-1],["Galarian Meowth",1],["Galarian Zigzagoon",1],["Galarian Stunfisk",0],["In 7 km Eggs From Route Rewards",-1],["Galarian Slowpoke",1],["Hisuian Sneasel",1],["Galarian Corsola",1],["In 10 km Eggs",-1],["Dratini",1],["Honedge",1],["Impidimp",1],["In 10 km Eggs from Adventure Sync Rewards",-1],["Bagon",1],["Druddigon",1],["Drampa",1]]}]]],["Zacian (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-09T06:00","2026-09-15T22:00","https://leekduck.com/events/zacian-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-09T06:00","2026-09-15T22:00",{"raid":[["Zacian (Hero of Many Battles)",1]],"shiny":[["Zacian (Hero of Many Battles)",0]]}]]],["Shadow Thundurus (Incarnate Forme) in Shadow Raids","raid-battles","Raid Battles","2026-09-09T06:00","2026-10-06T22:00","https://leekduck.com/events/shadow-thundurus-incarnate-forme-in-shadow-raids-september-2026/",[],[["2026-09-09T06:00","2026-10-06T22:00",{"raid":[["Appearing in 5-Star Shadow Raids",-1],["Thundurus (Incarnate)",1]],"shiny":[["Thundurus (Incarnate)",0]]}]]],["Zacian (Hero of Many Battles) Raid Hour","raid-hour","Raid Hour","2026-09-09T18:00","2026-09-09T19:00","https://leekduck.com/events/raidhour20260909/",[],[]],["Weedle, Kakuna, and Beedrill Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-10T18:00","2026-09-10T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-10/",[["Weedle",1],["Kakuna",1],["Beedrill",1]],[["2026-09-10T18:00","2026-09-10T19:00",{"spawn":[["Weedle",1],["Kakuna",1],["Beedrill",1]]}]]],["Mega Houndoom in Mega Raids","raid-battles","Raid Battles","2026-09-11T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-houndoom-in-mega-raids-september-2026/",[],[["2026-09-11T06:00","2026-09-15T22:00",{"raid":[["Mega Houndoom",1]],"shiny":[["Houndoom",0],["Mega Houndoom",0]]}]]],["Gible Community Day Classic","community-day","Community Day","2026-09-12T14:00","2026-09-12T17:00","https://leekduck.com/events/september-communitydayclassic2026/",[],[["2026-09-12T14:00","2026-09-12T17:00",{"bonus":[["Increased Spawns",0],["3x Catch XP",0],["3-hour Incense*",0],["1-hour Lures**",0]],"spawn":[["Gible",1]],"shiny":[["Gible",0],["Gabite",0],["Garchomp",0]]}]]],["Houndour and Houndoom Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-13T18:00","2026-09-13T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-13/",[["Houndour",1],["Houndoom",1]],[["2026-09-13T18:00","2026-09-13T19:00",{"spawn":[["Houndour",1],["Houndoom",1]]}]]],["Dynamax Rhyhorn during Max Monday","max-mondays","Max Mondays","2026-09-14T06:00","2026-09-14T21:00","https://leekduck.com/events/max-mondays-2026-09-14/",[],[["2026-09-14T06:00","2026-09-14T21:00",{"raid":[["Rhyhorn",1]]}]]],["Mega Venusaur in Mega Raids","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/mega-venusaur-in-mega-raids-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Mega Venusaur",1]],"shiny":[["Venusaur",0],["Mega Venusaur",0]]}]]],["Zamazenta (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/zamazenta-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Zamazenta (Hero of Many Battles)",1]],"shiny":[["Zamazenta (Hero of Many Battles)",0]]}]]],["Pokémon Horizons: The Series Celebration Event","event","Event","2026-09-16T10:00","2026-09-22T20:00","https://leekduck.com/events/pokemon-horizons-the-series-celebration-event-2026/",[],[["2026-09-16T10:00","2026-09-22T20:00",{"bonus":[["Increased chance to encounter Kecleon at PokéStops",0],["Tier 1 Bonus – Starting at Rank 1",-1],["2× Candy for catching Pokémon",0],["GO Pass Deluxe: 3× Candy for catching Pokémon",0],["Tier 2 Bonus – Starting at Rank 10",-1],["Regular Lure Modules will last for one hour and may attract the featured Pokémon",0],["Tier 3 Bonus – Starting at Rank 20",-1],["Additional Stardust for catching Hatenna and Wattrel",0]],"spawn":[["Wild Encounters",-1],["Charmander wearing Friede's goggles",1],["Captain's Cap Pikachu",1],["From 5:00 a.m. to 5:00 p.m.",-1],["Fidough",1],["Wattrel",0],["Chansey",1],["From 5:00 p.m. to 5:00 a.m.",-1],["Eevee",1],["Hatenna",1],["Rockruff",1]],"raid":[["One-Star Raids",-1],["Captain's Cap Pikachu",1],["Three-Star Raids",-1],["Charizard wearing Friede's goggles",1],["Meowscarada",1],["Skeledirge",1],["Quaquaval",1]],"shiny":[["Charmander wearing Friede's goggles",0],["Charmeleon wearing Friede's goggles",0],["Charizard wearing Friede's goggles",0]]}]]],["Zamazenta (Hero of Many Battles) Raid Hour","raid-hour","Raid Hour","2026-09-16T18:00","2026-09-16T19:00","https://leekduck.com/events/raidhour20260916/",[],[]],["Mystery Pokémon Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-17T18:00","2026-09-17T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-17/",[],[]],["Staraptor Super Mega Raid Day","raid-day","Raid Day","2026-09-19T14:00","2026-09-19T17:00","https://leekduck.com/events/staraptor-super-mega-raid-day-2026/",[],[["2026-09-19T14:00","2026-09-19T17:00",{"bonus":[["Remote Raid limit increased to 20 from Friday, September 18, at 5:00 p.m. to Saturday, September 19, 2026, at 8:00 p.m. PDT",0],["Receive up to six free Raid Passes from spinning Gym Photo Discs",0],["Staraptor caught from Super Mega Raids will have Mega Level 1 unlocked",0],["Increased chance of encountering Shiny Staraptor from Super Mega Raids",0],["Event Ticket",-1],["Receive up to 14 Raid Passes from spinning Gym Photo Discs",0],["Increased chance to get Rare Candy XL from Raid Battles",0],["An additional 5,000 XP from Super Mega Raid Battles",0],["An additional 5,000 Stardust from Super Mega Raid Battles",0]],"shiny":[["Staraptor",0]]}]]],["Dynamax Articuno, Zapdos, and Moltres during Max Monday","max-mondays","Max Mondays","2026-09-21T06:00","2026-09-21T21:00","https://leekduck.com/events/max-mondays-2026-09-21/",[],[["2026-09-21T06:00","2026-09-21T21:00",{"raid":[["Articuno",1],["Zapdos",1],["Moltres",1]]}]]],["Mega Malamar in Mega Raids","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/mega-malamar-in-mega-raids-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Mega Malamar",1]],"shiny":[["Malamar",0],["Mega Malamar",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/xurkitree-pheromosa-buzzwole-in-5-star-raid-battles-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Buzzwole",1],["Pheromosa",1],["Xurkitree",1]],"shiny":[["Buzzwole",0],["Pheromosa",0],["Xurkitree",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole Raid Hour","raid-hour","Raid Hour","2026-09-23T18:00","2026-09-23T19:00","https://leekduck.com/events/raidhour20260923/",[],[]],["Rattata Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-24T18:00","2026-09-24T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-24/",[["Rattata",1]],[["2026-09-24T18:00","2026-09-24T19:00",{"spawn":[["Rattata",1]]}]]],["Phantump Catch Mastery","event","Event","2026-09-26T10:00","2026-09-26T20:00","https://leekduck.com/events/catch-mastery-phantump-2026/",[],[["2026-09-26T10:00","2026-09-26T20:00",{"bonus":[["2× XP for successfully catching Pokémon with Nice Throws or better",0],["Increased Candy for successfully catching Pokémon with Nice Throws or better",0]],"spawn":[["Wild Encounters",-1],["Cherubi",1],["Drifloon",1]],"shiny":[["Increased Shiny Chance",-1],["Cherubi",0],["Drifloon",0],["Phantump",0]]}]]],["Dynamax Sobble during Max Monday","max-mondays","Max Mondays","2026-09-28T06:00","2026-09-28T21:00","https://leekduck.com/events/max-mondays-2026-09-28/",[],[["2026-09-28T06:00","2026-09-28T21:00",{"raid":[["Sobble",1]]}]]],["Harvest Festival","event","Event","2026-09-29T10:00","2026-10-05T20:00","https://leekduck.com/events/harvest-festival-2026/",[],[]],["Mega Victreebel in Mega Raids","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/mega-victreebel-in-mega-raids-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Mega Victreebel",1]],"shiny":[["Victreebel",0],["Mega Victreebel",0]]}]]],["Xerneas in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/xerneas-in-5-star-raid-battles-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Xerneas",1]],"shiny":[["Xerneas",0]]}]]],["Xerneas Raid Hour","raid-hour","Raid Hour","2026-09-30T18:00","2026-09-30T19:00","https://leekduck.com/events/raidhour20260930/",[],[]],["Max Battle Day","max-battles","Max Battles","2026-10-03T14:00","2026-10-03T17:00","https://leekduck.com/events/max-battle-day-october-2026/",[],[]],["October Community Day","community-day","Community Day","2026-10-10T14:00","2026-10-10T17:00","https://leekduck.com/events/october-communityday2026/",[],[]],["Hatch Day","event","Event","2026-10-17T11:00","2026-10-17T17:00","https://leekduck.com/events/hatch-day-october-2026/",[],[]],["Max Battle Day","max-battles","Max Battles","2026-10-24T14:00","2026-10-24T17:00","https://leekduck.com/events/max-battle-day-october-24-2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-10-31T14:00","2026-10-31T17:00","https://leekduck.com/events/super-mega-raid-day-october-2026/",[],[]],["November Community Day","community-day","Community Day","2026-11-21T14:00","2026-11-21T17:00","https://leekduck.com/events/november-communityday2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-11-28T14:00","2026-11-28T17:00","https://leekduck.com/events/super-mega-raid-day-november-2026/",[],[]]],"raids":[["Mega Mewtwo Y","Super Mega Raids",["Psychic"],[2294,2387],[2868,2984],1],["Mega Raichu Y","Mega Raids",["Electric"],[1180,1247],[1476,1558],1],["Mega Sableye","Mega Raids",["Dark","Ghost"],[789,843],[986,1054],1],["Mega Mawile","Mega Raids",["Steel","Fairy"],[877,934],[1096,1167],1],["Mega Audino","Mega Raids",["Normal","Fairy"],[901,961],[1127,1201],0],["Armored Mewtwo","5-Star Raids",["Psychic"],[1740,1821],[2175,2276],0],["Shadow Slowpoke","1-Star Raids",["Water","Psychic"],[610,700],[763,876],1],["Shadow Aipom","1-Star Raids",["Normal"],[678,770],[848,963],1],["Shadow Croagunk","1-Star Raids",["Poison","Fighting"],[466,544],[583,680],1],["Shadow Grubbin","1-Star Raids",["Bug"],[483,562],[604,703],1],["Shadow Snorlax","3-Star Raids",["Normal"],[1696,1843],[2120,2304],1],["Shadow Hitmontop","3-Star Raids",["Fighting"],[1114,1232],[1393,1540],1],["Shadow Lampent","3-Star Raids",["Ghost","Fire"],[871,976],[1089,1220],1],["Shadow Giratina (Altered)","5-Star Raids",["Ghost","Dragon"],[1782,1931],[2228,2414],1]],"ligy":[["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-09-08T20:00","2026-09-15T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-1/"],["Great League, Ultra League: Mega Edition, and Willpower Cup: Great League Edition | Twili…","2026-09-15T20:00","2026-09-22T20:00",["GL","UL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_willpower-cup-great-league-edition/"],["Ultra League, Master League: Mega Edition, and Retro Cup: Great League Edition | Twilight…","2026-09-22T20:00","2026-09-29T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_retro-cup-great-league-edition/"],["Master League and Mega Color Cup: Great League Edition | Twilight Trails","2026-09-29T20:00","2026-10-06T20:00",["GL","ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-color-cup-great-league-edition/"],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-10-06T20:00","2026-10-13T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-2/"],["Great League, Ultra League: Mega Edition, and Little Cup | Twilight Trails","2026-10-13T20:00","2026-10-20T20:00",["LC","GL","UL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_little-cup/"],["Ultra League, Master League: Mega Edition, and Fantasy Cup: Great League Edition | Twilig…","2026-10-20T20:00","2026-10-27T20:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_fantasy-cup-great-league-edition/"],["Master League and Mega Halloween Cup: Great League Edition | Twilight Trails","2026-10-27T21:00","2026-11-03T21:00",["GL","ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-halloween-cup-great-league-edition/"],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-11-03T21:00","2026-11-10T21:00",["GL","UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-3/"],["Great League, Ultra League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-10T21:00","2026-11-17T21:00",["GL","UL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_2026-go-laic-cup/"],["Ultra League, Master League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-18T21:00","2026-11-25T21:00",["UL","ML"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_2026-go-laic-cup/"],["Master League and Mega Catch Cup: Great League Edition | Twilight Trails","2026-11-24T21:00","2026-12-01T21:00",["GL","ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-catch-cup-great-league-edition/"]]};
   // === EVENTS END ===
 
   // Razítko sestavení. Bez něj se u sdíleného souboru nedá poznat, jestli má
@@ -2944,7 +3003,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-07 11:12";
+  var BUILD = "2026-09-07 12:53";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4876,6 +4935,24 @@
     }).catch(function () { /* výpis složky není kritický */ });
   }
 
+  /** Nastavení do přenositelného souboru. Roster v něm schválně NENÍ —
+   *  ten veze `roster.csv` a dvě kopie téhož by se rozešly. */
+  function nastaveniText() {
+    var settings = {};
+    SETTING_IDS.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      settings[id] = el.type === "checkbox" ? (el.checked ? "1" : "0") : el.value;
+    });
+    return JSON.stringify({
+      pgoNastaveni: 1,
+      verze: BUILD,
+      ulozeno: new Date().toISOString().slice(0, 16),
+      profil: activeProfile,
+      settings: settings
+    }, null, 1);
+  }
+
   function zapsatZalohu() {
     var text = csvText();
 
@@ -4887,6 +4964,13 @@
           return dirHandle.getFileHandle("roster-" + dnes + ".csv", { create: true });
         })
         .then(function (h) { return zapisSoubor(h, text); })
+        // Nastavení vedle rosteru: v telefonu je localStorage vlastní, takže
+        // bez tohohle by tam appka počítala s výchozími prahy a u stejného
+        // kusu vypsala jiný verdikt než počítač.
+        .then(function () {
+          return dirHandle.getFileHandle("nastaveni.json", { create: true });
+        })
+        .then(function (h) { return zapisSoubor(h, nastaveniText()); })
         .then(function () {
           var novyDen = dnesniGenerace && dnesniGenerace !== dnes;
           dnesniGenerace = dnes;
@@ -12133,7 +12217,10 @@
     if (!klic) return null;
     var koren = evoKoren(klic);
     if (bonbony[koren]) {
-      return { text: bonbony[koren] + " bonbónů", ton: "chci" };
+      // „248 bonbónů" se dalo číst jako „tolik jich máš". Appka o zásobě
+      // bonbónů neví nic — v exportu ta informace není. Ví jen, kolik jich
+      // plán na tu rodinu POTŘEBUJE.
+      return { text: "potřeba " + bonbony[koren] + " bonbónů", ton: "chci" };
     }
     if (mam[klic] === undefined) return null;
     return { text: "máš " + Math.round(mam[klic] * 100) + " %", ton: "mas" };
@@ -12177,6 +12264,298 @@
       + (o.bezi ? '<span class="osa-do">do ' + evKonec(o.doKdy, o.jenDen)
           + "</span>" : "")
       + "</div>" + sekce + "</div>";
+  }
+
+  // ---------- kalendář jako běžící časová osa ----------
+  //
+  // Řádek = akce, vodorovně čas, svislá čára = teď. Seznam pod tím odpovídá
+  // na „co v tom je"; tenhle diagram na „co běží zároveň a jak dlouho ještě".
+  //
+  // Rozsah se nastavuje v hodinách. Hodinové akce (Spotlight Hour, Raid Hour)
+  // jsou při čtrnácti dnech užší než pixel, takže výchozí je den a půl —
+  // tam je vidět i hodina, a přitom i to, co přijde zítra.
+  var GANTT_ROZSAHY = [
+    ["12 h", 12], ["den", 24], ["3 dny", 72], ["týden", 168], ["2 týdny", 336]
+  ];
+  var ganttHodin = 36;
+  var ganttVybrano = null;   // index řádku, jehož rozpis je rozbalený
+  var ganttTiker = null;
+
+  /** Barva pruhu podle typu akce. Ne kvůli parádě: na osmi řádcích nad sebou
+   *  se stejnobarevné pruhy nedají odlišit od sebe. */
+  function ganttBarva(typ) {
+    // Jen barvy, které v paletě opravdu jsou — nedefinovaná proměnná by
+    // pruh nechala bez barvy a všechny řádky by splynuly.
+    var m = {
+      "community-day": "var(--series-2)",
+      "pokemon-spotlight-hour": "var(--series-3)",
+      "raid-battles": "var(--status-critical)",
+      "raid-hour": "var(--status-critical)",
+      "raid-day": "var(--status-critical)",
+      "max-mondays": "var(--status-warning)",
+      "max-battles": "var(--status-warning)",
+      "pokemon-go-fest": "var(--status-good)",
+      "season": "var(--text-muted)"
+    };
+    return m[typ] || "var(--series-1)";
+  }
+
+  /** Jméno do levého sloupce. „Mega Beedrill in Mega Raids" se do 152 px
+   *  nevejde a useknuté „Mega Beedrill in Mega Rai" nepřidá nic — že jde
+   *  o raid, říká barva pruhu. Celé jméno zůstává v bublině i v rozpisu. */
+  var GANTT_ZKRATKY = [
+    / in \d+-star Raid Battles$/i, / in Mega Raids$/i, / in Shadow Raids$/i,
+    / in Raid Battles$/i, / during Max Monday$/i, / Spotlight Hour$/i,
+    / Raid Hour$/i, / Community Day( Classic)?$/i, / Raid Day$/i
+  ];
+  function ganttJmeno(nazev) {
+    var t = String(nazev || "");
+    for (var i = 0; i < GANTT_ZKRATKY.length; i++) {
+      var k = t.replace(GANTT_ZKRATKY[i], "");
+      if (k !== t && k.trim().length >= 3) return k.trim();
+    }
+    return t;
+  }
+
+  /** Řádky diagramu pro okno <od, do>. */
+  function ganttRadky(od, doK) {
+    var radky = [];
+    ((EVENTS && EVENTS.events) || []).forEach(function (e) {
+      var zac = evDatum(e[3]), kon = evDatum(e[4]);
+      if (!zac || !kon) return;
+      if (kon.getTime() < od || zac.getTime() > doK) return;
+      // Akce s rozpisem se kreslí po oknech — jinak by Mega Squads byl jeden
+      // pruh přes celý týden a nebylo by poznat, že se v půlce mění spawny.
+      var useky = [];
+      (e[7] || []).forEach(function (o) {
+        var a = evDatum(o[0]), b = evDatum(o[1]);
+        if (!a || !b) return;
+        if (b.getTime() < od || a.getTime() > doK) return;
+        useky.push({ od: a, doKdy: b, sekce: o[2] || {}, jenDen: String(o[0]).length <= 10 });
+      });
+      // Bez rozpisu (raid hodiny, budoucí akce) zůstává jeden pruh za akci —
+      // kdy běží, se ví, i když se neví co v ní je.
+      if (!useky.length) useky.push({ od: zac, doKdy: kon, sekce: null, jenDen: false });
+      radky.push({ nazev: e[0], typ: e[1], odkaz: e[5], zac: zac, kon: kon, useky: useky });
+    });
+    radky.sort(function (a, b) {
+      // Co běží teď, patří nahoru; zbytek podle toho, co začne dřív.
+      var ted = Date.now();
+      var aBezi = a.zac <= ted && a.kon >= ted, bBezi = b.zac <= ted && b.kon >= ted;
+      if (aBezi !== bBezi) return aBezi ? -1 : 1;
+      return a.zac - b.zac || String(a.nazev).localeCompare(b.nazev);
+    });
+    return radky;
+  }
+
+  /** Popisky času nad diagramem. Hustota podle rozsahu — při týdnu se hodiny
+   *  slijí do kaše, při dvanácti hodinách je den zbytečně hrubý. */
+  function ganttPopisky(od, doK, sirka) {
+    var rozpeti = doK - od, HOD = 3600000;
+    var krok = rozpeti <= 18 * HOD ? 2 * HOD
+      : rozpeti <= 48 * HOD ? 6 * HOD
+        : rozpeti <= 96 * HOD ? 12 * HOD : 24 * HOD;
+    var DNY = ["ne", "po", "út", "st", "čt", "pá", "so"];
+    var h = "", d = new Date(od);
+    d.setMinutes(0, 0, 0);
+    while (d.getTime() < od) d = new Date(d.getTime() + HOD);
+    // zarovnat na násobek kroku od půlnoci
+    var pulnoc = new Date(d); pulnoc.setHours(0, 0, 0, 0);
+    var posun = (d - pulnoc) % krok;
+    if (posun) d = new Date(d.getTime() + (krok - posun));
+    for (; d.getTime() <= doK; d = new Date(d.getTime() + krok)) {
+      var x = (d - od) / rozpeti * sirka;
+      var pulnocni = d.getHours() === 0;
+      var text = krok >= 24 * HOD || pulnocni
+        ? DNY[d.getDay()] + " " + d.getDate() + "."
+        : String(d.getHours()).padStart(2, "0") + ":00";
+      h += '<div class="gantt-tick' + (pulnocni ? " den" : "") + '" style="left:'
+        + Math.round(x) + 'px">' + text + "</div>";
+    }
+    return h;
+  }
+
+  /** Co je v tom úseku, do jedné řádky textu na pruh. */
+  function ganttPopisUseku(u) {
+    if (!u.sekce) return "";
+    var kusy = [];
+    EV_SEKCE.forEach(function (par) {
+      var p = u.sekce[par[0]];
+      if (!p || !p.length) return;
+      var jmena = p.filter(function (x) { return x[1] !== -1; })
+        .map(function (x) { return x[0]; });
+      if (jmena.length) kusy.push(jmena.slice(0, 3).join(", ")
+        + (jmena.length > 3 ? " +" + (jmena.length - 3) : ""));
+    });
+    return kusy.join(" · ");
+  }
+
+  function ganttHtml() {
+    var HOD = 3600000;
+    var ted = Date.now();
+    // Půl hodiny dozadu schválně: co právě končí, je pořád rozhodnutí.
+    var od = ted - 0.5 * HOD, doK = ted + ganttHodin * HOD;
+    var radky = ganttRadky(od, doK);
+    if (!radky.length) return "";
+    // Šířka plátna: hodinová akce musí zůstat vidět i při dvou týdnech.
+    var pxNaHod = ganttHodin <= 24 ? 46 : ganttHodin <= 72 ? 26 : ganttHodin <= 168 ? 12 : 7;
+    var sirka = Math.round((doK - od) / HOD * pxNaHod);
+    var rozpeti = doK - od;
+
+    function x(t) { return Math.round((t - od) / rozpeti * sirka); }
+
+    // Okna jedné akce se běžně překrývají: Mega Squads má pruh přes celou akci
+    // a k tomu dvě poloviny se spawny. Rozhazují se proto do pruhů (lanes) tak,
+    // aby se v jednom nic nepřekrývalo — jméno akce nese jen ten první.
+    radky.forEach(function (r) {
+      var lanes = [];
+      r.useky.slice().sort(function (a, b) { return a.od - b.od; }).forEach(function (u) {
+        var kam = null;
+        for (var l = 0; l < lanes.length && kam === null; l++) {
+          if (lanes[l][lanes[l].length - 1].doKdy.getTime() <= u.od.getTime()) kam = l;
+        }
+        if (kam === null) lanes.push([u]);
+        else lanes[kam].push(u);
+      });
+      r.lanes = lanes;
+    });
+
+    var telo = "";
+    radky.forEach(function (r, i) {
+      r.lanes.forEach(function (lane, li) {
+      var pruhy = "";
+      lane.forEach(function (u) {
+        var a = Math.max(0, x(u.od.getTime()));
+        var b = Math.min(sirka, x(u.doKdy.getTime()));
+        var w = Math.max(3, b - a);
+        var bezi = u.od.getTime() <= ted && u.doKdy.getTime() >= ted;
+        var popis = ganttPopisUseku(u);
+        pruhy += '<button type="button" class="gantt-bar' + (bezi ? " bezi" : "")
+          + '" style="left:' + a + "px;width:" + w + "px;--bar:" + ganttBarva(r.typ) + '"'
+          + ' data-radek="' + i + '"'
+          + ' title="' + escHtml(r.nazev + " — " + evRozsah(u.od, u.doKdy, u.jenDen)
+              + (popis ? "\n" + popis : "")) + '">'
+          + escHtml(popis || r.nazev) + "</button>";
+      });
+      telo += '<div class="gantt-jmeno' + (i === ganttVybrano ? " vybrano" : "")
+        + (li ? " pokracovani" : "") + '" title="' + escHtml(r.nazev) + '">'
+        + (li ? "" : escHtml(ganttJmeno(r.nazev))) + "</div>"
+        + '<div class="gantt-radek">' + pruhy + "</div>";
+      });
+    });
+
+    var prepinace = GANTT_ROZSAHY.map(function (p) {
+      return '<button type="button" class="gantt-zoom' + (p[1] === ganttHodin ? " aktivni" : "")
+        + '" data-hodin="' + p[1] + '">' + p[0] + "</button>";
+    }).join("");
+
+    return '<div class="gantt" style="--sirka:' + sirka + 'px">'
+      + '<div class="gantt-lista">' + prepinace
+      + '<span class="hint">Svislá čára je teď. Klepni na pruh a dole se rozbalí,'
+      + " co v tom úseku běží.</span></div>"
+      + '<div class="gantt-plocha"><div class="gantt-mrizka">'
+      + '<div class="gantt-jmeno gantt-roh"></div>'
+      + '<div class="gantt-osa">' + ganttPopisky(od, doK, sirka) + "</div>"
+      + telo
+      + '<div class="gantt-ted" style="left:' + x(ted) + 'px"></div>'
+      + "</div></div></div>"
+      + '<div id="ganttDetail" class="gantt-detail"></div>';
+  }
+
+  /** Rozpis pod diagramem. Bez výběru ukáže, co běží právě teď. */
+  function ganttDetailHtml(mam, bonbony) {
+    var HOD = 3600000, ted = Date.now();
+    var radky = ganttRadky(ted - 0.5 * HOD, ted + ganttHodin * HOD);
+    var vybrany = ganttVybrano !== null ? radky[ganttVybrano] : null;
+    if (vybrany) {
+      var okna = vybrany.useky.filter(function (u) { return u.sekce; })
+        .map(function (u) {
+          return evOknoHtml({ akce: vybrany.nazev, od: u.od, doKdy: u.doKdy,
+            jenDen: u.jenDen, bezi: u.od.getTime() <= ted && u.doKdy.getTime() >= ted,
+            sekce: u.sekce }, mam, bonbony, 14);
+        }).join("");
+      return '<div class="gantt-detail-h">' + escHtml(vybrany.nazev)
+        + (vybrany.odkaz ? ' <a href="' + vybrany.odkaz + '" target="_blank"'
+            + ' rel="noopener">stránka akce →</a>' : "")
+        + '<button type="button" id="ganttZavrit">zavřít</button></div>'
+        + (okna || '<p class="hint">U téhle akce zdroj rozpis nemá — ví se jen,'
+            + " kdy běží.</p>");
+    }
+    var bezici = "";
+    radky.forEach(function (r) {
+      r.useky.forEach(function (u) {
+        if (!u.sekce) return;
+        if (u.od.getTime() > ted || u.doKdy.getTime() < ted) return;
+        // Sezónní okno běží tři měsíce a jeho seznam vajec je delší než
+        // všechno ostatní dohromady — mezi „co běží teď" nepatří. Klepnutím
+        // na jeho pruh se ukáže normálně.
+        if (u.doKdy - u.od > 30 * 86400000) return;
+        bezici += evOknoHtml({ akce: r.nazev, od: u.od, doKdy: u.doKdy,
+          jenDen: u.jenDen, bezi: true, sekce: u.sekce }, mam, bonbony, 12);
+      });
+    });
+    return bezici || '<p class="hint">Zrovna neběží žádná akce s rozpisem.'
+      + " Klepni na pruh a uvidíš, co v něm bude.</p>";
+  }
+
+  /** Překreslí jen detail a čáru „teď", ne celý diagram. */
+  function ganttObnovit() {
+    var box = document.getElementById("ganttDetail");
+    if (!box) { if (ganttTiker) { clearInterval(ganttTiker); ganttTiker = null; } return; }
+    analyze();
+    var mam = drzeneDruhy(lastBase || []);
+    var bonbony = {};
+    bonbonoveCile(lastBase || [], analyze()).forEach(function (r) {
+      bonbony[r.klic] = r.candy + (r.xl ? " + " + r.xl + " XL" : "");
+    });
+    box.innerHTML = ganttDetailHtml(mam, bonbony);
+    var zav = document.getElementById("ganttZavrit");
+    if (zav) zav.addEventListener("click", function () { ganttVybrano = null; renderEvents(); });
+  }
+
+  function ganttNapojit() {
+    var plocha = document.querySelector(".gantt-plocha");
+    if (!plocha) return;
+    plocha.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest(".gantt-bar") : null;
+      if (!b) return;
+      var i = parseInt(b.dataset.radek, 10);
+      ganttVybrano = (ganttVybrano === i) ? null : i;
+      renderEvents();
+    });
+    var lista = document.querySelector(".gantt-lista");
+    if (lista) {
+      lista.addEventListener("click", function (e) {
+        var z = e.target.closest ? e.target.closest(".gantt-zoom") : null;
+        if (!z) return;
+        ganttHodin = parseInt(z.dataset.hodin, 10) || 36;
+        ganttVybrano = null;
+        renderEvents();
+      });
+    }
+    // Čára „teď" musí být vidět hned, bez hledání.
+    var cara = document.querySelector(".gantt-ted");
+    if (cara) {
+      var levo = parseInt(cara.style.left, 10) || 0;
+      plocha.scrollLeft = Math.max(0, levo - 60);
+    }
+    // Diagram se nepřekresluje sám dokola — jen čára a rozpis, jednou za minutu.
+    if (ganttTiker) clearInterval(ganttTiker);
+    ganttTiker = setInterval(function () {
+      if (!document.getElementById("ganttDetail")) {
+        clearInterval(ganttTiker); ganttTiker = null; return;
+      }
+      var el = document.querySelector(".gantt-ted");
+      if (!el) return;
+      var HOD = 3600000, ted = Date.now();
+      var od = ted - 0.5 * HOD;
+      var sir = parseInt(getComputedStyle(document.querySelector(".gantt"))
+        .getPropertyValue("--sirka"), 10) || 0;
+      // Rozsah se posouvá s časem, takže čára zůstává na stejném místě;
+      // překreslit je potřeba obsah, ne ji.
+      el.style.left = Math.round(0.5 * HOD / (ganttHodin * HOD + 0.5 * HOD) * sir) + "px";
+      ganttObnovit();
+    }, 60000);
   }
 
   function evOsaHtml() {
@@ -12259,15 +12638,27 @@
     // Nad ligovou rotací schválně: tohle je jediné místo na kartě, které
     // odpovídá na „mám teď jít ven a na co".
     (function () {
+      var g = ganttHtml();
+      if (!g) return;
+      var hG = document.createElement("div");
+      hG.className = "ev-h";
+      hG.textContent = "Kalendář — co kdy běží";
+      box.appendChild(hG);
+      var boxG = document.createElement("div");
+      boxG.innerHTML = g;
+      box.appendChild(boxG);
+      ganttObnovit();
+      ganttNapojit();
+    })();
+
+    (function () {
       var osa = evOsaHtml();
       if (!osa) return;
-      var hO = document.createElement("div");
-      hO.className = "ev-h";
-      hO.textContent = "Časová osa — co kdy běží";
+      var hO = document.createElement("details");
+      hO.className = "osa-dalsi";
+      hO.innerHTML = "<summary>Celý rozpis po oknech (i to, co začne později)</summary>"
+        + osa;
       box.appendChild(hO);
-      var boxO = document.createElement("div");
-      boxO.innerHTML = osa;
-      box.appendChild(boxO);
     })();
 
     // --- které ligy se zrovna hrají -------------------------------------
@@ -16478,7 +16869,46 @@
       "<div>Náhled prvních řádků po namapování:</div>" + (preview.length ? html : "<em>Žádný řádek se nenačetl — zkontroluj sloupec „Pokémon“.</em>");
   }
 
+  /** Soubor z „nastaveni.json"? Vrátí nastavení, jinak null. */
+  function jeNastaveniSoubor(text) {
+    var t = String(text || "").trim();
+    if (t.charAt(0) !== "{" || t.indexOf("pgoNastaveni") === -1) return null;
+    try {
+      var d = JSON.parse(t);
+      return d && d.pgoNastaveni && d.settings ? d : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /** Převzít nastavení z druhého zařízení. Ptá se — přepisuje prahy, podle
+   *  kterých se rozhoduje o celém rosteru. */
+  function prevzitNastaveni(d) {
+    var kolik = 0;
+    SETTING_IDS.forEach(function (id) {
+      if (d.settings[id] === undefined) return;
+      kolik += 1;
+    });
+    var ok = window.confirm("Soubor s nastavením z " + (d.ulozeno || "?")
+      + (d.profil ? " (profil „" + d.profil + "“)" : "")
+      + ".\n\nPřevzít " + kolik + " hodnot? Roster se nemění — mění se prahy,"
+      + " podle kterých se počítají verdikty.");
+    if (!ok) return;
+    SETTING_IDS.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el || d.settings[id] === undefined) return;
+      if (el.type === "checkbox") el.checked = d.settings[id] === "1";
+      else el.value = d.settings[id];
+    });
+    renderSettingWarnings();
+    renderBody();
+    persist();
+    window.alert("Nastavení převzato. Verdikty se přepočítaly.");
+  }
+
   function startImport(text) {
+    var nast = jeNastaveniSoubor(text);
+    if (nast) { prevzitNastaveni(nast); return; }
     var parsed = parseText(text);
     if (!parsed) { window.alert("Nepodařilo se načíst žádná data."); return; }
     pending = { headers: parsed.headers, body: parsed.body, hasHeader: parsed.hasHeader, mapping: {}, auto: {} };
@@ -18294,11 +18724,38 @@
       + "myší; na telefonu není kam najet, takže by ta informace v appce sice "
       + "byla napsaná, ale nedostupná. Bere se to z živých buněk, ne z ručního "
       + "seznamu, takže to nezastará.</li>"
+      + "<li><b>Nastavení nikam nezmizelo</b> — je pod „Další…“. Pozor ale na to, "
+      + "že prahy jsou uložené <b>v tom zařízení</b>: telefon si appku otevře "
+      + "s výchozími a u téhož kusu mu vyjde jiný verdikt než počítači. Proto "
+      + "se do zálohovací složky vedle <code>roster.csv</code> píše i "
+      + "<code>nastaveni.json</code> — hoď ho v telefonu do <b>Importovat data</b> "
+      + "a prahy se převezmou. Roster v něm není, ten veze CSV.</li>"
       + "<li><b>Na počítači se nemění nic.</b> Hranice je 700 pixelů šířky okna "
       + "a je stejná v CSS i v kódu.</li>"
       + "</ul></div>";
 
-    h += "<h3>8. Kde model končí</h3>"
+    h += "<h3>8. Jak číst kalendář akcí</h3>"
+      + "<div class=\"docs-vzorec\"><ul>"
+      + "<li><b>Řádek je akce, vodorovně běží čas, svislá červená čára je teď.</b> "
+      + "Co skončí, z osy vypadne; co teprve začne, přijede zprava. Rozsah se "
+      + "přepíná od dvanácti hodin po dva týdny — hodinové akce (Spotlight Hour, "
+      + "Raid Hour) jsou při dvou týdnech užší než pixel, tak se na ně přepni "
+      + "na kratší rozsah.</li>"
+      + "<li><b>Jedna akce může mít víc pruhů pod sebou.</b> Mega Squads má okno "
+      + "přes celou akci a k tomu dvě poloviny, ve kterých se mění spawny; "
+      + "na jednom řádku by se kreslily přes sebe.</li>"
+      + "<li><b>Klepnutí na pruh</b> rozbalí dole, co v tom úseku běží — divočina, "
+      + "vejce, raidy, výzkum, shiny a bonusy. Bez výběru se ukazuje to, co běží "
+      + "právě teď (kromě sezóny, jejíž seznam vajec je delší než všechno "
+      + "ostatní dohromady).</li>"
+      + "<li><b>Značka u druhu</b> se ukáže jen tehdy, když něco znamená: kolik "
+      + "bonbónů ta rodina <b>potřebuje</b> podle plánu, nebo jak dobrý kus už "
+      + "máš. <b>Kolik bonbónů máš, appka neví</b> — v exportu to není. A "
+      + "„nemáš“ se nepíše vůbec: appka vidí do rosteru, ne do pokédexu, takže "
+      + "druh, kterého ses kdysi zbavil, by označila za chybějící.</li>"
+      + "</ul></div>";
+
+    h += "<h3>9. Kde model končí</h3>"
       + "<div class=\"docs-vzorec docs-limit\"><ul>"
       + "<li><b>Raidové skóre nezná konkrétního bosse ani uhýbání.</b> Výdrž se "
       + "započítává obecně, ne proti tomu, co ten boss zrovna hází. Když si nahoře "
