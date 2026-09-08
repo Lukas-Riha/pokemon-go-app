@@ -3346,7 +3346,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-08 12:39";
+  var BUILD = "2026-09-08 12:42";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5536,9 +5536,17 @@
       || window.location.hostname === "localhost";
   }
 
+  /* ID registrované aplikace. Není to tajemství — u jednostránkové appky
+     s PKCE je veřejné z principu, protože ho stejně vidí každý v adrese
+     přihlašovacího okna. Zapsané rovnou v appce znamená, že se každý
+     (Anet, kdokoli další) jen přihlásí svým účtem a má svůj roster ve
+     SVÉM OneDrivu — nikdo nic nenastavuje. Vlastní ID zadané v Nastavení
+     má přednost, kdyby si někdo chtěl zaregistrovat vlastní. */
+  var CLOUD_ID_VYCHOZI = "";
+
   function cloudClientId() {
-    try { return (localStorage.getItem(CLOUD_ID) || "").trim(); }
-    catch (e) { return ""; }
+    try { return ((localStorage.getItem(CLOUD_ID) || CLOUD_ID_VYCHOZI) || "").trim(); }
+    catch (e) { return CLOUD_ID_VYCHOZI; }
   }
 
   function cloudToken() {
