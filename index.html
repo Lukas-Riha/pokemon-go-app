@@ -1760,6 +1760,12 @@
     /* Rozbalený souhrn má ta čísla přímo pod sebou — shrnutí by je opakovalo. */
     .souhrn-karta:not(.sbaleno) .souhrn-shrnuti { display: none; }
 
+    /* Mobilní verze je na kontrolu — co se dělá od stolu (přidávání kusů,
+       import, export, zálohy, mazání, profil), se v liště neukazuje. */
+    #addRowBtn, #toggleImportBtn, #exportBtn, #starKeepersBtn, #backupBtn,
+    #backupNowBtn, #forgetDiscardedBtn, #clearUnstarredBtn, #clearBtn,
+    #profilBtn, .profile-box { display: none; }
+
     /* Lišta se zalomí, neposouvá se do strany. Posuv byl sice úspornější,
        ale 1028 px tlačítek v okně 322 px znamená, že pět z osmi není vidět
        a nic to nenapoví. Co se na telefonu nepoužívá (ruční zápis, import,
@@ -2392,6 +2398,19 @@
     color: var(--text-primary); width: 15em; max-width: 100%; }
   .scan-plan .hint { display: block; margin-top: 6px; line-height: 1.5; }
   input.dopocteno { border-color: var(--status-good); font-style: italic; }
+  /* Okno na přidání kusu. Není to vysouvací pruh v liště, ale skutečné okno
+     přes stránku: přidávání je odbočka, ne práce v tabulce, a člověk se do něj
+     má pustít, vyplnit ho a zas se vrátit. */
+  .rucni-box:not([hidden]) { position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0; padding: 16px; border: 0; border-radius: 0;
+    background: color-mix(in srgb, var(--page) 78%, transparent); }
+  .rucni-box > * { display: none; }
+  .rucni-box > .rb-okno { display: block; width: min(560px, 100%);
+    max-height: 100%; overflow-y: auto; padding: 16px 18px; border-radius: 14px;
+    border: 1px solid var(--grid); background: var(--surface-1);
+    box-shadow: 0 14px 44px rgba(0, 0, 0, .45); }
+  .rucni-box .rb-head b { font-size: 16px; }
   .rucni-box { margin: 0 0 10px; padding: 11px 13px; border-radius: 10px;
     border: 1px solid var(--border); background: var(--input-bg); }
   .rucni-box .rb-head { margin-bottom: 8px; }
@@ -2560,11 +2579,21 @@
   <div class="card">
     <h2>Souhrn</h2>
     <div class="tiles" id="tiles"></div>
-    <div class="type-chips" id="typeChips"></div>
   </div>
 
   <details class="card settings-card">
     <summary>Nastavení prahů — IV, PvP potenciál, kopie (nastavíš jednou a zapomeneš)</summary>
+    <!-- Kontrola počtu kusů. Stála nad rosterem, kde kradla řádek při každém
+         otevření — přitom se vyplňuje jednou za čas. Patří k nastavení. -->
+    <div class="box-check" id="boxCheck">
+      <label for="boxCountRoster">Ve hře mám</label>
+      <input type="number" id="boxCountRoster" min="0" max="9999" step="1" placeholder="?"
+        autocomplete="off" title="Číslo z boxu ve hře (např. 49/300). Appka podle něj pozná, jestli roster sedí." />
+      <label for="gymCountRoster">z toho v gymech</label>
+      <input type="number" id="gymCountRoster" min="0" max="999" step="1" placeholder="0"
+        autocomplete="off" title="Kusy nasazené v gymech. Calcy je při průchodu boxem nenaskenuje, takže v exportu chybí — appka je pak nehlásí jako díru." />
+      <span class="hint" id="boxCheckNote"></span>
+    </div>
     <div class="settings-row">
       <div class="setting">
         <label for="ivThresh">Práh „vysoké IV“ (%)</label>
@@ -2776,10 +2805,7 @@
   </details>
 
   <details class="card events-card" id="eventsCard">
-    <summary>Eventy a raid bossové — koho na ně vzít</summary>
-    <p class="plan-intro">Kdo je zrovna v raidech a co se ve hře děje. U každého bosse appka rovnou
-      vybere trojku z tvého rosteru. <b>Data se do appky zapékají</b>, protože běží offline
-      z disku — po skončení eventu je potřeba je obnovit (viz poznámka dole).</p>
+    <summary>Události — kalendář a ligy</summary>
     <div id="eventsBody"></div>
   </details>
 
@@ -2802,33 +2828,6 @@
     <div class="type-table-wrap"><table id="typeTable"></table></div>
   </details>
 
-  <details class="card gym-card" id="gymCard">
-    <summary>Gym a raid — koho na ně poslat</summary>
-    <p class="plan-intro">Napiš, proti komu jdeš — jména oddělená čárkou, klidně i s CP:
-      <code>Blissey 3200, Snorlax 2900, Steelix</code>. Můžeš napsat i <b>jen typ</b>, když jména
-      neznáš: <code>Water</code> — nebo sem rovnou vlož <b>celou hlášku raketáka</b>
-      (<code>These waters are treacherous!</code>) a typ z ní vyčtu sám. Appka dohledá typy a z tvého rosteru vybere, koho na koho poslat.
-      CP obránce na výběr counteru nemá vliv — je jen na pořadí, ať víš, co tě čeká.</p>
-    <div class="gym-tools">
-      <input type="text" id="gymInput" placeholder="Blissey 3200, Snorlax… — nebo hláška raketáka" autocomplete="off" />
-      <button class="primary" id="gymGoBtn">Vyhodnotit</button>
-      <button id="gymClearBtn">Vymazat</button>
-      <label class="gym-max" for="gymMode">Režim:</label>
-      <select id="gymMode">
-        <option value="gym">Gym / raid — parta 6</option>
-        <option value="rocket">Team GO Rocket — parta 3</option>
-        <option value="max">Max Battle (Dynamax) — parta 3</option>
-      </select>
-    </div>
-    <details class="gym-friend" id="gymFriendBox">
-        <summary>Jdeme ve dvou — přidat kusy od kamaráda</summary>
-      <p class="plan-intro">Napiš, co má kamarád po ruce — jeden na řádek nebo čárkou.
-        Jméno, CP a IV: <code>Machamp 2100 15/14/13</code>. CP i IV jsou nepovinné.
-        Appka je zahrne do výběru a u každého napíše, čí je — poskládá tak společnou partu.</p>
-      <textarea id="gymFriend" rows="3" placeholder="Machamp 2100 15/14/13&#10;Tyranitar 3000 14/14/14"></textarea>
-    </details>
-    <div id="gymBody"></div>
-  </details>
 
   <details class="card" id="prohlidkaCard">
     <summary>Konkrétní pokémon — co umí sám o sobě</summary>
@@ -2990,15 +2989,6 @@
 
   <div class="card roster">
     <h2>Roster — co s kterým pokémonem</h2>
-    <div class="box-check" id="boxCheck">
-      <label for="boxCountRoster">Ve hře<span class="jen-siroko"> mám</span></label>
-      <input type="number" id="boxCountRoster" min="0" max="9999" step="1" placeholder="?"
-        autocomplete="off" title="Číslo z boxu ve hře (např. 49/300). Appka podle něj pozná, jestli roster sedí." />
-      <label for="gymCountRoster"><span class="jen-siroko">z toho </span>v gymech</label>
-      <input type="number" id="gymCountRoster" min="0" max="999" step="1" placeholder="0"
-        autocomplete="off" title="Kusy nasazené v gymech. Calcy je při průchodu boxem nenaskenuje, takže v exportu chybí — appka je pak nehlásí jako díru." />
-      <span class="hint" id="boxCheckNote"></span>
-    </div>
     <div class="zal-warn" id="zalWarn" style="display:none">
       <div>
         <b>Roster je jen v tomhle prohlížeči.</b>
@@ -3008,7 +2998,6 @@
     </div>
     <div class="toolbar">
       <button class="primary" id="addRowBtn">+ Přidat pokémona</button>
-      <button id="rucniBtn" title="Na kus, který Calcy nenaskenuje celý — v gymu nebo v Dynamax spotu">+ Ručně (gym / Dmax)</button>
       <button id="toggleImportBtn">Importovat data</button>
       <button id="exportBtn">Exportovat CSV</button>
       <input type="search" id="searchInput" placeholder="Hledat pokémona…" autocomplete="off" />
@@ -3053,10 +3042,7 @@
       <button id="backupNowBtn" title="Uloží snímek s časem v názvu. Nic nepřepíše — hodí se, až budeš s úklidem hotový.">Zálohovat teď</button>
       <button id="starKeepersBtn" title="Označí hvězdičkou všechny kusy s kladným verdiktem. Co už označené je, zůstane."></button>
       <button class="danger" id="clearUnstarredBtn" style="display:none"></button>
-      <button id="hledaniBtn" title="Zkopíruje vyhledávací řetězec pro to, co je teď v tabulce">Hledat ve hře</button>
-      <button id="skenPlanBtn" title="Řetězec do vyhledávání ve hře — ukáže jen to, cos chytil od posledního skenu">Co skenovat</button>
       <button id="boxModeBtn" title="Projde kus po kusu přes celou obrazovku. Šipkami rozhodneš, tabulku k tomu nepotřebuješ.">Čistit box</button>
-      <div id="hledaniVysledek" class="hled-box" style="display:none"></div>
       <button class="danger" id="clearBtn">Vymazat vše</button>
       <button id="forgetDiscardedBtn" style="display:none" title="Co jsi tady smazal, se při importu nevrací. Tady se to dá prohlédnout a vrátit."></button>
       <span class="profile-box">
@@ -3069,12 +3055,16 @@
       <span class="save-state" id="saveState"></span>
       <span class="backup-state" id="backupState"></span>
     </div>
+    <!-- Okno na přidání kusu. Dřív to bylo zvláštní tlačítko „+ Ručně“
+         a „+ Přidat pokémona“ vkládalo prázdný řádek do tabulky, který se pak
+         musel dovyplnit — a když se nedovyplnil, strašil v rosteru. Teď je
+         jedna cesta: okno, vyplnit, přidat. -->
     <div class="rucni-box" id="rucniBox" hidden>
-      <div class="rb-head"><b>Přidat kus ručně</b>
-        <span class="hint">Na pokémona nasazeného v <b>gymu</b> nebo v <b>Dynamax
-          power spotu</b>. Calcy u něj appraisal přečte (útok / obrana / HP),
-          ale nespojí si ho se jménem a levelem. Jméno a CP máš na obrazovce,
-          <b>level appka dopočítá z CP a IV</b>.</span></div>
+      <div class="rb-okno">
+      <div class="rb-head"><b>Přidat pokémona</b>
+        <span class="hint">Jméno a CP stačí — <b>level appka dopočítá z CP a IV</b>.
+          Hodí se na kus, který sken nezachytí celý: nasazený v <b>gymu</b>
+          nebo v <b>Dynamax power spotu</b>.</span></div>
       <div class="rb-grid">
         <label>Pokémon<input id="rbName" list="rbNames" autocomplete="off"
           placeholder="Machamp" /></label>
@@ -3089,19 +3079,9 @@
       <div class="rb-out" id="rbOut"></div>
       <div class="actions">
         <button class="primary" id="rbAdd">Přidat do rosteru</button>
-        <button id="rbCancel">Zavřít</button>
+        <button id="rbCancel">Zrušit</button>
       </div>
-    </div>
-    <div class="scan-plan" id="scanPlan" hidden>
-      <div class="sp-head">
-        <b>Co teď skenovat</b>
-        <span class="sp-when" id="scanPlanWhen"></span>
       </div>
-      <div class="sp-radek">
-        <input type="text" id="scanPlanStr" readonly aria-label="Vyhledávací řetězec do hry" />
-        <button class="primary" id="scanPlanCopy">Kopírovat</button>
-      </div>
-      <span class="hint" id="scanPlanNote"></span>
     </div>
     <div class="discard-box" id="discardBox">
       <div class="db-panel">
@@ -3216,34 +3196,6 @@
     <div class="build-line"><span class="build-stamp" id="buildStamp"></span></div>
   </div>
 
-  <details class="card share-box" id="mobilCard">
-    <summary><b>Snímek do mobilu</b> — roster a rady do kapesní stránky</summary>
-    <p class="plan-intro"><b>Od té doby, co appka běží na
-      <code>lukas-riha.github.io/pokemon-go-app</code>, je tohle náhradní cesta.</b>
-      V telefonu se dá otevřít celá appka včetně počítání. Roster se do ní dostane
-      zálohou: v liště dej <b>Zálohovat do složky…</b> a vyber složku v OneDrivu
-      (vlastní, ne sdílenou). Do ní se pak sám píše <code>roster.csv</code> —
-      pořád ten nejnovější — a v telefonu ho načteš přes <b>Importovat data</b>
-      → <b>Nahradit roster</b>. Kapesní stránka zůstává pro případ, kdy chceš
-      jen nahlédnout a nic nepočítat.</p>
-    <p class="plan-intro">Vyber <b>jednou</b> soubor (klidně ve sdílené složce v OneDrivu)
-      a appka do něj bude při každé změně zapisovat <b>hotové závěry</b> — verdikt, role,
-      co evolvovat a nejlepší šestku na každou kombinaci typů bosse. V telefonu pak ten
-      soubor jednou načteš do kapesní stránky <b>StropCP.html</b> (záložka <b>Data</b>)
-      a máš roster u sebe i bez internetu. <b>Telefon nic nepočítá</b>, jen ukazuje, co
-      spočítal počítač — proto se nemůžou rozejít. Snímek obsahuje tvůj roster, takže
-      patří jen do složky, do které vidí lidé, kterým to nevadí.</p>
-    <p class="plan-intro"><b>Proč .txt a ne .json:</b> Android si příponu .json
-      rády zaberou jiné aplikace (třeba ChatGPT) a ťuknutí na soubor ho pak
-      otevře v nich. U .txt se to neděje a obsah je stejný — kapesní stránka
-      formát pozná z obsahu, ne z přípony. V telefonu na soubor stejně neťukej,
-      jdi přes tlačítko <b>Načíst snímek</b>.</p>
-    <p class="plan-intro"><b>Kam ho dát:</b> klidně rovnou do složky, kam si píšeš
-      vyměňovaný roster (<code>Luky roster</code>). Čtečka kamarádova rosteru bere
-      <b>jen soubory .csv</b>, takže o tenhle .json ani nezakopne a každý má svoje
-      věci na jednom místě. Ověřeno testem, ne odhadem.</p>
-    <div id="mobilBox"></div>
-  </details>
 
   <details class="card docs-card" id="docsCard">
     <summary><b>Odkud se to bere a jak se to počítá</b> — celý rozbor appky</summary>
@@ -3346,7 +3298,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-08 12:42";
+  var BUILD = "2026-09-08 13:56";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -10330,42 +10282,23 @@
    * se nemusela přepisovat lišta a nerozbily se odkazy na tlačítka v kódu.
    */
   // Pořadí tlačítek v hlavní řadě lišty.
-  var LISTA_HLAVNI = ["addRowBtn", "rucniBtn", "toggleImportBtn",
-    "boxModeBtn", "skenPlanBtn", "hledaniBtn", "starKeepersBtn"];
+  var LISTA_HLAVNI = ["addRowBtn", "boxModeBtn", "toggleImportBtn", "exportBtn",
+    "starKeepersBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn",
+    "clearUnstarredBtn", "clearBtn"];
   // Práce od stolu. Mobilní verze je doplněk na kontrolu — přidávání kusů,
   // ruční zápis, import a hromadné označení se dělají u počítače. V liště
   // pod prstem by je nikdo nehledal a osm tlačítek se do telefonu nevejde.
-  var LISTA_OD_STOLU = ["addRowBtn", "rucniBtn", "toggleImportBtn", "starKeepersBtn"];
-
-  /** Rozdělí tlačítka mezi hlavní řadu a „Další…“ podle šířky okna.
-   *
-   *  Volá se při každé změně šířky, ne jen při startu: appka se otevírá
-   *  i v okénku, které se pak roztáhne přes celou obrazovku. */
-  function listaPodleSirky() {
-    var hlavni = document.querySelector(".card.roster .tb-hlavni");
-    var dalsi = document.querySelector(".card.roster .tb-dalsi");
-    if (!hlavni || !dalsi) return;
-    var mob = jeMobil();
-    var vic = hlavni.querySelector(".tb-vic");
-    // Odzadu, ať v „Další…“ zůstane původní pořadí.
-    LISTA_HLAVNI.slice().reverse().forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      if (mob && LISTA_OD_STOLU.indexOf(id) !== -1) dalsi.insertBefore(el, dalsi.firstChild);
-      else hlavni.insertBefore(el, hlavni.firstChild);
-    });
-    if (vic) hlavni.appendChild(vic);
-  }
+  var LISTA_OD_STOLU = ["addRowBtn", "toggleImportBtn", "exportBtn", "starKeepersBtn",
+    "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearUnstarredBtn", "clearBtn"];
 
   function usporadatListu() {
     var lista = document.querySelector(".card.roster .toolbar");
     if (!lista || lista.dataset.usporadano) return;
+    // Jedna řada. „Další…“ dávalo smysl u dvanácti tlačítek; po úklidu jich
+    // zbylo tolik, že se veejdou, a jedno klepnutí navíc jen zdržovalo.
     var SKUPINY = [
       { trida: "tb-hlavni", ids: LISTA_HLAVNI },
-      { trida: "tb-hledani", ids: ["searchInput", "viewSelect", "filterSelect"] },
-      { trida: "tb-dalsi", skryta: true, ids: ["exportBtn",
-          "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearUnstarredBtn",
-          "clearBtn"] }
+      { trida: "tb-hledani", ids: ["searchInput", "viewSelect", "filterSelect"] }
     ];
     var radky = {};
     SKUPINY.forEach(function (sk) {
@@ -10378,31 +10311,30 @@
         if (el && el.parentNode === lista) r.appendChild(el);
       });
     });
-    // profil patří k „dalšímu" — mění se jednou za měsíc
+    // Profil se mění jednou za měsíc — schová se pod vlastní tlačítko,
+    // ne aby v liště trvale zabíral místo rozbalovacím seznamem.
     var profil = lista.querySelector(".profile-box");
-    if (profil) radky["tb-dalsi"].appendChild(profil);
+    if (profil) {
+      profil.hidden = true;
+      var pb = document.createElement("button");
+      pb.type = "button";
+      pb.id = "profilBtn";
+      pb.textContent = "Profil";
+      pb.title = "Přepnout mezi profily — víc lidí na jednom počítači";
+      pb.setAttribute("aria-expanded", "false");
+      pb.addEventListener("click", function () {
+        profil.hidden = !profil.hidden;
+        pb.setAttribute("aria-expanded", profil.hidden ? "false" : "true");
+        pb.classList.toggle("otevreno", !profil.hidden);
+      });
+      radky["tb-hlavni"].appendChild(pb);
+      radky["tb-hlavni"].appendChild(profil);
+    }
 
-    var vic = document.createElement("button");
-    vic.type = "button";
-    vic.className = "tb-vic";
-    vic.textContent = "Další…";
-    vic.setAttribute("aria-expanded", "false");
-    vic.addEventListener("click", function () {
-      var r = radky["tb-dalsi"];
-      r.hidden = !r.hidden;
-      vic.textContent = r.hidden ? "Další…" : "Skrýt další";
-      vic.setAttribute("aria-expanded", r.hidden ? "false" : "true");
-      vic.classList.toggle("otevreno", !r.hidden);
-      if (typeof syncToolbarHeight === "function") syncToolbarHeight();
-    });
-    radky["tb-hlavni"].appendChild(vic);
-
-    // co do skupin nepatří (stavové texty, výsledek hledání) zůstane, kde bylo
+    // co do skupin nepatří (stavové texty) zůstane, kde bylo
     lista.insertBefore(radky["tb-hlavni"], lista.firstChild);
     lista.insertBefore(radky["tb-hledani"], radky["tb-hlavni"].nextSibling);
-    lista.insertBefore(radky["tb-dalsi"], radky["tb-hledani"].nextSibling);
     lista.dataset.usporadano = "1";
-    listaPodleSirky();
     if (typeof syncToolbarHeight === "function") syncToolbarHeight();
   }
 
@@ -12154,14 +12086,6 @@
     });
     h += "</div>";
 
-    h += '<h2 class="cs-title">Pustit (' + kl.transfer.length + ", tolik bonbónů dostaneš)</h2>";
-    if (kl.transfer.length) {
-      h += '<div class="cs-transfer">' + kl.transfer.map(function (t) {
-        return "<span>" + t.name + (t.cp ? " " + t.cp : "") + "</span>";
-      }).join("") + "</div>";
-    } else {
-      h += '<p class="cs-foot">Nic k vyhození — buď máš uklizeno, nebo ještě není co vyhodnotit.</p>';
-    }
     return h;
   }
 
@@ -13607,25 +13531,10 @@
       return;
     }
 
-    // --- tvůj tým do toho, co se právě hraje ----------------------------
-    // Nahoře schválně: je to jediná věc na téhle kartě, podle které se
-    // rozhoduje hned teď. Rotace pod tím je kontext, ne akce.
-    (function () {
-      analyze();
-      var tymy = ligyTedHtml(lastBase);
-      if (!tymy) return;
-      var hT = document.createElement("div");
-      hT.className = "ev-h";
-      hT.textContent = "Tvůj tým do GO Battle League";
-      box.appendChild(hT);
-      var boxT = document.createElement("div");
-      boxT.innerHTML = tymy;
-      box.appendChild(boxT);
-    })();
-
-    // --- časová osa: co běží teď a co přijde ----------------------------
-    // Nad ligovou rotací schválně: tohle je jediné místo na kartě, které
-    // odpovídá na „mám teď jít ven a na co".
+    // --- časová osa: co běží teď a co přijde ---------------------------
+    // Je to jediné místo na kartě, které odpovídá na „mám teď jít ven a na co".
+    // Raidoví bossové a seznam „Co se děje" odsud zmizeli — bossů se týká
+    // Tahák (a líp: rovnou s trojkou z rosteru), akce jsou v kalendáři.
     (function () {
       var g = ganttHtml();
       if (!g) return;
@@ -13712,95 +13621,8 @@
     analyze();
 
     // dva sloupce, ať se eventy nehledají až na konci dlouhého seznamu bossů
-    var mrizka = document.createElement("div");
-    mrizka.className = "ev-grid";
-    var levy = document.createElement("div"), pravy = document.createElement("div");
-    mrizka.appendChild(levy);
-    mrizka.appendChild(pravy);
-    box.appendChild(mrizka);
 
-    // --- raid bossové s counterem z rosteru ---
-    if (bossove.length) {
-      var h1 = document.createElement("div");
-      h1.className = "ev-h";
-      h1.textContent = "Raid bossové právě teď";
-      levy.appendChild(h1);
 
-      bossove.forEach(function (b) {
-        var jmeno = b[0], tier = b[1], typy = b[2] || [], cp = b[3] || [], shiny = b[5];
-        var karta = document.createElement("div");
-        karta.className = "ev-boss";
-        var hd = document.createElement("div");
-        hd.className = "ev-boss-h";
-        hd.innerHTML = "<b>" + jmeno + "</b>"
-          + '<span class="ev-tier">' + tier + "</span>"
-          + typy.map(function (t) { return typeChipHtml(t); }).join("")
-          + (cp[0] ? '<span class="ev-cp">chytneš ' + cp[0] + "–" + cp[1] + " CP</span>" : "")
-          + (shiny ? '<span class="ev-shiny">✦ shiny</span>' : "");
-        karta.appendChild(hd);
-
-        // counter se počítá z typů bosse, stejně jako v panelu na gymy
-        var scored = [];
-        lastBase.forEach(function (x) {
-          if (!usableForPlan(x)) return;
-          var c = counterScore(x, typy);
-          // Kus, jehož útok boss ODOLÁVÁ (off < 1), není counter — je to
-          // jen nejsilnější kus v rosteru a v raidu by zdržoval. Radši se
-          // přizná, že na tohohle nikdo není. Neutrální (×1) projde.
-          //
-          // Vyplavalo to s Mega Latiasem a Mega Latiosem: na Dragon/Psychic
-          // nemá běžný roster nic a appka nabízela kus s násobkem 0,63.
-          if (c && c.off >= 1) scored.push({ b: x, c: c });
-        });
-        scored.sort(function (a, z) { return z.c.score - a.c.score; });
-        var top = scored.slice(0, 3);
-        if (!top.length) {
-          var none = document.createElement("div");
-          none.className = "ev-none";
-          none.textContent = "Na tohohle nemáš v rosteru nikoho, komu by boss"
-            + " neodolával. Nejsilnější kus by tu jen zdržoval.";
-          karta.appendChild(none);
-        }
-        top.forEach(function (pk, i) {
-          var line = document.createElement("div");
-          line.className = "ev-pick" + (i === 0 ? " best" : "");
-          var ms = pk.c.moveset ? pk.c.moveset.fast.name + " + " + pk.c.moveset.charged.name : "";
-          line.innerHTML = '<span class="ev-n">' + pk.b.row.pokemon
-            + (pk.b.row.cp ? " " + pk.b.row.cp + " CP" : "") + "</span>"
-            + '<span class="ev-m">' + ms + (pk.c.guessed ? " (odhad)" : "") + "</span>"
-            + '<span class="ev-x">síla ' + Math.round(pk.c.score / top[0].c.score * 100) + " %</span>"
-            + '<span class="ev-x">útok ×' + (Math.round(pk.c.off * 100) / 100)
-            + " · schytá ×" + (Math.round(pk.c.taken * 100) / 100) + "</span>";
-          karta.appendChild(line);
-        });
-        levy.appendChild(karta);
-      });
-    }
-
-    // --- eventy ---
-    if (ev.length) {
-      var h2 = document.createElement("div");
-      h2.className = "ev-h";
-      h2.textContent = "Co se děje";
-      pravy.appendChild(h2);
-      var ted = Date.now();
-      ev.slice().sort(function (a, z) { return (a[3] || "").localeCompare(z[3] || ""); }).forEach(function (e) {
-        var zac = evDatum(e[3]), kon = evDatum(e[4]);
-        if (kon && kon.getTime() < ted) return;   // co skončilo, nezajímá
-        var bezi = zac && kon && zac.getTime() <= ted && kon.getTime() >= ted;
-        var row = document.createElement("div");
-        row.className = "ev-row" + (bezi ? " ted" : "");
-        var popis = evPopis(e[1], e[2]);
-        row.innerHTML = '<span class="ev-name">' + e[0] + "</span>"
-          + '<span class="ev-tier">' + (e[2] || e[1]) + "</span>"
-          + '<span class="ev-when">' + (bezi ? "běží do " + evFormat(e[4])
-            : evFormat(e[3]) + " → " + evFormat(e[4])) + "</span>"
-          + '<div class="ev-desc">' + popis
-          + (e[5] ? ' <a href="' + e[5] + '" target="_blank" rel="noopener">víc →</a>' : "") + "</div>";
-        row.title = popis;
-        pravy.appendChild(row);
-      });
-    }
 
     var foot = document.createElement("p");
     foot.className = "ev-foot";
@@ -14816,32 +14638,6 @@
           + '</div><div class="cs-flow">' + obsah + "</div></div>";
       };
 
-      h += '<h2 class="cs-title">Co chytat</h2>';
-      ch.akce.forEach(function (a) {
-        h += blok(a.nazev, "", a.druhy.map(function (d) {
-          return chip(d, d.mas ? "máš " + d.nejlepsi + " %" : "nemáš");
-        }).join(""));
-      });
-      ch.ligy.forEach(function (l) {
-        h += blok("chybí do " + l.liga, "", l.druhy.map(function (d) {
-          return chip(d, "#" + d.poradi + " · " + d.kde);
-        }).join(""));
-      });
-      ch.raidy.forEach(function (r) {
-        h += blok(r.typ + " útočníci", "máš " + r.podil + " %",
-          r.druhy.map(function (d) {
-            return chip(d, (d.pct ? d.pct + " % · " : "") + d.kde);
-          }).join(""));
-      });
-
-      var rotT = rotaceNestuText();
-      h += '<div class="cs-catch cs-nesty"><div class="cs-type-name">Nesty</div>'
-        + "<p>Další rotace za <b>" + rotT.za + "</b> — " + rotT.datum + "."
-        + " Nest je konkrétní místo, kde se jeden druh líhne opakovaně;"
-        + " rotují každých 14 dní ve čtvrtek. Hlásí je místní hráči:</p>"
-        + "<ul>" + nestSkupinyHtml() + "</ul></div>";
-      h += '<p class="cs-foot">„Kde“ je odhad podle typu, ne herní data —'
-        + " biomy ve hře jsou, ale seznamy Niantic nikdy nezveřejnil.</p>";
     }
 
     if (sheet.keepList) h += keepListHtml(sheet.keepList);
@@ -16552,7 +16348,19 @@
     if (document.getElementById("discardBox").classList.contains("open")) renderDiscardList();
   }
 
+  /* Úvodní odstavce nad žebříčky (`.ref-note`, `.hint`) se mažou při prvním
+     vykreslení. Vysvětlení, jak se žebříček počítá, patří do dokumentace —
+     tady se čte seznam, ne výklad. */
+  function refBezVykladu() {
+    var karta = document.getElementById("refCard");
+    if (!karta) return;
+    Array.prototype.forEach.call(
+      karta.querySelectorAll(".ref-note, .plan-intro, .ref-tables > .hint, .ref-toggle > .hint"),
+      function (el) { el.remove(); });
+  }
+
   function renderRefTables() {
+    refBezVykladu();
     var raidT = document.getElementById("refRaidTable");
     var h1 = "<tr><th>Typ</th><th>#</th><th>Pokémon</th><th>Sestava</th><th>% špičky</th></tr>";
     ALL_TYPES.forEach(function (t) {
@@ -18559,11 +18367,13 @@
       prekreslit();
     });
 
-    document.getElementById("rucniBtn").addEventListener("click", function () {
+    // Otevřít okno umí jediné tlačítko — „+ Přidat pokémona“.
+    window.__pgoOtevritPridat = function () {
       naplnitDruhy();
-      box.hidden = !box.hidden;
-      if (!box.hidden) { prekreslit(); pole.name.focus(); }
-    });
+      box.hidden = false;
+      prekreslit();
+      pole.name.focus();
+    };
     document.getElementById("rbCancel").addEventListener("click", function () {
       box.hidden = true;
     });
@@ -18785,8 +18595,11 @@
   })();
 
   document.getElementById("addRowBtn").addEventListener("click", function () {
-    rows.push(newRow());
-    renderBody(); persist(true);
+    // Dřív to vložilo prázdný řádek do tabulky, který se musel dovyplnit —
+    // a když se nedovyplnil, strašil v rosteru vlastní hláškou. Teď se
+    // otevře okno a do rosteru se dostane až hotový kus.
+    if (window.__pgoOtevritPridat) window.__pgoOtevritPridat();
+    else { rows.push(newRow()); renderBody(); persist(true); }
   });
   (function skenPlanPrepinac() {
     var b = document.getElementById("skenPlanBtn");
@@ -19049,8 +18862,6 @@
     if (lista) ro.observe(lista);
   }
   window.addEventListener("resize", syncWrapOverflow);
-  // Hranice telefonu je 700 px — při překročení se lišta přerovná.
-  window.addEventListener("resize", listaPodleSirky);
   document.getElementById("weatherSelect").addEventListener("change", function () {
     renderTypeTable(); renderTiles(); persist(true);
   });
@@ -19101,22 +18912,6 @@
       fr.readAsText(f, "utf-8");
     });
   })();
-  document.getElementById("gymGoBtn").addEventListener("click", renderGym);
-  document.getElementById("gymMode").addEventListener("change", renderGym);
-  document.getElementById("gymFriend").addEventListener("input", function () {
-    window.clearTimeout(this._t);
-    this._t = window.setTimeout(renderGym, 400);
-  });
-
-  document.getElementById("gymInput").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") renderGym();
-  });
-  document.getElementById("gymClearBtn").addEventListener("click", function () {
-    document.getElementById("gymInput").value = "";
-    gymOut = {};
-    document.getElementById("gymMode").value = "gym";
-    renderGym();
-  });
   document.getElementById("resetSettingsBtn").addEventListener("click", function () {
     resetSettings();
     renderSettingWarnings(); renderBody(); renderDiscardBtn(); persist(true);
@@ -21077,10 +20872,8 @@
       ["cheatCard", "Tahák"],
       ["catchCard", "Co chytat"],
       ["eventsCard", "Události"],
-      ["gymCard", "Gym"],
       ["typesCard", "Co na co platí"],
       ["refCard", "Žebříčky"],
-      ["mobilCard", "Do mobilu"],
       ["docsCard", "Odkud se to bere"],
       ["settings-card", "Nastavení"]
     ];
