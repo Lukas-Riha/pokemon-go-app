@@ -511,8 +511,13 @@
   .plan-sum { font-size: 12.5px; color: var(--text-primary); margin-top: 12px; font-weight: 600; }
   .settings-card > summary { cursor: pointer; font-weight: 600; color: var(--text-secondary); font-size: 13px; }
   .settings-card[open] > summary { margin-bottom: 12px; }
-  .settings-row { display: flex; gap: 24px; flex-wrap: wrap; }
-  .setting { display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
+  /* Mřížka, ne zalamovaný flex. Ve flexu měl každý řádek výšku podle
+     nejvyššího políčka, takže rozbalení jedné vysvětlivky přeskládalo
+     celý řádek a ostatní políčka odskočila jinam. V mřížce si každá buňka
+     roste sama a sousedé se nehnou. */
+  .settings-row { display: grid; gap: 18px 24px; align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .setting { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .setting label { font-size: 12.5px; color: var(--text-secondary); }
   .setting input { width: 100px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-primary); font-size: 14px; }
   .setting .hint { font-size: 11.5px; color: var(--text-muted); }
@@ -1614,6 +1619,12 @@
     .gantt-jmeno { font-size: 10.5px; padding: 4px 6px; }
   }
 
+  .lt-mimo { opacity: .6; }
+  /* Čtyři ligy v Taháku vedle sebe — pod sebou to byly čtyři obrazovky. */
+  #cheatBody .cs-ligy { display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  #cheatBody .cs-ligy .cs-title { margin-top: 0; }
+
   /* ---------- časová osa akcí ---------- */
   .osa { display: grid; gap: 10px; margin: 0 0 14px; }
   .osa-okno { border: 1px solid var(--grid); border-left: 4px solid var(--grid);
@@ -2110,6 +2121,27 @@
   /* Křížek uvnitř rozboru zavírá řádek v TABULCE — tady ho zavírá ten nahoře. */
   .sd-telo .detail-close { display: none; }
 
+  /* Našeptávač druhů. Nativní <datalist> umí jen holý seznam jmen —
+     v pokédexu o 1387 položekách se v něm hledá špatně a není vidět,
+     který druh to vůbec je. Tenhle ukáže obrázek a typy. */
+  .druh-napoveda { position: fixed; z-index: 320; max-height: 300px;
+    overflow-y: auto; width: max-content; min-width: 220px;
+    max-width: min(360px, 92vw); padding: 4px; border-radius: 10px;
+    background: var(--surface-1); border: 1px solid var(--grid);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+  .druh-napoveda[hidden] { display: none; }
+  .druh-polozka { display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 5px 7px; border: 0; border-radius: 7px; background: none;
+    cursor: pointer; color: var(--text-primary); font: inherit;
+    font-size: 13px; text-align: left; }
+  .druh-polozka:hover, .druh-polozka.zvyraznena {
+    background: color-mix(in srgb, var(--series-1) 18%, transparent); }
+  .druh-polozka img { width: 28px; height: 28px; flex: none; }
+  .druh-polozka .dn-jmeno { flex: 1 1 auto; min-width: 0; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .druh-polozka .dn-typy { flex: none; font-size: 10.5px;
+    color: var(--text-muted); }
+
   /* Bublina ve stylu appky. */
   /* Dokud není vidět, nesmí nikde překážet — schovaná mimo obrazovku
      roztahovala na telefonu stránku do stran. */
@@ -2355,6 +2387,13 @@
   .d-ligy-tab td.d-lg-evo { background: color-mix(in srgb, var(--series-1) 15%, transparent) !important; }
   .d-ligy-tab td.d-lg-evo b { color: var(--series-1); }
   .d-ligy-tab td.d-lg-x { color: var(--text-muted); }
+  /* Nadpis formy nad její tabulkou lig. */
+  .d-liga-forma { display: flex; align-items: center; gap: 7px;
+    margin: 12px 0 2px; font-size: 13.5px; }
+  .d-liga-forma:first-of-type { margin-top: 4px; }
+  .d-liga-obr { width: 26px; height: 26px; }
+  .d-liga-az { font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .03em; }
   .d-lg-varovani { color: var(--status-warning) !important; font-weight: 600; }
   /* „až po evoluci" má svou barvu i tady, ať to sedí s odznáčky v tabulce */
   .d-role.evo { border-color: var(--series-1);
@@ -2859,19 +2898,15 @@
 
   <details class="card friend-card" id="friendCard">
     <summary>Výměna s kamarádem — co má a co si tradovat</summary>
-    <p class="plan-intro">Jeho kusy ve stejné tabulce jako tvůj roster, se stejnými sloupci
-      a stejným rozborem — plus sloupec <b>Proti tobě</b>, který u každého řekne, jestli ho vůbec
-      máš a kdo z vás má lepší. Načti <b>celý jeho CSV</b> tlačítkem, přetáhni ho sem, nebo napiš
-      pár kusů ručně (<code>Machamp 2100 15/14/13</code>). <b>Nikam se to neposílá</b>
-      a neuloží — porovnání běží jen tady a teď.</p>
-    <textarea id="friendInput" rows="4" placeholder="Machamp 2100 15/14/13&#10;Tyranitar 3000 14/14/14&#10;…nebo sem rovnou vlož celý CSV export"></textarea>
-    <div class="friend-tools">
-      <button class="primary" id="friendFileBtn">Načíst jeho CSV soubor…</button>
-      <input type="file" id="friendFile" accept=".csv,.txt,text/csv" hidden />
-      <button id="friendGoBtn">Vyhodnotit vložený text</button>
-      <button id="friendClearBtn">Vymazat</button>
-      <span class="friend-count" id="friendCount"></span>
-    </div>
+    <p class="plan-intro">Jeho kusy ve stejné tabulce jako tvůj roster, navíc
+      se sloupcem <b>Proti tobě</b>. Nikam se nic neposílá.</p>
+
+    <!-- Společná složka je hlavní cesta: nastaví se jednou a dál se roster
+         načítá sám při otevření appky. Dřív byla schovaná pod rozbalovátkem
+         až pod ručním vkládáním, takže ji nikdo nenašel a každý si CSV
+         nahrával pořád dokola. -->
+    <div id="shareBox"></div>
+
     <div class="friend-tools trade-tools">
       <label for="friendLevel">Jak dlouho jste kamarádi:</label>
       <select id="friendLevel">
@@ -2883,16 +2918,19 @@
       <label><input type="checkbox" id="friendLucky" /> jsme <b>Lucky Friends</b></label>
       <span class="hint" id="friendLevelInfo"></span>
     </div>
+
     <div id="friendBody"></div>
+
     <details class="share-box" id="shareCard">
-      <summary>Vyměňovat si rostery přes sdílenou složku (bez posílání souborů)</summary>
-      <p class="plan-intro">Když máte oba tu samou složku na disku (OneDrive, Dropbox, cokoli),
-        nemusíte si nic posílat. Každý si tady <b>jednou</b> vybere dva soubory v té složce:
-        do prvního mu appka zapisuje vlastní roster při každé změně, z druhého čte ten kamarádův.
-        Zbytek udělá synchronizace sama. <b>Ber to jako sdílení dat</b> — do té složky vidí
-        i ten druhý, takže tam patří jen roster (jméno, CP, IV, útoky), nic dalšího tam appka
-        nepíše. Po zavření a otevření stránky prohlížeč jednou chce přístup potvrdit.</p>
-      <div id="shareBox"></div>
+      <summary>Nemáme společnou složku — načíst ručně</summary>
+      <textarea id="friendInput" rows="3" placeholder="Machamp 2100 15/14/13&#10;Tyranitar 3000 14/14/14&#10;…nebo sem rovnou vlož celý CSV export"></textarea>
+      <div class="friend-tools">
+        <button class="primary" id="friendFileBtn">Načíst jeho CSV soubor…</button>
+        <input type="file" id="friendFile" accept=".csv,.txt,text/csv" hidden />
+        <button id="friendGoBtn">Vyhodnotit vložený text</button>
+        <button id="friendClearBtn">Vymazat</button>
+        <span class="friend-count" id="friendCount"></span>
+      </div>
     </details>
 
   </details>
@@ -3248,7 +3286,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-08 20:11";
+  var BUILD = "2026-09-08 20:44";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -10040,17 +10078,37 @@
     });
     h += '<div class="d-box-h d-sec-h">Ligy podrobně</div>';
     if (ligy.length) {
-      h += '<table class="d-ligy-tab"><tr><th>Liga</th><th>Pořadí druhu</th>'
-        + "<th>Doporučená sestava</th></tr>";
+      /* Seskupeno podle FORMY, ne podle ligy. U větvených řad (Eevee, Applin)
+         to jinak byla jedna dlouhá tabulka, kde se čtyři „Great League“
+         lišily jen dovětkem „až jako …“ — a nedalo se v ní nic najít.
+         Každá forma má vlastní nadpis s obrázkem a pod ním své ligy. */
+      var skupiny = [], indexSkupin = {};
       ligy.forEach(function (l) {
-        h += "<tr><td><b>" + escHtml(l.nazev) + "</b>"
-          + (l.poEvoluci ? "<span>až jako " + escHtml(l.poEvoluci) + "</span>" : "")
-          + "</td>"
-          + '<td><b>#' + l.rank + "</b><span>" + l.pct + " % nejlepšího v lize</span></td>"
-          + "<td>" + escHtml(sestavaText(l.cela)
-              || (l.jeMeta ? "–" : "mimo metu — sestavu appka nemá")) + "</td></tr>";
+        var kl = l.poEvoluci || "";
+        if (!indexSkupin[kl]) {
+          indexSkupin[kl] = { jmeno: l.poEvoluci || d.name, sam: !l.poEvoluci, radky: [] };
+          skupiny.push(indexSkupin[kl]);
+        }
+        indexSkupin[kl].radky.push(l);
       });
-      h += "</table>";
+      skupiny.forEach(function (sk) {
+        var dsk = dexEntry(sk.jmeno);
+        h += '<div class="d-liga-forma">'
+          + (dsk ? obrazekHtml(sk.jmeno, dsk, "d-liga-obr") : "")
+          + "<b>" + escHtml(sk.jmeno) + "</b>"
+          + (sk.sam ? "" : '<span class="d-liga-az">až po evoluci</span>')
+          + "</div>";
+        h += '<table class="d-ligy-tab"><tr><th>Liga</th><th>Pořadí druhu</th>'
+          + "<th>Doporučená sestava</th></tr>";
+        sk.radky.forEach(function (l) {
+          h += "<tr><td><b>" + escHtml(l.nazev) + "</b></td>"
+            + '<td><b>#' + l.rank + "</b><span>" + l.pct
+            + " % nejlepšího v lize</span></td>"
+            + "<td>" + escHtml(sestavaText(l.cela)
+                || (l.jeMeta ? "–" : "mimo metu — sestavu appka nemá")) + "</td></tr>";
+        });
+        h += "</table>";
+      });
     } else {
       h += '<p class="d-note">Do žádné z lig se tenhle druh nedostal.</p>';
     }
@@ -10338,6 +10396,103 @@
    * Dělá se to přes CSS třídu, ne rozřezáním textu — vysvětlivky mají uvnitř
    * značky (<b>, <br>) a rozřezat je na větě by je rozbilo.
    */
+  /** Připojí k políčku našeptávač druhů: obrázek, jméno, typy.
+   *
+   *  Nativní <datalist> je holý seznam jmen — v 1387 druzích se v něm
+   *  hledá špatně a nepoznáš, jestli je „Giratina“ ta správná forma.
+   *  Řadí se podle toho, kde se shoda našla: co začíná napsaným textem,
+   *  jde nahoru — „Mach“ má nabídnout Machampa, ne Primápu. */
+  function napovedaDruhu(vstup) {
+    if (!vstup || vstup.dataset.napoveda) return;
+    vstup.dataset.napoveda = "1";
+    vstup.removeAttribute("list");
+    vstup.setAttribute("autocomplete", "off");
+    var panel = document.createElement("div");
+    panel.className = "druh-napoveda";
+    panel.hidden = true;
+    document.body.appendChild(panel);
+    var vyber = -1;
+
+    function jmena() {
+      var sp = (POKEDEX && POKEDEX.species) || {};
+      return Object.keys(sp).map(function (k) { return sp[k][1]; })
+        .filter(function (x, i, p) { return x && p.indexOf(x) === i; });
+    }
+
+    function zavrit() { panel.hidden = true; vyber = -1; }
+
+    function vybrat(jm) {
+      vstup.value = jm;
+      zavrit();
+      vstup.dispatchEvent(new Event("input", { bubbles: true }));
+      vstup.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function prekreslit() {
+      var q = deaccent(String(vstup.value || "")).toLowerCase().trim();
+      if (!q) { zavrit(); return; }
+      var nalez = [];
+      jmena().forEach(function (jm) {
+        var i = deaccent(jm).toLowerCase().indexOf(q);
+        if (i > -1) nalez.push({ jm: jm, kde: i });
+      });
+      nalez.sort(function (a, b) {
+        return a.kde - b.kde || a.jm.length - b.jm.length
+          || a.jm.localeCompare(b.jm);
+      });
+      nalez = nalez.slice(0, 40);
+      if (!nalez.length) { zavrit(); return; }
+      panel.innerHTML = nalez.map(function (n) {
+        var d = dexEntry(n.jm);
+        return '<button type="button" class="druh-polozka" data-jm="'
+          + escHtml(n.jm) + '">'
+          + (d ? obrazekHtml(n.jm, d, "") : "")
+          + '<span class="dn-jmeno">' + escHtml(n.jm) + "</span>"
+          + '<span class="dn-typy">' + escHtml(d ? d.types.join(" / ") : "")
+          + "</span></button>";
+      }).join("");
+      var r = vstup.getBoundingClientRect();
+      panel.style.left = Math.max(6, Math.min(r.left,
+        window.innerWidth - 240)) + "px";
+      panel.style.top = (r.bottom + 4) + "px";
+      panel.hidden = false;
+      vyber = -1;
+    }
+
+    vstup.addEventListener("input", prekreslit);
+    vstup.addEventListener("focus", prekreslit);
+    vstup.addEventListener("blur", function () {
+      // Klik na položku problíkne až po blur — malé zpoždění to spraví.
+      window.setTimeout(zavrit, 160);
+    });
+    vstup.addEventListener("keydown", function (e) {
+      if (panel.hidden) return;
+      var polozky = panel.querySelectorAll(".druh-polozka");
+      if (!polozky.length) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        vyber += e.key === "ArrowDown" ? 1 : -1;
+        if (vyber < 0) vyber = polozky.length - 1;
+        if (vyber >= polozky.length) vyber = 0;
+        Array.prototype.forEach.call(polozky, function (p, i) {
+          p.classList.toggle("zvyraznena", i === vyber);
+        });
+        polozky[vyber].scrollIntoView({ block: "nearest" });
+      } else if (e.key === "Enter" && vyber > -1) {
+        e.preventDefault();
+        vybrat(polozky[vyber].dataset.jm);
+      } else if (e.key === "Escape") {
+        zavrit();
+      }
+    });
+    panel.addEventListener("mousedown", function (e) {
+      var b = e.target.closest ? e.target.closest(".druh-polozka") : null;
+      if (!b) return;
+      e.preventDefault();
+      vybrat(b.dataset.jm);
+    });
+  }
+
   function slozitVysvetlivky(koren) {
     var prvky = (koren || document).querySelectorAll(
       ".setting .hint:not(.slozeno), .plan-intro:not(.slozeno),"
@@ -12901,13 +13056,20 @@
     var poradi = ["LC", "GL", "UL", "ML"];
     var ted = poradi.filter(function (lg) { return stav[lg] === "ted"; });
     var brzy = poradi.filter(function (lg) { return stav[lg] === "brzy"; });
-    if (!ted.length && !brzy.length) return "";
+    // Zbytek lig se už nezamlčuje. Rotace říká, co se hraje teď, ale
+    // „koho mám do Ultra“ je otázka i mimo ní — třeba při rozhodování,
+    // koho dotáhnout. Ligy mimo rotaci jdou na konec a jsou ztlumené.
+    var zbytek = poradi.filter(function (lg) { return !stav[lg]; });
+    if (!ted.length && !brzy.length && !zbytek.length) return "";
 
-    var tym = function (lg, jeTed) {
+    var tym = function (lg, kdy) {
       var picks = (sheet.pvp && sheet.pvp[lg]) || [];
-      var h = '<div class="lt-liga' + (jeTed ? "" : " lt-brzy") + '">'
+      var trida = kdy === "ted" ? "" : (kdy === "brzy" ? " lt-brzy" : " lt-mimo");
+      var znacka = kdy === "ted" ? "hraje se teď"
+        : (kdy === "brzy" ? "začíná do týdne" : "mimo rotaci");
+      var h = '<div class="lt-liga' + trida + '">'
         + '<div class="lt-hlava"><b>' + NAZVY[lg] + "</b>"
-        + '<span class="lt-znacka">' + (jeTed ? "hraje se teď" : "začíná do týdne")
+        + '<span class="lt-znacka">' + znacka
         + "</span></div>";
       if (!picks.length) {
         h += '<p class="d-note">Do téhle ligy nemáš v rosteru koho postavit.</p>';
@@ -12931,8 +13093,9 @@
     };
 
     var h = '<div class="lt-obal">';
-    ted.forEach(function (lg) { h += tym(lg, true); });
-    brzy.forEach(function (lg) { h += tym(lg, false); });
+    ted.forEach(function (lg) { h += tym(lg, "ted"); });
+    brzy.forEach(function (lg) { h += tym(lg, "brzy"); });
+    zbytek.forEach(function (lg) { h += tym(lg, "mimo"); });
     return h + "</div>";
   }
 
@@ -14552,12 +14715,16 @@
 
     var LIGY_TAHAK = [["LC", "Little Cup"], ["GL", "Great League"],
                       ["UL", "Ultra League"], ["ML", "Master League"]];
+    // Čtyři ligy pod sebou znamenaly čtyři obrazovky rolování. Vedle sebe
+    // se dají porovnat a na široké obrazovce se vejdou všechny naráz.
+    var ligyHtml = "";
     LIGY_TAHAK.forEach(function (par) {
       var lg = par[0];
       if (!sheet.pvp[lg] || !sheet.pvp[lg].length) return;
-      h += '<h2 class="cs-title">' + par[1] + "</h2><ul class=\"cs-flat\">";
+      ligyHtml += '<div class="cs-liga"><h2 class="cs-title">' + par[1]
+        + "</h2><ul class=\"cs-flat\">";
       sheet.pvp[lg].forEach(function (p) {
-        h += "<li><b>" + p.name + "</b> <span class=\"cs-cp\">" + p.cp
+        ligyHtml += "<li><b>" + p.name + "</b> <span class=\"cs-cp\">" + p.cp
           + (p.level ? " CP na L" + p.level : " CP") + "</span>"
           + '<span class="cs-mv">'
           // V Master League není CP limit, takže procento z maxima druhu
@@ -14566,8 +14733,9 @@
                          : (Math.round(p.pct * 1000) / 10) + " %")
           + " · PvPoke #" + p.meta + "</span></li>";
       });
-      h += "</ul>";
+      ligyHtml += "</ul></div>";
     });
+    if (ligyHtml) h += '<div class="cs-ligy">' + ligyHtml + "</div>";
 
     // Co chytat patří do taháku víc než kamkoli jinam — je to jediná sekce,
     // kterou člověk potřebuje mít po ruce venku, ne doma u počítače.
@@ -18177,13 +18345,8 @@
     function naplnitDruhy() {
       if (naplneno) return;
       naplneno = true;
-      var dl = document.getElementById("rbNames");
-      var sp = POKEDEX.species || {};
-      var jmena = Object.keys(sp).map(function (k) { return sp[k][1]; })
-        .filter(function (x, i, p2) { return x && p2.indexOf(x) === i; }).sort();
-      dl.innerHTML = jmena.map(function (n) {
-        return '<option value="' + n.replace(/"/g, "&quot;") + '"></option>';
-      }).join("");
+      // Vlastní našeptávač s obrázkem a typy místo holého <datalist>.
+      napovedaDruhu(document.getElementById("rbName"));
     }
 
     /** Co se dá z vyplněného poskládat — a co ještě chybí. */
@@ -18377,9 +18540,8 @@
       if (naplneno) return;
       naplneno = true;
       var sp = POKEDEX.species || {};
-      opce(document.getElementById("prohNames"),
-        Object.keys(sp).map(function (k) { return sp[k][1]; })
-          .filter(function (x, i, p2) { return x && p2.indexOf(x) === i; }).sort());
+      // Jména druhů obsluhuje vlastní našeptávač, ne <datalist>.
+      napovedaDruhu(document.getElementById("prohName"));
       opce(document.getElementById("prohFast"), (MOVES.fastNames || []).slice().sort());
       opce(document.getElementById("prohCharged"), (MOVES.chargedNames || []).slice().sort());
     }
@@ -19543,6 +19705,35 @@
       + "a prahy se převezmou. Roster v něm není, ten veze CSV.</li>"
       + "<li><b>Na počítači se nemění nic.</b> Hranice je 700 pixelů šířky okna "
       + "a je stejná v CSS i v kódu.</li>"
+      + "</ul></div>";
+
+    h += "<h3>7b. Co v appce už není a proč</h3>"
+      + "<div class=\"docs-vzorec\"><ul>"
+      + "<li><b>Panel Gym</b> — týmy na obránce počítá <b>Tahák</b>, a to "
+      + "rovnou pro každý typ i pro aktuální raid bosse. Panel se ptál na "
+      + "totéž, jen se do něj muselo napsát jméno obránce.</li>"
+      + "<li><b>Do mobilu</b> — kapesní stránka byla náhrada z doby, kdy appka "
+      + "běžela jen z disku. Teď běží na webu jako PWA a funguje offline, "
+      + "takže snímek neměl co přidat. Ze stejného důvodu zmizelo i "
+      + "<b>stažení taháku</b> a jeho ukládání do OneDrivu.</li>"
+      + "<li><b>Karta Souhrn</b> — třináct dlaždic bylo jen jiným způsobem "
+      + "filtrování tabulky. Totéž udělá výběr <b>Zobrazit</b> nad rosterem.</li>"
+      + "<li><b>Sloupec Forma</b> — Shadow a Purified jsou teď <b>značka u jména</b> "
+      + "(tmavě fialová, resp. světlá), jako LEG nebo DMAX. Shadow se dá "
+      + "přepnout v rozboru kusu, sloupec na to není potřeba.</li>"
+      + "<li><b>„Ručně“, „Co skenovat“, „Hledat ve hře“</b> — tři tlačítka "
+      + "navíc. Přidávání kusu teď dělá jediné tlačítko <b>+ Přidat "
+      + "pokémona</b>, které otevře okno.</li>"
+      + "<li><b>Počítadlo „Ve hře mám“</b> — nezmizelo, jen se přestěhovalo "
+      + "do <b>Nastavení</b>. Vyplňuje se jednou za čas, nad rosterem kradlo řádek.</li>"
+      + "<li><b>V Událostech</b> zbyl kalendář a rotace lig. Raidoví bossové "
+      + "a seznam „Co se děje“ byly duplicita Taháku a kalendáře.</li>"
+      + "<li><b>V Taháku</b> už není „Nechat“, „Pustit“ ani „Co chytat“ — "
+      + "první dvě jsou výpis rosteru, třetí má vlastní panel.</li>"
+      + "<li><b>V „Co chytat“</b> zmizely sekce <b>Chybí ti do lig</b> a "
+      + "<b>do raidů</b>. Bez zvýšeného výskytu se ty druhy cíleně chytat "
+      + "nedají, takže se s tím seznamem venku nedalo nic dělat. Zůstalo to, "
+      + "co některá akce <b>zrovna pouští</b> — a u každé je teď i konec.</li>"
       + "</ul></div>";
 
     h += "<h3>8. Jak číst kalendář akcí</h3>"
