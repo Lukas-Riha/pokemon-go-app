@@ -744,6 +744,31 @@
     .ref-tables td, .ref-tables th {
       overflow-wrap: anywhere; word-break: break-word; }
 
+    /* --- na telefonu se KONTROLUJE, nevysvětluje ---
+     *
+     * Mobilní verze je doplněk appky z prohlížeče: kouknout se, ověřit,
+     * rozhodnout u boxu. Upravuje se u počítače, a tam ten výklad zůstává.
+     * Změřeno na 375 px: Rozpočet 352 px vysvětlivek k políčkům, Nastavení
+     * 597, Role 198 — všechno nad obsahem, kvůli kterému se karta otevírá.
+     * Nic se neztrácí: celý výklad je v záložce „Odkud se to bere“, která
+     * zůstává nedotčená — a to samé platí pro patičku se zdroji. */
+    /* `.app` v selektoru být musí: složený text má `.plan-intro.slozeno`,
+       a to je silnější než holé `.plan-intro` — výklad by zůstal vidět
+       všude, kde už jednou proběhlo skládání. */
+    .app .plan-intro, .app .discard-intro, .app .dust-jak, .app .type-note,
+    .app .cover-what, .app .proh-hint, .app .cloud-navod,
+    .app .setting .hint:not(.warn), .app .dust-input > .hint,
+    .app .gantt-lista .hint,
+    .app > .card > p, .app > .card > p.slozeno { display: none; }
+    /* Dokumentace a patička jsou výjimka — tam je výklad ten obsah.
+       Prázdná karta taky: bez věty „Napiš druh…“ by vypadala rozbitě. */
+    #docsCard p, #patickaZdroje p, .empty-state p { display: block; }
+    /* „Ve hře mám“: návod pryč, výsledek kontroly (zelený/žlutý) zůstává —
+       to je přesně to, kvůli čemu se na telefon kouká. */
+    .box-check .hint:not(.ok):not(.bad) { display: none; }
+    /* Tlačítko „víc“ patří ke schovanému textu — samo by nemělo co rozbalit. */
+    .card > .vic-btn, .setting > .vic-btn, .dust-input > .vic-btn { display: none; }
+
     /* Klávesové zkratky na telefonu nemají co dělat — zabíraly tři řádky
        pod tlačítky a jedno klepnutí navíc při každém kusu. */
     .bm-hint, .bm-btn kbd { display: none; }
@@ -3258,7 +3283,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-08 10:03";
+  var BUILD = "2026-09-08 10:36";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5137,6 +5162,14 @@
     if (backupHandle || dirHandle || !rows.length) { box.style.display = "none"; return; }
     box.style.display = "";
     var umiSlozku = typeof window.showDirectoryPicker === "function";
+    // Na telefonu jedna věta. Záloha se stejně dělá u počítače — prohlížeče
+    // v telefonu psát na disk neumí — a tenhle roster je jen kopie k nahlédnutí.
+    if (jeMobil()) {
+      txt.textContent = " Zálohu si udělej u počítače.";
+      var bm = document.getElementById("zalWarnBtn");
+      if (bm) bm.style.display = "none";
+      return;
+    }
     txt.textContent = typeof window.showSaveFilePicker === "function"
       ? "Máš v něm " + kusu(rows.length) + " a nikde jinde nejsou. Vymazání dat prohlížeče,"
         + " jiný prohlížeč i otevření appky z jiné složky znamená, že je neuvidíš."
@@ -10222,26 +10255,43 @@
    * (data, profily, mazání) je na klik. Skládá se to za běhu podle id, aby
    * se nemusela přepisovat lišta a nerozbily se odkazy na tlačítka v kódu.
    */
+  // Pořadí tlačítek v hlavní řadě lišty.
+  var LISTA_HLAVNI = ["addRowBtn", "rucniBtn", "toggleImportBtn",
+    "boxModeBtn", "skenPlanBtn", "hledaniBtn", "starKeepersBtn"];
+  // Práce od stolu. Mobilní verze je doplněk na kontrolu — přidávání kusů,
+  // ruční zápis, import a hromadné označení se dělají u počítače. V liště
+  // pod prstem by je nikdo nehledal a osm tlačítek se do telefonu nevejde.
+  var LISTA_OD_STOLU = ["addRowBtn", "rucniBtn", "toggleImportBtn", "starKeepersBtn"];
+
+  /** Rozdělí tlačítka mezi hlavní řadu a „Další…“ podle šířky okna.
+   *
+   *  Volá se při každé změně šířky, ne jen při startu: appka se otevírá
+   *  i v okénku, které se pak roztáhne přes celou obrazovku. */
+  function listaPodleSirky() {
+    var hlavni = document.querySelector(".card.roster .tb-hlavni");
+    var dalsi = document.querySelector(".card.roster .tb-dalsi");
+    if (!hlavni || !dalsi) return;
+    var mob = jeMobil();
+    var vic = hlavni.querySelector(".tb-vic");
+    // Odzadu, ať v „Další…“ zůstane původní pořadí.
+    LISTA_HLAVNI.slice().reverse().forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (mob && LISTA_OD_STOLU.indexOf(id) !== -1) dalsi.insertBefore(el, dalsi.firstChild);
+      else hlavni.insertBefore(el, hlavni.firstChild);
+    });
+    if (vic) hlavni.appendChild(vic);
+  }
+
   function usporadatListu() {
     var lista = document.querySelector(".card.roster .toolbar");
     if (!lista || lista.dataset.usporadano) return;
-    // Na telefonu se venku používá čištění boxu a dvě hledání do hry.
-    // Ruční zápis, import a hromadné označení jsou práce od stolu — v liště
-    // by je nikdo nehledal a osm tlačítek se do šířky telefonu nevešlo.
-    var naTelefonu = jeMobil();
-    var odStolu = ["rucniBtn", "toggleImportBtn", "starKeepersBtn"];
-    var hlavni = ["addRowBtn", "rucniBtn", "toggleImportBtn",
-      "boxModeBtn", "skenPlanBtn", "hledaniBtn", "starKeepersBtn"];
-    var dalsi = ["exportBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn",
-      "clearUnstarredBtn", "clearBtn"];
-    if (naTelefonu) {
-      hlavni = hlavni.filter(function (id) { return odStolu.indexOf(id) === -1; });
-      dalsi = odStolu.concat(dalsi);
-    }
     var SKUPINY = [
-      { trida: "tb-hlavni", ids: hlavni },
+      { trida: "tb-hlavni", ids: LISTA_HLAVNI },
       { trida: "tb-hledani", ids: ["searchInput", "viewSelect", "filterSelect"] },
-      { trida: "tb-dalsi", skryta: true, ids: dalsi }
+      { trida: "tb-dalsi", skryta: true, ids: ["exportBtn",
+          "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearUnstarredBtn",
+          "clearBtn"] }
     ];
     var radky = {};
     SKUPINY.forEach(function (sk) {
@@ -10278,6 +10328,7 @@
     lista.insertBefore(radky["tb-hledani"], radky["tb-hlavni"].nextSibling);
     lista.insertBefore(radky["tb-dalsi"], radky["tb-hledani"].nextSibling);
     lista.dataset.usporadano = "1";
+    listaPodleSirky();
     if (typeof syncToolbarHeight === "function") syncToolbarHeight();
   }
 
@@ -10301,17 +10352,16 @@
       + " .dust-jak:not(.slozeno),"
       + " .type-note:not(.slozeno), .cover-what:not(.slozeno)");
     Array.prototype.forEach.call(prvky, function (el) {
+      // Na SKRYTÉM prvku se nerozhoduje nic — ani „nech celý". Text schovaný
+      // stylem (na telefonu se výklad neukazuje) by tím dostal `slozeno`,
+      // a to pravidlo ho zase zviditelnilo.
+      if (!el.getClientRects().length) return;
       // V odstavci může být tlačítko (Tahák má uvnitř „Stáhnout"). Složit ho
       // znamená schovat ovládací prvek — takový text zůstává celý.
       if (el.querySelector("button, input, select, textarea, a")) {
         el.classList.add("slozeno", "cely");
         return;
       }
-      // Na SKRYTÉ kartě má všechno nulovou výšku, takže by každý text vyšel
-      // jako krátký a složení by už nikdy nepřišlo — přesně to potkalo
-      // varování o záloze, když appka nastartovala na jiné záložce.
-      // Nedotčený prvek se zpracuje, až bude vidět (viz přepínání záložek).
-      if (!el.getClientRects().length) return;
       el.classList.add("slozeno");
       // krátký text skládat nemá cenu
       if (el.scrollHeight <= el.clientHeight + 4) { el.classList.add("cely"); return; }
@@ -18925,6 +18975,8 @@
     if (lista) ro.observe(lista);
   }
   window.addEventListener("resize", syncWrapOverflow);
+  // Hranice telefonu je 700 px — při překročení se lišta přerovná.
+  window.addEventListener("resize", listaPodleSirky);
   document.getElementById("weatherSelect").addEventListener("change", function () {
     renderTypeTable(); renderTiles(); persist(true);
   });
@@ -19643,6 +19695,20 @@
       + "tabulku začíná první pokémon na 525. pixelu místo na 1408. — tedy "
       + "hned, ne po dvou obrazovkách rolování. Na počítači se nic z toho "
       + "neděje.</li>"
+      + "<li><b>Výklad nad kartami se na telefonu neukazuje.</b> Mobilní verze "
+      + "je doplněk appky z prohlížeče — je na to, kouknout se a zkontrolovat; "
+      + "upravuje se u počítače, a tam ten výklad zůstává celý. Změřeno na "
+      + "375 px: Nastavení mělo 597 px vysvětlivek k políčkům, Rozpočet 352 "
+      + "a Role 198 — všechno nad obsahem, kvůli kterému se karta otevírá. "
+      + "<b>Nic se nemazá:</b> tahle záložka a patička se zdroji zůstávají "
+      + "i na telefonu úplné. Co naopak zůstává všude, jsou <b>výsledky</b> — "
+      + "kontrola počtu kusů, varování o chybějících datech, verdikty.</li>"
+      + "<li><b>Úpravy rosteru nejsou v liště pod prstem.</b> Přidat pokémona, "
+      + "ruční zápis, import a hromadné označení jsou práce od stolu — na "
+      + "telefonu se schovají pod <b>Další…</b>, aby v liště zbylo to, co se "
+      + "dělá venku: čištění boxu, „Co skenovat“ a „Hledat ve hře“. "
+      + "Záloha se též dělá u počítače — prohlížeč v telefonu na disk psát "
+      + "neumí, takže tam z varování zbyde jedna věta.</li>"
       + "<li><b>Rozbor otevře klepnutí kamkoli na kartu</b>, ne jenom na jméno. "
       + "Hvězdička, koš a odkazy si svůj klik nechávají.</li>"
       + "<li><b>Vysvětlivky z bublin jsou v rozboru</b>, v sekci "
