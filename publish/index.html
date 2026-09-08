@@ -725,17 +725,23 @@
     /* Seznam kusů u role je sám o sobě mřížka — vedle popisku by se zlomil. */
     .rozp-tab td.rozp-kusy { display: block; text-align: left; }
     .rozp-tab td.rozp-kusy::before { display: block; margin-bottom: 3px; }
-    .rozp-tab td.num, .rozp-tab th.num { width: auto; }
+    /* `tr` v selektoru být musí: `width: 58px` na číselných buňkách stojí
+       v souboru níž a při stejné síle vyhraje — popisek „Náplast“ s hodnotou
+       se pak do 58 px nevešel a přetékal přes okraj karty. */
+    .rozp-tab tr td.num, .rozp-tab tr th.num { width: auto; }
     .rozp-tab tr.rozp-sekce td { display: block; text-align: left; }
     .dust-table tr.dust-hranice td, .dust-table tr.dust-kopie-hranice td {
       display: block; text-align: left; }
 
     /* Tabulky v dokumentaci: dlouhé nedělitelné kusy textu (pokemon_evolutions,
        jména souboru) roztlacily tabulku nad sirku karty. `fixed` rozdeli
-       sloupce podle karty a zbytek se zalomi. */
-    #docsCard table, #patickaZdroje table { table-layout: fixed; width: 100%; }
+       sloupce podle karty a zbytek se zalomi. Žebříčky měly týž problém,
+       jen o 29 px — a to stačilo na vodorovný posuvník přes celou kartu. */
+    #docsCard table, #patickaZdroje table, .ref-tables table {
+      table-layout: fixed; width: 100%; }
     #docsCard table td, #docsCard table th,
-    #patickaZdroje table td, #patickaZdroje table th {
+    #patickaZdroje table td, #patickaZdroje table th,
+    .ref-tables td, .ref-tables th {
       overflow-wrap: anywhere; word-break: break-word; }
 
     /* Klávesové zkratky na telefonu nemají co dělat — zabíraly tři řádky
@@ -1444,7 +1450,9 @@
   .cloud-akce { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
   .cloud-navod { margin: 6px 0 10px 18px; font-size: 13px; line-height: 1.6;
     color: var(--text-secondary); }
-  .cloud-navod code { font-size: 12px; }
+  /* Adresa přesměrování je jedno dlouhé slovo bez mezery — na telefonu
+     vylezla z karty ven. Zalomit ji jde kdekoli, je to URL ke zkopírování. */
+  .cloud-navod code { font-size: 12px; overflow-wrap: anywhere; }
   .cloud-id { display: block; font-size: 13px; font-weight: 600; }
   .cloud-id input { display: block; width: 100%; max-width: 420px; margin-top: 4px;
     padding: 8px 10px; font-family: inherit; font-size: 13px; }
@@ -1467,10 +1475,12 @@
     grid-template-columns: var(--jmena, 152px) var(--sirka); align-items: stretch; }
   /* Jména musí zůstat na očích i po odscrollování doprava — jinak se u pruhu
      na konci týdne nedá poznat, ke které akci patří. */
+  /* Jméno drží u HORNÍ hrany. Akce s víc pruhy tvoří jeden vysoký blok
+     a vystředěný název v něm plaval mezi pruhy sousedních akcí. */
   .gantt-jmeno { position: sticky; left: 0; z-index: 4; background: var(--surface-1);
     border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid-weak, var(--grid));
     padding: 5px 8px; font-size: 11.5px; line-height: 1.25;
-    display: flex; align-items: center; overflow: hidden; }
+    display: flex; align-items: flex-start; overflow: hidden; }
   /* Useknuté jméno musí přiznat, že je useknuté — bez tří teček to vypadá,
      že se akce fakt jmenuje „Regirock, Regice, and Regist". */
   .gantt-jmeno-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1478,7 +1488,9 @@
   .gantt-jmeno.vybrano { background: color-mix(in srgb, var(--series-1) 14%, transparent);
     font-weight: 700; }
   /* Druhý a další pruh téže akce — jméno nese jen ten první. */
-  .gantt-jmeno.pokracovani { border-bottom-color: transparent; }
+  /* Čára se schovává mezi pruhy TÉŽE akce, ne pod jejím posledním — tam
+     začíná další akce a bez linky se do ní výběr vizuálně přeléval. */
+  .gantt-jmeno.spojeno { border-bottom-color: transparent; }
   .gantt-roh { position: sticky; left: 0; z-index: 5; }
   .gantt-osa { position: relative; height: 26px;
     border-bottom: 1px solid var(--grid); }
@@ -1549,10 +1561,6 @@
     border: 1px solid var(--grid); border-radius: 999px; font-size: 12px; }
   .osa-shiny { color: var(--status-warning); font-size: 11px; }
   .osa-z { font-size: 10px; font-weight: 700; }
-  .osa-chci { color: var(--status-warning); }
-  /* Druh, do kterého plán sype prach — jediný, kvůli kterému má smysl jít ven. */
-  .osa-kus.chci { border-color: var(--status-warning);
-    background: color-mix(in srgb, var(--status-warning) 10%, transparent); }
   .osa-vic { font-size: 11px; color: var(--text-muted); }
   .osa-dalsi { margin-top: 2px; }
   .osa-dalsi > summary { cursor: pointer; font-size: 12px; font-weight: 600;
@@ -1626,8 +1634,10 @@
       display: flex; flex-wrap: wrap; gap: 0; overflow: visible;
       background: var(--surface-1); border-top: 1px solid var(--grid);
       border-bottom: 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .10); }
+    /* Ikony drží jednu čáru. Při vystředění sloupce vyjela ikona
+       u „Konkrétního pokémona“ výš, protože jeho popisek je na dva řádky. */
     .zal-btn, .zal-vic { flex: 1 1 0; min-width: 0; display: flex;
-      flex-direction: column; align-items: center; justify-content: center;
+      flex-direction: column; align-items: center; justify-content: flex-start;
       gap: 2px; padding: 5px 2px; min-height: 56px; border: 0; border-radius: 12px;
       background: none; font-size: 9.5px; font-weight: 600; line-height: 1.15;
       color: var(--text-muted); white-space: normal; text-align: center;
@@ -1680,11 +1690,12 @@
     /* Rozbalený souhrn má ta čísla přímo pod sebou — shrnutí by je opakovalo. */
     .souhrn-karta:not(.sbaleno) .souhrn-shrnuti { display: none; }
 
-    /* Lišta: jeden posuvný řádek místo čtyř zalomených, hledání a dva filtry
-       vedle sebe místo pod sebou. */
-    .tb-hlavni { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-    .tb-hlavni::-webkit-scrollbar { display: none; }
-    .tb-hlavni button { flex: 0 0 auto; }
+    /* Lišta se zalomí, neposouvá se do strany. Posuv byl sice úspornější,
+       ale 1028 px tlačítek v okně 322 px znamená, že pět z osmi není vidět
+       a nic to nenapoví. Co se na telefonu nepoužívá (ruční zápis, import,
+       hromadné označení), je pod „Další…“ — zbytek se ve dvou řádcích vejde. */
+    .tb-hlavni { flex-wrap: wrap; }
+    .tb-hlavni button { flex: 0 1 auto; font-size: 12px; padding: 8px 10px; }
     /* Hledání má vlastní řádek, oba filtry se dělí o ten další. Ve třech
        sloupcích z nich zbylo „Zobraze⌄“ a „Zobrazit⌄“ — vypadaly stejně
        a nastavená hodnota nebyla vidět vůbec. */
@@ -3091,6 +3102,11 @@
         </div>
       </div>
     </div>
+    <!-- Hláška o neznámých druzích a nevyplněných řádcích patří K ROSTERU.
+         Dokud stála mimo kartu, vezla se pod každou záložkou — takže v
+         „Konkrétním pokémonovi“, kde se žádný roster nezobrazuje, visela
+         žlutá výstraha o řádku, který není vidět. -->
+    <div class="neznamy-warn" id="unknownWarn" style="display:none"></div>
     <div class="table-wrap">
       <table id="rosterTable">
         <colgroup id="colgroup"></colgroup>
@@ -3174,8 +3190,6 @@
     </div>
   </details>
 
-  <div class="neznamy-warn" id="unknownWarn" style="display:none"></div>
-
   <footer>
     <div id="dataInfo"></div>
     <p>Engine je heuristika — u hraničních případů (drahá XL Candy, level 45+) se vyplatí rozhodnout i sám.
@@ -3244,7 +3258,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-08 09:36";
+  var BUILD = "2026-09-08 10:03";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5124,7 +5138,7 @@
     box.style.display = "";
     var umiSlozku = typeof window.showDirectoryPicker === "function";
     txt.textContent = typeof window.showSaveFilePicker === "function"
-      ? "Máš v něm " + rows.length + " kusů a nikde jinde nejsou. Vymazání dat prohlížeče,"
+      ? "Máš v něm " + kusu(rows.length) + " a nikde jinde nejsou. Vymazání dat prohlížeče,"
         + " jiný prohlížeč i otevření appky z jiné složky znamená, že je neuvidíš."
         + (umiSlozku
             ? " Vyber si složku na disku a od té chvíle se do ní roster ukládá sám,"
@@ -10211,13 +10225,23 @@
   function usporadatListu() {
     var lista = document.querySelector(".card.roster .toolbar");
     if (!lista || lista.dataset.usporadano) return;
+    // Na telefonu se venku používá čištění boxu a dvě hledání do hry.
+    // Ruční zápis, import a hromadné označení jsou práce od stolu — v liště
+    // by je nikdo nehledal a osm tlačítek se do šířky telefonu nevešlo.
+    var naTelefonu = jeMobil();
+    var odStolu = ["rucniBtn", "toggleImportBtn", "starKeepersBtn"];
+    var hlavni = ["addRowBtn", "rucniBtn", "toggleImportBtn",
+      "boxModeBtn", "skenPlanBtn", "hledaniBtn", "starKeepersBtn"];
+    var dalsi = ["exportBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn",
+      "clearUnstarredBtn", "clearBtn"];
+    if (naTelefonu) {
+      hlavni = hlavni.filter(function (id) { return odStolu.indexOf(id) === -1; });
+      dalsi = odStolu.concat(dalsi);
+    }
     var SKUPINY = [
-      { trida: "tb-hlavni", ids: ["addRowBtn", "rucniBtn", "toggleImportBtn",
-          "boxModeBtn", "skenPlanBtn", "hledaniBtn", "starKeepersBtn"] },
+      { trida: "tb-hlavni", ids: hlavni },
       { trida: "tb-hledani", ids: ["searchInput", "viewSelect", "filterSelect"] },
-      { trida: "tb-dalsi", skryta: true, ids: ["exportBtn",
-          "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearUnstarredBtn",
-          "clearBtn"] }
+      { trida: "tb-dalsi", skryta: true, ids: dalsi }
     ];
     var radky = {};
     SKUPINY.forEach(function (sk) {
@@ -10283,6 +10307,11 @@
         el.classList.add("slozeno", "cely");
         return;
       }
+      // Na SKRYTÉ kartě má všechno nulovou výšku, takže by každý text vyšel
+      // jako krátký a složení by už nikdy nepřišlo — přesně to potkalo
+      // varování o záloze, když appka nastartovala na jiné záložce.
+      // Nedotčený prvek se zpracuje, až bude vidět (viz přepínání záložek).
+      if (!el.getClientRects().length) return;
       el.classList.add("slozeno");
       // krátký text skládat nemá cenu
       if (el.scrollHeight <= el.clientHeight + 4) { el.classList.add("cely"); return; }
@@ -12955,28 +12984,21 @@
 
   /** Co ten druh znamená pro tvůj roster. `null` = nic, co by stálo za řeč.
    *
-   *  Značka „nemáš" tu byla první verzi a svítila u každého druhu — u vajec
-   *  klidně u dvaceti za sebou. Značka, která platí pro všechno, neříká nic
-   *  a jen ubírá pozornost těm dvěma, které rozhodují: kolik bonbónů do té
-   *  rodiny plán sype (tedy proč toho chytat) a jak dobrý kus už máš (tedy
-   *  proč nechytat). Že druh v rosteru nemáš, appka navíc neví jistě —
-   *  do pokédexu nevidí, vidí jen do rosteru. */
-  function evZnacka(jmeno, mam, bonbony) {
+   *  Zbyla jediná značka: jak dobrý kus už máš — tedy proč NEchytat.
+   *  „Nemáš" svítilo u každého druhu (u vajec klidně dvacetkrát za sebou)
+   *  a značka, která platí pro všechno, neříká nic; navíc appka do pokédexu
+   *  nevidí, jen do rosteru. „Plán chce X bonbónů" zase odpovídalo na otázku,
+   *  kterou si u kalendáře nikdo neklade — kolik bonbónů někam patří, řeší
+   *  Rozpočet a „Co chytat", ne rozpis akcí. */
+  function evZnacka(jmeno, mam) {
     var klic = dexKey(jmeno);
     if (!klic) return null;
-    var koren = evoKoren(klic);
-    if (bonbony[koren]) {
-      // „248 bonbónů" se dalo číst jako „tolik jich máš". Appka o zásobě
-      // bonbónů neví nic — v exportu ta informace není. Ví jen, kolik jich
-      // plán na tu rodinu POTŘEBUJE.
-      return { text: "plán chce " + bonbony[koren] + " bonbónů", ton: "chci" };
-    }
     if (mam[klic] === undefined) return null;
     return { text: "máš " + Math.round(mam[klic] * 100) + " %", ton: "mas" };
   }
 
   /** Jedno okno do HTML. `strop` je maximum položek na sekci. */
-  function evOknoHtml(o, mam, bonbony, strop) {
+  function evOknoHtml(o, mam, strop) {
     var sekce = "";
     EV_SEKCE.forEach(function (par) {
       var polozky = o.sekce[par[0]];
@@ -12994,12 +13016,8 @@
         }
         if (vykresleno >= strop) { vic += 1; return; }
         vykresleno += 1;
-        // Kolik bonbónů plán chce, má smysl jen tam, kde si vybíráš, jestli
-        // za tím půjdeš: divočina, raid, výzkum. Co se vylíhne z vajíčka,
-        // neovlivníš, takže tam je to jen šum.
-        var lzeChytat = ["spawn", "raid", "vyzkum"].indexOf(par[0]) !== -1;
-        var z = evZnacka(x[0], mam, lzeChytat ? bonbony : {});
-        kusy += '<span class="osa-kus' + (z && z.ton === "chci" ? " chci" : "") + '">'
+        var z = evZnacka(x[0], mam);
+        kusy += '<span class="osa-kus">'
           + escHtml(x[0])
           + (x[1] === 1 ? '<span class="osa-shiny">✦</span>' : "")
           + (z ? '<span class="osa-z osa-' + z.ton + '">' + escHtml(z.text) + "</span>" : "")
@@ -13195,7 +13213,12 @@
           + escHtml(popis || r.nazev) + "</button>";
       });
       telo += '<div class="gantt-jmeno' + (i === ganttVybrano ? " vybrano" : "")
-        + (li ? " pokracovani" : "") + '" data-radek="' + i + '"'
+        + (li ? " pokracovani" : "")
+        // `spojeno` = pod tímhle pruhem pokračuje TÁŽ akce, takže mezi nimi
+        // žádná čára není. Dřív se schovávala čára u „pokračování“, což je
+        // o jeden pruh vedle: linka chyběla pod POSLEDNÍM pruhem akce, takže
+        // vybrané „Mega Squads“ vypadalo, že sahá i do „Twilight Trails“.
+        + (li < r.lanes.length - 1 ? " spojeno" : "") + '" data-radek="' + i + '"'
         + ' title="' + escHtml(r.nazev) + '">'
         + (li ? "" : '<span class="gantt-jmeno-t">' + escHtml(ganttJmeno(r.nazev))
             + "</span>") + "</div>"
@@ -13244,7 +13267,7 @@
   }
 
   /** Rozpis pod diagramem. Bez výběru ukáže, co běží právě teď. */
-  function ganttDetailHtml(mam, bonbony) {
+  function ganttDetailHtml(mam) {
     var HOD = 3600000, ted = Date.now();
     var radky = ganttRadky(ted - 0.5 * HOD, ted + ganttHodin * HOD);
     var vybrany = ganttVybrano !== null ? radky[ganttVybrano] : null;
@@ -13253,7 +13276,7 @@
         .map(function (u) {
           return evOknoHtml({ akce: vybrany.nazev, od: u.od, doKdy: u.doKdy,
             jenDen: u.jenDen, bezi: u.od.getTime() <= ted && u.doKdy.getTime() >= ted,
-            sekce: u.sekce }, mam, bonbony, 14);
+            sekce: u.sekce }, mam, 14);
         }).join("");
       return '<div class="gantt-detail-h">' + escHtml(vybrany.nazev)
         + (vybrany.odkaz ? ' <a href="' + vybrany.odkaz + '" target="_blank"'
@@ -13272,7 +13295,7 @@
         // na jeho pruh se ukáže normálně.
         if (u.doKdy - u.od > 30 * 86400000) return;
         bezici += evOknoHtml({ akce: r.nazev, od: u.od, doKdy: u.doKdy,
-          jenDen: u.jenDen, bezi: true, sekce: u.sekce }, mam, bonbony, 12);
+          jenDen: u.jenDen, bezi: true, sekce: u.sekce }, mam, 12);
       });
     });
     return bezici || '<p class="hint">Zrovna neběží žádná akce s rozpisem.'
@@ -13285,11 +13308,7 @@
     if (!box) { if (ganttTiker) { clearInterval(ganttTiker); ganttTiker = null; } return; }
     analyze();
     var mam = drzeneDruhy(lastBase || []);
-    var bonbony = {};
-    bonbonoveCile(lastBase || [], analyze()).forEach(function (r) {
-      bonbony[r.klic] = r.candy + (r.xl ? " + " + r.xl + " XL" : "");
-    });
-    box.innerHTML = ganttDetailHtml(mam, bonbony);
+    box.innerHTML = ganttDetailHtml(mam);
     var zav = document.getElementById("ganttZavrit");
     if (zav) zav.addEventListener("click", function () { ganttVybrano = null; renderEvents(); });
   }
@@ -13415,12 +13434,6 @@
     if (!okna.length) return "";
     analyze();
     var mam = drzeneDruhy(lastBase || []);
-    // Rodiny, do kterých plán sype prach — tam se každý chycený kus počítá
-    // jako bonbóny, ne jako další krám do boxu.
-    var bonbony = {};
-    bonbonoveCile(lastBase || [], analyze()).forEach(function (r) {
-      bonbony[r.klic] = r.candy + (r.xl ? " + " + r.xl + " XL" : "");
-    });
 
     // Sezóna běží tři měsíce. Její vejce se sice líhnou i dneska, ale mezi
     // „co se děje" to nepatří — je to kulisa, ne novinka, a svým rozsahem
@@ -13436,7 +13449,7 @@
 
     function blok(seznam, strop) {
       return seznam.map(function (o) {
-        return evOknoHtml(o, mam, bonbony, strop);
+        return evOknoHtml(o, mam, strop);
       }).join("");
     }
 
@@ -20803,6 +20816,9 @@
     klicHandleOf: klicHandle,
     typeColors: function () { return TYPE_COLORS; },
     typIkona: typIkonaHtml,
+    // Záložkové menu je vlastní IIFE — potřebuje složit dlouhé texty na kartě,
+    // která se právě odkryla (do té doby měly všechny nulovou výšku).
+    slozitVysvetlivky: slozitVysvetlivky,
     prepocitat: refreshComputed,
     prekreslit: renderBody,
     persistNow: function () { persist(true); },
@@ -21011,6 +21027,15 @@
         }
         lista.classList.toggle("navic-aktivni", !MOBILNI[klic]);
         prekreslitVic();
+      }
+      // Dlouhé texty na kartě, která byla dosud skrytá, se složí teď — dokud
+      // neměly žádnou výšku, nedalo se poznat, jestli je co skládat.
+      var slozit = window.__pgo && window.__pgo.slozitVysvetlivky;
+      if (slozit) {
+        karty.forEach(function (k) {
+          if (k.klic !== klic) return;
+          [k.el].concat(k.spolu).forEach(function (el) { slozit(el); });
+        });
       }
       try { window.localStorage.setItem("pgo_zalozka", klic); } catch (e) { /* nevadí */ }
       if (!tiche) window.scrollTo({ top: 0, behavior: "smooth" });
