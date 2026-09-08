@@ -446,6 +446,8 @@
   #typeTable td.x1 { color: var(--text-muted); opacity: .45; }
   .proh-utok { display: block; }
   .proh-utok .uv-pole { width: 100%; }
+  .typ-matice > summary { cursor: pointer; font-weight: 700; font-size: 13px;
+    color: var(--series-1); padding: 8px 0; }
   .typ-hledacek { margin-bottom: 16px; }
   .typ-hledacek-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
     color: var(--text-muted); margin-bottom: 8px; }
@@ -552,7 +554,10 @@
   .card > p.slozeno.rozbaleno, .type-note.slozeno.rozbaleno,
   .cover-what.slozeno.rozbaleno, .dust-jak.slozeno.rozbaleno,
   .d-role-p.slozeno.rozbaleno { max-height: none; }
-  .vic-btn { align-self: flex-start; margin-top: 2px; padding: 1px 6px;
+  /* „Víc“ patří k textu, který rozbaluje. Odstavec pod sebou má vlastní
+     spodní mezeru, takže tlačítko přistálo až za ní a vypadalo, že patří
+     k něčemu jinému — záporným odsazením se přitiskne zpátky. */
+  .vic-btn { align-self: flex-start; margin: -6px 0 0; padding: 1px 6px;
     font-size: 11px; font-weight: 600; color: var(--series-1); background: none;
     border: 0; border-radius: 5px; cursor: pointer; }
   .vic-btn:hover { background: var(--grid); }
@@ -1359,6 +1364,11 @@
      jinak by pořád svítily a vypadaly jako stav, který platí. */
   /* 100 % má vlastní barvu, ať se neplete s ručními značkami. */
   .rarity-chip.r-H { background: var(--status-good); color: #fff; }
+  /* Shadow: tmavě fialová se světlým písmem — ve hře má fialovou auru
+     a mezi ostatními značkami je ten odstín volný. Purified naopak
+     světlá s tmavým písmem, jak vypadá očištěný kus. */
+  .rarity-chip.r-SH { background: #4b2a6b; color: #f0e6ff; }
+  .rarity-chip.r-PU { background: #cfe0f5; color: #17263a; }
   /* Lucky je ve hře oranžové třpytky — tmavý text, na oranžové je bílá nečitelná. */
   .rarity-chip.r-L2 { background: #f08a24; color: #2a1600; }
   /* Stejná velikost jako přepínače vedle: ty jsou <button> s `font: inherit`,
@@ -1366,9 +1376,10 @@
      jinak byly LEG a MYT viditelně menší než DMAX, CUTE, SHINY a 100 %. */
   .rarity-chip.sto-znacka, .detail-title .rarity-chip { font: inherit; font-weight: 700;
     border: 1px solid transparent; }
-  .dmax-prepinac, .cute-prepinac, .shiny-prepinac { cursor: pointer; font: inherit;
+  .dmax-prepinac, .cute-prepinac, .shiny-prepinac, .shadow-prepinac { cursor: pointer; font: inherit;
     border: 1px solid transparent; }
-  .dmax-prepinac.vypnuto, .cute-prepinac.vypnuto, .shiny-prepinac.vypnuto {
+  .dmax-prepinac.vypnuto, .cute-prepinac.vypnuto, .shiny-prepinac.vypnuto,
+  .shadow-prepinac.vypnuto {
     background: transparent; box-shadow: none;
     color: var(--text-muted); opacity: .75;
     border: 1px dashed var(--border-subtle, rgba(128,128,128,.45)); }
@@ -1743,22 +1754,6 @@
      * a lištu (425). Okénko nad hrou tuhle kázeň už mělo, telefon dostal jen
      * spodní lištu. Nic se nemaže — všechno je na klepnutí nebo posun do strany. */
 
-    /* Souhrn: sbalený je jeden řádek s tím, co si žádá akci. */
-    .souhrn-karta > h2 { display: flex; align-items: center; gap: 8px;
-      cursor: pointer; }
-    .souhrn-karta > h2::after { content: "▾"; margin-left: auto;
-      font-size: 11px; color: var(--text-muted); }
-    .souhrn-karta.sbaleno > h2::after { content: "▸"; }
-    .souhrn-karta.sbaleno > h2 { margin-bottom: 0; }
-    .souhrn-karta.sbaleno #tiles, .souhrn-karta.sbaleno #typeChips { display: none; }
-    /* Nadpis je verzálkami a rozpalkovaný; shrnutí je věta, ne nadpis —
-       ve verzálkách se nevlezlo a končilo třemi tečkami. */
-    .souhrn-karta > h2 { font-size: 13px; }
-    .souhrn-shrnuti { font-size: 11.5px; font-weight: 500; color: var(--text-muted);
-      text-transform: none; letter-spacing: 0;
-      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    /* Rozbalený souhrn má ta čísla přímo pod sebou — shrnutí by je opakovalo. */
-    .souhrn-karta:not(.sbaleno) .souhrn-shrnuti { display: none; }
 
     /* Mobilní verze je na kontrolu — co se dělá od stolu (přidávání kusů,
        import, export, zálohy, mazání, profil), se v liště neukazuje. */
@@ -2576,11 +2571,6 @@
     takže po zavření stránky o data nepřijdeš.
   </p>
 
-  <div class="card">
-    <h2>Souhrn</h2>
-    <div class="tiles" id="tiles"></div>
-  </div>
-
   <details class="card settings-card">
     <summary>Nastavení prahů — IV, PvP potenciál, kopie (nastavíš jednou a zapomeneš)</summary>
     <!-- Kontrola počtu kusů. Stála nad rosterem, kde kradla řádek při každém
@@ -2713,24 +2703,12 @@
 
   <details class="card rozpocet-card" id="rozpocetCard">
     <summary>Rozpočet rolí — kolik kusů čeho vlastně potřebuju</summary>
-    <p class="plan-intro">Tohle je pravidlo, podle kterého appka rozhoduje o ponechání.
-      Ne „má hezké IV“, ale <b>drží místo v rozpočtu?</b> Do raidu jde parta o šesti,
-      do ligy tým o třech (plus tři odpovědi), gym uživí osm obránců, mega stačí jedna
-      od druhu. Co se do rozpočtu nevejde, jde pryč — i s 97 % IV.<br>
-      Typy nejsou vybrané od oka: je to pořadí, v jakém pokrývají 192 legendárních,
-      mytických a Ultra Beast druhů. <b>Prvních osm pokryje 95 % bossů, všech deset 100 %.</b>
-      Normal v seznamu není — proti žádnému z těch 192 není správná odpověď.
+    <p class="plan-intro"><b>Ne „má hezká IV“, ale „drží místo v rozpočtu?“</b>
+      Raid chce partu o šesti, liga tým o třech, gym uživí osm obránců,
+      mega stačí jedna od druhu. Slot dostane ten, kdo je v té roli
+      <b>nejsilnější</b> — IV rozhoduje až mezi rovnocennými.
       <span class="rozp-mezera-vzor">Žlutě</span> je <b>díra</b>: roli něco drží,
-      ale jen proto, že lepší nemáš. Ta se pouští, až chytíš náhradu.</p>
-    <p class="plan-intro"><b>Podle čeho se vybírá, kdo slot dostane:</b> podle
-      <b>síly v té roli</b>, ne podle IV. U raidů je to podíl na DPS špičky
-      daného typu, u ligy pořadí druhu v žebříčku, u gymu výdrž obránce.
-      <b>IV rozhoduje až mezi kusy, které jsou na tom jinak stejně.</b>
-      Proto může slot Electric držet Ampharos s 62 % IV: otázka nezní „kdo má
-      hezká IV“, ale „koho z toho, co máš, postavíš na Water bosse“ —
-      a stopětadevadesátiprocentní Rattata tam nepomůže. Když je nejlepší,
-      co máš, přesto slabý, je slot <span class="rozp-mezera-vzor">žlutý</span>
-      jako díra: drží se jen do doby, než chytíš lepšího.</p>
+      ale jen proto, že lepší nemáš. Celý výklad je v „Odkud se to bere“.</p>
     <div id="rozpocetBody"></div>
   </details>
 
@@ -2745,32 +2723,18 @@
         <option value="40" selected>na L40 — bez XL bonbónů</option>
         <option value="50">na L50 — maximum</option>
       </select>
-      <span class="hint">Posledních deset levelů je nejdražší část: z L30 na L40
-        stojí 150 tis., z L40 na L50 dalších 250 tis. <b>a k tomu 296 XL</b>.
-        Napřed dotáhnout všechno na L40 je skoro vždycky lepší než dotáhnout
-        pár kusů na L50.</span>
+      <span class="hint">L40→L50 stojí 250 tis. prachu a 296 XL. Dotáhnout
+        všechno na L40 je skoro vždycky lepší.</span>
       <label class="dust-xl-prep"><input type="checkbox" id="krokyPlan" checked />
         Plánovat po krocích (víc kusů najednou)</label>
-      <span class="hint"><b>U každé úrovně je i CP</b>, které tam kus bude mít —
-        ve hře žádný level vidět není, u pokémona svítí jen CP a oblouk. Na dnešní
-        úrovni se bere CP ze skenu (level v exportu bývá zaokrouhlený, takže
-        dopočítané by se o pár jednotek lišilo); u cíle, kterého se dosáhne až
-        evolucí, se počítá z vyvinuté formy. <b>Pozor:</b> jedno klepnutí na
-        „Vylepšit“ je ve hře <b>půl levelu</b> — z L3 na L30 je to 54 klepnutí,
-        ne 30 (víc v dokumentaci).</span>
-      <span class="hint">Cesta se rozpadne na <b>dva smysluplné kroky</b>, ne na
-        stejné dílky: <b>na L30</b> (odtud je kus použitelný do raidu a cena za 1 %
-        síly je pořád 5,8 tis.) a <b>na L40</b> (od L30 stojí totéž procento už
-        12 tis. a nad L40 se platí XL). Mezi těmito body je cena plynulá, takže
-        dělit ji jinde by bylo vymyšlené číslo. <b>Do lig se nekrokuje vůbec</b> —
-        tam je hranicí cap ligy a kus na půl cesty je proti soupeřům na capu
-        prostě horší. <b>Vypnuté</b> počítá po starém: každý kus rovnou na cíl.</span>
+      <span class="hint">Cesta se dělí na <b>L30</b> (odtud už do raidu)
+        a <b>L40</b>. Do lig se nekrokuje — tam je hranicí cap ligy.
+        U každé úrovně je i CP; jedno klepnutí na „Vylepšit“ je ve hře
+        <b>půl levelu</b> (víc v dokumentaci).</span>
       <label class="dust-xl-prep" id="bezXLObal"><input type="checkbox" id="bezXL" />
         Jen to, na co nepotřebuju XL bonbóny</label>
-      <span class="hint">XL se platí až nad L40. Prach je jeden společný fond,
-        ale XL bonbóny jsou <b>na každý druh zvlášť</b> — jedno číslo „mám XL“
-        by nedávalo smysl, proto je tu místo rozpočtu tenhle přepínač
-        a sloupec, kolik čeho je potřeba.</span>
+      <span class="hint">XL se platí až nad L40 a jsou na každý druh zvlášť —
+        proto přepínač, ne rozpočet.</span>
     </div>
     <div id="dustBody"></div>
     <!-- Zbytek po zrušené kartě „Kam dát prach". Ta vybírala jeden nejlepší
@@ -2783,16 +2747,6 @@
 
   <details class="card cheat-card" id="cheatCard">
     <summary>Tahák na ven — koho na koho</summary>
-    <p class="plan-intro">Nahoře <b>bossové, kteří jsou v raidech právě teď</b>, a u každého tři
-      kusy, co na něj poslat. Pod tím to samé pro každý typ (na bosse, který v datech není),
-      obránci gymů a PvP týmy. <button id="cheatDownloadBtn" class="primary">Stáhnout</button>
-      <button id="cheatOneDriveBtn">Uložit do OneDrive</button>
-      <span id="cheatSaveState" class="hint"></span><br>
-      Je to samostatná stránka — v mobilu ji otevřeš v prohlížeči a nepotřebuje
-      appku ani import. <b>Uložit do OneDrive</b> ji zapíše do složky, kterou
-      jednou vybereš; pak se v telefonu objeví sama v aplikaci OneDrive
-      a další uložení už se neptá. Obrázky se stahují z internetu — bez signálu
-      se prostě nezobrazí, text funguje dál.</p>
     <div id="cheatBody"></div>
   </details>
 
@@ -2811,10 +2765,6 @@
 
   <details class="card types-card" id="typesCard">
     <summary>Co na co platí — typy a dnešní počasí</summary>
-    <p class="plan-intro">Řádek = <b>útočící typ</b>, sloupec = <b>bránící typ</b>. Hodnoty v Pokémon GO:
-      super efektivní <b>×1,6</b>, neefektivní <b>×0,625</b>, dvojitě neefektivní <b>×0,39</b>.
-      Tečka znamená <b>×1</b> — běžné poškození, ani bonus, ani sráž.
-      U dvojtypů se násobí obojí: 1,6 × 1,6 = <b>×2,56</b>, 1,6 × 0,625 = <b>×1</b>.</p>
     <div class="weather-row">
       <label for="weatherSelect">Dnešní počasí:</label>
       <select id="weatherSelect"><option value="">nevybráno</option></select>
@@ -2825,20 +2775,23 @@
       <div id="typVyber" class="typ-vyber"></div>
       <div id="typOdpoved" class="typ-odpoved"></div>
     </div>
-    <div class="type-table-wrap"><table id="typeTable"></table></div>
+    <!-- Celá matice 18×18 je referenční tabulka, ne to, kvůli čemu se karta
+         otevírá. Nahoru patří výběr typu a odpověď na něj; matice je pod tím
+         na jedno klepnutí, i s vysvětlením, jak se čte. -->
+    <details class="typ-matice">
+      <summary>Celá tabulka 18×18</summary>
+      <p class="plan-intro">Řádek = <b>útočící typ</b>, sloupec = <b>bránící typ</b>.
+        Hodnoty v Pokémon GO: super efektivní <b>×1,6</b>, neefektivní
+        <b>×0,625</b>, dvojitě neefektivní <b>×0,39</b>. Tečka znamená <b>×1</b>.
+        U dvojtypů se násobí obojí: 1,6 × 1,6 = <b>×2,56</b>,
+        1,6 × 0,625 = <b>×1</b>.</p>
+      <div class="type-table-wrap"><table id="typeTable"></table></div>
+    </details>
   </details>
 
 
   <details class="card" id="prohlidkaCard">
     <summary>Konkrétní pokémon — co umí sám o sobě</summary>
-    <p class="plan-intro">Vyplň, co o kusu víš, a appka ho rozebere <b>samostatně</b>,
-      bez ohledu na tvůj roster. Žádné „tohohle už máš šest, pusť ho" — tady jde
-      čistě o to, co ten kus umí: do jakých lig patří, jak je na tom proti ostatním
-      kusům svého druhu, jaký má strop CP, na co se hodí a proti čemu funguje.
-      Hodí se, když někdo chytí něco zajímavého a chce vědět, jestli to za něco stojí.
-      <b>Nikam se to neukládá</b> ani nepřidává do rosteru.
-      V evoluční řadě vpravo jde na kterýkoli stupeň kliknout — prohlídka
-      se přepne na něj, jen podle jména (CP a IV patřily předchozímu kusu).</p>
     <div class="rb-grid proh-grid">
       <label>Pokémon<input id="prohName" list="prohNames" autocomplete="off"
         placeholder="Machamp" /></label>
@@ -2944,6 +2897,13 @@
 
   </details>
 
+  <div class="pvp-filtr typ-filtr" id="silnyFiltrPanel" hidden>
+    <div class="pvp-filtr-h">Silný proti typu</div>
+    <div id="silnyFiltrSeznam" class="typ-filtr-mrizka"></div>
+    <label class="typ-filtr-rezim"><input type="checkbox" id="silnyFiltrOba" />
+      musí bít proti všem zaškrtnutým</label>
+    <button id="silnyFiltrReset">Zrušit filtr</button>
+  </div>
   <div class="pvp-filtr typ-filtr" id="typFiltrPanel" hidden>
     <div class="pvp-filtr-h">Typ pokémona</div>
     <div id="typFiltrSeznam" class="typ-filtr-mrizka"></div>
@@ -3207,20 +3167,10 @@
     <div class="ref-tables">
       <div>
         <h2 style="margin-top:12px;">TOP raidoví útočníci</h2>
-        <p class="ref-note">Počítá se z herních dat: base útok + 15 IV × DPS nejlepší stejnotypé
-          sestavy. Není to ruční seznam, takže to nestárne — po každém balance patchi stačí
-          přegenerovat <code>data/moves.json</code>. Pět nejlepších na typ.</p>
         <table id="refRaidTable"></table>
       </div>
       <div>
         <h2 style="margin-top:12px;">TOP obránci gymů</h2>
-        <p class="hint" style="margin:-4px 0 8px;">Taky spočítané, ne opsané:
-          <b>Def &times; HP</b> vydělené průměrným příchozím násobkem přes všech 18 typů
-          (Steel bere průměrně 0,88&times;, Ice 1,11&times;), a z 30 % <b>útok obránce</b>.
-          Ten se nepočítá jako DPS: obránce útočí v pevném rytmu, takže rozhoduje
-          <b>síla na jedno použití</b> — proto je na obranu skvělý Incinerate (síla 32).
-          Legendární a mytické tu nejsou, protože je do gymu dát nejde.
-          Hvězdička u útoku = druh v datech útoků chybí, dosadil se medián.</p>
         <table id="refGymTable"></table>
       </div>
       <div>
@@ -3298,7 +3248,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-08 13:56";
+  var BUILD = "2026-09-08 20:11";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4737,7 +4687,6 @@
     // Shiny je tu proto, aby šel označit ručně — do skenu z Calcy IV se
     // nedostane (v exportu ten sloupec vůbec není) a přitom je to jediná
     // věc, kvůli které má smysl vyměňovat kus, co oba znáte.
-    { key: "forma", label: "Forma", type: "select", options: ["Normal", "Shadow", "Purified", "Lucky", "Shiny", "Mega-schopný"], wv: 64, w: 128 },
     { key: "dynamax", label: "Dynamax", type: "select", options: ["Ano", "Ne"], w: 96 },
     { key: "cute", label: "CUTE", type: "select", options: ["Ano", "Ne"], w: 88 },
     { key: "shiny", label: "SHINY", type: "select", options: ["Ano", "Ne"], w: 92 },
@@ -4781,7 +4730,7 @@
   // 33 sloupců se nedá číst, verdikt se ztrácí mezi vstupy.
   var DETAIL_ONLY = ["dynamax", "cute", "shiny", "finalEvo", "level", "lcRank", "ivAtk", "ivDef", "ivSta", "fastMove", "charged1", "charged2",
     "glRank", "ulRank", "mlRank", "buddy", "note", "raid", "gym", "pvpPot", "summary"];
-  var LEFT_SIDE = ["star", "pokemon", "forma", "dynamax", "cute", "shiny", "finalEvo", "cp", "level", "ivAtk", "ivDef", "ivSta", "ivPct",
+  var LEFT_SIDE = ["star", "pokemon", "dynamax", "cute", "shiny", "finalEvo", "cp", "level", "ivAtk", "ivDef", "ivSta", "ivPct",
     "types", "cpMax", "strong", "fastMove", "charged1", "charged2", "lcRank", "glRank", "ulRank", "mlRank", "buddy", "note"];
   // Zaškrtávací filtr nad sloupcem PvP. Prázdná množina = neomezovat.
   // Ligy a stavy se kombinují jako AND: „Great League" + „hotoví" = jen kusy,
@@ -4790,6 +4739,10 @@
   // Filtr na vlastní typy pokémona. „oba" znamená AND — na hledání
   // konkrétní dvojice (Water/Flying) je to jediné, co pomůže.
   var typFiltr = { typy: {}, oba: false };
+  /* Filtr na sloupec „Silný proti“. Odpovídá na jinou otázku než filtr
+     na vlastní typy: ne „kdo je Water“, ale „koho mám na Water bosse“.
+     `oba` = kus musí být silný proti VŠEM zaškrtnutým typům (dvojtypy). */
+  var silnyFiltr = { typy: {}, oba: false };
   var znackaFiltr = { znacky: {}, vse: false };
   /* Sloupce, kde má filtr na hodnotu smysl: pár možností a rozhoduje se
      podle nich, co s kusem dál. */
@@ -4800,7 +4753,8 @@
   /** Běží na tabulce nějaké omezení? Vyhledávání, typy, PvP, hodnoty sloupců
    *  i řazení — všechno, co může schovat řádek nebo změnit pořadí. */
   function nejakeOmezeni() {
-    return !!(search || typeFilter || typFiltrAktivni() || pvpFiltrAktivni()
+    return !!(search || typeFilter || typFiltrAktivni() || silnyFiltrAktivni()
+      || pvpFiltrAktivni()
       || hodnotaFiltrAktivni() || znackaFiltrAktivni()
       || sortKey || sortKey2);
   }
@@ -4811,6 +4765,7 @@
     if (hledej) hledej.value = "";
     typeFilter = null;
     typFiltr.typy = {}; typFiltr.oba = false;
+    silnyFiltr.typy = {}; silnyFiltr.oba = false;
     pvpFiltr.ligy = {}; pvpFiltr.stavy = {};
     znackaFiltr.znacky = {}; znackaFiltr.vse = false;
     hodnotaFiltr = {};
@@ -4868,6 +4823,7 @@
     return znackaFiltr.vse ? shod === chce.length : shod > 0;
   }
   function typFiltrAktivni() { return Object.keys(typFiltr.typy).length > 0; }
+  function silnyFiltrAktivni() { return Object.keys(silnyFiltr.typy).length > 0; }
 
   function pvpFiltrAktivni() {
     return Object.keys(pvpFiltr.ligy).length > 0 || Object.keys(pvpFiltr.stavy).length > 0;
@@ -4951,6 +4907,15 @@
       var maTypy = (c.typesList || []);
       var shod = chceTypy.filter(function (t) { return maTypy.indexOf(t) !== -1; }).length;
       if (typFiltr.oba ? shod < chceTypy.length : shod === 0) return false;
+    }
+    if (silnyFiltrAktivni()) {
+      // `strongAll` je čárkou oddělený seznam typů, proti kterým ten kus bije.
+      var chceProti = Object.keys(silnyFiltr.typy);
+      var biji = String(c.strongAll || "").split(",").map(function (x) {
+        return x.trim();
+      });
+      var shodP = chceProti.filter(function (t) { return biji.indexOf(t) !== -1; }).length;
+      if (silnyFiltr.oba ? shodP < chceProti.length : shodP === 0) return false;
     }
     var chceLigy = Object.keys(pvpFiltr.ligy);
     var chceStavy = Object.keys(pvpFiltr.stavy);
@@ -9349,6 +9314,22 @@
         });
         th.appendChild(ikonaT);
       }
+      // „Silný proti“: stejné rozbalovátko jako u typů, jen se ptá na to,
+      // proti čemu kus bije — tedy „koho mám na tohohle bosse“.
+      if (c.key === "strong") {
+        th.className += (th.className ? " " : "") + "pvp-head"
+          + (silnyFiltrAktivni() ? " aktivni" : "");
+        var ikonaS = document.createElement("button");
+        ikonaS.type = "button";
+        ikonaS.className = "pvp-filtr-ikona";
+        ikonaS.textContent = silnyFiltrAktivni() ? "▼" : "▽";
+        ikonaS.title = "Filtrovat podle toho, proti čemu je kus silný";
+        ikonaS.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          otevritSilnyFiltr(th);
+        });
+        th.appendChild(ikonaS);
+      }
       // Značky se dosud daly jen číst. Filtr je ve stejném rozbalovátku
       // jako u typů a lig, aby se to ovládalo pořád stejně.
       if (c.key === "pokemon") {
@@ -9944,6 +9925,14 @@
         if (poZmene.zmena) poZmene.zmena();
       });
     }
+    var shadowBtn = kontejner.querySelector(".shadow-prepinac");
+    if (shadowBtn && radek) {
+      shadowBtn.addEventListener("click", function () {
+        radek.forma = radek.forma === "Shadow" ? "Normal" : "Shadow";
+        persist(true);
+        if (poZmene.zmena) poZmene.zmena();
+      });
+    }
     var shinyBtn = kontejner.querySelector(".shiny-prepinac");
     if (shinyBtn && radek) {
       shinyBtn.addEventListener("click", function () {
@@ -10298,7 +10287,10 @@
     // zbylo tolik, že se veejdou, a jedno klepnutí navíc jen zdržovalo.
     var SKUPINY = [
       { trida: "tb-hlavni", ids: LISTA_HLAVNI },
-      { trida: "tb-hledani", ids: ["searchInput", "viewSelect", "filterSelect"] }
+      // „Zrušit filtry“ patří k hledání, ne mezi příkazy — a stavové texty
+      // (uloženo v prohlížeči, stav zálohy) na konec téžřádky.
+      { trida: "tb-hledani", ids: ["zrusitFiltry", "searchInput", "viewSelect",
+          "filterSelect", "saveState", "backupState"] }
     ];
     var radky = {};
     SKUPINY.forEach(function (sk) {
@@ -10581,7 +10573,17 @@
     (c.types && c.types !== "–" ? c.types.split(" / ") : []).forEach(function (t) {
       chips += typeChipHtml(t.trim());
     });
-    if (r.forma && r.forma !== "Normal") chips += '<span class="d-flag">' + r.forma + "</span>";
+    // Shadow se dá přepnout i ručně — sloupec „Forma“ v tabulce už není
+    // a sken ho nemusí poznat (Calcy ho v exportu mívá jako číselné ID).
+    chips += '<button type="button" class="rarity-chip r-SH shadow-prepinac'
+      + (r.forma === "Shadow" ? "" : " vypnuto") + '" title="'
+      + (r.forma === "Shadow"
+          ? "Označený jako Shadow (+20 % útok, −17 % obrana). Klikni a zruš to."
+          : "Označit jako Shadow. Sken to nemusí poznat.")
+      + '">SHADOW</button>';
+    if (r.forma && r.forma !== "Normal" && r.forma !== "Shadow") {
+      chips += '<span class="d-flag">' + r.forma + "</span>";
+    }
     if (c.rarity) chips += '<span class="rarity-chip r-' + c.rarity + '">'
       + ({ L: "LEG", M: "MYT", U: "UB" }[c.rarity] || "") + "</span>";
     // Dynamax se nedá vyčíst ze skenu — Calcy ho v exportu buď má, nebo (starší
@@ -11253,10 +11255,22 @@
               + (c.staty.shadow ? " Shadow bonus započítaný: +20 % útok, −20 % obrana." : "")
               + " CP je jen jejich slepenec; v souboji rozhoduje tohle.";
           }
+          var formaTag = r.forma === "Shadow" || r.forma === "Purified"
+            ? r.forma : "";
           if (col.key === "pokemon"
               && (c.rarity || c.dynamax || c.cute || c.stoProcent || c.shiny
-                  || c.lucky)) {
+                  || c.lucky || formaTag)) {
             var chips = "";
+            // Shadow a Purified bývaly vlastním sloupcem „Forma“. Jako značka
+            // u jména jsou vidět tam, kde se čtou — a sloupec ubyl.
+            if (formaTag === "Shadow") {
+              chips += '<span class="rarity-chip r-SH" title="Shadow — o 20 %'
+                + ' vyšší útok a o 17 % nižší obrana. Vylepšení stojí víc prachu'
+                + ' a bonbónů.">SHADOW</span>';
+            } else if (formaTag === "Purified") {
+              chips += '<span class="rarity-chip r-PU" title="Purified — lacinější'
+                + ' vylepšení a útok Return. IV se při očištění zvedla o 2.">PURIFIED</span>';
+            }
             if (c.rarity) {
               var lbl = { L: "LEG", M: "MYT", U: "UB" }[c.rarity];
               var full = { L: "Legendární", M: "Mytický", U: "Ultra Beast" }[c.rarity];
@@ -11455,7 +11469,11 @@
     ];
     tiles.forEach(function (t) { t.val = kolik(t.filter); });
 
+    // Karta Souhrn z appky zmizela — stejná čísla si člověk vyfiltruje
+    // rovnou v tabulce a přehled nad ní jen kradl první obrazovku.
+    // Počítá se dál: dlaždice už nejsou, ale zbytek karty na výpočtu visí.
     var wrap = document.getElementById("tiles");
+    if (!wrap) { renderRankInfo(); renderPrachKurz(); renderLigaVaha(); return; }
     wrap.innerHTML = "";
     tiles.forEach(function (t) {
       var div = document.createElement("div");
@@ -11473,82 +11491,11 @@
       wrap.appendChild(div);
     });
 
-    souhrnShrnuti(tiles);
-    renderTypeChips(all);
     renderRankInfo();
     renderPrachKurz();
     renderLigaVaha();
   }
 
-  // Klíč, pod kterým si prohlížeč pamatuje, jestli je souhrn sbalený.
-  var SOUHRN_KLIC = "pgo_souhrn_sbaleno";
-  /* Pořadí, ve kterém se do jednoho řádku vybírá — nejdřív to, co si žádá akci.
-     Popisek se nebere z dlaždice: „Díry v pokrytí“ je nadpis sloupce, ale
-     „1 díry v pokrytí“ není česky. */
-  var SOUHRN_PORADI = [
-    { filter: "discard", text: function (n) { return n + " k zahození"; } },
-    { filter: "dupes", text: function (n) {
-      return sklonuj(n, "duplicita", "duplicity", "duplicit"); } },
-    { filter: "mezera", text: function (n) {
-      return sklonuj(n, "díra v pokrytí", "díry v pokrytí", "děr v pokrytí"); } },
-    { filter: "retrain", text: function (n) { return n + "× přeučit útok"; } },
-    { filter: "rescan", text: function (n) { return n + " doskenovat"; } }
-  ];
-
-  /** Souhrn na telefonu: sbalený je jeden řádek.
-   *
-   *  Třináct dlaždic a osmnáct typových odznáčků měřilo na telefonu 515 px —
-   *  celou první obrazovku zabral přehled a první pokémon začínal až na
-   *  1408. pixelu, tedy skoro dvě obrazovky scrollování. Přehled se čte jednou
-   *  za den, roster pořád — sbalený proto říká jen to, co si žádá akci, a celý
-   *  je na jedno klepnutí. Na počítači se neděje nic.
-   */
-  function souhrnShrnuti(tiles) {
-    var dlazdice = document.getElementById("tiles");
-    var karta = dlazdice && dlazdice.closest ? dlazdice.closest(".card") : null;
-    var h2 = karta && karta.querySelector("h2");
-    if (!h2) return;
-    if (!jeMobil()) { karta.classList.remove("sbaleno"); return; }
-    karta.classList.add("souhrn-karta");
-
-    var shrnuti = karta.querySelector(".souhrn-shrnuti");
-    if (!shrnuti) {
-      shrnuti = document.createElement("span");
-      shrnuti.className = "souhrn-shrnuti";
-      h2.appendChild(shrnuti);
-      h2.setAttribute("role", "button");
-      h2.setAttribute("tabindex", "0");
-      var prepnout = function () {
-        var sbaleno = karta.classList.toggle("sbaleno");
-        h2.setAttribute("aria-expanded", sbaleno ? "false" : "true");
-        try { localStorage.setItem(SOUHRN_KLIC, sbaleno ? "1" : "0"); } catch (e) {}
-      };
-      h2.addEventListener("click", prepnout);
-      h2.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); prepnout(); }
-      });
-      var ulozeno = null;
-      try { ulozeno = localStorage.getItem(SOUHRN_KLIC); } catch (e) {}
-      // Výchozí stav je SBALENO. Kdo si ho rozbalí, tomu to zůstane.
-      if (ulozeno !== "0") karta.classList.add("sbaleno");
-      h2.setAttribute("aria-expanded",
-        karta.classList.contains("sbaleno") ? "false" : "true");
-    }
-
-    var najdi = function (klic) {
-      return tiles.filter(function (x) { return x.filter === klic; })[0];
-    };
-    var akce = [];
-    SOUHRN_PORADI.forEach(function (polozka) {
-      var t = najdi(polozka.filter);
-      if (t && t.val) akce.push(polozka.text(t.val));
-    });
-    var celkem = najdi("all");
-    shrnuti.textContent = (celkem ? kusu(celkem.val) : "")
-      + (akce.length ? " · " + akce.slice(0, 2).join(" · ") : " · nic k řešení");
-  }
-
-  /** Druhý řádek: typové filtry, po zapnutí counter módu výběr typů raid bosse. */
   function renderTypeChips(all) {
     var box = document.getElementById("typeChips");
     if (!box) return;
@@ -13458,22 +13405,24 @@
         plocha.scrollLeft = Math.max(0, levo - 60);
       }
     }
-    // Diagram se nepřekresluje sám dokola — jen čára a rozpis, jednou za minutu.
+    // Kalendář běží sám. Dřív se jednou za minutu překreslil jen rozpis pod
+    // ním a přepočítala čára „teď“ — pruhy zůstávaly stát, dokud člověk
+    // nenačetl stránku znovu. Teď se překreslí celý diagram: co skončilo,
+    // zmizí, co začíná, přibude, a pruhy se posunou. `ganttPrekreslit`
+    // si drží vodorovný posun i vybranou akci, takže to nekope pod rukama.
+    //
+    // Při posunu šipkami (`ganttPosun`) se nepřekresluje: tam si člověk
+    // schválně odsunul okno jinam a samovolný návrat by ho vyhodil.
     if (ganttTiker) clearInterval(ganttTiker);
     ganttTiker = setInterval(function () {
       if (!document.getElementById("ganttDetail")) {
         clearInterval(ganttTiker); ganttTiker = null; return;
       }
-      var el = document.querySelector(".gantt-ted");
-      if (!el) return;
-      var HOD = 3600000, ted = Date.now();
-      var od = ted - 0.5 * HOD;
-      var sir = parseInt(getComputedStyle(document.querySelector(".gantt"))
-        .getPropertyValue("--sirka"), 10) || 0;
-      // Rozsah se posouvá s časem, takže čára zůstává na stejném místě;
-      // překreslit je potřeba obsah, ne ji.
-      el.style.left = Math.round(0.5 * HOD / (ganttHodin * HOD + 0.5 * HOD) * sir) + "px";
-      ganttObnovit();
+      // Schovaná záložka se překreslovat nemusí — udělá se to, až bude vidět.
+      var plocha = document.querySelector(".gantt-plocha");
+      if (!plocha || !plocha.getClientRects().length) return;
+      if (ganttPosun) { ganttObnovit(); return; }
+      ganttPrekreslit();
     }, 60000);
   }
 
@@ -14640,7 +14589,6 @@
 
     }
 
-    if (sheet.keepList) h += keepListHtml(sheet.keepList);
 
     h += '<p class="cs-foot">Vygenerováno z tvého rosteru ' + new Date().toLocaleDateString("cs-CZ")
       + ". Pořadí bere DPS movesetu, typovou výhodu a to, kolik kus sám schytá.</p>";
@@ -15152,8 +15100,11 @@
       h += '<h3 class="ch-h">Akce, které je zrovna pouštějí</h3>';
       h += '<div class="ch-sloupce">';
       data.akce.forEach(function (a) {
+        // Samotný začátek neříká, jestli to ještě běží — rozhoduje konec.
+        var kdy = evRozsah(evDatum(a.od), evDatum(a.konec),
+          String(a.od || "").length <= 10);
         h += '<div class="ch-blok"><div class="ch-blok-name">' + a.nazev
-          + '<span class="ch-datum">' + String(a.od || "").replace("T", " ") + "</span></div>";
+          + '<span class="ch-datum">' + escHtml(kdy) + "</span></div>";
         h += '<div class="ch-grid">';
         a.druhy.forEach(function (d) {
           h += dlazdice(d, d.mas
@@ -15188,43 +15139,6 @@
           + '<span class="ch-kde">' + escHtml(r.kde)
           + (r.km ? " · " + String(r.km).replace(".", ",") + " km/bonbón" : "")
           + "</span></div></div>";
-      });
-      h += "</div>";
-    }
-
-    if (data.ligy.length) {
-      h += '<h3 class="ch-h">Chybí ti do lig</h3>'
-        + '<p class="ch-pozn">Druhy z mety do tvého prahu pořadí, které v boxu nemáš'
-        + " ani jako předchozí vývojový stupeň. Legendární, mýtičtí a Ultra"
-        + " Beasti tu nejsou — ti se venku nechytají, ti jsou z raidů.</p>";
-      h += '<div class="ch-sloupce">';
-      data.ligy.forEach(function (l) {
-        h += '<div class="ch-blok"><div class="ch-blok-name">' + l.liga + "</div>";
-        h += '<div class="ch-grid">';
-        l.druhy.forEach(function (d) {
-          h += dlazdice(d, "#" + d.poradi + " v lize");
-        });
-        h += "</div></div>";
-      });
-      h += "</div>";
-    }
-
-    if (data.raidy.length) {
-      h += '<h3 class="ch-h">Chybí ti do raidů</h3>'
-        + '<p class="ch-pozn">Útočné typy, kde tvůj nejlepší kus nesahá ani na 60 %'
-        + " toho, co ten typ ve hře umí. Procenta jsou ta samá jako ve sloupci"
-        + " raidů v tabulce. Nabízí se jen druhy, které jde chytit —"
-        + " legendy, mýty a Ultra Beasti jsou z raidů, ne z trávy.</p>";
-      h += '<div class="ch-sloupce">';
-      data.raidy.forEach(function (r) {
-        h += '<div class="ch-blok"><div class="ch-blok-name">' + r.typ + " útočníci"
-          + '<span class="ch-datum">tvoje špička ' + r.podil + " %"
-          + (r.mujKus ? " (" + r.mujKus + ")" : "") + "</span></div>";
-        h += '<div class="ch-grid">';
-        r.druhy.forEach(function (d) {
-          h += dlazdice(d, (d.pct ? d.pct + " % · " : "") + (d.moveset || ""));
-        });
-        h += "</div></div>";
       });
       h += "</div>";
     }
@@ -16261,29 +16175,16 @@
     // výš — a horší, protože nepočítal s cenou: vybíral „nejlepší kus na
     // roli", což jsou typicky kusy, které už hotové máš. `sections` se pořád
     // počítají, protože z nich čerpá seznam „nechat / pustit".
-    vypis(evoSection, left);
-    vypis(tmSection, right);
+    // „Koho evolvovat“ se už nevypisuje: totéž stojí přímo u kusu
+    // v rozpočtu výš (sloupec Evolvovat i cíl plánu), takže to byl druhý
+    // seznam téhož. Elitní TM zůstává — ta se nikde jinde neřeší.
+    vypis(tmSection, left);
     if (tmSection.rows.length) {
       var tmPozn = document.createElement("p");
       tmPozn.className = "plan-foot";
-      tmPozn.textContent = "Elitní TM je jediný, kde si útok vybíráš — běžný dá náhodný."
-        + " Tady jsou kusy, kterým legacy útok přidá nejvíc DPS a zatím ho nemají.";
-      right.appendChild(tmPozn);
-    }
-    if (evoSection.rows.length) {
-      var pozn = document.createElement("p");
-      pozn.className = "plan-foot";
-      pozn.textContent = "Zvýrazněné kusy bez evoluce nemají smysl — u zbytku je evoluce bonus"
-        + " k roli, kterou drží už teď. Bonbóny dej odshora.";
-      left.appendChild(pozn);
-    }
-    if (evoSection.rows.length || tmSection.rows.length) {
-      var uvod = document.createElement("p");
-      uvod.className = "plan-intro";
-      uvod.textContent = "Tyhle dva seznamy se za prach nekupují — jedou na"
-        + " bonbóny a na Elitní TM. Proto mají vlastní pořadí a nemíchají se"
-        + " do rozpočtu výš.";
-      box.insertBefore(uvod, box.firstChild);
+      tmPozn.textContent = "Elitní TM je jediný, kde si útok vybíráš — běžný dá"
+        + " náhodný. Neplatí se za něj prach, takže do rozpočtu výš nepatří.";
+      left.appendChild(tmPozn);
     }
 
     if (false && totalDust) {
@@ -16348,19 +16249,7 @@
     if (document.getElementById("discardBox").classList.contains("open")) renderDiscardList();
   }
 
-  /* Úvodní odstavce nad žebříčky (`.ref-note`, `.hint`) se mažou při prvním
-     vykreslení. Vysvětlení, jak se žebříček počítá, patří do dokumentace —
-     tady se čte seznam, ne výklad. */
-  function refBezVykladu() {
-    var karta = document.getElementById("refCard");
-    if (!karta) return;
-    Array.prototype.forEach.call(
-      karta.querySelectorAll(".ref-note, .plan-intro, .ref-tables > .hint, .ref-toggle > .hint"),
-      function (el) { el.remove(); });
-  }
-
   function renderRefTables() {
-    refBezVykladu();
     var raidT = document.getElementById("refRaidTable");
     var h1 = "<tr><th>Typ</th><th>#</th><th>Pokémon</th><th>Sestava</th><th>% špičky</th></tr>";
     ALL_TYPES.forEach(function (t) {
@@ -17335,6 +17224,14 @@
         } else {
           td.className = (col.cls || "") + (col.num ? " num" : "") + " readonly";
           td.textContent = r[col.key] === undefined || r[col.key] === "" ? "–" : String(r[col.key]);
+          // Sloupec „Forma“ už není — aby se ze seznamu puštěných nedalo
+          // vyčíst míň než dřív, jde Shadow/Purified ke jménu jako značka.
+          if (col.key === "pokemon" && (r.forma === "Shadow" || r.forma === "Purified")) {
+            td.innerHTML = escHtml(td.textContent)
+              + ' <span class="rarity-chip r-'
+              + (r.forma === "Shadow" ? "SH" : "PU") + '">'
+              + (r.forma === "Shadow" ? "SHADOW" : "PURIFIED") + "</span>";
+          }
           if (col.key === "cp" && c.staty) {
             td.innerHTML = td.textContent
               + '<span class="cell-sub">' + c.staty.a + "/" + c.staty.d + "/" + c.staty.hp + "</span>";
@@ -18001,6 +17898,51 @@
   });
   document.getElementById("backupNowBtn").addEventListener("click", zalohovatTed);
   /** Panel se ukotví pod hlavičku sloupce, ať je jasné, čeho se týká. */
+  function otevritSilnyFiltr(th) {
+    var panel = document.getElementById("silnyFiltrPanel");
+    if (!panel) return;
+    if (!panel.hidden) { panel.hidden = true; return; }
+    var seznam = document.getElementById("silnyFiltrSeznam");
+    if (!seznam.dataset.hotovo) {
+      seznam.innerHTML = ALL_TYPES.map(function (t) {
+        return '<label><input type="checkbox" data-typ="' + t + '" /> ' + t + "</label>";
+      }).join("");
+      seznam.dataset.hotovo = "1";
+    }
+    var rr = th.getBoundingClientRect();
+    panel.style.left = Math.max(8, Math.min(rr.left + window.scrollX,
+      window.innerWidth - 270)) + "px";
+    panel.style.top = (rr.bottom + window.scrollY + 4) + "px";
+    panel.querySelectorAll("input[data-typ]").forEach(function (i) {
+      i.checked = !!silnyFiltr.typy[i.dataset.typ];
+    });
+    document.getElementById("silnyFiltrOba").checked = !!silnyFiltr.oba;
+    panel.hidden = false;
+  }
+
+  (function () {
+    var panel = document.getElementById("silnyFiltrPanel");
+    if (!panel) return;
+    panel.addEventListener("change", function (ev) {
+      var i = ev.target;
+      if (i.dataset.typ) {
+        if (i.checked) silnyFiltr.typy[i.dataset.typ] = true;
+        else delete silnyFiltr.typy[i.dataset.typ];
+      } else if (i.id === "silnyFiltrOba") {
+        silnyFiltr.oba = i.checked;
+      } else return;
+      renderHeader();
+      renderBody();
+    });
+    document.getElementById("silnyFiltrReset").addEventListener("click", function () {
+      silnyFiltr.typy = {}; silnyFiltr.oba = false;
+      panel.querySelectorAll("input").forEach(function (i) { i.checked = false; });
+      renderHeader();
+      renderBody();
+      panel.hidden = true;
+    });
+  })();
+
   function otevritTypFiltr(th) {
     var panel = document.getElementById("typFiltrPanel");
     if (!panel) return;
@@ -18826,15 +18768,9 @@
   document.getElementById("catchCard").addEventListener("toggle", function () {
     if (document.getElementById("catchCard").open) renderCoChytat();
   });
-  var tahakBtn = document.getElementById("cheatOneDriveBtn");
-  if (tahakBtn) tahakBtn.addEventListener("click", function (e) {
-    e.preventDefault();
-    ulozitTahakDoSlozky();
-  });
-  document.getElementById("cheatDownloadBtn").addEventListener("click", function (e) {
-    e.preventDefault();
-    downloadCheatSheet();
-  });
+  // Tahák už se nikam nestahuje ani neukládá do OneDrivu — celá appka
+  // běží v telefonu (PWA, funguje offline), takže samostatná stránka
+  // neměla co přidat.
   document.getElementById("searchInput").addEventListener("input", function (e) {
     search = deaccent(e.target.value).toLowerCase().trim();
     renderBody(); persist(true);
@@ -20884,7 +20820,7 @@
     //    pod KAŽDOU záložkou. Patří k dokumentaci, kde je to samé podrobněji.
     //  * Přihlášení k cloudu se nastavuje jednou a patří k nastavení; vlastní
     //    záložka by z něj udělala něco, k čemu se chodí často.
-    var SPOLU = { "souhrn": "roster", "patickaZdroje": "docsCard",
+    var SPOLU = { "patickaZdroje": "docsCard",
       "cloudCard": "settings-card" };
 
     var POPISKY = {};
