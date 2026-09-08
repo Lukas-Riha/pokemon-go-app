@@ -533,6 +533,10 @@
     background: linear-gradient(to bottom, transparent, var(--surface-1)); }
   .d-role-p.slozeno::after {
     background: linear-gradient(to bottom, transparent, var(--role-podklad)); }
+  /* Uvnitř varování žádný přechod není. Leží na jantarovém podkladu,
+     ne na barvě karty, takže to vypadalo jako šedý proužek přes text —
+     a „víc“ stojí hned pod ním, takže přechod stejně nic neříká. */
+  .zal-warn div.slozeno::after { display: none; }
   .card > p.slozeno.cely::after, .card > p.slozeno.rozbaleno::after,
   .type-note.slozeno.cely::after, .type-note.slozeno.rozbaleno::after,
   .hint.slozeno.cely::after, .hint.slozeno.rozbaleno::after,
@@ -1651,6 +1655,57 @@
     .zal-kryt { display: none; }
     body.zal-otevreno .zal-kryt { display: block; position: fixed; inset: 0;
       z-index: 89; background: rgba(0, 0, 0, .35); }
+
+    /* --- místo pro pokémony ---
+     *
+     * Změřeno na 375×812: první kus začínal až na 1408. pixelu, tedy skoro
+     * dvě obrazovky scrollování přes souhrn (515 px), varování o záloze (240)
+     * a lištu (425). Okénko nad hrou tuhle kázeň už mělo, telefon dostal jen
+     * spodní lištu. Nic se nemaže — všechno je na klepnutí nebo posun do strany. */
+
+    /* Souhrn: sbalený je jeden řádek s tím, co si žádá akci. */
+    .souhrn-karta > h2 { display: flex; align-items: center; gap: 8px;
+      cursor: pointer; }
+    .souhrn-karta > h2::after { content: "▾"; margin-left: auto;
+      font-size: 11px; color: var(--text-muted); }
+    .souhrn-karta.sbaleno > h2::after { content: "▸"; }
+    .souhrn-karta.sbaleno > h2 { margin-bottom: 0; }
+    .souhrn-karta.sbaleno #tiles, .souhrn-karta.sbaleno #typeChips { display: none; }
+    /* Nadpis je verzálkami a rozpalkovaný; shrnutí je věta, ne nadpis —
+       ve verzálkách se nevlezlo a končilo třemi tečkami. */
+    .souhrn-karta > h2 { font-size: 13px; }
+    .souhrn-shrnuti { font-size: 11.5px; font-weight: 500; color: var(--text-muted);
+      text-transform: none; letter-spacing: 0;
+      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Rozbalený souhrn má ta čísla přímo pod sebou — shrnutí by je opakovalo. */
+    .souhrn-karta:not(.sbaleno) .souhrn-shrnuti { display: none; }
+
+    /* Lišta: jeden posuvný řádek místo čtyř zalomených, hledání a dva filtry
+       vedle sebe místo pod sebou. */
+    .tb-hlavni { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .tb-hlavni::-webkit-scrollbar { display: none; }
+    .tb-hlavni button { flex: 0 0 auto; }
+    /* Hledání má vlastní řádek, oba filtry se dělí o ten další. Ve třech
+       sloupcích z nich zbylo „Zobraze⌄“ a „Zobrazit⌄“ — vypadaly stejně
+       a nastavená hodnota nebyla vidět vůbec. */
+    .tb-hledani { flex-wrap: wrap; min-width: 0; }
+    /* width: 0 je nutná — samotné min-width: 0 flexu nestačí, select si drží
+       šířku podle nejdelší volby. */
+    .tb-hledani input { flex: 1 1 100%; width: 0; min-width: 0; }
+    .tb-hledani select { flex: 1 1 calc(50% - 4px); width: 0; min-width: 0;
+      font-size: 12px; }
+    /* „Uloženo v prohlížeči“ i „Bez zálohy“ říká výš celý panel zálohy. */
+    .save-state, .backup-state { display: none; }
+
+    /* Počítadlo „Ve hře mám“ je kontrola, ne denní ovládání — políčka na jeden
+       řádek, vysvětlivka pod ně. */
+    /* Počítadlo „Ve hře mám“ se na 375 px lámalo do tří řádků. Zkrácené
+       popisky („Ve hře … v gymech“) se vejdou na jeden. */
+    .box-check { font-size: 11.5px; gap: 6px; margin-bottom: 6px; }
+    .jen-siroko { display: none; }
+    /* Šířka políček visí na id, takže `.box-check input` by prohrálo. */
+    #boxCountRoster, #gymCountRoster { width: 52px; padding: 3px 5px; }
+    .box-check .hint { flex: 1 1 100%; margin: 0; }
   }
 
 
@@ -2837,10 +2892,10 @@
   <div class="card roster">
     <h2>Roster — co s kterým pokémonem</h2>
     <div class="box-check" id="boxCheck">
-      <label for="boxCountRoster">Ve hře mám</label>
+      <label for="boxCountRoster">Ve hře<span class="jen-siroko"> mám</span></label>
       <input type="number" id="boxCountRoster" min="0" max="9999" step="1" placeholder="?"
         autocomplete="off" title="Číslo z boxu ve hře (např. 49/300). Appka podle něj pozná, jestli roster sedí." />
-      <label for="gymCountRoster">z toho v gymech</label>
+      <label for="gymCountRoster"><span class="jen-siroko">z toho </span>v gymech</label>
       <input type="number" id="gymCountRoster" min="0" max="999" step="1" placeholder="0"
         autocomplete="off" title="Kusy nasazené v gymech. Calcy je při průchodu boxem nenaskenuje, takže v exportu chybí — appka je pak nehlásí jako díru." />
       <span class="hint" id="boxCheckNote"></span>
@@ -2915,7 +2970,6 @@
       <span class="save-state" id="saveState"></span>
       <span class="backup-state" id="backupState"></span>
     </div>
-    <div class="build-line"><span class="build-stamp" id="buildStamp"></span></div>
     <div class="rucni-box" id="rucniBox" hidden>
       <div class="rb-head"><b>Přidat kus ručně</b>
         <span class="hint">Na pokémona nasazeného v <b>gymu</b> nebo v <b>Dynamax
@@ -3052,6 +3106,10 @@
       <p>Nebo si appku nejdřív osahej: <button id="demoBtn">Načíst ukázková data</button>
         (tři pokémoni, klidně je pak smaž).</p>
     </div>
+    <!-- Ražítko verze patří pod tabulku. Nad ní to byl na telefonu poslední
+         řádek před prvním pokémonem — a je to údaj do patičky, ne něco, co
+         se čte při rozhodování o kusech. -->
+    <div class="build-line"><span class="build-stamp" id="buildStamp"></span></div>
   </div>
 
   <details class="card share-box" id="mobilCard">
@@ -3186,7 +3244,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-08 07:08";
+  var BUILD = "2026-09-08 09:35";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5080,6 +5138,18 @@
     if (b) {
       b.style.display = typeof window.showSaveFilePicker === "function" ? "" : "none";
       b.textContent = umiSlozku ? "Zálohovat do složky…" : "Zálohovat do souboru…";
+    }
+    // Skládání dlouhých vysvětlivek na tenhle text míří od začátku, jenže ho
+    // změřilo ještě PRÁZDNÝ — vyplňuje se až tady. Vyhodnotilo ho tedy jako
+    // krátký, označilo „celý“ a složení už nikdy nepřišlo: na telefonu z toho
+    // bylo 240 px varování nad každým otevřením rosteru. Po naplnění se
+    // rozhodnutí dělá znovu.
+    var vnitrek = box.querySelector("div");
+    if (vnitrek) {
+      vnitrek.classList.remove("slozeno", "cely", "rozbaleno");
+      var starePrepnuti = box.querySelector(".vic-btn");
+      if (starePrepnuti) starePrepnuti.remove();
+      slozitVysvetlivky(box);
     }
   }
 
@@ -11318,10 +11388,79 @@
       wrap.appendChild(div);
     });
 
+    souhrnShrnuti(tiles);
     renderTypeChips(all);
     renderRankInfo();
     renderPrachKurz();
     renderLigaVaha();
+  }
+
+  // Klíč, pod kterým si prohlížeč pamatuje, jestli je souhrn sbalený.
+  var SOUHRN_KLIC = "pgo_souhrn_sbaleno";
+  /* Pořadí, ve kterém se do jednoho řádku vybírá — nejdřív to, co si žádá akci.
+     Popisek se nebere z dlaždice: „Díry v pokrytí“ je nadpis sloupce, ale
+     „1 díry v pokrytí“ není česky. */
+  var SOUHRN_PORADI = [
+    { filter: "discard", text: function (n) { return n + " k zahození"; } },
+    { filter: "dupes", text: function (n) {
+      return sklonuj(n, "duplicita", "duplicity", "duplicit"); } },
+    { filter: "mezera", text: function (n) {
+      return sklonuj(n, "díra v pokrytí", "díry v pokrytí", "děr v pokrytí"); } },
+    { filter: "retrain", text: function (n) { return n + "× přeučit útok"; } },
+    { filter: "rescan", text: function (n) { return n + " doskenovat"; } }
+  ];
+
+  /** Souhrn na telefonu: sbalený je jeden řádek.
+   *
+   *  Třináct dlaždic a osmnáct typových odznáčků měřilo na telefonu 515 px —
+   *  celou první obrazovku zabral přehled a první pokémon začínal až na
+   *  1408. pixelu, tedy skoro dvě obrazovky scrollování. Přehled se čte jednou
+   *  za den, roster pořád — sbalený proto říká jen to, co si žádá akci, a celý
+   *  je na jedno klepnutí. Na počítači se neděje nic.
+   */
+  function souhrnShrnuti(tiles) {
+    var dlazdice = document.getElementById("tiles");
+    var karta = dlazdice && dlazdice.closest ? dlazdice.closest(".card") : null;
+    var h2 = karta && karta.querySelector("h2");
+    if (!h2) return;
+    if (!jeMobil()) { karta.classList.remove("sbaleno"); return; }
+    karta.classList.add("souhrn-karta");
+
+    var shrnuti = karta.querySelector(".souhrn-shrnuti");
+    if (!shrnuti) {
+      shrnuti = document.createElement("span");
+      shrnuti.className = "souhrn-shrnuti";
+      h2.appendChild(shrnuti);
+      h2.setAttribute("role", "button");
+      h2.setAttribute("tabindex", "0");
+      var prepnout = function () {
+        var sbaleno = karta.classList.toggle("sbaleno");
+        h2.setAttribute("aria-expanded", sbaleno ? "false" : "true");
+        try { localStorage.setItem(SOUHRN_KLIC, sbaleno ? "1" : "0"); } catch (e) {}
+      };
+      h2.addEventListener("click", prepnout);
+      h2.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); prepnout(); }
+      });
+      var ulozeno = null;
+      try { ulozeno = localStorage.getItem(SOUHRN_KLIC); } catch (e) {}
+      // Výchozí stav je SBALENO. Kdo si ho rozbalí, tomu to zůstane.
+      if (ulozeno !== "0") karta.classList.add("sbaleno");
+      h2.setAttribute("aria-expanded",
+        karta.classList.contains("sbaleno") ? "false" : "true");
+    }
+
+    var najdi = function (klic) {
+      return tiles.filter(function (x) { return x.filter === klic; })[0];
+    };
+    var akce = [];
+    SOUHRN_PORADI.forEach(function (polozka) {
+      var t = najdi(polozka.filter);
+      if (t && t.val) akce.push(polozka.text(t.val));
+    });
+    var celkem = najdi("all");
+    shrnuti.textContent = (celkem ? kusu(celkem.val) : "")
+      + (akce.length ? " · " + akce.slice(0, 2).join(" · ") : " · nic k řešení");
   }
 
   /** Druhý řádek: typové filtry, po zapnutí counter módu výběr typů raid bosse. */
@@ -19475,8 +19614,22 @@
       + "<li><b>Karta kusu nese jen rozhodnutí</b>: hvězdičku, jméno se "
       + "značkami, CP s IV a verdikt. Role (raid, gym, liga, vylepšit, "
       + "evolvovat) se přesunuly do rozboru — verdikt je stejně shrnuje "
-      + "v podtitulku. Karta tím spadla z 243 na 93 pixelů, což je u rosteru "
-      + "o 450 kusech rozdíl mezi 130 a 50 obrazovkami rolování.</li>"
+      + "v podtitulku. Karta tím spadla z 243 na 85 pixelů, což je u rosteru "
+      + "o 450 kusech rozdíl mezi 130 a 47 obrazovkami rolování.</li>"
+      + "<li><b>Karta stojí na pevné mřížce</b> — <code>☆ | jméno | CP | IV %</code> "
+      + "a pod tím verdikt s košem. Sloupce mají stejnou šířku u všech kusů, "
+      + "ať se druh jmenuje jakkoli; dlouhé jméno se usekne třemi tečkami. "
+      + "Dokud si každá buňka brála šířku podle obsahu, začínalo CP u každého "
+      + "kusu jinde a seznam nedržel žádnou svislou linku.</li>"
+      + "<li><b>Souhrn je sbalený do jednoho řádku</b> — řekne počet kusů "
+      + "a to, co si žádá akci („1 k zahození · 1 díra v pokrytí“). Celý "
+      + "s dlaždicemi i typovými odznáčky je na jedno klepnutí a volba se "
+      + "pamatuje. Přehled se čte jednou za den, roster pořád — rozbalený "
+      + "zabral celou první obrazovku. Spolu se složeným varováním o záloze, "
+      + "lištou na jednom posuvném řádku a razítkem verze přesunutým pod "
+      + "tabulku začíná první pokémon na 525. pixelu místo na 1408. — tedy "
+      + "hned, ne po dvou obrazovkách rolování. Na počítači se nic z toho "
+      + "neděje.</li>"
       + "<li><b>Rozbor otevře klepnutí kamkoli na kartu</b>, ne jenom na jméno. "
       + "Hvězdička, koš a odkazy si svůj klik nechávají.</li>"
       + "<li><b>Vysvětlivky z bublin jsou v rozboru</b>, v sekci "
