@@ -3377,7 +3377,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-09 18:28";
+  var BUILD = "2026-09-09 19:43";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -3492,15 +3492,6 @@
   }
 
   indexRows(REFERENCE.raidAttackers, RAID_BY);
-  // Nejlepší útočníci na každý typ — používá se ve verdiktu u kusů, které
-  // slot drží jen jako náplast: musí být vidět, čím je nahradit.
-  var NEJ_UTOCNICI = {};
-  REFERENCE.raidAttackers.forEach(function (e) {
-    if (!NEJ_UTOCNICI[e.type]) NEJ_UTOCNICI[e.type] = [];
-    if (NEJ_UTOCNICI[e.type].length < 3) {
-      NEJ_UTOCNICI[e.type].push((e.form && /Mega|Primal/.test(e.form) ? "Mega " : "") + e.pokemon);
-    }
-  });
   // gymDefenders se sem SCHVÁLNĚ neindexují: gymRoleFor si obránce počítá
   // sám z výdrže přes všech 1110 druhů a ruční osmičku ignoruje (byla v ní
   // i Dialga, kterou do gymu dát nejde). Do appky se ta část dat proto už
@@ -7308,10 +7299,50 @@
     return (b.sloty || []).map(function (sl) { return sl.popis; }).join(", ");
   }
 
-  /** Čím kus nahradit, až se objeví něco lepšího. */
+  /** Čím kus nahradit, až se objeví něco lepšího.
+   *
+   *  Bere se ze SPOČÍTANÉHO žebříčku, ne z ručního seznamu v reference.json.
+   *  Ten je ze srpna a jméno v něm zastarává s každým balance patchem i s novou
+   *  generací — a je to jediné místo, kde appka uživateli říká „shánět tohle".
+   *  Spočítaný žebříček je ze stejných dat jako zbytek rozhodování, takže se
+   *  aspoň nemůže rozejít sám se sebou.
+   *
+   *  Jsou to ZÁKLADNÍ formy, ne megy: mega je dočasné zesílení druhu, který
+   *  stejně musíš mít, kdežto tady jde o radu „tohle chytej". Ruční seznam
+   *  psal „Mega Lucario", což se jako cíl lovu chytit nedá.
+   *
+   *  Jména se odduplikují: Landorus Incarnate a Therian jsou dva klíče, ale
+   *  ve hře je to jedno jméno a „Landorus, Groudon, Landorus" nedává smysl. */
+  var nejUtocniciCache = null;
+  function nejUtocniciNaTyp() {
+    if (nejUtocniciCache) return nejUtocniciCache;
+    var podleTypu = {};
+    var idx = raidRankIndex();
+    Object.keys(idx).forEach(function (k) {
+      (idx[k] || []).forEach(function (e) {
+        (podleTypu[e.type] = podleTypu[e.type] || []).push({ klic: k, rank: e.rank });
+      });
+    });
+    var out = {};
+    Object.keys(podleTypu).forEach(function (t) {
+      var videno = {}, jmena = [];
+      podleTypu[t].sort(function (a, b) { return a.rank - b.rank; }).forEach(function (x) {
+        if (jmena.length >= 3) return;
+        var d = dexByKey(x.klic);
+        var jm = (d && d.name) || x.klic;
+        if (videno[jm]) return;
+        videno[jm] = true;
+        jmena.push(jm);
+      });
+      out[t] = jmena;
+    });
+    nejUtocniciCache = out;
+    return out;
+  }
+
   function cimNahradit(sl) {
     if (!sl || sl.druh !== "raid") return "";
-    var nej = NEJ_UTOCNICI[sl.typ];
+    var nej = nejUtocniciNaTyp()[sl.typ];
     return nej && nej.length ? nej.join(", ") : "";
   }
 
@@ -9290,9 +9321,15 @@
       + "<tr><td>Kdo je v které lize PvP meta</td>"
       + "<td>PvPoke top " + (DATA_INFO.metaTop || "?") + " — " + agePhrase(DATA_INFO.meta) + "</td>"
       + "<td class=\"src-soft\">názor komunity, mění se s balance patchi</td></tr>"
-      + "<tr><td>TOP raidoví útočníci a gymoví obránci</td>"
-      + "<td>ručně udržovaný seznam — " + agePhrase(DATA_INFO.reference) + "</td>"
-      + "<td class=\"src-soft\">nejvíc náchylné zastarat</td></tr>"
+      + "<tr><td>Gymoví obránci</td>"
+      + "<td>počítá si appka sama z výdrže (Def × HP) a typového profilu "
+      + "přes celý pokédex, " + Object.keys(gymRankIndex()).length + " druhů</td>"
+      + "<td class=\"src-hard\">odvozené z tvrdých dat</td></tr>"
+      + "<tr><td>Ruční seznam v reference.json</td>"
+      + "<td>" + agePhrase(DATA_INFO.reference) + " — už jen záloha pro druh, "
+      + "na který výpočet nesáhne. Dneska nesáhne na žádný, takže se nepoužívá "
+      + "vůbec. Gymová část se do appky ani nebalí.</td>"
+      + "<td class=\"src-soft\">nejvíc náchylné zastarat, proto se nepočítá</td></tr>"
       + "<tr><td>Kdo je jak dobrý útočník na daný typ</td>"
       + "<td>počítá si appka sama z DPS (útoky × staty), " + RAID_TOP_N
       + " nejlepších druhů na typ, minimálně " + Math.round(RAID_MIN_PCT * 100)
@@ -12477,7 +12514,11 @@
    *  v reference.json se přidává jen tam, kde výpočet nic nenašel. */
   function raidRolesFor(name) {
     var dk = dexKey(name);
-    var computed = raidRankIndex()[dk] || raidRankIndex()[dk.split("-")[0]] || [];
+    // dataKlic() přeloží mezi dvojčaty s jedním statlinem: „Zacian" vede
+    // žebříček pod `zacian-crownedsword`, „Landorus" pod `-incarnate`.
+    // Bez toho spadlo šest druhů zbytečně na ruční seznam ze srpna.
+    var computed = raidRankIndex()[dk] || raidRankIndex()[dataKlic(dk)]
+      || raidRankIndex()[dk.split("-")[0]] || [];
     if (computed.length) return computed;
     var key = speciesKey(name);
     return (key && RAID_BY[key]) ? RAID_BY[key] : [];
