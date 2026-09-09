@@ -3341,7 +3341,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-09 09:30";
+  var BUILD = "2026-09-09 09:37";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4849,6 +4849,10 @@
     return !!(search || typeFilter || typFiltrAktivni() || silnyFiltrAktivni()
       || pvpFiltrAktivni()
       || hodnotaFiltrAktivni() || znackaFiltrAktivni()
+      // Oba výběry nad tabulkou taky filtrují. Dokud se nepočítaly,
+      // zůstávalo tlačítko „Zrušit filtry“ šedé a nedalo se jimi kliknout.
+      || (typeof filterMode === "string" && filterMode !== "all")
+      || (typeof viewMode === "string" && viewMode !== "verdict")
       || sortKey || sortKey2);
   }
 
