@@ -446,8 +446,6 @@
   #typeTable td.x1 { color: var(--text-muted); opacity: .45; }
   .proh-utok { display: block; }
   .proh-utok .uv-pole { width: 100%; }
-  .typ-matice-h { font-weight: 700; font-size: 13px; color: var(--series-1);
-    padding: 10px 0 4px; }
   .typ-hledacek { margin-bottom: 16px; }
   .typ-hledacek-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
     color: var(--text-muted); margin-bottom: 8px; }
@@ -582,6 +580,10 @@
   .nast-mrizka .setting { min-width: 0; break-inside: avoid;
     margin: 0 0 16px; display: block; }
   .nast-mrizka .setting label { display: block; margin-bottom: 4px; }
+  /* Zaškrtávací políčko patří k levému okraji jako všechna ostatní pole,
+     ne doprostřed sloupce, kam ho posunula výchozí šířka `input`. */
+  .setting-prepinac input[type="checkbox"] { width: auto; margin: 0;
+    align-self: flex-start; }
   .nast-mrizka .setting input { margin-bottom: 4px; }
 
   /* toolbar */
@@ -2312,10 +2314,16 @@
   th.pvp-head { cursor: pointer; }
   /* Vlastní tlačítko, ne znak v textu — na malou šipku vedle řazení se klikalo
      špatně a místo filtru se řadila tabulka. */
-  .pvp-filtr-ikona { display: inline; margin-left: 3px; padding: 0;
-    font: inherit; font-size: 11px; line-height: 1; vertical-align: baseline;
+  /* Šipka byla 8 px široká a místo filtru se trefovalo řazení. Klepací cíl
+     je teď 22×20 px — sám znak zůstává stejně malý, jen kolem něj je
+     místo, které patří tlačítku, ne záhlaví. */
+  .pvp-filtr-ikona { display: inline-flex; align-items: center;
+    justify-content: center; margin-left: 2px; padding: 0;
+    min-width: 22px; height: 20px; border-radius: 5px;
+    font: inherit; font-size: 11px; line-height: 1; vertical-align: middle;
     background: none; color: var(--text-muted); border: 0; cursor: pointer; }
-  .pvp-filtr-ikona:hover { color: var(--text-primary); }
+  .pvp-filtr-ikona:hover { color: var(--text-primary);
+    background: color-mix(in srgb, var(--series-1) 22%, transparent); }
   th.pvp-head.aktivni .pvp-filtr-ikona { color: var(--series-1); font-weight: 700; }
   th.pvp-head.aktivni { color: var(--series-1); }
   .d-verdict-row { display: flex; gap: 12px; align-items: flex-start; }
@@ -2462,25 +2470,39 @@
     margin: 0; padding: 16px; border: 0; border-radius: 0;
     background: color-mix(in srgb, var(--page) 78%, transparent); }
   .rucni-box > * { display: none; }
-  .rucni-box > .rb-okno { display: block; width: min(560px, 100%);
-    max-height: 100%; overflow-y: auto; padding: 16px 18px; border-radius: 14px;
+  .rucni-box > .rb-okno { display: block; width: min(620px, 100%);
+    max-height: 100%; overflow-y: auto; padding: 20px 22px; border-radius: 16px;
     border: 1px solid var(--grid); background: var(--surface-1);
-    box-shadow: 0 14px 44px rgba(0, 0, 0, .45); }
-  .rucni-box .rb-head b { font-size: 16px; }
+    box-shadow: 0 18px 56px rgba(0, 0, 0, .5); }
+  .rucni-box .rb-head b { font-size: 17px; }
   .rucni-box { margin: 0 0 10px; padding: 11px 13px; border-radius: 10px;
     border: 1px solid var(--border); background: var(--input-bg); }
   .rucni-box .rb-head { margin-bottom: 8px; }
   .rucni-box .rb-head .hint { display: block; margin-top: 3px; line-height: 1.5; }
-  .rucni-box .rb-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* Mřížka, ne zalamovaný flex: pole měla každé jinou šířku a řádky
+     se rozpadaly podle toho, jak dlouhý byl zrovna popisek. */
+  .rucni-box .rb-grid { display: grid; gap: 10px 12px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
   .rucni-box label { display: flex; flex-direction: column; gap: 3px;
     font-size: 12px; color: var(--text-secondary); }
-  .rucni-box input { padding: 5px 8px; border-radius: 7px; font-size: 14px;
+  .rucni-box input, .rucni-box select { width: 100%; box-sizing: border-box;
+    padding: 7px 9px; border-radius: 8px; font-size: 14px;
     border: 1px solid var(--input-border); background: var(--page);
     color: var(--text-primary); width: 9em; }
-  .rucni-box .rb-grid label:first-child input { width: 13em; }
-  .rucni-box .rb-znacky { display: flex; flex-wrap: wrap; gap: 6px 16px;
-    margin-top: 10px; font-size: 12.5px; color: var(--text-secondary); }
-  .rucni-box .rb-znacky label { flex-direction: row; align-items: center; gap: 5px; }
+  /* Značky vypadají a chovají se stejně jako v rozboru kusu: barevný
+     odznáček, který se klepnutím rozsvítí. Zaškrtávací políčka tu byla
+     cizorodá — nikde jinde v appce se značka takhle nezapíná. */
+  .rucni-box .rb-znacky { display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 14px; }
+  .rucni-box .rb-znacky input { display: none; }
+  .rucni-box .rb-znacka { cursor: pointer; }
+  .rucni-box .rb-znacka .rarity-chip { display: inline-block; opacity: .35;
+    filter: grayscale(1); transition: opacity .12s, filter .12s; }
+  .rucni-box .rb-znacka input:checked + .rarity-chip { opacity: 1;
+    filter: none; }
+  .rucni-box .rb-hlava-radek { display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px; }
+  .rucni-box .rb-nahled { width: 44px; height: 44px; flex: none; }
   .rucni-box .rb-grid + .rb-grid { margin-top: 8px; }
   .rucni-box .rb-out { margin: 9px 0 4px; font-size: 13px; line-height: 1.5; }
   .rucni-box .rb-out.ok { color: var(--status-good); }
@@ -2747,7 +2769,7 @@
           „je to teď zbytečné“ a „za tu cenu je to jedno“, musíš říct ty.</span>
         <div id="ligaVahaInfo" class="prah-krivka"></div>
       </div>
-      <div class="setting">
+      <div class="setting setting-prepinac">
         <label for="keepForms">Shadow a Lucky držet vždy</label>
         <input type="checkbox" id="keepForms" />
         <span class="hint">Vypnuté (doporučeno): shadow, lucky, purified a dynamax se počítají
@@ -2844,7 +2866,6 @@
          otevírá. Nahoru patří výběr typu a odpověď na něj; matice je pod tím
          na jedno klepnutí, i s vysvětlením, jak se čte. -->
     <div class="typ-matice">
-      <div class="typ-matice-h">Celá tabulka 18×18</div>
       <p class="plan-intro">Řádek = <b>útočící typ</b>, sloupec = <b>bránící typ</b>.
         Hodnoty v Pokémon GO: super efektivní <b>×1,6</b>, neefektivní
         <b>×0,625</b>, dvojitě neefektivní <b>×0,39</b>. Tečka znamená <b>×1</b>.
@@ -3086,10 +3107,13 @@
          jedna cesta: okno, vyplnit, přidat. -->
     <div class="rucni-box" id="rucniBox" hidden>
       <div class="rb-okno">
-      <div class="rb-head"><b>Přidat pokémona</b>
+      <div class="rb-hlava-radek">
+        <img class="rb-nahled" id="rbNahled" alt="" hidden />
+        <div class="rb-head"><b>Přidat pokémona</b>
         <span class="hint">Jméno a CP stačí — <b>level appka dopočítá z CP a IV</b>.
           Hodí se na kus, který sken nezachytí celý: nasazený v <b>gymu</b>
           nebo v <b>Dynamax power spotu</b>.</span></div>
+      </div>
       <div class="rb-grid">
         <label>Pokémon<input id="rbName" list="rbNames" autocomplete="off"
           placeholder="Machamp" /></label>
@@ -3119,10 +3143,14 @@
           placeholder="nepovinné" /></label>
       </div>
       <div class="rb-znacky">
-        <label><input type="checkbox" id="rbDmax" /> Dynamax</label>
-        <label><input type="checkbox" id="rbShiny" /> Shiny</label>
-        <label><input type="checkbox" id="rbCute" /> CUTE (nikdy nepustit)</label>
-        <label><input type="checkbox" id="rbStar" /> Označit ★</label>
+        <label class="rb-znacka" title="Dynamax — použitelný v Max Battles">
+          <input type="checkbox" id="rbDmax" /><span class="rarity-chip r-D">DMAX</span></label>
+        <label class="rb-znacka" title="Shiny — hra ho nepustí do hromadného výběru">
+          <input type="checkbox" id="rbShiny" /><span class="rarity-chip r-S">SHINY</span></label>
+        <label class="rb-znacka" title="CUTE — appka ho nikdy nenabídne k vyhození">
+          <input type="checkbox" id="rbCute" /><span class="rarity-chip r-C">CUTE</span></label>
+        <label class="rb-znacka" title="Označit hvězdičkou (jako oblíbený ve hře)">
+          <input type="checkbox" id="rbStar" /><span class="rarity-chip r-L2">★</span></label>
       </div>
       <datalist id="rbNames"></datalist>
       <datalist id="rbFastNames"></datalist>
@@ -3341,7 +3369,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-09 09:37";
+  var BUILD = "2026-09-09 10:44";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -8037,6 +8065,23 @@
         keepTitle = "Nedrží žádnou roli: " + proc.join(", ")
           + (b.isFinalEvo === false && !poEvo
             ? " a ani po evoluci by to nic nezměnilo" : "") + ".";
+        // „Proč si mám nechat kus se 40 % a pustit ten s 80 %?“ Bez téhle věty
+        // to vypadá jako chyba. Roli drží shadow kopie, protože shadow má
+        // o pětinu vyšší útok — a to je u raidu víc než IV, které rozhoduje
+        // až mezi kusy, co jsou na tom jinak stejně.
+        var lepsiJinak = (lastBase || []).filter(function (x) {
+          return x !== b && x.groupKey === b.groupKey
+            && (x.sloty || []).length > 0 && (x.ivPct || 0) < (b.ivPct || 0);
+        })[0];
+        if (lepsiJinak) {
+          keepTitle += " Roli drží jiný kus téhož druhu s NIŽŠÍM IV ("
+            + Math.round((lepsiJinak.ivPct || 0) * 100) + " %)"
+            + (lepsiJinak.row.forma === "Shadow"
+                ? " — je to shadow, a ten má o 20 % vyšší útok, což u raidu"
+                  + " rozhoduje víc než IV"
+                : " — má lepší útoky nebo lepší pořadí v lize")
+            + ". IV je až tiebreak mezi kusy, které jsou na tom jinak stejně.";
+        }
       }
 
       var powerup, powerupTone, powerupNote = "";
@@ -11624,10 +11669,15 @@
       delBtn.textContent = "🗑";
       delBtn.title = "Smazat řádek";
       delBtn.addEventListener("click", function () {
+        // Smažený kus uvolní slot a někomu dalšímu se tím verdikt překlopí
+        // na „nechat“ — stejný případ jako u ruční značky, jen opačným směrem.
+        // Bez hlášky by se to člověk nedozvěděl, když už ten kus „projil“.
+        var predSmazanim = verdiktSnimek();
         var key = scanKey(r);
         if (r.cp) discarded.push({ k: key, at: parseScanDate(r.scanDate), n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
         rows = rows.filter(function (x) { return x.id !== r.id; });
         renderBody(); renderTiles(); persist(true); renderDiscardBtn();
+        ohlasitZmenuVerdiktu(predSmazanim, r.id);
       });
       tdDel.appendChild(delBtn);
       tr.appendChild(tdDel);
@@ -11708,9 +11758,10 @@
     if (!box) return;
     if (!zmeneni.length) { box.style.display = "none"; box.innerHTML = ""; return; }
     box.style.display = "";
-    box.innerHTML = "<b>" + sklonuj(zmeneni.length, "Jin\u00e9mu kusu", "Jin\u00fdm kus\u016fm",
-        "Jin\u00fdm kus\u016fm")
-      + " se t\u00edm zm\u011bnil verdikt.</b> "
+    box.innerHTML = "<b>Změnilo to verdikt u "
+      + sklonuj(zmeneni.length, "jiného kusu", "jiných kusů",
+        "jiných kusů")
+      + ".</b> "
       + zmeneni.slice(0, 6).map(function (z) {
         return escHtml(z.jmeno) + " \u2192 " + escHtml(z.verdikt);
       }).join(", ")
@@ -13785,8 +13836,69 @@
    *    −  už máš dobrý kus — pak je to jen shiny lov.
    *  Každý bod se při vykreslení napíše slovem, ať není pořadí hádanka.
    */
+  /** Kdo je v raidech OPRAVDU dneska.
+   *
+   *  `EVENTS.raids` ze ScrapedDucku je snímek „aktuálních bossů“ bez dat —
+   *  a ten se zpoždúvá o celou rotaci. Při stažení 9. 9. v něm pořád stáli
+   *  Regirock/Regice/Registeel, jejichž akce skončila 8. 9. ve 22:00, a naopak
+   *  chyběl Zacian, který ten den v šest ráno začal.
+   *
+   *  Datumy zná druhá strana dat: rozpis akcí z LeekDucku. Každé okno akce nese
+   *  sekci `raid` se jmény bossů, takže se z něj dá přečíst, co běží teď a co
+   *  už skončilo. Snímek ze ScrapedDucku zůstává jako zdroj typů a CP a jako
+   *  seznam stálé rotace (jedno- a tříhvězdičkoví bossové vlastní akci nemají). */
+  function bossZAkci() {
+    var ted = Date.now();
+    var bezi = {}, skoncilo = {};
+    var tierZNazvu = function (nazev) {
+      var n = String(nazev || "");
+      if (/mega/i.test(n)) return "Mega Raids";
+      if (/shadow/i.test(n)) return "Shadow Raids";
+      if (/5-star|5 star/i.test(n)) return "5-Star Raids";
+      if (/3-star|3 star/i.test(n)) return "3-Star Raids";
+      if (/1-star|1 star/i.test(n)) return "1-Star Raids";
+      return "Raids";
+    };
+    ((EVENTS && EVENTS.events) || []).forEach(function (e) {
+      if (String(e[1] || "").indexOf("raid") !== 0) return;
+      (e[7] || []).forEach(function (o) {
+        var od = evDatum(o[0]), doKdy = evDatum(o[1]);
+        var sek = o[2] || {};
+        (sek.raid || []).forEach(function (x) {
+          // shiny === -1 je mezinadpis seznamu, ne pokémon
+          if (x[1] === -1) return;
+          var jm = x[0];
+          var jeShadow = /shadow/i.test(e[0]);
+          var plne = jeShadow && !/^shadow/i.test(jm) ? "Shadow " + jm : jm;
+          if (od && doKdy && od.getTime() <= ted && doKdy.getTime() >= ted) {
+            bezi[plne] = { tier: tierZNazvu(e[0]), shiny: 1 };
+          } else if (doKdy && doKdy.getTime() < ted) {
+            skoncilo[plne] = true;
+          }
+        });
+      });
+    });
+
+    var klic = function (jm) {
+      return String(jm).toLowerCase().replace(/[^a-z0-9]+/g, "");
+    };
+    var out = [], videno = {};
+    ((EVENTS && EVENTS.raids) || []).forEach(function (r) {
+      // Boss, jehož akce prokazatelně skončila a žádná jiná ho nedrží, už není.
+      if (skoncilo[r[0]] && !bezi[r[0]]) return;
+      videno[klic(r[0])] = true;
+      out.push(r);
+    });
+    Object.keys(bezi).forEach(function (jm) {
+      if (videno[klic(jm)]) return;
+      var d = dexEntry(jm.replace(/^shadow\s+/i, ""));
+      out.push([jm, bezi[jm].tier, d ? d.types : [], [], [], bezi[jm].shiny]);
+    });
+    return out;
+  }
+
   function bossovePodlePriority(base) {
-    var seznam = (EVENTS && EVENTS.raids) || [];
+    var seznam = bossZAkci();
     if (!seznam.length) return [];
     var mam = drzeneDruhy(base || []);
     var raidIdx = raidRankIndex();
@@ -13837,15 +13949,29 @@
       }
 
       // Hraje některou ligu, kterou rozpočet drží?
-      var vLize = "";
+      var vLize = "", nejRank = null;
       if (klic) {
         LEAGUES.concat([{ nazev: "Master League", meta: "master" }]).forEach(function (lg) {
-          if (vLize) return;
           var p = ligovePoradi(klic, lg.meta);
-          if (p && p.jeMeta) vLize = lg.nazev + " #" + p.rank;
+          if (!p || !p.jeMeta) return;
+          if (nejRank === null || p.rank < nejRank) {
+            nejRank = p.rank;
+            vLize = lg.nazev + " #" + p.rank;
+          }
         });
       }
-      if (vLize) { skore += 18; duvody.push("hraje " + vLize); }
+      if (vLize) {
+        // Špička ligy je jiná váha než „někde v mete“ — Zacian jako #1
+        // v Master League je důvod jít, i když žádný typ nelátá.
+        skore += nejRank <= 20 ? 30 : 18;
+        duvody.push("hraje " + vLize);
+      }
+      // Legendární, mytický a Ultra Beast se venku nechytí — buď raid, nebo nic.
+      if (d && d.rarity) {
+        skore += 20;
+        duvody.push({ L: "legendární", M: "mytický", U: "Ultra Beast" }[d.rarity]
+          + " — jinde než z raidu ho nemáš kde vzít");
+      }
 
       // Co už mám?
       var kvalita = klic !== null && mam[klic] !== undefined ? mam[klic] : null;
@@ -18767,10 +18893,27 @@
     });
 
     // Otevřít okno umí jediné tlačítko — „+ Přidat pokémona“.
+    // Obrázek druhu v hlavičce okna — hned je vidět, jestli sedí to, co
+    // člověk napsal („Alolan Ninetales“ vs „Ninetales“).
+    var obnovitNahled = function () {
+      var img = document.getElementById("rbNahled");
+      if (!img) return;
+      var d = dexEntry(String(pole.name.value || "").trim());
+      if (!d) { img.hidden = true; img.removeAttribute("src"); return; }
+      var tmp = document.createElement("div");
+      tmp.innerHTML = obrazekHtml(d.name, d, "rb-nahled");
+      var zdroj = tmp.querySelector("img");
+      if (!zdroj) { img.hidden = true; return; }
+      img.src = zdroj.getAttribute("src");
+      img.alt = d.name;
+      img.hidden = false;
+    };
+    pole.name.addEventListener("input", obnovitNahled);
     window.__pgoOtevritPridat = function () {
       naplnitDruhy();
       box.hidden = false;
       prekreslit();
+      obnovitNahled();
       pole.name.focus();
     };
     document.getElementById("rbCancel").addEventListener("click", function () {
@@ -20060,12 +20203,29 @@
       + "<b>+18</b> když hraje některou ligu z mety, <b>+22</b> když ho v rosteru "
       + "nemáš vůbec, <b>+8</b> za shiny — a <b>−30</b>, když už máš kus nad 90 %. "
       + "U každého bosse je napsané, které z těch důvodů na něj sedly.</li>"
+      + "<li><b>Odkud se bossové berou.</b> Snímek „aktuálních bossů“ ze "
+      + "ScrapedDucku je bez dat a zpožďuje se o celou rotaci — 9. 9. v něm "
+      + "pořád stáli Regi bossové, kterým akce skončila 8. 9. ve 22:00, a "
+      + "chyběl Zacian, který ten den v šest ráno začal. Datumy zná rozpis "
+      + "akcí z LeekDucku, takže se žebříček skládá z něj: co má okno akce "
+      + "právě teď běžící, je v seznamu, co skončilo, vypadne. Snímek "
+      + "zůstává jako zdroj typů a jako stálá rotace jedno- a "
+      + "tříhvězdičkových bossů, kteří vlastní akci nemají.</li>"
       + "<li><b>Změnilo to verdikt u jiných kusů.</b> Rozpočet rolí má pevný "
       + "počet slotů, takže když označíš značku (DMAX, CUTE, shiny, Shadow) "
       + "u lepšího kusu, může tím horší vypadnout ze slotu — i když už ho máš "
-      + "„projitý a ponechaný“. Appka to hlásí pruhem nad tabulkou a umí ty "
+      + "„projitý a ponechaný“. Stejně to funguje i opačně: když kus smažeš, "
+      + "uvolněný slot připadne dalšímu v pořadí a tomu se verdikt překlopí "
+      + "na „nechat“. Appka to hlásí stejným pruhem nad tabulkou a umí ty "
       + "kusy rovnou vyfiltrovat. Hlásí se jen <b>překlopení nechat/pustit</b>, "
       + "ne přeformulování téhož rozhodnutí.</li>"
+      + "<li><b>Proč roli drží kus s nižším IV.</b> O slot se soupeří <b>silou "
+      + "v roli</b>, ne procentem IV: rozhodují útoky, pořadí druhu v lize a "
+      + "u shadow kusu i to, že má <b>o pětinu vyšší útok</b>, což v raidu "
+      + "váží víc než pár bodů IV. IV je až <b>tiebreak</b> mezi kusy, které "
+      + "jsou na tom jinak stejně. Když ti tedy appka nechává 40% kus a pouští "
+      + "80%, najedeš myší na jeho verdikt — v bublině je napsané, který kus "
+      + "roli drží a čím ji vyhrál.</li>"
       + "<li><b>Mega nedrží druhý kus.</b> Mega je trvalé odemknutí druhu, takže "
       + "slot dostane přednostně ten kus, který si necháváš už kvůli jiné roli. "
       + "Dřív se vybíral čistě nejlepší IV, takže mohla připadnout kusu, který "
@@ -21516,7 +21676,8 @@
       // textu — testy i vyhledávání tím pádem vidí totéž co dřív.
       b.innerHTML = zalIkona(k.klic) + '<span class="zal-txt">'
         + zalEsc(k.popis) + "</span>";
-      b.title = "Podrž a táhni, když ji chceš přesunout jinam";
+      // Žádný popisek: bublina „Podrž a táhni…“ vyskakovala u každého
+      // přejetí myší přes menu a překrývala obsah pod ním.
       b.addEventListener("click", function () {
         if (praveTazeno) return;
         prepni(k.klic);
