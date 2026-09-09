@@ -2636,6 +2636,23 @@
     .settings-row { flex-direction: column; }
     .toolbar { flex-wrap: wrap; }
   }
+
+  /* === ATLAS CSS START === */
+/* Vzhledová vrstva appky — vlastní soubor, aby se nemuselo sahat do
+   pokemon_tracker_app.html a dva lidi se navzájem nepřepisovali.
+
+   Zapéká se při buildu (tools/sync_reference.py) mezi značky ATLAS CSS
+   v hlavním souboru, tedy ÚPLNĚ NAKONEC celého <style>. Díky tomu přebije
+   výchozí vzhled bez !important, jen tím, že stojí níž.
+
+   Pravidla:
+   - Vlastní třídy prefixuj `atlas-`, ať je poznat, co je čí.
+   - Barvy ber z proměnných (--surface-1, --text-primary, --series-1, …),
+     jinak se rozbije tmavý režim.
+   - Appka musí držet do 500 px šířky.
+
+   Kontrakt na data je v docs/ATLAS_KONTRAKT.md. */
+  /* === ATLAS CSS END === */
 </style>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0d0d0d"><link rel="apple-touch-icon" href="ikona-192.png"><script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js");});}</script></head>
 <body>
@@ -3377,7 +3394,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-09 20:35";
+  var BUILD = "2026-09-09 22:08";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -22883,6 +22900,31 @@
     new MutationObserver(prekreslit).observe(tbody, { childList: true, subtree: true });
   })();
 
+
+// === ATLAS JS START ===
+/* Vzhledová vrstva appky — vlastní soubor, aby se nemuselo sahat do
+   pokemon_tracker_app.html a dva lidi se navzájem nepřepisovali.
+
+   Zapéká se při buildu (tools/sync_reference.py) mezi značky ATLAS JS,
+   tedy až za celý engine. Když sem kód doběhne, `window.__pgo` už existuje
+   a je hotové i první vykreslení.
+
+   Co se smí číst a na co se dá spolehnout: docs/ATLAS_KONTRAKT.md.
+   Engine se odsud NEUPRAVUJE — když něco chybí, řekne se o pole jménem
+   a doplní se do enginu i s testem. Přepisovat `computed` po analyze()
+   znamená, že se oprava ve výpočtu tiše ztratí.
+
+   Obrázky: web-app/atlas/atlas-art.json se do HTML NEZAPÉKÁ. Kopíruje se
+   vedle appky a stahuje se až když je potřeba, takže appka zůstane malá
+   a v mobilu se otevře rychle. */
+(function () {
+  "use strict";
+
+  if (!window.__pgo) return;   // engine se nenačetl, vzhled nemá nad čím stavět
+
+  // --- tady začíná vzhledová vrstva ---
+})();
+// === ATLAS JS END ===
 </script>
 </body>
 </html>
