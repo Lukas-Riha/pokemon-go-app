@@ -3377,7 +3377,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-09 19:43";
+  var BUILD = "2026-09-09 20:35";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -9052,6 +9052,19 @@
       //
       // U mytického je to zámek, u legendárního a Ultra Beasta jen varování —
       // ten se pustit dá, jen je to nevratné.
+      // Kus, který drží jen značka (CUTE) nebo dokonalé IV, žádnou roli
+      // nezastává. Do prachového plánu proto nepatří: sype se do role,
+      // a tenhle žádnou nemá.
+      var jenZnamka = cuteZachranil || stoZachranil;
+      // …a proto se do něj ani nesype prach. Dokonalé IV samo o sobě
+      // roli nedělá, což appka píše všude jinde — jen sloupec Vylepšit
+      // na to zapomínal a u 100% Rattaty svítilo „Zvážit".
+      if (jenZnamka) {
+        powerup = "Ne";
+        powerupTone = "muted";
+        powerupSub = cuteZachranil ? "drží ho značka, ne role"
+          : "drží ho dokonalé IV, ne role";
+      }
       if (cuteZachranil) keepSub = "Protože CUTE";
       // Nad prahem je až po očištění — bez téhle věty vypadá verdikt jako
       // chyba: v tabulce svítí IV pod prahem a kus se přesto nechává.
@@ -9160,6 +9173,7 @@
         // z toho dělají seznam toho, co se má při chytání hledat.
         jeMezera: keepGood && !!b.jenMezera,
         powerup: powerup, powerupTone: powerupTone, powerupSub: powerupSub,
+        jenZnamka: jenZnamka,
         cost: b.cost,
         costText: b.cost ? (formatDust(b.cost.dust) + " prachu + " + b.cost.candy + " bonbónů do L40"
           + (b.cost.xl ? " (+" + b.cost.xl + " XL)" : "")) : "",
@@ -16438,6 +16452,11 @@
       var r = b.row, c = computed[r.id];
       if (!c || !b.levelNum) return;
       if (c.keep && String(c.keep).indexOf("Zahodit") === 0) return;   // do koše prach nesypeme
+      // Kus, který se drží jen kvůli značce CUTE nebo dokonalému IV,
+      // nedrží žádnou roli — prach do něj nemá kam přinést užitek.
+      // Anet se v rozpočtu nabízeli přesně takoví: „nechala jsem si je,
+      // protože jsou hezcí", a appka je poslala vylepšovat.
+      if (c.jenZnamka) return;
 
       // 1) PvP: cíl je nejvyšší level, který se ještě vejde pod cap ligy
       //
@@ -16525,6 +16544,10 @@
       }
       if (!useky.length) useky.push({ od: b.levelNum, doUr: cil.uroven });
 
+      // Kolik ještě stojí DOTÁHNOUT TENHLE KUS do cíle. Tím se pak
+      // porovnávají kopie téhož druhu: rozdělaný kus se má dodělat dřív,
+      // než se začne od nuly s druhým.
+      var zbyvaCelkem = (cil.cena && cil.cena.dust) || 0;
       var poslEfektivita = Infinity;
       useky.forEach(function (u, i) {
         var cena = (useky.length === 1 && u.od === b.levelNum && u.doUr === cil.uroven)
@@ -16559,7 +16582,8 @@
           // skóre druhu v lize se dosud do plánu vůbec nepředávalo, takže
           // se nedalo ukázat, z čeho se kvalita skládá
           skoreDruhu: cil.skoreDruhu === undefined ? null : cil.skoreDruhu,
-          cena: cena, prinos: prinos,
+          cena: cena, prinos: prinos, zbyvaCelkem: zbyvaCelkem,
+          odUrovneKusu: b.levelNum,
           nedotazeny: !!cil.nedotazeny && u.doUr === cil.uroven,
           efektivita: ef,
           evoluce: cil.evoluce && i === 0
@@ -16576,23 +16600,51 @@
     // Horší kopie se nemažou (do raidu se posílá šestka, takže druhý kus
     // stejného druhu smysl má) — jen se odsunou pod ty, které se mají udělat
     // dřív, a řekne se u nich proč.
-    var skupiny = {};
+    //
+    // POZOR na směr porovnání. Dřív se řadilo podle „kvalita na cenu KROKU",
+    // jenže kvalita je u raidu vlastnost DRUHU, takže obě kopie mají tutéž,
+    // a rozhodla levnější první etapa. Vyhrál tím kus na L8 nad kusem na
+    // L30 téhož druhu: appka radila sypat prach do trojsetového Gyaradose,
+    // přestože vedle stál dva tisíce CP silný. Rozhoduje proto CELÁ zbylá
+    // cesta do cíle — rozdělaný kus se dodělá dřív, než se začne od nuly.
+    // Porovnávají se KUSY, ne kroky. Dřív byl v klíči i pořadový krok, takže
+    // kus rozdělený na dvě etapy a kus na jednu spadly do různých skupin
+    // a nikdy se nepotkaly — přesně ten případ, kdy Gyarados na L8 (dvě etapy)
+    // předběhl Gyaradose na L30 (jedna etapa) téhož druhu.
+    var kusy = {};
     out.forEach(function (e) {
-      // Kroky JEDNOHO kusu nejsou kopie druhu — jinak by si appka
-      // označila vlastní pokračování za „levnější cestu".
-      var klic = (speciesKey(e.row.pokemon) || e.row.pokemon) + "|" + e.role
-        + "|" + (e.krok ? e.krok : 0);
-      (skupiny[klic] = skupiny[klic] || []).push(e);
+      (kusy[e.row.id] = kusy[e.row.id] || { radky: [] }).radky.push(e);
+      kusy[e.row.id].kvalita = e.kvalita;
+      kusy[e.row.id].zbyvaCelkem = e.zbyvaCelkem;
+      kusy[e.row.id].uroven = e.odUrovneKusu;
+      kusy[e.row.id].role = e.role;
+      kusy[e.row.id].druh = speciesKey(e.row.pokemon) || e.row.pokemon;
+    });
+    var skupiny = {};
+    Object.keys(kusy).forEach(function (id) {
+      var k = kusy[id];
+      (skupiny[k.druh + "|" + k.role] = skupiny[k.druh + "|" + k.role] || []).push(k);
     });
     Object.keys(skupiny).forEach(function (klic) {
       var g = skupiny[klic];
       if (g.length < 2) return;
       g.sort(function (a, b) {
-        return (b.kvalita / b.cena.dust) - (a.kvalita / a.cena.dust);
+        // Kvalita na CELÉ zbývající cestě, ne na cenu jednoho kroku.
+        // Rozhoduje tím „kam se dostanu a za kolik“, a rozděláný kus tak
+        // přirozeně vyhraje: má stejný cíl a zbytěk cesty kratší. Pár bodů
+        // IV navíc to nepřebije, protože poměr klesne s cenou lín.
+        var za = function (x) {
+          var c = x.zbyvaCelkem || (x.radky[0] && x.radky[0].cena.dust) || 1;
+          return x.kvalita / c;
+        };
+        var r = za(b) - za(a);
+        if (r) return r;
+        return (b.uroven || 0) - (a.uroven || 0);
       });
-      g.forEach(function (e, i) {
+      var nej = g[0].radky[0];
+      g.forEach(function (k, i) {
         if (i === 0) return;
-        e.lepsiCesta = g[0];
+        k.radky.forEach(function (e) { e.lepsiCesta = nej; });
       });
     });
 
@@ -16721,8 +16773,9 @@
       if (e.lepsiCesta && !kopieHlaska) {
         kopieHlaska = true;
         h += '<tr class="dust-kopie-hranice"><td colspan="8">— odsud jsou další'
-          + " kopie stejných druhů: stejnou roli zvládne levněji kus nad čarou."
-          + " Do raidu se posílá šestka, takže druhý kus smysl má — ale až potom. —</td></tr>";
+          + " kopie stejných druhů: tutéž roli má rozdělaný kus nad čarou"
+          + " a dotáhnout ho stojí míň. Do raidu se posílá šestka, takže"
+          + " druhý kus smysl má — ale až potom. —</td></tr>";
       }
       var vejde = rozpocet === null || e.kumulativne <= rozpocet;
       if (!vejde && !hranice) {
@@ -16741,9 +16794,10 @@
         + (e.krok ? '<span class="plan-krok">krok ' + e.krok + "/"
             + e.krokuCelkem + "</span>" : "") + "</span>"
         + (e.lepsiCesta
-            ? '<span class="plan-id dust-levneji">levnější cesta: '
-              + (e.lepsiCesta.row.cp || "?") + " CP za "
-              + formatDust(e.lepsiCesta.cena.dust) + "</span>"
+            ? '<span class="plan-id dust-levneji">nejdřív dodělej '
+              + (e.lepsiCesta.row.cp || "?") + " CP — zbývá "
+              + formatDust(e.lepsiCesta.zbyvaCelkem || e.lepsiCesta.cena.dust)
+              + " místo " + formatDust(e.zbyvaCelkem || e.cena.dust) + "</span>"
             : "")
         + "</span></span></td>"
         // Role jako odznáček: „Raid Ground" a „PvP UL #14" jsou dvě různé
@@ -20691,6 +20745,26 @@
       + "liga a omezený formát vedou zvlášť; formát váží při rozhodování "
       + "<b>půl cesty</b> mezi „liga běží“ a „neběží“, protože CP limit je "
       + "stejný a kus tam vzít jde, ale meta je jiná.</li>"
+      + "</ul></div>";
+
+    h += "<h3>7g. Do čeho rozpočet prach nesype</h3>"
+      + "<div class=\"docs-vzorec\"><ul>"
+      + "<li><b>Kus, který drží jen značka.</b> CUTE a dokonalé IV jsou pojistky "
+      + "proti vyhození, ne role. Takový kus se pořád nechává, ale v rozpočtu "
+      + "nemá co dělat a sloupec <b>Vylepšit</b> u něj říká <b>Ne</b> "
+      + "s důvodem. Dřív se nabízeli k vylepšení právě tihle — u 100% Rattaty "
+      + "svítilo „Zvážit“, přestože žádnou roli nezastane.</li>"
+      + "<li><b>Rozdělaná kopie se dodělá dřív.</b> Když máš od druhu dva kusy "
+      + "na tutéž roli, plán počítá <b>celou zbylou cestu do cíle</b>, ne cenu "
+      + "nejbližšího kroku. Kus na L30 má stejný cíl jako kus na L8 a zbývá mu "
+      + "míň, takže jde napřed; ten druhý se odsune pod čáru a je u něj "
+      + "napsané, co dodělat dřív a o kolik je to lacinější. Dřív se porovnávaly "
+      + "jednotlivé KROKY, takže kus rozdělený na dvě etapy a kus na jednu se "
+      + "nikdy nepotkaly — a rozpočet radil sypat do trojsetového Gyaradose, "
+      + "přestože vedle stál stejný druh za 2400 CP.</li>"
+      + "<li><b>Pár bodů IV to nepřebije.</b> Rozhoduje kvalita na vynaložený "
+      + "prach, takže dražší cesta musí přinést výrazně lepší výsledek, ne jen "
+      + "o půl procenta.</li>"
       + "</ul></div>";
 
     h += "<h3>8. Jak číst kalendář akcí</h3>"
