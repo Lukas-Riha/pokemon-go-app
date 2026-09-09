@@ -3375,7 +3375,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-09 12:04";
+  var BUILD = "2026-09-09 13:56";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5137,7 +5137,11 @@
   }
 
   function seedExamples() {
-    rows.push(newRow({ pokemon: "Azumarill", forma: "Lucky", finalEvo: "Ano", cp: 1489, level: 24.5, ivAtk: 12, ivDef: 14, ivSta: 15, fastMove: "Bubble", charged1: "Ice Beam", charged2: "Play Rough", glRank: 3, ulRank: 8, buddy: "Ne", note: "Ukázkový řádek" }));
+    // CP musí sedět s levelem a IV, jinak si appka sama se sebou odporuje:
+    // 12/14/15 dává na L24,5 rovných 1082 CP, ne 1489 (to je až L37,5).
+    // S nesmyslným řádkem hlásila „cíl L37,5 → 1490 CP" a zároveň
+    // „vylepšit za 448 tis. prachu", přestože kus na tom CP už byl.
+    rows.push(newRow({ pokemon: "Azumarill", forma: "Lucky", finalEvo: "Ano", cp: 1082, level: 24.5, ivAtk: 12, ivDef: 14, ivSta: 15, fastMove: "Bubble", charged1: "Ice Beam", charged2: "Play Rough", glRank: 3, ulRank: 8, buddy: "Ne", note: "Ukázkový řádek" }));
     rows.push(newRow({ pokemon: "Registeel", forma: "Normal", finalEvo: "Ano", cp: 1498, level: 30.5, ivAtk: 15, ivDef: 15, ivSta: 14, fastMove: "Lock On", charged1: "Flash Cannon", charged2: "Focus Blast", glRank: 1, ulRank: 5, buddy: "Ano", note: "Ukázkový řádek" }));
     rows.push(newRow({ pokemon: "Pidgey", forma: "Normal", finalEvo: "Ne", cp: 289, level: 12, ivAtk: 3, ivDef: 5, ivSta: 2, fastMove: "Tackle", charged1: "Aerial Ace", buddy: "Ne", note: "Nízké IV — kandidát na transfer" }));
   }
@@ -9340,12 +9344,17 @@
       + "<code>python tools/build_meta.py --refresh</code> (PvP žebříčky), "
       + "<code>python tools/build_pokedex.py --refresh</code> (herní data), pak "
       + "<code>python tools/sync_reference.py</code>.</p>";
-    html += "<p><strong>Samo se obnovuje jen jedno:</strong> nasazení "
+    html += "<p><strong>Co se obnovuje samo:</strong> nasazení "
       + "(<code>tools/deploy.ps1</code>) před každým buildem stáhne <em>akce "
-      + "a raid bosse</em>, protože ti stárnou po dnech. Ligové žebříčky, "
-      + "pokédex ani útoky se samy nestahují — datum u každého řádku výš "
-      + "říká, jak jsou stará, a nad " + STALE_DAYS + " dní se sem přidá "
-      + "žluté varování.</p>";
+      + "a raid bosse</em>, protože ti stárnou po dnech. Navíc denní úloha "
+      + "(<code>tools/naplanovat.ps1 -Obnovit</code>) stáhne večer akce "
+      + "i <em>ligové žebříčky</em> a zapeče je do appky, i když se několik dní "
+      + "nenasazuje. Pořadí je záloha, obnova, audit, testy — když obnova "
+      + "neprojde kontrolou, data i appka se vrátí ze zálohy. Pokédex "
+      + "a útoky se mění jen s novou generací, ty se stahují na vyžádání "
+      + "(<code>-Vsechno</code>, nebo <code>refresh_all.py</code>). Datum "
+      + "u každého řádku výš říká, jak jsou data stará, a nad "
+      + STALE_DAYS + " dní se sem přidá žluté varování.</p>";
 
     if (stale) {
       html = "<div class=\"stale-warn\">Data jsou starší než " + STALE_DAYS
@@ -14020,6 +14029,20 @@
       if (/1-star|1 star/i.test(n)) return "1-Star Raids";
       return "Raids";
     };
+    /** Kanonická identita bosse: DRUH a FORMA, ne napsané jméno.
+     *
+     *  Rozpis akcí píše „Zacian (Hero of Many Battles)", snímek ze
+     *  ScrapedDucku „Zacian (Hero)" — a Zacian pak stál v žebříčku dvakrát,
+     *  na 3. a 4. místě. Přes dexKey() spadnou obě jména na `zacian-hero`.
+     *  Shadow a mega se z názvu vytáhnou zvlášť, protože je dexKey odstraňuje:
+     *  Shadow Machop a Machop jsou dva různí bossové. */
+    var klic = function (jm) {
+      var n = String(jm || "");
+      var predpona = (/^shadow\s/i.test(n) ? "s:" : "") + (/^mega\s/i.test(n) ? "m:" : "");
+      var k = dexKey(n.replace(/^(shadow|mega)\s+/i, ""));
+      return predpona + (k || n.toLowerCase().replace(/[^a-z0-9]+/g, ""));
+    };
+
     ((EVENTS && EVENTS.events) || []).forEach(function (e) {
       if (String(e[1] || "").indexOf("raid") !== 0) return;
       (e[7] || []).forEach(function (o) {
@@ -14032,28 +14055,30 @@
           var jeShadow = /shadow/i.test(e[0]);
           var plne = jeShadow && !/^shadow/i.test(jm) ? "Shadow " + jm : jm;
           if (od && doKdy && od.getTime() <= ted && doKdy.getTime() >= ted) {
-            bezi[plne] = { tier: tierZNazvu(e[0]), shiny: 1 };
+            bezi[klic(plne)] = { jmeno: plne, tier: tierZNazvu(e[0]), shiny: 1 };
           } else if (doKdy && doKdy.getTime() < ted) {
-            skoncilo[plne] = true;
+            skoncilo[klic(plne)] = true;
           }
         });
       });
     });
 
-    var klic = function (jm) {
-      return String(jm).toLowerCase().replace(/[^a-z0-9]+/g, "");
-    };
     var out = [], videno = {};
     ((EVENTS && EVENTS.raids) || []).forEach(function (r) {
+      var k = klic(r[0]);
       // Boss, jehož akce prokazatelně skončila a žádná jiná ho nedrží, už není.
-      if (skoncilo[r[0]] && !bezi[r[0]]) return;
-      videno[klic(r[0])] = true;
+      if (skoncilo[k] && !bezi[k]) return;
+      // A dvakrát tam být nesmí ani ze samotného snímku.
+      if (videno[k]) return;
+      videno[k] = true;
       out.push(r);
     });
-    Object.keys(bezi).forEach(function (jm) {
-      if (videno[klic(jm)]) return;
+    Object.keys(bezi).forEach(function (k) {
+      if (videno[k]) return;
+      var jm = bezi[k].jmeno;
+      videno[k] = true;
       var d = dexEntry(jm.replace(/^shadow\s+/i, ""));
-      out.push([jm, bezi[jm].tier, d ? d.types : [], [], [], bezi[jm].shiny]);
+      out.push([jm, bezi[k].tier, d ? d.types : [], [], [], bezi[k].shiny]);
     });
     return out;
   }
@@ -20406,6 +20431,11 @@
       + "právě teď běžící, je v seznamu, co skončilo, vypadne. Snímek "
       + "zůstává jako zdroj typů a jako stálá rotace jedno- a "
       + "tříhvězdičkových bossů, kteří vlastní akci nemají.</li>"
+      + "<li><b>Jeden boss, dvě jména.</b> Rozpis ho píše jako „Zacian "
+      + "(Hero of Many Battles)“, snímek jako „Zacian (Hero)“ — a v žebříčku "
+      + "pak stál dvakrát. Sjednoťuje se podle <b>druhu a formy</b>, ne podle "
+      + "napsaného jména; shadow a mega se rozlišují zvlášť, protože Shadow "
+      + "Machop a Machop jsou dva různí bossové.</li>"
       + "<li><b>Změnilo to verdikt u jiných kusů.</b> Rozpočet rolí má pevný "
       + "počet slotů, takže když označíš značku (DMAX, CUTE, shiny, Shadow) "
       + "u lepšího kusu, může tím horší vypadnout ze slotu — i když už ho máš "
