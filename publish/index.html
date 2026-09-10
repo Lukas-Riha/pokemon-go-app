@@ -2185,6 +2185,9 @@
   /* Seznam utoku v bublině: odrážky pryč, typ jako malá plaketka. */
   .tip-utoky { margin: 4px 0 0; padding: 0; list-style: none; }
   .tip-navod { margin-top: 7px; font-size: 11px; color: var(--text-muted); }
+  /* Nejlepší možná sestava u kusu bez útoků — hlavní sdělení bubliny,
+     ne řádek v odstavci. */
+  .tip-nej { font-weight: 700; font-size: 13.5px; color: var(--text-primary); }
   .tip-utoky li { margin-top: 5px; }
   .tip-typ { font-size: 10px; text-transform: uppercase; letter-spacing: .03em;
     opacity: .75; }
@@ -3399,7 +3402,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-10 08:27";
+  var BUILD = "2026-09-10 08:59";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -9014,12 +9017,12 @@
           // Ve hře má útoky každý kus — tohle znamená, že je nezná APPKA:
           // Calcy u části skenů zapíše nabitý útok jako „-" a bez něj se
           // moveset ohodnotit nedá.
+          // Krátce. Důležitá je jediná věc: co si má nastavit. Výklad o tom,
+          // že sken útoky nezachytil a jak se bez nich počítá role, jen
+          // přehlušil to jméno.
           moves = "Sken je nedal";
           movesTone = "muted";
-          movesTitle = "Ve hře útoky samozřejmě má, ale sken je nezachytil"
-            + " (Calcy u nabitého útoku občas zapíše jen „-“)."
-            + " Doplň je klepnutím na buňku Útoky, nebo kus naskenuj znovu."
-            + " Nejlepší možný moveset: " + setTxt(mr.best);
+          movesTitle = "Doplň útoky klepnutím na tuhle buňku.";
         } else if (mr.jenPvp) {
           // Sestava stojí na útoku, který známe jen z PvPoke — herní data
           // (a s nimi doba trvání) k němu chybí. Do raidů se k tomu tedy nemáme
@@ -9227,6 +9230,11 @@
               + " ne pořadí druhu v lize. Do verdiktu nevstupuje: tu samou věc si"
               + " appka počítá sama jako procento kvality kusu." : ""),
         moves: moves, movesTone: movesTone, movesTitle: movesTitle, movesSub: movesSub,
+        // Nejlepší možná sestava druhu — vlastní pole, ne věta v textu.
+        // Ve výkladu zanikala, přitom je to to jediné, co u kusu bez
+        // útoků k něčemu je.
+        movesBest: (b.moveRating && b.moveRating.best)
+          ? setTxt(b.moveRating.best) : "",
         // Posudek KAŽDÉHO útoku zvlášť. Počítá se tady, aby ho tabulka
         // i rozbor braly z jednoho místa a nemohly si odporovat.
         utoky: [
@@ -10034,21 +10042,28 @@
    *  znamená pro rozhodování — ne prázdná pomlčka.
    */
   function bublinaUtoku(c, konflikt) {
-    var h = '<div class="tip-hlava">Útoky</div>';
+    var prazdne = !(c.utoky || []).length;
+    var h = '<div class="tip-hlava">'
+      + (prazdne ? "Útoky nejsou vyplněné" : "Útoky") + "</div>";
     if (konflikt) {
       h += "<div><b>Raid a liga chtějí jinou sestavu</b> a rychlý útok můžeš"
         + " mít jen jeden. Na raid " + escHtml(konflikt.raid) + ", do "
         + escHtml(konflikt.liga) + " " + escHtml(konflikt.pvp)
         + ". Vyber si podle toho, na co ten kus chceš.</div>";
     }
-    if (c.movesTitle) h += "<div>" + escHtml(c.movesTitle) + "</div>";
+    // U prázdných útoků si bublina text skladá sama — shrnutí by se s ním
+    // jen opakovalo.
+    if (c.movesTitle && !prazdne) h += "<div>" + escHtml(c.movesTitle) + "</div>";
     var u = c.utoky || [];
     if (!u.length) {
-      h += "<div><b>Bez útoků se role počítá jen odhadem.</b> Raidové DPS"
-        + " se skládá z rychlého i nabitého útoku, takže dokud tu nejsou,"
-        + " bere appka jen typy druhu — a to je horní odhad, ne měření."
-        + " Doplň je klepnutím na tuhle buňku; jakmile tam budou, řekne ti"
-        + " ke každému, jestli ho nechat, nebo přeučit a za co.</div>";
+      // Bez útoků má cenu říct jedině to, co si má člověk nastavit.
+      // Výklad o tom, proč je sken nezachytil a jak se bez nich počítá
+      // role, jen přehlušil to jméno.
+      if (c.movesBest) {
+        h += '<div class="tip-nej">' + escHtml(c.movesBest) + "</div>"
+          + '<div class="tip-navod">Nejlepší možná sestava tohohle druhu.'
+          + " Klepnutím na buňku ji nastavíš.</div>";
+      }
       return h;
     }
     h += '<ul class="tip-utoky">' + u.map(function (x) {
@@ -11715,8 +11730,15 @@
             + (u.znacka ? '<span class="d-move-elit">' + u.znacka + "</span>" : "")
             + "</span>";
         }).join("")
-        : '<span class="d-note">nevyplněné</span>')
-      + '<div class="d-why">' + (c.movesTitle || "") + "</div></div>";
+        // Bez útoků má cenu ukázat jedině to, co si má člověk nastavit.
+        : '<span class="d-note">nevyplněné</span>'
+          + (c.movesBest ? '<span class="d-move d-move-nej">'
+              + '<span class="d-move-jm">' + escHtml(c.movesBest)
+              + "</span></span>" : ""))
+      + '<div class="d-why">' + escHtml(utoky.length ? (c.movesTitle || "")
+          : (c.movesBest ? "Nejlepší možná sestava tohohle druhu. "
+              + (c.movesTitle || "") : (c.movesTitle || "")))
+      + "</div></div>";
 
     if (c.konfliktSestav) {
       h += '<div class="d-conflict"><b>Pozor — raid a liga chtějí jinou sestavu.</b>'
@@ -21083,9 +21105,11 @@
       + "a zpátky jde jen za Elite TM.</li>"
       + "<li><b>Kde to najdeš.</b> Tentýž posudek nese bublina u buňky "
       + "<i>Útoky</i> v tabulce i sekce Útoky v rozboru kusu — počítá se "
-      + "jednou a obě místa ho berou odtamtud, takže si nemůžou odporovat. "
-      + "Když útoky vyplněné nejsou, bublina řekne, že se role počítá jen "
-      + "odhadem z typů druhu — to je horní odhad, ne měření.</li>"
+      + "jednou a obě místa ho berou odtamtud, takže si nemůžou odporovat.</li>"
+      + "<li><b>Když útoky vyplněné nejsou</b>, ukáže se <b>nejlepší možná "
+      + "sestava</b> toho druhu a nic víc. Výklad o tom, že je sken nezachytil "
+      + "a jak se bez nich počítá role, to jediné použitelné jméno jen "
+      + "přehlušil.</li>"
       + "<li><b>Číslo ve výběru útoku není síla útoku.</b> Surová síla o volbě "
       + "nerozhoduje: neříká, jak dlouho útok trvá ani kolik energie stojí. "
       + "V seznamu proto stojí <b>DPS celé sestavy</b>, jak by vyšla s tím "

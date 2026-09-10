@@ -1,5 +1,5 @@
 /* Generováno tools/build_publish.py — needitovat ručně. */
-var VERZE = "pgo-c719668c3b5f";
+var VERZE = "pgo-1f81ece9dc0d";
 var SOUBORY = ["./", "index.html", "manifest.webmanifest",
   "ikona-192.png", "ikona-512.png", "strop.html"];
 
