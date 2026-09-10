@@ -2260,6 +2260,12 @@
   .d-role-p { font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
 
   .d-moves { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  /* Nejlepší útoky druhu ve vyhledávání: jeden řádek na roli. */
+  .d-utoky-druh { display: flex; flex-direction: column; gap: 7px; }
+  .d-utoky-radek { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .d-utoky-role { min-width: 74px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); }
+  .d-utoky-druh .d-note { margin-top: 2px; }
   /* Útok nese typ a jeho barvu jako všude jinde. Levý pruh říká posudek:
      zelený nech, žlutý zvaž, červený přeuč. Barva typu tím zůstane barvou
      typu — kdyby se obarvil celý štítek, splynulo by obojí. */
@@ -3402,7 +3408,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-10 08:59";
+  var BUILD = "2026-09-10 10:22";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -10657,6 +10663,57 @@
     return rec ? rec.text : "";
   }
 
+  /** Nejlepší útoky DRUHU: do raidu a do lig, které hraje.
+   *
+   *  Vypadá to stejně jako sestava u kusu (typ, barva, bublina), jen se
+   *  neptá „nechat, nebo přeučit" — na to je potřeba konkrétní kus. Odpovídá
+   *  na otázku, kterou člověk ve vyhledávání má: co má ten druh umět.
+   */
+  function nejlepsiUtokyHtml(klic, d) {
+    var radky = [];
+    var stitek = function (jmeno, rychly, tridaNavic, bublina) {
+      var m = rychly ? fastByName(jmeno) : chargedByName(jmeno);
+      return '<span class="d-move ' + (tridaNavic || "d-move-nej") + '"'
+        + (bublina ? ' title="' + escHtml(bublina) + '"' : "") + ">"
+        + (m ? typeChipHtml(m.type) : "")
+        + '<span class="d-move-jm">' + escHtml(m ? m.name : jmeno) + "</span></span>";
+    };
+
+    var best = bestMoveset(d, klic);
+    if (best) {
+      radky.push('<div class="d-utoky-radek"><span class="d-utoky-role">Do raidu</span>'
+        + stitek(best.fast.name, true,
+            "d-move-nej", "Nejvyšší poškození za vteřinu, jaké tenhle druh zvládne.")
+        + stitek(best.charged.name, false,
+            "d-move-nej", "Nejvyšší poškození za vteřinu, jaké tenhle druh zvládne.")
+        + (best.elite ? '<span class="d-move-elit" title="Vyžaduje Elite TM">★</span>' : "")
+        + "</div>");
+    }
+
+    // Ligy: doporučená sestava od PvPoke pro každou ligu, kterou druh hraje.
+    LEAGUES.concat([{ label: "ML", nazev: "Master League", meta: "master" }])
+      .forEach(function (lg) {
+        var e = metaZaznam(dataKlic(klic), lg.meta);
+        var rec = e ? recMoveset(e) : null;
+        if (!rec) return;
+        var kusy = [stitek(rec.fastName, true, "d-move-dobry",
+          "Doporučená sestava pro " + lg.nazev + " od PvPoke.")];
+        rec.chargedNames.forEach(function (jm) {
+          kusy.push(stitek(jm, false, "d-move-dobry",
+            "Doporučená sestava pro " + lg.nazev + " od PvPoke."));
+        });
+        radky.push('<div class="d-utoky-radek"><span class="d-utoky-role">Do '
+          + escHtml(lg.label) + "</span>" + kusy.join("") + "</div>");
+      });
+
+    if (!radky.length) return "";
+    return '<div class="d-box-h d-sec-h">Nejlepší útoky</div>'
+      + '<div class="d-utoky-druh">' + radky.join("")
+      + '<div class="d-note">Raidová sestava je spočítaná z poškození za vteřinu'
+      + " celého cyklu; ligová je doporučení PvPoke, protože v lize rozhodují"
+      + " i štíty a energie, ne samotné poškození.</div></div>";
+  }
+
   /** Karta o DRUHU — bez konkrétního kusu.
    *
    *  Rozbor kusu potřebuje CP a IV; bez nich vycházely otazníky („Strop ? CP",
@@ -10858,6 +10915,13 @@
           + " Konkrétní kus bude níž podle svých IV." : ""));
     h += '<div class="d-box-h d-sec-h">Na co je</div><div class="d-roles">'
       + role.join("") + "</div>";
+
+    // --- nejlepší útoky ---
+    //
+    // Ve vyhledávání není konkrétní kus, takže se nedá říct „tenhle nech
+    // a tenhle přeuč". Otázka je jiná: co má ten druh mít, až ho chytíš.
+    // Vypisuje se proto stejně jako v rozboru — typ, barva, bublina.
+    h += nejlepsiUtokyHtml(klic, d);
 
     // --- proti čemu funguje ---
     var pt = pokrytiText(d.types || []);
