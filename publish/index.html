@@ -2182,6 +2182,12 @@
   .tip-bublina.vidno { opacity: 1; transform: translateY(0); }
   .tip-hlava { font-weight: 700; font-size: 13.5px; margin-bottom: 6px;
     padding-bottom: 6px; border-bottom: 1px solid var(--grid); color: var(--text-primary); }
+  /* Seznam utoku v bublině: odrážky pryč, typ jako malá plaketka. */
+  .tip-utoky { margin: 4px 0 0; padding: 0; list-style: none; }
+  .tip-navod { margin-top: 7px; font-size: 11px; color: var(--text-muted); }
+  .tip-utoky li { margin-top: 5px; }
+  .tip-typ { font-size: 10px; text-transform: uppercase; letter-spacing: .03em;
+    opacity: .75; }
   .tip-hlava em { font-style: normal; font-size: 11px; font-weight: 600;
     color: var(--status-good); margin-left: 4px; }
   .tip-radek { display: flex; align-items: baseline; justify-content: space-between;
@@ -3393,7 +3399,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-10 07:58";
+  var BUILD = "2026-09-10 08:27";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -9012,7 +9018,7 @@
           movesTone = "muted";
           movesTitle = "Ve hře útoky samozřejmě má, ale sken je nezachytil"
             + " (Calcy u nabitého útoku občas zapíše jen „-“)."
-            + " Doplň je ručně v zobrazení Vše, nebo kus naskenuj znovu."
+            + " Doplň je klepnutím na buňku Útoky, nebo kus naskenuj znovu."
             + " Nejlepší možný moveset: " + setTxt(mr.best);
         } else if (mr.jenPvp) {
           // Sestava stojí na útoku, který známe jen z PvPoke — herní data
@@ -9221,6 +9227,17 @@
               + " ne pořadí druhu v lize. Do verdiktu nevstupuje: tu samou věc si"
               + " appka počítá sama jako procento kvality kusu." : ""),
         moves: moves, movesTone: movesTone, movesTitle: movesTitle, movesSub: movesSub,
+        // Posudek KAŽDÉHO útoku zvlášť. Počítá se tady, aby ho tabulka
+        // i rozbor braly z jednoho místa a nemohly si odporovat.
+        utoky: [
+          { jm: r.fastMove, rychly: true },
+          { jm: r.charged1, rychly: false },
+          { jm: r.charged2, rychly: false, druhy: true }
+        ].filter(function (x) { return x.jm; }).map(function (x) {
+          var p = posudekUtoku(b, x.jm, x.rychly, x.druhy);
+          return { jm: x.jm, rychly: x.rychly, druhy: !!x.druhy, typ: p.typ,
+            stav: p.stav, znacka: p.znacka, proc: p.proc };
+        }),
         konfliktSestav: konfliktSestav,
         movesPct: mr && mr.pct !== null ? mr.pct : null,
         strongFromMoves: b.strongFromMoves,
@@ -9813,11 +9830,12 @@
     if (col.key === "moves") {
       var k = c.konfliktSestav;
       td.innerHTML = badgeSub(c.moves, k ? "warning" : c.movesTone, k ? "raid ≠ liga" : c.movesSub);
-      td.title = k
-        ? "Raid a liga chtějí jinou sestavu a rychlý útok můžeš mít jen jeden."
-          + " Na raid: " + k.raid + ". Do " + k.liga + ": " + k.pvp
-          + ". Vyber si podle toho, na co ho chceš."
-        : (c.movesSub ? c.movesSub + " — " : "") + (c.movesTitle || "");
+      // Bublina nese TOTÉŽ co rozbor: shrnutí a pod ním každý útok zvlášť.
+      // Dřív tu byla jen jedna věta o celé sestavě — z „62 % nejlepšího
+      // movesetu" se nedalo poznat, který ze tří útoků je ten špatný,
+      // a u nevyplněných útoků nestálo, co to vlastně znamená.
+      td.removeAttribute("title");
+      td.setAttribute("data-tip", bublinaUtoku(c, k));
       return;
     }
     if (col.key === "trade") { td.innerHTML = badgeSub(c.trade, c.tradeTone, c.tradeSub); td.title = c.tradeTitle || ""; return; }
@@ -10007,6 +10025,40 @@
       out.proc += " Je elitní — přeučením o něj přijdeš a zpátky jde jen za Elite TM.";
     }
     return out;
+  }
+
+  /** Bublina k útokům: shrnutí, pak každý útok zvlášť.
+   *
+   *  Skládá se z posudků, které už jsou na `computed`, takže tabulka a rozbor
+   *  říkají doslova totéž. Když útoky vyplněné nejsou, je to celé o tom, co to
+   *  znamená pro rozhodování — ne prázdná pomlčka.
+   */
+  function bublinaUtoku(c, konflikt) {
+    var h = '<div class="tip-hlava">Útoky</div>';
+    if (konflikt) {
+      h += "<div><b>Raid a liga chtějí jinou sestavu</b> a rychlý útok můžeš"
+        + " mít jen jeden. Na raid " + escHtml(konflikt.raid) + ", do "
+        + escHtml(konflikt.liga) + " " + escHtml(konflikt.pvp)
+        + ". Vyber si podle toho, na co ten kus chceš.</div>";
+    }
+    if (c.movesTitle) h += "<div>" + escHtml(c.movesTitle) + "</div>";
+    var u = c.utoky || [];
+    if (!u.length) {
+      h += "<div><b>Bez útoků se role počítá jen odhadem.</b> Raidové DPS"
+        + " se skládá z rychlého i nabitého útoku, takže dokud tu nejsou,"
+        + " bere appka jen typy druhu — a to je horní odhad, ne měření."
+        + " Doplň je klepnutím na tuhle buňku; jakmile tam budou, řekne ti"
+        + " ke každému, jestli ho nechat, nebo přeučit a za co.</div>";
+      return h;
+    }
+    h += '<ul class="tip-utoky">' + u.map(function (x) {
+      return "<li><b>" + escHtml(x.jm) + "</b>"
+        + (x.typ ? " <span class=\"tip-typ\">" + escHtml(x.typ) + "</span>" : "")
+        + (x.znacka ? " " + x.znacka : "")
+        + " — " + escHtml(x.proc) + "</li>";
+    }).join("") + "</ul>";
+    h += '<div class="tip-navod">Klepnutím na buňku útoky změníš.</div>';
+    return h;
   }
 
   function barHtml(label, hodnota, max, barva) {
@@ -11653,19 +11705,14 @@
     // Útoky nesou typ a jeho barvu jako všude jinde v appce, a u každého
     // je vlastní bublina — „62 % nejlepšího movesetu" neřekne, který ze tří
     // je ten špatný.
-    var utoky = [
-      { jm: r.fastMove, rychly: true },
-      { jm: r.charged1, rychly: false },
-      { jm: r.charged2, rychly: false, druhy: true }
-    ].filter(function (x) { return x.jm; });
+    var utoky = c.utoky || [];
     h += '<div class="d-box-h d-sec-h" data-sekce="utoky">Útoky</div><div class="d-moves">'
       + (utoky.length ? utoky.map(function (u) {
-          var p = posudekUtoku(b, u.jm, u.rychly, u.druhy);
-          return '<span class="d-move d-move-' + p.stav + '" title="'
-            + escHtml(p.proc) + '">'
-            + (p.typ ? typeChipHtml(p.typ) : "")
+          return '<span class="d-move d-move-' + u.stav + '" title="'
+            + escHtml(u.proc) + '">'
+            + (u.typ ? typeChipHtml(u.typ) : "")
             + '<span class="d-move-jm">' + escHtml(u.jm) + "</span>"
-            + (p.znacka ? '<span class="d-move-elit">' + p.znacka + "</span>" : "")
+            + (u.znacka ? '<span class="d-move-elit">' + u.znacka + "</span>" : "")
             + "</span>";
         }).join("")
         : '<span class="d-note">nevyplněné</span>')
@@ -21034,6 +21081,17 @@
       + "<li><b>Frustration a Return</b> nedává druh, ale stav kusu, takže se "
       + "nepřeučují. Elitní útok se pozná hvězdičkou: přeučením o něj přijdeš "
       + "a zpátky jde jen za Elite TM.</li>"
+      + "<li><b>Kde to najdeš.</b> Tentýž posudek nese bublina u buňky "
+      + "<i>Útoky</i> v tabulce i sekce Útoky v rozboru kusu — počítá se "
+      + "jednou a obě místa ho berou odtamtud, takže si nemůžou odporovat. "
+      + "Když útoky vyplněné nejsou, bublina řekne, že se role počítá jen "
+      + "odhadem z typů druhu — to je horní odhad, ne měření.</li>"
+      + "<li><b>Číslo ve výběru útoku není síla útoku.</b> Surová síla o volbě "
+      + "nerozhoduje: neříká, jak dlouho útok trvá ani kolik energie stojí. "
+      + "V seznamu proto stojí <b>DPS celé sestavy</b>, jak by vyšla s tím "
+      + "útokem — druhý útok se bere ten, který kus má. Je to přesně to číslo, "
+      + "podle kterého se pak počítá raidová role. Surová síla zůstala "
+      + "v bublině.</li>"
       + "</ul></div>";
 
     h += "<h3>8. Jak číst kalendář akcí</h3>"
@@ -22229,6 +22287,19 @@
     vydrzFaktor: vydrzFaktor, raidScore: raidScore,
     // pro testy: skóre protikusu na bosse daných typů
     counterScore: counterScore,
+    /** DPS cyklu pro konkrétní dvojici útoků u druhu.
+     *
+     *  „Síla 95" u útoku sama o sobě nerozhoduje: nezahrnuje, jak dlouho
+     *  ten útok trvá ani kolik energie stojí. Rozhoduje poškození za
+     *  vteřinu celého cyklu, a to je tohle číslo. */
+    dpsSestavy: function (druh, rychlyJm, nabityJm) {
+      var d = dexEntry(druh);
+      var f = rychlyJm ? fastByName(rychlyJm) : null;
+      var ch = nabityJm ? chargedByName(nabityJm) : null;
+      if (!d || !f || !ch) return null;
+      var v = cycleDps(d.types, f, ch);
+      return v > 0 ? v : null;
+    },
     typeDmgCeiling: typeDmgCeiling,
     pokrytiKombinaci: pokrytiKombinaci,
     realneKombinace: realneKombinace,
@@ -22905,6 +22976,20 @@
         box.className = "uv-seznam";
         var polozky = [];
 
+        /** DPS celé sestavy, kdyby si uživatel vybral tenhle útok.
+         *  Druhý útok se bere ten, který kus má — porovnávají se tím jablka
+         *  s jablky: co se stane, když vyměním PRÁVĚ TENHLE. */
+        function dpsSTimhle(m) {
+          if (!m || !window.__pgo.dpsSestavy) return null;
+          var jm = r.pokemon;
+          if (!jm) return null;
+          var rychly = klic === "fastMove" ? m.name : r.fastMove;
+          var nabity = klic === "fastMove"
+            ? (r.charged1 || r.charged2) : m.name;
+          if (!rychly || !nabity) return null;
+          return window.__pgo.dpsSestavy(jm, rychly, nabity);
+        }
+
         function pridat(popisek, hodnota, m) {
           var b = document.createElement("button");
           b.type = "button";
@@ -22941,7 +23026,22 @@
             // vybraný podle zvýrazněného okraje řádku.
             var meta = document.createElement("span");
             meta.className = "uv-meta";
-            meta.textContent = m.power ? "síla " + m.power : "";
+            // „Síla 95" sama o sobě nerozhoduje: neříká, jak dlouho ten útok
+            // trvá ani kolik energie stojí. Rock Slide má sílu 75 a Stone Edge
+            // 100, a přesto bývá lepší ten první. Ukazuje se proto DPS CELÉ
+            // sestavy, jak by vyšla s tímhle útokem — přesně to číslo, podle
+            // kterého se pak počítá raidová role. Surová síla zůstává
+            // v bublině pro toho, kdo ji hledá.
+            var dps = dpsSTimhle(m);
+            if (dps !== null) {
+              meta.textContent = String(Math.round(dps * 10) / 10).replace(".", ",");
+              meta.title = "Poškození za vteřinu celé sestavy, kdyby sis vybral"
+                + " tenhle útok. Počítá se cyklus „nabíjej rychlým, vypal"
+                + " nabitý“ včetně bonusu za shodu typu."
+                + (m.power ? " Surová síla útoku je " + m.power + "." : "");
+            } else {
+              meta.textContent = m.power ? "síla " + m.power : "";
+            }
             if (m.jenPvp) {
               meta.textContent = m.power ? m.power + " PvP" : "PvP";
               meta.title = "Nový útok — herní data k němu zatím nemají dobu"
@@ -23141,7 +23241,11 @@
         if (!td || td.classList.contains("utok-edit-otevreny")) return;
         if (!tr.dataset || !tr.dataset.rowId) return;
         td.classList.add("utok-klik");
-        if (!td.title) td.title = "Klikni a doplň útoky";
+        // Když už buňka svou bublinu má (posudek jednotlivých útoků),
+        // nepřetloukat ji návodem — ten je v ní posledním řádkem.
+        if (!td.title && !td.getAttribute("data-tip")) {
+          td.title = "Klikni a doplň útoky";
+        }
       });
     }
 
