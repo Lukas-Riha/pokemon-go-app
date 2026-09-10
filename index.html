@@ -2251,8 +2251,21 @@
   .d-role-p { font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
 
   .d-moves { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .d-move { font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
-    background: var(--input-bg); border: 1px solid var(--grid); color: var(--text-primary); }
+  /* Útok nese typ a jeho barvu jako všude jinde. Levý pruh říká posudek:
+     zelený nech, žlutý zvaž, červený přeuč. Barva typu tím zůstane barvou
+     typu — kdyby se obarvil celý štítek, splynulo by obojí. */
+  .d-move { display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; padding: 4px 10px 4px 6px;
+    border-radius: 6px; background: var(--input-bg);
+    border: 1px solid var(--grid); color: var(--text-primary);
+    border-left-width: 4px; cursor: help; }
+  .d-move .d-type { font-size: 9px; padding: 2px 6px; }
+  .d-move-jm { white-space: nowrap; }
+  .d-move-elit { color: var(--status-warning); font-size: 12px; }
+  .d-move-nej { border-left-color: var(--status-good); }
+  .d-move-dobry { border-left-color: var(--series-1); }
+  .d-move-preucit { border-left-color: var(--status-warning); }
+  .d-move-nezna { border-left-color: var(--status-critical); }
   .d-moves .d-why { flex-basis: 100%; }
   .d-conflict { margin-top: 12px; border-radius: 8px; padding: 11px 14px; font-size: 13px;
     line-height: 1.55; border-left: 5px solid var(--status-warning);
@@ -3380,7 +3393,7 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-10 07:16";
+  var BUILD = "2026-09-10 07:58";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5103,10 +5116,13 @@
     retrain: function (c) { return c.movesTone === "critical" || !!c.pvpRetrain; }
   };
 
-  /** Projde kus filtrem? Ligy i stavy musí sedět na TÉŽE lize. */
+  /** Projde kus filtrem sloupců? Ligy i stavy musí sedět na TÉŽE lize.
+   *
+   *  Filtry na Typy a Silný proti se sem přidaly později a šlo se rovnou
+   *  za ně — funkce totiž začínala „když není zapnutý ligový filtr, pusť
+   *  všechno" a tím se obě nové větve přeskočily. Klikat šlo, jen se nikdy
+   *  nic neodfiltrovalo. Zkratka je proto až za nimi. */
   function pvpFiltrProjde(c) {
-    if (!pvpFiltrAktivni()) return true;
-    var ligy = (c && c.pvpLigy) || [];
     if (typFiltrAktivni()) {
       var chceTypy = Object.keys(typFiltr.typy);
       var maTypy = (c.typesList || []);
@@ -5122,6 +5138,8 @@
       var shodP = chceProti.filter(function (t) { return biji.indexOf(t) !== -1; }).length;
       if (silnyFiltr.oba ? shodP < chceProti.length : shodP === 0) return false;
     }
+    if (!pvpFiltrAktivni()) return true;
+    var ligy = (c && c.pvpLigy) || [];
     var chceLigy = Object.keys(pvpFiltr.ligy);
     var chceStavy = Object.keys(pvpFiltr.stavy);
     return ligy.some(function (l) {
@@ -9865,6 +9883,132 @@
       + typIkonaHtml(t) + t + "</span>";
   }
 
+  /** Posudek JEDNOHO útoku: proč tam je, nebo co si dát místo něj.
+   *
+   *  Sestava se dosud hodnotila jen jako celek („62 % nejlepšího movesetu"),
+   *  jenže to neřekne, KTERÝ ze tří útoků je ten špatný — a přeučuje se
+   *  po jednom. Tohle je k tomu konkrétnímu.
+   *
+   *  Zdroje jsou dva a oba už v appce jsou: vlastní raidový výpočet (DPS
+   *  cyklu) a doporučená sestava od PvPoke pro ligy, které ten druh hraje.
+   */
+  function posudekUtoku(b, jmeno, rychly, druhyNabity) {
+    var m = rychly ? fastByName(jmeno) : chargedByName(jmeno);
+    var out = { typ: "", stav: "nezna", znacka: "", proc: "" };
+    if (!m) {
+      out.proc = "Tenhle útok appka nezná. Nejspíš překlep — nebo je nový"
+        + " a herní data ho zatím nemají.";
+      return out;
+    }
+    out.typ = m.type;
+    var kdo = rychly ? "rychlý" : "nabitý";
+
+    // Frustration a Return nejsou volba: dává je stav kusu, ne druh.
+    if (moveKey(jmeno) === moveKey("Frustration")) {
+      out.stav = "preucit";
+      out.proc = "Frustration má každý shadow a je to nejslabší nabitý útok"
+        + " ve hře. Přeučit ho jde jen očištěním kusu nebo během akce"
+        + " Team GO Rocket.";
+      return out;
+    }
+    if (moveKey(jmeno) === moveKey("Return")) {
+      out.stav = "dobry";
+      out.proc = "Return má každý očištěný kus a přeučit se nedá.";
+      return out;
+    }
+
+    var klic = moveKey(jmeno);
+    var l = learnset(b.key);
+    var elite = l ? (rychly ? l.eliteFast : l.eliteCharged).map(function (i) {
+      return moveKey(rychly ? MOVES.fastNames[i] : MOVES.chargedNames[i]);
+    }) : [];
+    if (elite.indexOf(klic) !== -1) out.znacka = "★";
+
+    var duvody = [];
+    var mr = b.moveRating;
+    var jeVSestave = function (set) {
+      if (!set) return false;
+      var x = rychly ? set.fast : set.charged;
+      return !!x && moveKey(x.name) === klic;
+    };
+
+    // Kolik ten útok STOJÍ, ne jen jestli je zrovna ten nejlepší. Karate Chop
+    // místo Counteru je rozdíl tří desetin procenta DPS — označit ho za útok
+    // k přeučení by si odporovalo s větou nad tím, kde stojí „100 % nejlepšího
+    // movesetu". Spočítá se cyklus s tímhle útokem a cyklus s nejlepší
+    // náhradou; rozdíl je ztráta.
+    var ztrata = null;
+    if (mr && mr.current && mr.best && b.dex && jeVSestave(mr.current)) {
+      var ted = cycleDps(b.dex.types, mr.current.fast, mr.current.charged);
+      var kdyby = cycleDps(b.dex.types,
+        rychly ? mr.best.fast : mr.current.fast,
+        rychly ? mr.current.charged : mr.best.charged);
+      if (ted > 0 && kdyby > 0) ztrata = 1 - ted / kdyby;
+    }
+    // Česká desetinná čárka — „0.3 %" v české větě tahá za oči.
+    var procenta = function (x) {
+      return String(Math.round(x * 1000) / 10).replace(".", ",");
+    };
+
+    if (mr && jeVSestave(mr.best)) {
+      out.stav = "nej";
+      duvody.push("nejlepší " + kdo + " útok tohohle druhu do raidu");
+    } else if (ztrata !== null && ztrata < 0.05) {
+      // Do pěti procent je to šum: přeučovat kvůli tomu Elite TM nebo TM
+      // je dražší než ten rozdíl.
+      out.stav = "dobry";
+      duvody.push("prakticky nejlepší — nejlepší náhrada by dala jen o "
+        + procenta(ztrata) + " % víc");
+    } else if (mr && jeVSestave(mr.bestForRole)) {
+      out.stav = "dobry";
+      duvody.push("nejlepší " + kdo + " útok v tomhle typu poškození");
+    }
+
+    // Ligy: doporučená sestava od PvPoke a útoky, které simulace opravdu bere.
+    var doporucene = [], pouzivane = [];
+    LEAGUES.concat([{ label: "ML", meta: "master" }]).forEach(function (lg) {
+      var e = metaZaznam(dataKlic(b.key), lg.meta, b.row.forma);
+      var rec = e ? recMoveset(e) : null;
+      if (!rec) return;
+      if (moveKey(rec.fastName) === klic
+          || rec.chargedNames.some(function (x) { return moveKey(x) === klic; })) {
+        doporucene.push(lg.label);
+      } else if ((rec.okKeys || []).indexOf(klic) !== -1) {
+        pouzivane.push(lg.label);
+      }
+    });
+    if (doporucene.length) {
+      if (out.stav !== "nej") out.stav = "nej";
+      duvody.push("v doporučené sestavě pro " + doporucene.join(", "));
+    } else if (pouzivane.length) {
+      if (out.stav === "nezna") out.stav = "dobry";
+      duvody.push("simulace ho v " + pouzivane.join(", ") + " používá");
+    }
+
+    if (duvody.length) {
+      out.proc = "Tenhle nech: " + duvody.join(", ") + ".";
+    } else {
+      out.stav = "preucit";
+      var lepsi = mr && mr.best ? (rychly ? mr.best.fast : mr.best.charged) : null;
+      var oKolik = ztrata !== null && ztrata > 0
+        ? " (o " + procenta(ztrata) + " % míň poškození)" : "";
+      // Nedoporučovat útok, který už ten kus má — to není rada, to je zmatek.
+      var uzMa = lepsi && [b.row.fastMove, b.row.charged1, b.row.charged2]
+        .filter(Boolean).some(function (x) { return moveKey(x) === moveKey(lepsi.name); });
+      out.proc = "Do raidu se nehodí" + oKolik
+        + (lepsi && !uzMa ? " — nejlepší je " + lepsi.name + " (" + lepsi.type + ")" : "")
+        + " a v žádné lize, kterou ten druh hraje, ho simulace nepoužívá.";
+      out.proc += druhyNabity
+        ? " Druhý nabitý útok se ale platí zvlášť a v raidu se skoro nevystřílí —"
+          + " smysl dává hlavně v lize jako druhá hrozba a jiný typ poškození."
+        : " Tenhle je kandidát na přeučení.";
+    }
+    if (out.znacka) {
+      out.proc += " Je elitní — přeučením o něj přijdeš a zpátky jde jen za Elite TM.";
+    }
+    return out;
+  }
+
   function barHtml(label, hodnota, max, barva) {
     var pct = Math.max(0, Math.min(100, Math.round(hodnota / max * 100)));
     return '<div class="d-bar"><span class="d-bar-l">' + label + "</span>"
@@ -11506,9 +11650,24 @@
       }
     }
 
-    var utoky = [r.fastMove, r.charged1, r.charged2].filter(Boolean);
+    // Útoky nesou typ a jeho barvu jako všude jinde v appce, a u každého
+    // je vlastní bublina — „62 % nejlepšího movesetu" neřekne, který ze tří
+    // je ten špatný.
+    var utoky = [
+      { jm: r.fastMove, rychly: true },
+      { jm: r.charged1, rychly: false },
+      { jm: r.charged2, rychly: false, druhy: true }
+    ].filter(function (x) { return x.jm; });
     h += '<div class="d-box-h d-sec-h" data-sekce="utoky">Útoky</div><div class="d-moves">'
-      + (utoky.length ? utoky.map(function (m) { return '<span class="d-move">' + m + "</span>"; }).join("")
+      + (utoky.length ? utoky.map(function (u) {
+          var p = posudekUtoku(b, u.jm, u.rychly, u.druhy);
+          return '<span class="d-move d-move-' + p.stav + '" title="'
+            + escHtml(p.proc) + '">'
+            + (p.typ ? typeChipHtml(p.typ) : "")
+            + '<span class="d-move-jm">' + escHtml(u.jm) + "</span>"
+            + (p.znacka ? '<span class="d-move-elit">' + p.znacka + "</span>" : "")
+            + "</span>";
+        }).join("")
         : '<span class="d-note">nevyplněné</span>')
       + '<div class="d-why">' + (c.movesTitle || "") + "</div></div>";
 
@@ -20852,6 +21011,29 @@
       + "<li><b>Pár bodů IV to nepřebije.</b> Rozhoduje kvalita na vynaložený "
       + "prach, takže dražší cesta musí přinést výrazně lepší výsledek, ne jen "
       + "o půl procenta.</li>"
+      + "</ul></div>";
+
+    h += "<h3>7h. Posudek u jednotlivého útoku</h3>"
+      + "<div class=\"docs-vzorec\"><ul>"
+      + "<li><b>Proč po jednom.</b> Sestava se hodnotila jako celek — „62 % "
+      + "nejlepšího movesetu“. To neřekne, KTERÝ ze tří útoků je ten špatný, "
+      + "a přeučuje se po jednom. V rozboru kusu má proto každý útok vlastní "
+      + "bublinu, svůj typ a barvu podle posudku.</li>"
+      + "<li><b>Rozhoduje ztráta, ne pořadí.</b> Spočítá se cyklus s tímhle "
+      + "útokem a cyklus s nejlepší náhradou; rozdíl je ztráta. <b>Do 5 %</b> "
+      + "je to šum a útok se nechává — Karate Chop místo Counteru je u Machampa "
+      + "rozdíl tří desetin procenta a pálit kvůli tomu TM je dražší než ten "
+      + "rozdíl. Nad tím je to kandidát na přeučení a u něj stojí o kolik.</li>"
+      + "<li><b>Liga se počítá zvlášť.</b> Útok, který do raidu nevede, může "
+      + "být v doporučené sestavě od PvPoke — pak se nechává a je napsané, "
+      + "pro kterou ligu. Bere se i seznam útoků, které simulace opravdu "
+      + "používá, ne jen ta jedna doporučená trojice.</li>"
+      + "<li><b>Druhý nabitý útok</b> se v raidu skoro nevystřílí a platí se "
+      + "zvlášť. Když do raidu nevede, neoznačí se rovnou za zbytečný — smysl "
+      + "dává v lize jako druhá hrozba a jiný typ poškození.</li>"
+      + "<li><b>Frustration a Return</b> nedává druh, ale stav kusu, takže se "
+      + "nepřeučují. Elitní útok se pozná hvězdičkou: přeučením o něj přijdeš "
+      + "a zpátky jde jen za Elite TM.</li>"
       + "</ul></div>";
 
     h += "<h3>8. Jak číst kalendář akcí</h3>"
