@@ -14219,6 +14219,83 @@ try {
   check("a neni tam nic z jineho druhu",
     nabidkaUtoku.poVyberu.indexOf("Vine Whip") === -1, nabidkaUtoku.poVyberu.join(", "));
 
+  console.log("\n230) obrazky forem a odznacek roli");
+  await page.goto(URL);
+  await page.waitForTimeout(800);
+
+  // Shellos ma vychodni a zapadni more a herni ikona BEZ te pripony vubec
+  // neexistuje. Adresa se proto musela nejdriv pokazit a teprve pak spadnout
+  // na nahradu — a to probliknuti rozbiteho ramecku bylo videt.
+  const obrazkyForem = await page.evaluate(() => {
+    const P = window.__pgo;
+    const vem = (jm) => {
+      const t = document.createElement("template");
+      t.innerHTML = P.atlasImage(jm);
+      const img = t.content.querySelector("img");
+      return img ? { src: img.getAttribute("src"), styl: img.getAttribute("style") || "",
+        load: img.getAttribute("onload") || "" } : null;
+    };
+    return { vychod: vem("Shellos East Sea"), zapad: vem("Shellos West Sea"),
+      bezMore: vem("Shellos"), gastrodon: vem("Gastrodon East Sea"),
+      bezny: vem("Machamp") };
+  });
+  check("Shellos East Sea ma v adrese vychodni more",
+    /EAST_SEA/.test(obrazkyForem.vychod.src), obrazkyForem.vychod.src);
+  check("…a zapadni zapadni", /WEST_SEA/.test(obrazkyForem.zapad.src), obrazkyForem.zapad.src);
+  check("Shellos bez urceneho more taky dostane priponu",
+    /_SEA/.test(obrazkyForem.bezMore.src), obrazkyForem.bezMore.src);
+  check("Gastrodon je na tom stejne", /EAST_SEA/.test(obrazkyForem.gastrodon.src),
+    obrazkyForem.gastrodon.src);
+  check("bezny druh zadnou priponu nedostane",
+    !/_SEA/.test(obrazkyForem.bezny.src), obrazkyForem.bezny.src);
+  // Pojistka proti probliknuti: obrazek je do nacteni pruhledny.
+  check("obrazek je do nacteni pruhledny", /opacity:0/.test(obrazkyForem.bezny.styl),
+    obrazkyForem.bezny.styl);
+  check("…a po nacteni se ukaze", /opacity=1/.test(obrazkyForem.bezny.load),
+    obrazkyForem.bezny.load);
+
+  // Adresy se opravdu musi dat stahnout — 404 by znamenal tyz problem jinde.
+  const stavyIkon = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const adresy = ["Shellos East Sea", "Shellos West Sea", "Gastrodon East Sea"].map((jm) => {
+      const t = document.createElement("template");
+      t.innerHTML = P.atlasImage(jm);
+      return t.content.querySelector("img").getAttribute("src");
+    });
+    return Promise.all(adresy.map((u) => new Promise((res) => {
+      const img = new Image();
+      const dost = setTimeout(() => res("timeout"), 12000);
+      img.onload = () => { clearTimeout(dost); res("ok"); };
+      img.onerror = () => { clearTimeout(dost); res("404"); };
+      img.src = u;
+    })));
+  });
+  if (stavyIkon.some((x) => x === "timeout")) {
+    console.log("  -- obrazky se nestahly (bez site), kontrola preskocena");
+  } else {
+    eq("herni ikony forem Shellose opravdu existuji", stavyIkon.join(","), "ok,ok,ok");
+  }
+
+  // Odznacek u verdiktu ukazuje jednu roli, ale kus jich drzi vic. Bez
+  // pripocteni to vypada, ze ho drzi jen ta jedna, co se zrovna vesla.
+  const odznakRoli = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([{ pokemon: "Garchomp", cp: 3947, level: 40, ivAtk: 14, ivDef: 15, ivSta: 15 }]);
+    await new Promise((r) => setTimeout(r, 900));
+    const b = P.base()[0];
+    const c = P.getComputed()[b.row.id];
+    return { sub: c.keepSub, slotu: (b.sloty || []).length,
+      titulek: c.keepTitle, raid: c.raidRec, mega: c.mega };
+  });
+  check("kus drzi vic roli najednou", odznakRoli.slotu > 1, String(odznakRoli.slotu));
+  check("odznacek rekne, kolik roli je jeste vedle",
+    /\+\d/.test(odznakRoli.sub), odznakRoli.sub);
+  check("plny vycet roli zustava ve vete",
+    odznakRoli.titulek.indexOf("mega") > -1 && odznakRoli.titulek.indexOf("raidu") > -1,
+    odznakRoli.titulek.slice(0, 160));
+  // Mega nic neprebiji: raidova role se hlasi dal.
+  check("mega neprebije raidove doporuceni", odznakRoli.raid !== "Ne", odznakRoli.raid);
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 
