@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {execFileSync} from 'node:child_process';
+import crypto from 'node:crypto';
+const prod='web-app/pokemon_tracker_app.html',test='web-app/pokemon_tracker_TEST.html';
+const hash=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex'),before=hash(prod);
+fs.mkdirSync('zalohy/atlas-spolecny-engine-2026-09-10',{recursive:true});
+if(!fs.existsSync('zalohy/atlas-spolecny-engine-2026-09-10/test-pred-opravou.html'))fs.copyFileSync(test,'zalohy/atlas-spolecny-engine-2026-09-10/test-pred-opravou.html');
+execFileSync('python',['tools/sync_reference.py','--test','--s-obrazky'],{stdio:'inherit'});
+let html=fs.readFileSync(test,'utf8');
+for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new vm.Script(m[1]);
+fs.writeFileSync(test,html);if(hash(prod)!==before)throw Error('Production changed');
+console.log('TEST built; production unchanged; no roster seed; isolated storage.');

@@ -1,7 +1,43 @@
-# Do repozitáře jde JEN složka publish/ — hotová appka pro GitHub Pages.
-# Všechno ostatní (nástroje, stažená data, testy, zálohy) zůstává na disku:
-# co se nezveřejní, to nemůže uniknout.
+# Repozitář je VEŘEJNÝ (běží z něj GitHub Pages), takže tenhle soubor
+# rozhoduje o tom, co se zveřejní. Dovnitř jde `publish/` — hotová appka pro
+# Pages — a zdroje, ze kterých vzniká. Ven zůstává všechno osobní a všechno
+# velké, co jde kdykoli vyrobit znovu.
 *
+!.gitignore
+!README.md
+!PROMPT_PRO_CLAUDE.md
+!PRODUKCE_ZAMCENA.txt
 !publish/
 !publish/**
-!.gitignore
+!web-app/
+!web-app/**
+!tools/
+!tools/**
+!tests/
+!tests/**
+!docs/
+!docs/**
+!data/
+!data/**
+
+# --- co se zveřejnit NESMÍ ---------------------------------------------
+# Skutečný roster: jména, přezdívky, CP i IV každého kusu.
+web-app/zaloha.csv
+# Testovací build má zapečený art — 31 MB, a vyrobí se jedním příkazem.
+web-app/pokemon_tracker_TEST.html
+# Zálohy appky a dat: kopie rosteru z různých dnů.
+zalohy/
+# Syrové stažené dumpy (9 MB). Jsou jen mezikrok k data/*.json.
+data/raw/
+# Cizí pracovní složka (vzhledová vrstva), drží si vlastní historii.
+navrh-aplikace/
+# Jednorázové pomůcky a podklady, které s appkou nesouvisí.
+docx-guide/
+xlsx-reference/
+xlsx-tracker/
+# Balík obrázků od vzhledové vrstvy: 30 MB, které by v historii zůstaly
+# navždy. Do testovacího buildu se vkládá z disku, ne odsud.
+web-app/atlas/atlas-art.json
+# Zkompilovaný Python.
+__pycache__/
+*.pyc

@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0d0d0d" />
+<title>Pokémon — kapesní</title>
+<style>
+  :root {
+    --page: #f9f9f7; --karta: #ffffff; --text: #0b0b0b; --text2: #52514e;
+    --tlum: #898781; --cara: rgba(11,11,11,.10); --pole: #fffef8;
+    --polekraj: #d8d6cc; --zluta: #b9790a; --zlutabg: #fdf3e0;
+    --zelena: #0ca30c; --zelenabg: #e6f6e6; --cerv: #c05a34; --cervbg: #fbe9e2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d; --karta: #171716; --text: #ffffff; --text2: #c3c2b7;
+      --tlum: #898781; --cara: rgba(255,255,255,.10); --pole: #232320;
+      --polekraj: #3a3a37; --zluta: #fab219; --zlutabg: #362b0e;
+      --zelena: #4cd04c; --zelenabg: #14301a; --cerv: #ec835a; --cervbg: #3a2119;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; padding: 10px 10px 76px; background: var(--page); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-size: 16px; margin: 0; }
+  .hlava { display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 10px; }
+  .hlava .kdy { font-size: 11px; color: var(--tlum); text-align: right; }
+  button, input, select { font-family: inherit; }
+  .btn { padding: 9px 12px; font-size: 13px; border: 1px solid var(--polekraj);
+    border-radius: 10px; background: var(--pole); color: var(--text); }
+  .btn.hlavni { background: var(--zlutabg); border-color: var(--zluta); color: var(--text); }
+  label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  input[type=text], input[type=search], select { width: 100%; padding: 11px 12px;
+    font-size: 16px; border: 1px solid var(--polekraj); border-radius: 10px;
+    background: var(--pole); color: var(--text); }
+  .karta { background: var(--karta); border: 1px solid var(--cara); border-radius: 13px;
+    padding: 11px 12px; margin-bottom: 9px; }
+
+  /* --- záložky dole, aby na ně dosáhl palec --- */
+  .zalozky { position: fixed; left: 0; right: 0; bottom: 0; display: flex;
+    background: var(--karta); border-top: 1px solid var(--cara);
+    padding-bottom: env(safe-area-inset-bottom); z-index: 5; }
+  .zalozky button { flex: 1 1 0; min-width: 0; border: 0; background: none;
+    color: var(--text2); padding: 11px 2px 12px; font-size: 11.5px; }
+  .zalozky button b { display: block; font-size: 17px; line-height: 1.1; font-weight: 400; }
+  .zalozky button.on { color: var(--zluta); }
+  .zalozky button.on b { transform: translateY(-1px); }
+
+  /* --- roster --- */
+  .filtry { display: flex; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
+  .filtry button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 12px;
+    border: 1px solid var(--polekraj); border-radius: 9px; background: var(--pole);
+    color: var(--text2); }
+  .filtry button.on { background: var(--zlutabg); border-color: var(--zluta); color: var(--text); }
+  .kus { background: var(--karta); border: 1px solid var(--cara); border-radius: 12px;
+    padding: 9px 11px; margin-bottom: 7px; }
+  .kus .r1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .kus .jm { font-size: 15px; font-weight: 600; }
+  .kus .cp { font-size: 13px; color: var(--text2); white-space: nowrap; }
+  .kus .verdikt { font-size: 12.5px; margin-top: 3px; }
+  .kus.ano .verdikt { color: var(--zelena); }
+  .kus.ne .verdikt { color: var(--cerv); }
+  .kus ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .kus li { font-size: 12px; color: var(--text2); padding: 3px 8px; border-radius: 7px;
+    background: var(--zlutabg); margin-bottom: 3px; }
+  .prazdno { color: var(--text2); font-size: 13.5px; padding: 20px 4px; text-align: center; }
+
+  /* --- raid --- */
+  .typy { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 8px; }
+  .typy button { padding: 8px 2px; font-size: 11.5px; border: 1px solid var(--polekraj);
+    border-radius: 8px; background: var(--pole); color: var(--text2); }
+  .typy button.on { background: var(--zlutabg); border-color: var(--zluta); color: var(--text); }
+  .parta { counter-reset: p; }
+  .parta .kus { position: relative; padding-left: 34px; }
+  .parta .kus::before { counter-increment: p; content: counter(p);
+    position: absolute; left: 10px; top: 9px; font-size: 15px; font-weight: 700;
+    color: var(--zluta); }
+
+  .pozn { font-size: 12px; color: var(--text2); line-height: 1.6;
+    border-top: 1px solid var(--cara); margin-top: 16px; padding-top: 11px; }
+  .chyba { color: var(--zluta); font-size: 13.5px; margin-top: 12px; }
+
+  /* --- strop CP --- */
+  .iv-mrizka { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .iv { background: var(--karta); border: 1px solid var(--cara); border-radius: 12px;
+    padding: 7px 5px; text-align: center; min-width: 0; }
+  .iv .jm { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .03em; }
+  .iv .radek { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .iv button { flex: 0 0 34px; height: 38px; font-size: 20px; line-height: 1; padding: 0;
+    border: 1px solid var(--polekraj); border-radius: 10px; background: var(--pole);
+    color: var(--text); }
+  .iv .hod { font-size: 21px; font-weight: 700; min-width: 22px; }
+  .liga h2 { font-size: 15px; margin: 0; display: flex; justify-content: space-between;
+    align-items: baseline; gap: 8px; }
+  .liga h2 span { font-size: 12px; color: var(--tlum); font-weight: 400; }
+  .stupne { list-style: none; margin: 10px 0 0; padding: 0; }
+  .stupne li { display: flex; justify-content: space-between; align-items: baseline;
+    padding: 7px 10px; border-radius: 9px; background: var(--zlutabg); margin-bottom: 5px; }
+  .stupne li.fin { background: var(--zelenabg); }
+  .stupne li .c { font-size: 19px; font-weight: 700; color: var(--zluta); }
+  .stupne li.fin .c { color: var(--zelena); }
+  .stupne li .po { font-size: 11px; color: var(--text2); display: block; }
+  .nevejde { color: var(--text2); font-size: 13px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+
+<div class="hlava">
+  <h1 id="nadpis">Kapesní</h1>
+  <div class="kdy" id="kdy"></div>
+</div>
+
+<div id="obsah"></div>
+
+<nav class="zalozky" id="zalozky">
+  <button data-z="roster"><b>★</b>Roster</button>
+  <button data-z="raid"><b>⚔</b>Do raidu</button>
+  <button data-z="evo"><b>⇗</b>Evolvovat</button>
+  <button data-z="strop"><b>#</b>Strop CP</button>
+  <button data-z="data"><b>⤓</b>Data</button>
+</nav>
+
+<input type="file" id="souborSnimek" style="display:none" />
+
+<script>
+var DEX = /*DATA*/;
+var LIGY = [["Little Cup", 500], ["Great League", 1500], ["Ultra League", 2500]];
+var TYPY = ["Normal", "Fire", "Water", "Electric", "Grass", "Ice", "Fighting",
+  "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon",
+  "Dark", "Steel", "Fairy"];
+var CPM = Object.keys(DEX.cpm).map(function (k) { return [parseFloat(k), DEX.cpm[k]]; })
+  .sort(function (x, y) { return x[0] - y[0]; });
+
+var SNIMEK = null;             // co přišlo z počítače
+var zalozka = "roster";
+var hledani = "", filtr = "vse";
+var raidTypy = [];
+var IV = { a: 15, d: 15, s: 15 }, stropDruh = "", stropZRosteru = null;
+
+/* ---------- úložiště ---------- */
+function nacistUlozene() {
+  try {
+    var t = localStorage.getItem("kapesni_snimek");
+    if (t) SNIMEK = JSON.parse(t);
+    var s = JSON.parse(localStorage.getItem("kapesni_stav") || "null");
+    if (s) { IV = s.iv || IV; stropDruh = s.druh || ""; zalozka = s.z || "roster"; }
+  } catch (e) { }
+}
+function ulozitStav() {
+  try {
+    localStorage.setItem("kapesni_stav",
+      JSON.stringify({ iv: IV, druh: stropDruh, z: zalozka }));
+  } catch (e) { }
+}
+
+/* ---------- výpočet stropu (jediné, co telefon počítá sám) ---------- */
+var PODLE_JMENA = {};
+Object.keys(DEX.s).forEach(function (k) {
+  var jm = DEX.s[k][0];
+  if (!PODLE_JMENA[jm] || k.length < PODLE_JMENA[jm].length) PODLE_JMENA[jm] = k;
+});
+
+function cpAt(st, a, d, s, m) {
+  var cp = Math.floor((st[1] + a) * Math.sqrt(st[2] + d) * Math.sqrt(st[3] + s) * m * m / 10);
+  return cp < 10 ? 10 : cp;
+}
+function nejvyssiLevel(st, a, d, s, cap) {
+  for (var i = CPM.length - 1; i >= 0; i--) {
+    if (cpAt(st, a, d, s, CPM[i][1]) <= cap) return i;
+  }
+  return -1;
+}
+function koren(klic) {
+  var k = klic, zmena = true, i = 0;
+  while (zmena && i++ < 6) {
+    zmena = false;
+    Object.keys(DEX.evo).forEach(function (x) {
+      if (DEX.evo[x].indexOf(k) !== -1) { k = x; zmena = true; }
+    });
+  }
+  return k;
+}
+function terminalni(klic) {
+  var videl = {}, fronta = [koren(klic)], out = [];
+  while (fronta.length) {
+    var k = fronta.shift();
+    if (videl[k]) continue;
+    videl[k] = true;
+    var d = DEX.evo[k] || [];
+    if (!d.length) out.push(k); else d.forEach(function (n) { fronta.push(n); });
+  }
+  return out;
+}
+function cesta(odKlic, cilKlic) {
+  var fronta = [[odKlic]];
+  for (var i = 0; i < 200 && fronta.length; i++) {
+    var c = fronta.shift(), posl = c[c.length - 1];
+    if (posl === cilKlic) return c;
+    (DEX.evo[posl] || []).forEach(function (n) { fronta.push(c.concat([n])); });
+  }
+  return [cilKlic];
+}
+
+/* ---------- pomůcky ---------- */
+function el(html) {
+  var d = document.createElement("div");
+  d.innerHTML = html;
+  return d;
+}
+function esc(t) {
+  return String(t === undefined || t === null ? "" : t)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function kusHtml(k) {
+  return '<div class="kus ' + (k.ok ? "ano" : "ne") + '">'
+    + '<div class="r1"><span class="jm">' + esc(k.n)
+    + (k.f ? " <small>" + esc(k.f) + "</small>" : "") + "</span>"
+    + '<span class="cp">CP ' + (k.cp || "?") + (k.p !== null ? " · " + k.p + " %" : "")
+    + "</span></div>"
+    + '<div class="verdikt">' + esc(k.v) + (k.vs ? " · " + esc(k.vs) : "") + "</div>"
+    + ((k.r || []).length
+      ? "<ul>" + k.r.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"
+      : "")
+    + "</div>";
+}
+
+/* ---------- karty ---------- */
+function vykresliRoster() {
+  if (!SNIMEK) return bezSnimku();
+  var h = '<input type="search" id="hled" placeholder="Hledat pokémona…" value="'
+    + esc(hledani) + '" autocomplete="off" />'
+    + '<div class="filtry">'
+    + [["vse", "Vše"], ["ano", "Nechat"], ["ne", "Pustit"], ["role", "Drží roli"]]
+      .map(function (f) {
+        return '<button data-f="' + f[0] + '"' + (filtr === f[0] ? ' class="on"' : "")
+          + ">" + f[1] + "</button>";
+      }).join("") + "</div>";
+  var sez = SNIMEK.kusy.filter(function (k) {
+    if (hledani && k.n.toLowerCase().indexOf(hledani.toLowerCase()) === -1) return false;
+    if (filtr === "ano") return k.ok;
+    if (filtr === "ne") return !k.ok;
+    if (filtr === "role") return (k.r || []).length > 0;
+    return true;
+  });
+  h += sez.length
+    ? sez.map(kusHtml).join("")
+    : '<p class="prazdno">Nic nesedí na filtr ani hledání.</p>';
+  document.getElementById("obsah").innerHTML = h;
+  var vstup = document.getElementById("hled");
+  vstup.addEventListener("input", function () {
+    hledani = vstup.value;
+    var poz = vstup.selectionStart;
+    vykresliRoster();
+    var n = document.getElementById("hled");
+    n.focus(); n.setSelectionRange(poz, poz);
+  });
+  document.querySelector(".filtry").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-f]");
+    if (!b) return;
+    filtr = b.dataset.f;
+    vykresliRoster();
+  });
+}
+
+function vykresliRaid() {
+  if (!SNIMEK) return bezSnimku();
+  var h = '<div class="karta"><label for="boss">Boss z aktuálních raidů</label>'
+    + '<select id="boss"><option value="">— vyber, nebo zvol typy níž —</option>'
+    + (SNIMEK.bossove || []).map(function (b, i) {
+        return '<option value="' + i + '">' + esc(b.n) + " · " + esc(b.tier)
+          + " · " + b.t.join("/") + "</option>";
+      }).join("")
+    + "</select></div>";
+  h += '<div class="karta"><label>…nebo rovnou typy bosse (max 2)</label>'
+    + '<div class="typy">' + TYPY.map(function (t) {
+        return '<button data-t="' + t + '"' + (raidTypy.indexOf(t) > -1 ? ' class="on"' : "")
+          + ">" + t + "</button>";
+      }).join("") + "</div></div>";
+
+  if (raidTypy.length) {
+    var klic = raidTypy.join("|");
+    var idx = (SNIMEK.counters || {})[klic];
+    if (!idx && raidTypy.length === 2) idx = (SNIMEK.counters || {})[raidTypy[1] + "|" + raidTypy[0]];
+    h += '<div class="karta"><h2 style="margin:0 0 2px;font-size:15px;">Tvoje šestka na '
+      + raidTypy.join(" / ") + "</h2>"
+      + '<p style="margin:0;font-size:12px;color:var(--text2)">Řazeno podle toho, kolik'
+      + " toho udělají a jak dlouho vydrží. Kusy, kterým boss odolává, tu nejsou.</p></div>";
+    h += (idx && idx.length)
+      ? '<div class="parta">' + idx.map(function (i) { return kusHtml(SNIMEK.kusy[i]); }).join("") + "</div>"
+      : '<p class="prazdno">Na tuhle kombinaci nemáš v rosteru nikoho, komu by boss neodolával.</p>';
+  }
+  document.getElementById("obsah").innerHTML = h;
+
+  document.getElementById("boss").addEventListener("change", function (e) {
+    var b = SNIMEK.bossove[+e.target.value];
+    if (b) { raidTypy = b.t.slice(0, 2); vykresliRaid(); }
+  });
+  document.querySelector(".typy").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-t]");
+    if (!b) return;
+    var t = b.dataset.t, i = raidTypy.indexOf(t);
+    if (i > -1) raidTypy.splice(i, 1);
+    else { raidTypy.push(t); if (raidTypy.length > 2) raidTypy.shift(); }
+    vykresliRaid();
+  });
+}
+
+function vykresliEvo() {
+  if (!SNIMEK) return bezSnimku();
+  var sez = SNIMEK.kusy.filter(function (k) {
+    return k.e && k.e !== "Ne" && k.e !== "Nevyvíjí se" && k.e !== "Finální";
+  });
+  document.getElementById("obsah").innerHTML = sez.length
+    ? '<p style="margin:0 0 10px;font-size:12.5px;color:var(--text2)">Co appka'
+      + " doporučuje vyvinout. U každého je i to, proč se drží.</p>"
+      + sez.map(function (k) {
+          return kusHtml(k)
+            .replace('<div class="verdikt">',
+              '<div class="verdikt" style="color:var(--zluta)">' + esc(k.e) + " · ");
+        }).join("")
+    : '<p class="prazdno">Teď není co vyvíjet.</p>';
+}
+
+function vykresliStrop() {
+  var zRosteru = SNIMEK && SNIMEK.kusy.length;
+  var h = "";
+  if (zRosteru) {
+    h += '<div class="karta"><label for="zRost">Z mého rosteru</label>'
+      + '<select id="zRost"><option value="">— vyber kus —</option>'
+      + SNIMEK.kusy.map(function (k, i) {
+          return '<option value="' + i + '"' + (stropZRosteru === i ? " selected" : "")
+            + ">" + esc(k.n) + " · CP " + (k.cp || "?")
+            + (k.iv && k.iv[0] !== null ? " · " + k.iv.join("/") : "") + "</option>";
+        }).join("") + "</select></div>";
+  }
+  h += '<div class="karta"><label for="druh">…nebo libovolný druh</label>'
+    + '<input type="text" id="druh" list="druhy" autocomplete="off" placeholder="Mankey" value="'
+    + esc(stropDruh) + '" /><datalist id="druhy"></datalist>'
+    + '<div id="cilObal" style="display:none;margin-top:10px;">'
+    + '<label for="cil">Vyvinout na</label><select id="cil"></select></div>'
+    + '<div class="iv-mrizka" id="ivMrizka"></div></div>'
+    + '<div id="stropVysledek"></div>';
+  document.getElementById("obsah").innerHTML = h;
+  document.getElementById("druhy").innerHTML = Object.keys(PODLE_JMENA).sort()
+    .map(function (n) { return '<option value="' + esc(n) + '"></option>'; }).join("");
+  vykresliIv();
+  document.getElementById("druh").addEventListener("input", function (e) {
+    stropDruh = e.target.value; stropZRosteru = null; ulozitStav(); spocitatStrop();
+  });
+  if (zRosteru) {
+    document.getElementById("zRost").addEventListener("change", function (e) {
+      var i = e.target.value === "" ? null : +e.target.value;
+      stropZRosteru = i;
+      if (i !== null) {
+        var k = SNIMEK.kusy[i];
+        stropDruh = k.n;
+        document.getElementById("druh").value = k.n;
+        if (k.iv && k.iv[0] !== null) { IV.a = k.iv[0]; IV.d = k.iv[1]; IV.s = k.iv[2]; }
+        vykresliIv();
+      }
+      ulozitStav(); spocitatStrop();
+    });
+  }
+  spocitatStrop();
+}
+
+function vykresliIv() {
+  var m = document.getElementById("ivMrizka");
+  if (!m) return;
+  if (m.dataset.hotovo) {
+    ["a", "d", "s"].forEach(function (k) {
+      m.querySelector('[data-hod="' + k + '"]').textContent = IV[k];
+    });
+    return;
+  }
+  m.dataset.hotovo = "1";
+  m.innerHTML = [["a", "Útok"], ["d", "Obrana"], ["s", "HP"]].map(function (p) {
+    return '<div class="iv"><div class="jm">' + p[1] + "</div>"
+      + '<div class="radek"><button type="button" data-krok="-1" data-k="' + p[0] + '">−</button>'
+      + '<span class="hod" data-hod="' + p[0] + '">' + IV[p[0]] + "</span>"
+      + '<button type="button" data-krok="1" data-k="' + p[0] + '">+</button></div></div>';
+  }).join("");
+  m.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-k]");
+    if (!b) return;
+    IV[b.dataset.k] = Math.max(0, Math.min(15, IV[b.dataset.k] + (+b.dataset.krok)));
+    vykresliIv(); ulozitStav(); spocitatStrop();
+  });
+}
+
+function spocitatStrop() {
+  var out = document.getElementById("stropVysledek");
+  if (!out) return;
+  var jm = (document.getElementById("druh") || {}).value || "";
+  jm = jm.trim();
+  var klic = PODLE_JMENA[jm];
+  if (!klic) {
+    var shoda = Object.keys(PODLE_JMENA).filter(function (n) {
+      return n.toLowerCase() === jm.toLowerCase();
+    })[0];
+    klic = shoda ? PODLE_JMENA[shoda] : null;
+  }
+  var cilObal = document.getElementById("cilObal");
+  if (!klic) {
+    cilObal.style.display = "none";
+    out.innerHTML = jm ? '<p class="chyba">Druh „' + esc(jm) + "“ neznám.</p>" : "";
+    return;
+  }
+  var finale = terminalni(klic);
+  var sel = document.getElementById("cil");
+  if (finale.length > 1) {
+    cilObal.style.display = "";
+    if (sel.dataset.pro !== klic) {
+      sel.dataset.pro = klic;
+      sel.innerHTML = finale.map(function (f) {
+        return '<option value="' + f + '">' + esc(DEX.s[f][0]) + "</option>";
+      }).join("");
+      sel.onchange = spocitatStrop;
+    }
+  } else { cilObal.style.display = "none"; sel.dataset.pro = ""; }
+  var cil = finale.length > 1 ? (sel.value || finale[0]) : (finale[0] || klic);
+  var retez = cesta(koren(klic), cil);
+  var stFin = DEX.s[cil];
+  var h = "";
+  LIGY.forEach(function (lg) {
+    var idx = nejvyssiLevel(stFin, IV.a, IV.d, IV.s, lg[1]);
+    h += '<div class="karta liga"><h2>' + lg[0] + "<span>do " + lg[1] + " CP</span></h2>";
+    if (idx < 0) {
+      h += '<p class="nevejde">' + esc(DEX.s[cil][0]) + " se pod " + lg[1]
+        + " CP nevejde ani na nejnižším levelu.</p></div>";
+      return;
+    }
+    var lvl = CPM[idx][0], m = CPM[idx][1];
+    h += '<ul class="stupne">' + retez.map(function (k, i) {
+      var jeFin = i === retez.length - 1;
+      return "<li" + (jeFin ? ' class="fin"' : "") + "><span>" + esc(DEX.s[k][0])
+        + (jeFin ? '<span class="po">po evoluci · L' + String(lvl).replace(".", ",")
+          + "</span>" : "")
+        + '</span><span class="c">' + cpAt(DEX.s[k], IV.a, IV.d, IV.s, m) + "</span></li>";
+    }).join("") + "</ul></div>";
+  });
+  out.innerHTML = h;
+}
+
+function vykresliData() {
+  var h = '<div class="karta"><p style="margin:0 0 10px;font-size:13px;">'
+    + (SNIMEK
+      ? "Snímek z <b>" + esc(SNIMEK.kdy || "?") + "</b>, profil <b>"
+        + esc(SNIMEK.profil || "?") + "</b>, <b>" + SNIMEK.kusy.length + "</b> kusů."
+      : "Zatím nemáš načtený žádný snímek.")
+    + '</p><button class="btn hlavni" id="nacti">Načíst snímek z počítače…</button>'
+    + ' <button class="btn" id="vlozit">Vložit ze schránky…</button>'
+    + (SNIMEK ? ' <button class="btn" id="smaz">Smazat</button>' : "")
+    + "</div>"
+    + '<p class="pozn">Snímek dělá appka na počítači — v kartě „Vyměňovat si rostery“'
+    + " → <b>Snímek do mobilu</b>. Zapisuje se sám při každé změně rosteru, takže"
+    + " stačí ten soubor v telefonu občas načíst znovu."
+    + " <b>Na soubor v OneDrivu neťukej</b> — otevřel by ho ten, kdo si .json"
+    + " zabral (třeba ChatGPT). Jdi vždycky přes tlačítko nahoře; otevře se"
+    + " výběr souborů, kde si OneDrive najdeš."
+    + " Telefon nic nepočítá kromě stropu CP; verdikty a role jsou hotové z počítače,"
+    + " proto se nemůžou rozejít.</p>";
+  document.getElementById("obsah").innerHTML = h;
+  document.getElementById("nacti").addEventListener("click", function () {
+    document.getElementById("souborSnimek").click();
+  });
+  var vloz = document.getElementById("vlozit");
+  if (vloz) vloz.addEventListener("click", function () {
+    var t = window.prompt("Vlož sem obsah snímku (dlouhý stisk → Vložit):", "");
+    if (t) nactiText(t, "vložený text");
+  });
+  var sm = document.getElementById("smaz");
+  if (sm) sm.addEventListener("click", function () {
+    if (!window.confirm("Smazat načtený snímek?")) return;
+    SNIMEK = null;
+    try { localStorage.removeItem("kapesni_snimek"); } catch (e) { }
+    vykresli();
+  });
+}
+
+function bezSnimku() {
+  document.getElementById("obsah").innerHTML =
+    '<p class="prazdno">Nejdřív načti snímek rosteru — záložka <b>Data</b> dole vpravo.</p>';
+}
+
+/* ---------- kostra ---------- */
+function vykresli() {
+  document.querySelectorAll("#zalozky button").forEach(function (b) {
+    b.classList.toggle("on", b.dataset.z === zalozka);
+  });
+  document.getElementById("kdy").innerHTML = SNIMEK
+    ? esc(SNIMEK.profil || "") + "<br>snímek " + esc(SNIMEK.kdy || "")
+    : "bez snímku";
+  ({ roster: vykresliRoster, raid: vykresliRaid, evo: vykresliEvo,
+     strop: vykresliStrop, data: vykresliData }[zalozka] || vykresliRoster)();
+  window.scrollTo(0, 0);
+}
+
+document.getElementById("zalozky").addEventListener("click", function (e) {
+  var b = e.target.closest("button[data-z]");
+  if (!b) return;
+  zalozka = b.dataset.z;
+  ulozitStav();
+  vykresli();
+});
+
+document.getElementById("souborSnimek").addEventListener("change", function (e) {
+  var f = e.target.files && e.target.files[0];
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function () { nactiText(r.result, f.name); };
+  r.readAsText(f);
+  e.target.value = "";
+});
+
+/** Načte snímek z textu — jedno, jestli přišel ze souboru nebo z vložení. */
+function nactiText(text, odkud) {
+  try {
+    var d = JSON.parse(text);
+    if (!d || !d.kusy) throw new Error("nejsou v něm kusy — tohle není snímek");
+    SNIMEK = d;
+    localStorage.setItem("kapesni_snimek", text);
+    zalozka = "roster";
+    vykresli();
+  } catch (err) {
+    window.alert("Nepodařilo se načíst (" + odkud + "): " + (err.message || err));
+  }
+}
+
+nacistUlozene();
+if (!SNIMEK && zalozka !== "strop") zalozka = "data";
+vykresli();
+</script>
+</body>
+</html>

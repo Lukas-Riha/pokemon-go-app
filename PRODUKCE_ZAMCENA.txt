@@ -1,0 +1,26 @@
+PRODUKCE JE ZAMCENA
+===================
+
+Dokud tenhle soubor existuje, tools\deploy.ps1 odmitne nasadit.
+Nic neodejde na GitHub Pages ani do sdilene slozky v OneDrivu.
+
+Duvod: pracuje se na testovaci verzi (GO Atlas) a do produkce se nic
+neprevadi, dokud to nebude vyladene.
+
+Zamceno: 9. 9. 2026
+Posledni nasazena produkcni verze: 941c539
+
+Co plati mezitim
+----------------
+- Vyvoj jde do testovaci verze:  python tools\sync_reference.py --test
+- Produkcni build (bez vzhledove vrstvy) se da porad sestavit:
+    python tools\sync_reference.py
+  jen se nenasazuje.
+- Denni uloha data obnovuje, ale NENASAZUJE - bezi bez -Nasadit,
+  takze na git nic neodchazi ani sama od sebe.
+- Kdyz bude potreba oprava produkce, udela se prednostne do enginu.
+  Engine je jeden, takze testovaci verze tim nezustane pozadu.
+
+Odemceni
+--------
+Smazat tenhle soubor. Nic vic.

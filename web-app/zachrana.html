@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Záchrana dat — Pokémon GO tracker</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; padding: 18px; font: 14px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #14140f; color: #e8e6df; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .lead { color: #b6b3a8; margin: 0 0 18px; }
+  .safe { background: rgba(45,150,90,.14); border: 1px solid #2d965a; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 16px; font-size: 13px; }
+  .card { background: #1e1e18; border: 1px solid #33322a; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 15px; margin: 0 0 8px; }
+  .empty { color: #b6b3a8; font-style: italic; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #33322a; }
+  th { color: #b6b3a8; font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  button { font: inherit; padding: 5px 11px; border-radius: 6px; cursor: pointer;
+    background: #2a2a22; color: #e8e6df; border: 1px solid #45443a; }
+  button.primary { background: #2a78d6; border-color: #2a78d6; color: #fff; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: default; }
+  code { background: #2a2a22; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+  .hint { color: #b6b3a8; font-size: 12.5px; }
+  ol { padding-left: 20px; }
+  li { margin: 5px 0; }
+  .bad { color: #ff8a8a; }
+  .good { color: #7ddba0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Záchrana dat</h1>
+  <p class="lead">Tahle stránka jen <b>čte</b>, co má prohlížeč uložené. Nic nepřepisuje
+    ani nemaže — můžeš ji otevřít bez obav.</p>
+
+  <div class="safe">
+    <b>Než začneš:</b> zavři záložku s trackerem. Dokud je otevřený, může si uložený stav
+    přepsat sám. Tahle stránka musí být otevřená <b>ze stejné složky a ve stejném
+    prohlížeči</b> jako tracker, jinak na jeho data nedosáhne.
+  </div>
+
+  <div class="card">
+    <h2>Kde jsem</h2>
+    <div id="kde"></div>
+  </div>
+
+  <div class="card">
+    <h2>Co je v prohlížeči uložené</h2>
+    <div id="nalez"></div>
+  </div>
+
+  <div class="card">
+    <h2>Co dál</h2>
+    <div id="rada"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEY2 = "pgo_tracker_v2", KEY1 = "pgo_tracker";
+
+  function el(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  // ---- kde jsme ----
+  var kde = "<table>";
+  kde += "<tr><th>Adresa</th><td><code>" + esc(location.href) + "</code></td></tr>";
+  kde += "<tr><th>Prohlížeč</th><td>" + esc(navigator.userAgent) + "</td></tr>";
+  var ok = true;
+  try { localStorage.setItem("__probe", "1"); localStorage.removeItem("__probe"); }
+  catch (e) { ok = false; }
+  kde += "<tr><th>Úložiště</th><td>" + (ok
+    ? "<span class='good'>funguje</span>"
+    : "<span class='bad'>prohlížeč ho tady blokuje — data se nedají přečíst</span>") + "</td></tr>";
+  kde += "</table>";
+  el("kde").innerHTML = kde;
+
+  // ---- co tam je ----
+  var profily = [], starych = 0, jineKlice = [];
+  var rada = [];
+
+  if (ok) {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k !== KEY2 && k !== KEY1) jineKlice.push(k);
+    }
+    try {
+      var raw = localStorage.getItem(KEY2);
+      if (raw) {
+        var st = JSON.parse(raw);
+        Object.keys(st.profiles || {}).forEach(function (jmeno) {
+          var p = st.profiles[jmeno] || {};
+          var rows = Array.isArray(p.rows) ? p.rows : [];
+          profily.push({
+            jmeno: jmeno,
+            aktivni: st.active === jmeno,
+            pocet: rows.length,
+            ukazka: rows.slice(0, 4).map(function (r) {
+              return r.pokemon + (r.cp ? " " + r.cp : "");
+            }).join(", "),
+            jenUkazky: rows.length > 0 && rows.every(function (r) {
+              return String(r.note || "").indexOf("Ukázkový") === 0;
+            }),
+            smazanych: Array.isArray(p.discarded) ? p.discarded.length : 0,
+            rows: rows
+          });
+        });
+      }
+      var old = localStorage.getItem(KEY1);
+      if (old) {
+        var d = JSON.parse(old);
+        if (d && Array.isArray(d.rows)) {
+          starych = d.rows.length;
+          profily.push({ jmeno: "(starý formát bez profilů)", aktivni: false,
+            pocet: d.rows.length, ukazka: d.rows.slice(0, 4).map(function (r) {
+              return r.pokemon + (r.cp ? " " + r.cp : ""); }).join(", "),
+            jenUkazky: false, smazanych: 0, rows: d.rows });
+        }
+      }
+    } catch (e) {
+      el("nalez").innerHTML = "<p class='bad'>Uložený obsah se nepodařilo přečíst: "
+        + esc(e.message) + "</p>";
+    }
+  }
+
+  // ---- výpis ----
+  var box = el("nalez");
+  if (!ok) {
+    box.innerHTML = "<p class='bad'>Úložiště tady nejde přečíst.</p>";
+  } else if (!profily.length) {
+    box.innerHTML = "<p class='empty'>V tomhle prohlížeči a na téhle adrese"
+      + " není uložený žádný roster.</p>"
+      + (jineKlice.length ? "<p class='hint'>Jiné klíče v úložišti: <code>"
+          + jineKlice.map(esc).join("</code>, <code>") + "</code></p>" : "");
+  } else {
+    var h = "<table><tr><th>Profil</th><th>Kusů</th><th>Smazaných</th><th>Ukázka</th><th></th></tr>";
+    profily.forEach(function (p, idx) {
+      h += "<tr><td>" + esc(p.jmeno) + (p.aktivni ? " <span class='hint'>(aktivní)</span>" : "")
+        + (p.jenUkazky ? " <span class='bad'>jen ukázkové řádky</span>" : "") + "</td>"
+        + "<td class='num'>" + p.pocet + "</td>"
+        + "<td class='num'>" + p.smazanych + "</td>"
+        + "<td class='hint'>" + esc(p.ukazka) + "</td>"
+        + "<td><button data-i='" + idx + "'" + (p.pocet ? "" : " disabled")
+        + ">Uložit jako CSV</button></td></tr>";
+    });
+    h += "</table>";
+    box.innerHTML = h;
+
+    box.addEventListener("click", function (ev) {
+      var b = ev.target.closest("button[data-i]");
+      if (!b) return;
+      exportCsv(profily[+b.dataset.i]);
+    });
+  }
+
+  // ---- export ----
+  var SLOUPCE = ["pokemon", "forma", "finalEvo", "cp", "level", "ivAtk", "ivDef", "ivSta",
+    "ivPctIn", "fastMove", "charged1", "charged2", "glRank", "ulRank", "mlRank", "buddy",
+    "note", "star", "dynamax", "gender", "vyska", "vaha", "scanDate"];
+  var HLAVICKA = ["Pokemon", "Forma", "Final Evo", "CP", "Level", "ATT IV", "DEF IV", "HP IV",
+    "IV%", "Fast move", "Special move", "Special move 2", "GL Rank", "UL Rank", "ML Rank",
+    "Buddy", "Note", "Star", "Dynamax", "Gender", "Height (cm)", "Weight (g)", "Scan date"];
+
+  function csvEscape(v) {
+    v = (v === undefined || v === null) ? "" : String(v);
+    if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }
+
+  function exportCsv(p) {
+    var radky = [HLAVICKA.join(",")];
+    p.rows.forEach(function (r) {
+      radky.push(SLOUPCE.map(function (k) { return csvEscape(r[k]); }).join(","));
+    });
+    var blob = new Blob(["﻿" + radky.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "zachrana_" + p.jmeno.replace(/[^a-zA-Z0-9_-]+/g, "_") + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ---- rada ----
+  if (!ok) {
+    rada.push("Prohlížeč tady úložiště blokuje. Zkus soubor otevřít v Chrome nebo Edge"
+      + " (ne v režimu Anonymní / InPrivate).");
+  } else if (!profily.length) {
+    rada.push("Tady data nejsou. To skoro vždycky znamená, že tracker běžel <b>jinde</b>."
+      + " Projdi postupně:");
+    rada.push("<b>Jiný prohlížeč.</b> Zkus otevřít tuhle stránku v Edge, Chrome i Firefoxu —"
+      + " každý má vlastní úložiště a data jsou jen v tom, kde tracker běžel.");
+    rada.push("<b>Jiná složka.</b> Některé prohlížeče drží data zvlášť podle toho, odkud"
+      + " se soubor otevřel. Najdi <b>původní</b> kopii trackeru (Stažené soubory, plocha…),"
+      + " zkopíruj tuhle stránku vedle ní a otevři ji odtamtud.");
+    rada.push("<b>Anonymní okno.</b> Když v něm tracker běžel, data se zavřením okna smazala"
+      + " a vrátit nejdou.");
+  } else {
+    var mas = profily.filter(function (p) { return p.pocet && !p.jenUkazky; });
+    if (mas.length) {
+      rada.push("<span class='good'><b>Data tu jsou.</b></span> U profilu s tvými pokémony dej"
+        + " <b>Uložit jako CSV</b> — tím máš zálohu, kterou už nic nepřepíše.");
+      rada.push("Pak otevři tracker, dej <b>Importovat data</b>, vlož ten CSV"
+        + " a zvol <b>Nahradit roster</b>.");
+      rada.push("A hned potom v trackeru klikni na <b>Zálohovat do souboru…</b> a vyber si"
+        + " soubor na disku. Od té chvíle se roster ukládá i mimo prohlížeč.");
+      if (profily.length > 1) {
+        rada.push("Profilů je tu víc — v trackeru se mezi nimi přepíná rozbalovátkem"
+          + " <b>Profil</b> nahoře. Možná ti stačí přepnout na ten správný.");
+      }
+    } else {
+      rada.push("Uložený je jen prázdný nebo ukázkový roster. Tvoje data budou jinde —"
+        + " zkus tuhle stránku otevřít v jiném prohlížeči, nebo ze složky, odkud jsi"
+        + " tracker spouštěla dřív.");
+    }
+  }
+  el("rada").innerHTML = "<ol><li>" + rada.join("</li><li>") + "</li></ol>";
+})();
+</script>
+</body>
+</html>

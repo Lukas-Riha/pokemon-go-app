@@ -1,0 +1,2283 @@
+{
+ "_meta": {
+  "popis": "Jediný zdroj pravdy pro referenční data. Čte ho build_xlsx.py, build_tracker.py i webová appka (přes tools/sync_reference.py).",
+  "aktualizovano": "2026-08",
+  "overovat_proti": [
+   "https://pvpoke.com",
+   "https://pokemongohub.net"
+  ],
+  "poznamka": "Meta se mění s balance patchi — jde o dlouhodobě stabilní jádro, ne zmrazený tier list.",
+  "obsahuje": {
+   "typeChart": 18,
+   "tradeEvolutions": 10,
+   "raidAttackers": 70,
+   "gymDefenders": 8,
+   "megaEvolutions": 47,
+   "pvp": {
+    "great": 15,
+    "ultra": 12,
+    "master": 12
+   }
+  },
+  "weather_zdroj": "https://pogoapi.net (weather_boosts)"
+ },
+ "raidAttackers": [
+  {
+   "type": "Fire",
+   "rank": 1,
+   "pokemon": "Charizard",
+   "form": "Mega Y",
+   "fastMove": "Fire Spin",
+   "chargedMove": "Blast Burn",
+   "priority": "Vysoká",
+   "matchNames": [
+    "charizard"
+   ],
+   "matchName": "Charizard"
+  },
+  {
+   "type": "Fire",
+   "rank": 2,
+   "pokemon": "Blaziken",
+   "form": "Mega",
+   "fastMove": "Fire Spin",
+   "chargedMove": "Blast Burn",
+   "priority": "Vysoká",
+   "matchNames": [
+    "blaziken"
+   ],
+   "matchName": "Blaziken"
+  },
+  {
+   "type": "Fire",
+   "rank": 3,
+   "pokemon": "Blacephalon",
+   "form": "Legendary/Mythical",
+   "fastMove": "Incinerate",
+   "chargedMove": "Mind Blown",
+   "priority": "Střední",
+   "matchNames": [
+    "blacephalon"
+   ],
+   "matchName": "Blacephalon"
+  },
+  {
+   "type": "Fire",
+   "rank": 4,
+   "pokemon": "Reshiram",
+   "form": "Legendary",
+   "fastMove": "Fire Fang",
+   "chargedMove": "Overheat",
+   "priority": "Střední",
+   "matchNames": [
+    "reshiram"
+   ],
+   "matchName": "Reshiram"
+  },
+  {
+   "type": "Water",
+   "rank": 1,
+   "pokemon": "Kyogre",
+   "form": "Primal",
+   "fastMove": "Waterfall",
+   "chargedMove": "Origin Pulse",
+   "priority": "Vysoká (jen pokud často raiduješ)",
+   "matchNames": [
+    "kyogre"
+   ],
+   "matchName": "Kyogre"
+  },
+  {
+   "type": "Water",
+   "rank": 2,
+   "pokemon": "Kyogre",
+   "form": "Běžná",
+   "fastMove": "Waterfall",
+   "chargedMove": "Hydro Pump",
+   "priority": "Vysoká",
+   "matchNames": [
+    "kyogre"
+   ],
+   "matchName": "Kyogre"
+  },
+  {
+   "type": "Water",
+   "rank": 3,
+   "pokemon": "Gyarados",
+   "form": "Mega",
+   "fastMove": "Waterfall",
+   "chargedMove": "Hydro Pump",
+   "priority": "Vysoká",
+   "matchNames": [
+    "gyarados"
+   ],
+   "matchName": "Gyarados"
+  },
+  {
+   "type": "Water",
+   "rank": 4,
+   "pokemon": "Feraligatr",
+   "form": "Community Day moveset",
+   "fastMove": "Water Gun",
+   "chargedMove": "Hydro Cannon",
+   "priority": "Střední",
+   "matchNames": [
+    "feraligatr"
+   ],
+   "matchName": "Feraligatr"
+  },
+  {
+   "type": "Grass",
+   "rank": 1,
+   "pokemon": "Sceptile",
+   "form": "Mega",
+   "fastMove": "Bullet Seed",
+   "chargedMove": "Frenzy Plant",
+   "priority": "Vysoká",
+   "matchNames": [
+    "sceptile"
+   ],
+   "matchName": "Sceptile"
+  },
+  {
+   "type": "Grass",
+   "rank": 2,
+   "pokemon": "Kartana",
+   "form": "Legendary/Mythical (Ultra Beast)",
+   "fastMove": "Razor Leaf",
+   "chargedMove": "Leaf Blade",
+   "priority": "Střední",
+   "matchNames": [
+    "kartana"
+   ],
+   "matchName": "Kartana"
+  },
+  {
+   "type": "Grass",
+   "rank": 3,
+   "pokemon": "Venusaur",
+   "form": "Mega",
+   "fastMove": "Vine Whip",
+   "chargedMove": "Frenzy Plant",
+   "priority": "Vysoká",
+   "matchNames": [
+    "venusaur"
+   ],
+   "matchName": "Venusaur"
+  },
+  {
+   "type": "Grass",
+   "rank": 4,
+   "pokemon": "Roserade",
+   "form": "Běžná",
+   "fastMove": "Bullet Seed",
+   "chargedMove": "Grass Knot",
+   "priority": "Nízká",
+   "matchNames": [
+    "roserade"
+   ],
+   "matchName": "Roserade"
+  },
+  {
+   "type": "Electric",
+   "rank": 1,
+   "pokemon": "Thundurus",
+   "form": "Therian, Shadow",
+   "fastMove": "Volt Switch",
+   "chargedMove": "Thunder",
+   "priority": "Vysoká",
+   "matchNames": [
+    "thundurus"
+   ],
+   "matchName": "Thundurus"
+  },
+  {
+   "type": "Electric",
+   "rank": 2,
+   "pokemon": "Regieleki",
+   "form": "Legendary",
+   "fastMove": "Volt Switch",
+   "chargedMove": "Thunder",
+   "priority": "Střední",
+   "matchNames": [
+    "regieleki"
+   ],
+   "matchName": "Regieleki"
+  },
+  {
+   "type": "Electric",
+   "rank": 3,
+   "pokemon": "Manectric",
+   "form": "Mega",
+   "fastMove": "Volt Switch",
+   "chargedMove": "Wild Charge",
+   "priority": "Střední",
+   "matchNames": [
+    "manectric"
+   ],
+   "matchName": "Manectric"
+  },
+  {
+   "type": "Electric",
+   "rank": 4,
+   "pokemon": "Zekrom",
+   "form": "Legendary",
+   "fastMove": "Charge Beam",
+   "chargedMove": "Wild Charge",
+   "priority": "Střední",
+   "matchNames": [
+    "zekrom"
+   ],
+   "matchName": "Zekrom"
+  },
+  {
+   "type": "Ice",
+   "rank": 1,
+   "pokemon": "Kyurem",
+   "form": "Black",
+   "fastMove": "Dragon Breath",
+   "chargedMove": "Freeze-Dry",
+   "priority": "Vysoká",
+   "matchNames": [
+    "kyurem"
+   ],
+   "matchName": "Kyurem"
+  },
+  {
+   "type": "Ice",
+   "rank": 2,
+   "pokemon": "Kyurem",
+   "form": "White",
+   "fastMove": "Dragon Breath",
+   "chargedMove": "Freeze-Dry",
+   "priority": "Vysoká",
+   "matchNames": [
+    "kyurem"
+   ],
+   "matchName": "Kyurem"
+  },
+  {
+   "type": "Ice",
+   "rank": 3,
+   "pokemon": "Glalie",
+   "form": "Mega",
+   "fastMove": "Frost Breath",
+   "chargedMove": "Avalanche",
+   "priority": "Nízká",
+   "matchNames": [
+    "glalie"
+   ],
+   "matchName": "Glalie"
+  },
+  {
+   "type": "Ice",
+   "rank": 4,
+   "pokemon": "Abomasnow",
+   "form": "Mega",
+   "fastMove": "Powder Snow",
+   "chargedMove": "Weather Ball (Ice)",
+   "priority": "Nízká",
+   "matchNames": [
+    "abomasnow"
+   ],
+   "matchName": "Abomasnow"
+  },
+  {
+   "type": "Fighting",
+   "rank": 1,
+   "pokemon": "Lucario",
+   "form": "Mega",
+   "fastMove": "Counter",
+   "chargedMove": "Aura Sphere",
+   "priority": "Vysoká",
+   "matchNames": [
+    "lucario"
+   ],
+   "matchName": "Lucario"
+  },
+  {
+   "type": "Fighting",
+   "rank": 2,
+   "pokemon": "Blaziken",
+   "form": "Mega",
+   "fastMove": "Counter",
+   "chargedMove": "Focus Blast",
+   "priority": "Vysoká",
+   "matchNames": [
+    "blaziken"
+   ],
+   "matchName": "Blaziken"
+  },
+  {
+   "type": "Fighting",
+   "rank": 3,
+   "pokemon": "Terrakion",
+   "form": "Legendary",
+   "fastMove": "Double Kick",
+   "chargedMove": "Sacred Sword",
+   "priority": "Střední",
+   "matchNames": [
+    "terrakion"
+   ],
+   "matchName": "Terrakion"
+  },
+  {
+   "type": "Fighting",
+   "rank": 4,
+   "pokemon": "Machamp",
+   "form": "Mega/Shadow",
+   "fastMove": "Counter",
+   "chargedMove": "Dynamic Punch",
+   "priority": "Střední",
+   "matchNames": [
+    "machamp"
+   ],
+   "matchName": "Machamp"
+  },
+  {
+   "type": "Poison",
+   "rank": 1,
+   "pokemon": "Beedrill",
+   "form": "Mega",
+   "fastMove": "Poison Jab",
+   "chargedMove": "Sludge Bomb",
+   "priority": "Nízká",
+   "matchNames": [
+    "beedrill"
+   ],
+   "matchName": "Beedrill"
+  },
+  {
+   "type": "Poison",
+   "rank": 2,
+   "pokemon": "Gengar",
+   "form": "Mega",
+   "fastMove": "Lick",
+   "chargedMove": "Sludge Bomb",
+   "priority": "Vysoká",
+   "matchNames": [
+    "gengar"
+   ],
+   "matchName": "Gengar"
+  },
+  {
+   "type": "Poison",
+   "rank": 3,
+   "pokemon": "Roserade",
+   "form": "Běžná",
+   "fastMove": "Poison Jab",
+   "chargedMove": "Sludge Bomb",
+   "priority": "Nízká",
+   "matchNames": [
+    "roserade"
+   ],
+   "matchName": "Roserade"
+  },
+  {
+   "type": "Poison",
+   "rank": 4,
+   "pokemon": "Nidoking",
+   "form": "Shadow",
+   "fastMove": "Poison Jab",
+   "chargedMove": "Sludge Wave",
+   "priority": "Nízká",
+   "matchNames": [
+    "nidoking"
+   ],
+   "matchName": "Nidoking"
+  },
+  {
+   "type": "Ground",
+   "rank": 1,
+   "pokemon": "Groudon",
+   "form": "Primal",
+   "fastMove": "Mud Shot",
+   "chargedMove": "Precipice Blades",
+   "priority": "Vysoká (jen časté raidy)",
+   "matchNames": [
+    "groudon"
+   ],
+   "matchName": "Groudon"
+  },
+  {
+   "type": "Ground",
+   "rank": 2,
+   "pokemon": "Garchomp",
+   "form": "Mega",
+   "fastMove": "Mud Shot",
+   "chargedMove": "Earthquake",
+   "priority": "Vysoká",
+   "matchNames": [
+    "garchomp"
+   ],
+   "matchName": "Garchomp"
+  },
+  {
+   "type": "Ground",
+   "rank": 3,
+   "pokemon": "Landorus",
+   "form": "Therian",
+   "fastMove": "Mud Shot",
+   "chargedMove": "Earthquake",
+   "priority": "Střední",
+   "matchNames": [
+    "landorus"
+   ],
+   "matchName": "Landorus"
+  },
+  {
+   "type": "Ground",
+   "rank": 4,
+   "pokemon": "Excadrill",
+   "form": "Shadow",
+   "fastMove": "Mud Slap",
+   "chargedMove": "Drill Run",
+   "priority": "Nízká",
+   "matchNames": [
+    "excadrill"
+   ],
+   "matchName": "Excadrill"
+  },
+  {
+   "type": "Flying",
+   "rank": 1,
+   "pokemon": "Pidgeot",
+   "form": "Mega",
+   "fastMove": "Wing Attack",
+   "chargedMove": "Brave Bird",
+   "priority": "Střední",
+   "matchNames": [
+    "pidgeot"
+   ],
+   "matchName": "Pidgeot"
+  },
+  {
+   "type": "Flying",
+   "rank": 2,
+   "pokemon": "Staraptor",
+   "form": "Shadow",
+   "fastMove": "Gust",
+   "chargedMove": "Brave Bird",
+   "priority": "Nízká",
+   "matchNames": [
+    "staraptor"
+   ],
+   "matchName": "Staraptor"
+  },
+  {
+   "type": "Flying",
+   "rank": 3,
+   "pokemon": "Moltres",
+   "form": "Shadow",
+   "fastMove": "Wing Attack",
+   "chargedMove": "Sky Attack",
+   "priority": "Střední",
+   "matchNames": [
+    "moltres"
+   ],
+   "matchName": "Moltres"
+  },
+  {
+   "type": "Flying",
+   "rank": 4,
+   "pokemon": "Honchkrow",
+   "form": "Shadow",
+   "fastMove": "Snarl",
+   "chargedMove": "Brave Bird",
+   "priority": "Nízká",
+   "matchNames": [
+    "honchkrow"
+   ],
+   "matchName": "Honchkrow"
+  },
+  {
+   "type": "Psychic",
+   "rank": 1,
+   "pokemon": "Mewtwo",
+   "form": "Mega Y",
+   "fastMove": "Psycho Cut",
+   "chargedMove": "Psystrike",
+   "priority": "Vysoká",
+   "matchNames": [
+    "mewtwo"
+   ],
+   "matchName": "Mewtwo"
+  },
+  {
+   "type": "Psychic",
+   "rank": 2,
+   "pokemon": "Alakazam",
+   "form": "Mega/Shadow",
+   "fastMove": "Confusion",
+   "chargedMove": "Future Sight",
+   "priority": "Vysoká",
+   "matchNames": [
+    "alakazam"
+   ],
+   "matchName": "Alakazam"
+  },
+  {
+   "type": "Psychic",
+   "rank": 3,
+   "pokemon": "Deoxys",
+   "form": "Attack Forme",
+   "fastMove": "Zen Headbutt",
+   "chargedMove": "Psycho Boost",
+   "priority": "Střední",
+   "matchNames": [
+    "deoxys"
+   ],
+   "matchName": "Deoxys"
+  },
+  {
+   "type": "Psychic",
+   "rank": 4,
+   "pokemon": "Espeon",
+   "form": "Běžná",
+   "fastMove": "Confusion",
+   "chargedMove": "Future Sight",
+   "priority": "Nízká",
+   "matchNames": [
+    "espeon"
+   ],
+   "matchName": "Espeon"
+  },
+  {
+   "type": "Bug",
+   "rank": 1,
+   "pokemon": "Beedrill",
+   "form": "Mega",
+   "fastMove": "Bug Bite",
+   "chargedMove": "X-Scissor",
+   "priority": "Nízká",
+   "matchNames": [
+    "beedrill"
+   ],
+   "matchName": "Beedrill"
+  },
+  {
+   "type": "Bug",
+   "rank": 2,
+   "pokemon": "Pinsir",
+   "form": "Mega",
+   "fastMove": "Fury Cutter",
+   "chargedMove": "X-Scissor",
+   "priority": "Nízká",
+   "matchNames": [
+    "pinsir"
+   ],
+   "matchName": "Pinsir"
+  },
+  {
+   "type": "Bug",
+   "rank": 3,
+   "pokemon": "Genesect",
+   "form": "Mythical",
+   "fastMove": "Fury Cutter",
+   "chargedMove": "X-Scissor",
+   "priority": "Střední",
+   "matchNames": [
+    "genesect"
+   ],
+   "matchName": "Genesect"
+  },
+  {
+   "type": "Bug",
+   "rank": 4,
+   "pokemon": "Scizor",
+   "form": "Mega",
+   "fastMove": "Fury Cutter",
+   "chargedMove": "X-Scissor",
+   "priority": "Nízká",
+   "matchNames": [
+    "scizor"
+   ],
+   "matchName": "Scizor"
+  },
+  {
+   "type": "Rock",
+   "rank": 1,
+   "pokemon": "Diancie",
+   "form": "Mega",
+   "fastMove": "Rock Throw",
+   "chargedMove": "Rock Slide",
+   "priority": "Střední",
+   "matchNames": [
+    "diancie"
+   ],
+   "matchName": "Diancie"
+  },
+  {
+   "type": "Rock",
+   "rank": 2,
+   "pokemon": "Aerodactyl",
+   "form": "Mega/Shadow",
+   "fastMove": "Rock Throw",
+   "chargedMove": "Rock Slide",
+   "priority": "Nízká",
+   "matchNames": [
+    "aerodactyl"
+   ],
+   "matchName": "Aerodactyl"
+  },
+  {
+   "type": "Rock",
+   "rank": 3,
+   "pokemon": "Rampardos",
+   "form": "Shadow",
+   "fastMove": "Smack Down",
+   "chargedMove": "Rock Slide",
+   "priority": "Nízká",
+   "matchNames": [
+    "rampardos"
+   ],
+   "matchName": "Rampardos"
+  },
+  {
+   "type": "Rock",
+   "rank": 4,
+   "pokemon": "Terrakion",
+   "form": "Legendary",
+   "fastMove": "Smack Down",
+   "chargedMove": "Rock Slide",
+   "priority": "Střední",
+   "matchNames": [
+    "terrakion"
+   ],
+   "matchName": "Terrakion"
+  },
+  {
+   "type": "Ghost",
+   "rank": 1,
+   "pokemon": "Gengar",
+   "form": "Mega",
+   "fastMove": "Lick",
+   "chargedMove": "Shadow Ball",
+   "priority": "Vysoká",
+   "matchNames": [
+    "gengar"
+   ],
+   "matchName": "Gengar"
+  },
+  {
+   "type": "Ghost",
+   "rank": 2,
+   "pokemon": "Giratina",
+   "form": "Origin Forme",
+   "fastMove": "Shadow Claw",
+   "chargedMove": "Shadow Ball",
+   "priority": "Střední",
+   "matchNames": [
+    "giratina"
+   ],
+   "matchName": "Giratina"
+  },
+  {
+   "type": "Ghost",
+   "rank": 3,
+   "pokemon": "Mewtwo",
+   "form": "Shadow",
+   "fastMove": "Confusion",
+   "chargedMove": "Shadow Ball",
+   "priority": "Střední",
+   "matchNames": [
+    "mewtwo"
+   ],
+   "matchName": "Mewtwo"
+  },
+  {
+   "type": "Ghost",
+   "rank": 4,
+   "pokemon": "Chandelure",
+   "form": "Běžná",
+   "fastMove": "Hex",
+   "chargedMove": "Shadow Ball",
+   "priority": "Nízká",
+   "matchNames": [
+    "chandelure"
+   ],
+   "matchName": "Chandelure"
+  },
+  {
+   "type": "Dragon",
+   "rank": 1,
+   "pokemon": "Rayquaza",
+   "form": "Mega",
+   "fastMove": "Dragon Tail",
+   "chargedMove": "Outrage",
+   "priority": "Vysoká",
+   "matchNames": [
+    "rayquaza"
+   ],
+   "matchName": "Rayquaza"
+  },
+  {
+   "type": "Dragon",
+   "rank": 2,
+   "pokemon": "Salamence",
+   "form": "Mega/Shadow",
+   "fastMove": "Dragon Tail",
+   "chargedMove": "Outrage",
+   "priority": "Vysoká",
+   "matchNames": [
+    "salamence"
+   ],
+   "matchName": "Salamence"
+  },
+  {
+   "type": "Dragon",
+   "rank": 3,
+   "pokemon": "Dialga",
+   "form": "Origin/Běžná",
+   "fastMove": "Dragon Breath",
+   "chargedMove": "Draco Meteor",
+   "priority": "Vysoká",
+   "matchNames": [
+    "dialga"
+   ],
+   "matchName": "Dialga"
+  },
+  {
+   "type": "Dragon",
+   "rank": 4,
+   "pokemon": "Palkia",
+   "form": "Origin/Běžná",
+   "fastMove": "Dragon Tail",
+   "chargedMove": "Draco Meteor",
+   "priority": "Střední",
+   "matchNames": [
+    "palkia"
+   ],
+   "matchName": "Palkia"
+  },
+  {
+   "type": "Dark",
+   "rank": 1,
+   "pokemon": "Houndoom",
+   "form": "Mega",
+   "fastMove": "Snarl",
+   "chargedMove": "Foul Play",
+   "priority": "Nízká",
+   "matchNames": [
+    "houndoom"
+   ],
+   "matchName": "Houndoom"
+  },
+  {
+   "type": "Dark",
+   "rank": 2,
+   "pokemon": "Hydreigon",
+   "form": "Shadow",
+   "fastMove": "Bite",
+   "chargedMove": "Brutal Swing",
+   "priority": "Střední",
+   "matchNames": [
+    "hydreigon"
+   ],
+   "matchName": "Hydreigon"
+  },
+  {
+   "type": "Dark",
+   "rank": 3,
+   "pokemon": "Yveltal",
+   "form": "Legendary",
+   "fastMove": "Snarl",
+   "chargedMove": "Dark Pulse",
+   "priority": "Střední",
+   "matchNames": [
+    "yveltal"
+   ],
+   "matchName": "Yveltal"
+  },
+  {
+   "type": "Dark",
+   "rank": 4,
+   "pokemon": "Weavile",
+   "form": "Shadow",
+   "fastMove": "Snarl",
+   "chargedMove": "Foul Play",
+   "priority": "Nízká",
+   "matchNames": [
+    "weavile"
+   ],
+   "matchName": "Weavile"
+  },
+  {
+   "type": "Steel",
+   "rank": 1,
+   "pokemon": "Metagross",
+   "form": "Mega/Shadow",
+   "fastMove": "Bullet Punch",
+   "chargedMove": "Meteor Mash",
+   "priority": "Vysoká",
+   "matchNames": [
+    "metagross"
+   ],
+   "matchName": "Metagross"
+  },
+  {
+   "type": "Steel",
+   "rank": 2,
+   "pokemon": "Dialga",
+   "form": "Origin/Běžná",
+   "fastMove": "Metal Claw",
+   "chargedMove": "Iron Head",
+   "priority": "Vysoká",
+   "matchNames": [
+    "dialga"
+   ],
+   "matchName": "Dialga"
+  },
+  {
+   "type": "Steel",
+   "rank": 3,
+   "pokemon": "Melmetal",
+   "form": "Běžná",
+   "fastMove": "Thunder Shock",
+   "chargedMove": "Double Iron Bash",
+   "priority": "Střední",
+   "matchNames": [
+    "melmetal"
+   ],
+   "matchName": "Melmetal"
+  },
+  {
+   "type": "Steel",
+   "rank": 4,
+   "pokemon": "Lucario",
+   "form": "Mega/Shadow",
+   "fastMove": "Bullet Punch",
+   "chargedMove": "Flash Cannon",
+   "priority": "Střední",
+   "matchNames": [
+    "lucario"
+   ],
+   "matchName": "Lucario"
+  },
+  {
+   "type": "Fairy",
+   "rank": 1,
+   "pokemon": "Zacian",
+   "form": "Crowned Sword",
+   "fastMove": "Snarl",
+   "chargedMove": "Play Rough",
+   "priority": "Vysoká",
+   "matchNames": [
+    "zacian"
+   ],
+   "matchName": "Zacian"
+  },
+  {
+   "type": "Fairy",
+   "rank": 2,
+   "pokemon": "Gardevoir",
+   "form": "Mega",
+   "fastMove": "Charm",
+   "chargedMove": "Dazzling Gleam",
+   "priority": "Vysoká",
+   "matchNames": [
+    "gardevoir"
+   ],
+   "matchName": "Gardevoir"
+  },
+  {
+   "type": "Fairy",
+   "rank": 3,
+   "pokemon": "Xerneas",
+   "form": "Legendary",
+   "fastMove": "Zen Headbutt",
+   "chargedMove": "Moonblast",
+   "priority": "Střední",
+   "matchNames": [
+    "xerneas"
+   ],
+   "matchName": "Xerneas"
+  },
+  {
+   "type": "Fairy",
+   "rank": 4,
+   "pokemon": "Diancie",
+   "form": "Mega",
+   "fastMove": "Charm",
+   "chargedMove": "Moonblast",
+   "priority": "Nízká",
+   "matchNames": [
+    "diancie"
+   ],
+   "matchName": "Diancie"
+  },
+  {
+   "type": "Normal",
+   "rank": 1,
+   "pokemon": "Regigigas",
+   "form": "Legendary",
+   "fastMove": "Zen Headbutt",
+   "chargedMove": "Giga Impact",
+   "priority": "Nízká",
+   "matchNames": [
+    "regigigas"
+   ],
+   "matchName": "Regigigas"
+  },
+  {
+   "type": "Normal",
+   "rank": 2,
+   "pokemon": "Snorlax",
+   "form": "Shadow",
+   "fastMove": "Lick",
+   "chargedMove": "Body Slam",
+   "priority": "Nízká",
+   "matchNames": [
+    "snorlax"
+   ],
+   "matchName": "Snorlax"
+  }
+ ],
+ "gymDefenders": [
+  {
+   "rank": 1,
+   "pokemon": "Blissey",
+   "types": "Normal",
+   "trait": "Extrémně vysoké HP",
+   "note": "Klasika mezi obránci, prakticky nejvyšší HP ve hře",
+   "matchNames": [
+    "blissey"
+   ],
+   "matchName": "Blissey"
+  },
+  {
+   "rank": 2,
+   "pokemon": "Snorlax / Shadow Snorlax",
+   "types": "Normal",
+   "trait": "Vysoké HP i Defense",
+   "note": "Skvělá kombinace výdrže a síly",
+   "matchNames": [
+    "snorlax"
+   ],
+   "matchName": "Snorlax"
+  },
+  {
+   "rank": 3,
+   "pokemon": "Chansey",
+   "types": "Normal",
+   "trait": "Obří HP",
+   "note": "Levnější alternativa k Blissey (nižší evoluce)",
+   "matchNames": [
+    "chansey"
+   ],
+   "matchName": "Chansey"
+  },
+  {
+   "rank": 4,
+   "pokemon": "Stunfisk",
+   "types": "Ground/Steel (Galarian)",
+   "trait": "Vysoká Defense",
+   "note": "Skvělý typový profil, odolá mnoha útokům",
+   "matchNames": [
+    "stunfisk"
+   ],
+   "matchName": "Stunfisk"
+  },
+  {
+   "rank": 5,
+   "pokemon": "Dialga",
+   "types": "Steel/Dragon",
+   "trait": "Vysoký Defense i útok",
+   "note": "Pro vyšší úrovně gymů, kde chceš i sílu",
+   "matchNames": [
+    "dialga"
+   ],
+   "matchName": "Dialga"
+  },
+  {
+   "rank": 6,
+   "pokemon": "Melmetal",
+   "types": "Steel",
+   "trait": "Vysoké HP",
+   "note": "Odolný proti mnoha běžným útočníkům",
+   "matchNames": [
+    "melmetal"
+   ],
+   "matchName": "Melmetal"
+  },
+  {
+   "rank": 7,
+   "pokemon": "Togekiss",
+   "types": "Fairy/Flying",
+   "trait": "Vyvážené staty",
+   "note": "Dobrý typový profil proti Fighting/Dragon útočníkům",
+   "matchNames": [
+    "togekiss"
+   ],
+   "matchName": "Togekiss"
+  },
+  {
+   "rank": 8,
+   "pokemon": "Gyarados / Shadow Gyarados",
+   "types": "Water/Flying",
+   "trait": "Solidní HP i Defense",
+   "note": "Univerzální obránce",
+   "matchNames": [
+    "gyarados"
+   ],
+   "matchName": "Gyarados"
+  }
+ ],
+ "pvp": {
+  "great": [
+   {
+    "rank": 1,
+    "pokemon": "Azumarill",
+    "types": "Water/Fairy",
+    "cpLimit": 1500,
+    "fastMove": "Bubble",
+    "charged1": "Ice Beam",
+    "charged2": "Play Rough",
+    "role": "Closer/Tank",
+    "note": "Obrovská výdrž, tvrdý Play Rough",
+    "matchNames": [
+     "azumarill"
+    ]
+   },
+   {
+    "rank": 2,
+    "pokemon": "Registeel",
+    "types": "Steel",
+    "cpLimit": 1500,
+    "fastMove": "Lock On",
+    "charged1": "Flash Cannon",
+    "charged2": "Focus Blast",
+    "role": "Safe swap",
+    "note": "Téměř nezraditelný typový profil",
+    "matchNames": [
+     "registeel"
+    ]
+   },
+   {
+    "rank": 3,
+    "pokemon": "Talonflame",
+    "types": "Fire/Flying",
+    "cpLimit": 1500,
+    "fastMove": "Incinerate",
+    "charged1": "Brave Bird",
+    "charged2": "Flame Charge",
+    "role": "Closer",
+    "note": "Rychlý fast move, silný Brave Bird",
+    "matchNames": [
+     "talonflame"
+    ]
+   },
+   {
+    "rank": 4,
+    "pokemon": "Altaria",
+    "types": "Dragon/Flying",
+    "cpLimit": 1500,
+    "fastMove": "Dragon Breath",
+    "charged1": "Sky Attack",
+    "charged2": "Moonblast",
+    "role": "Tank",
+    "note": "Solidní typová kombinace, odolá Fighting",
+    "matchNames": [
+     "altaria"
+    ]
+   },
+   {
+    "rank": 5,
+    "pokemon": "Trevenant",
+    "types": "Ghost/Grass",
+    "cpLimit": 1500,
+    "fastMove": "Shadow Claw",
+    "charged1": "Seed Bomb",
+    "charged2": "Poltergeist",
+    "role": "Attacker",
+    "note": "Silný Shadow Claw, dobré pokrytí",
+    "matchNames": [
+     "trevenant"
+    ]
+   },
+   {
+    "rank": 6,
+    "pokemon": "Stunfisk (Galarian)",
+    "types": "Ground/Steel",
+    "cpLimit": 1500,
+    "fastMove": "Mud Shot",
+    "charged1": "Rock Slide",
+    "charged2": "Earthquake",
+    "role": "Tank",
+    "note": "Jedna z nejlepších typových kombinací v lize",
+    "matchNames": [
+     "stunfisk"
+    ]
+   },
+   {
+    "rank": 7,
+    "pokemon": "Medicham",
+    "types": "Fighting/Psychic",
+    "cpLimit": 1500,
+    "fastMove": "Counter",
+    "charged1": "Dynamic Punch",
+    "charged2": "Ice Punch",
+    "role": "Attacker",
+    "note": "Extrémně efektivní staty přesně na CP 1500",
+    "matchNames": [
+     "medicham"
+    ]
+   },
+   {
+    "rank": 8,
+    "pokemon": "Skarmory",
+    "types": "Steel/Flying",
+    "cpLimit": 1500,
+    "fastMove": "Air Slash",
+    "charged1": "Sky Attack",
+    "charged2": "Flash Cannon",
+    "role": "Wall",
+    "note": "Čistě defenzivní, odolá mnoha typům",
+    "matchNames": [
+     "skarmory"
+    ]
+   },
+   {
+    "rank": 9,
+    "pokemon": "Diggersby",
+    "types": "Normal/Ground",
+    "cpLimit": 1500,
+    "fastMove": "Mud Shot",
+    "charged1": "Fire Punch",
+    "charged2": "Hyper Beam",
+    "role": "Attacker",
+    "note": "Rychlá energie, dobré pokrytí",
+    "matchNames": [
+     "diggersby"
+    ]
+   },
+   {
+    "rank": 10,
+    "pokemon": "Venusaur",
+    "types": "Grass/Poison",
+    "cpLimit": 1500,
+    "fastMove": "Vine Whip",
+    "charged1": "Frenzy Plant",
+    "charged2": "Sludge Bomb",
+    "role": "Attacker",
+    "note": "Silný proti Water/Ground/Fairy",
+    "matchNames": [
+     "venusaur"
+    ]
+   },
+   {
+    "rank": 11,
+    "pokemon": "Lanturn",
+    "types": "Water/Electric",
+    "cpLimit": 1500,
+    "fastMove": "Water Gun",
+    "charged1": "Thunderbolt",
+    "charged2": "Hydro Pump",
+    "role": "Attacker",
+    "note": "Dobrý proti Water/Flying",
+    "matchNames": [
+     "lanturn"
+    ]
+   },
+   {
+    "rank": 12,
+    "pokemon": "Toxapex",
+    "types": "Poison/Water",
+    "cpLimit": 1500,
+    "fastMove": "Poison Sting",
+    "charged1": "Sludge Bomb",
+    "charged2": "Scald",
+    "role": "Wall",
+    "note": "Vysoká Defense, dobrý štítový soupeř",
+    "matchNames": [
+     "toxapex"
+    ]
+   },
+   {
+    "rank": 13,
+    "pokemon": "Sableye",
+    "types": "Dark/Ghost",
+    "cpLimit": 1500,
+    "fastMove": "Shadow Claw",
+    "charged1": "Foul Play",
+    "charged2": "Power Gem",
+    "role": "Attacker",
+    "note": "Bez typových slabin (imunní vůči Fighting/Normal/Psychic)",
+    "matchNames": [
+     "sableye"
+    ]
+   },
+   {
+    "rank": 14,
+    "pokemon": "Ferrothorn",
+    "types": "Grass/Steel",
+    "cpLimit": 1500,
+    "fastMove": "Bullet Seed",
+    "charged1": "Power Whip",
+    "charged2": "Flash Cannon",
+    "role": "Wall",
+    "note": "Vysoká Defense, dobrý proti Fairy",
+    "matchNames": [
+     "ferrothorn"
+    ]
+   },
+   {
+    "rank": 15,
+    "pokemon": "Walrein",
+    "types": "Ice/Water",
+    "cpLimit": 1500,
+    "fastMove": "Powder Snow",
+    "charged1": "Icicle Spear",
+    "charged2": "Blizzard",
+    "role": "Attacker",
+    "note": "Solidní všestranný útočník",
+    "matchNames": [
+     "walrein"
+    ]
+   }
+  ],
+  "ultra": [
+   {
+    "rank": 1,
+    "pokemon": "Cresselia",
+    "types": "Psychic",
+    "cpLimit": 2500,
+    "fastMove": "Psycho Cut",
+    "charged1": "Moonblast",
+    "charged2": "Grass Knot",
+    "role": "Safe swap",
+    "note": "Obří výdrž, skvělý bezpečný přechod",
+    "matchNames": [
+     "cresselia"
+    ]
+   },
+   {
+    "rank": 2,
+    "pokemon": "Trevenant",
+    "types": "Ghost/Grass",
+    "cpLimit": 2500,
+    "fastMove": "Shadow Claw",
+    "charged1": "Seed Bomb",
+    "charged2": "Poltergeist",
+    "role": "Attacker",
+    "note": "Funguje i tady díky nízkému potřebnému levelu",
+    "matchNames": [
+     "trevenant"
+    ]
+   },
+   {
+    "rank": 3,
+    "pokemon": "Registeel",
+    "types": "Steel",
+    "cpLimit": 2500,
+    "fastMove": "Lock On",
+    "charged1": "Flash Cannon",
+    "charged2": "Focus Blast",
+    "role": "Safe swap",
+    "note": "Stále skvělý typový profil",
+    "matchNames": [
+     "registeel"
+    ]
+   },
+   {
+    "rank": 4,
+    "pokemon": "Talonflame",
+    "types": "Fire/Flying",
+    "cpLimit": 2500,
+    "fastMove": "Incinerate",
+    "charged1": "Brave Bird",
+    "charged2": "Flame Charge",
+    "role": "Closer",
+    "note": "Rychlá energie na Brave Bird",
+    "matchNames": [
+     "talonflame"
+    ]
+   },
+   {
+    "rank": 5,
+    "pokemon": "Swampert",
+    "types": "Water/Ground",
+    "cpLimit": 2500,
+    "fastMove": "Mud Shot",
+    "charged1": "Hydro Cannon",
+    "charged2": "Earthquake",
+    "role": "Attacker",
+    "note": "Silný proti Fire/Rock/Steel",
+    "matchNames": [
+     "swampert"
+    ]
+   },
+   {
+    "rank": 6,
+    "pokemon": "Walrein",
+    "types": "Ice/Water",
+    "cpLimit": 2500,
+    "fastMove": "Powder Snow",
+    "charged1": "Icicle Spear",
+    "charged2": "Blizzard",
+    "role": "Attacker",
+    "note": "Dobré pokrytí proti Dragon/Flying/Ground",
+    "matchNames": [
+     "walrein"
+    ]
+   },
+   {
+    "rank": 7,
+    "pokemon": "Giratina",
+    "types": "Ghost/Dragon (Altered)",
+    "cpLimit": 2500,
+    "fastMove": "Shadow Claw",
+    "charged1": "Shadow Ball",
+    "charged2": "Dragon Claw",
+    "role": "Tank",
+    "note": "Vysoká výdrž i útok",
+    "matchNames": [
+     "giratina"
+    ]
+   },
+   {
+    "rank": 8,
+    "pokemon": "Escavalier",
+    "types": "Bug/Steel",
+    "cpLimit": 2500,
+    "fastMove": "Counter",
+    "charged1": "Megahorn",
+    "charged2": "Drill Run",
+    "role": "Attacker",
+    "note": "Dobrý proti Fairy/Psychic metagame",
+    "matchNames": [
+     "escavalier"
+    ]
+   },
+   {
+    "rank": 9,
+    "pokemon": "Politoed",
+    "types": "Water",
+    "cpLimit": 2500,
+    "fastMove": "Mud Shot",
+    "charged1": "Weather Ball (Water)",
+    "charged2": "Earthquake",
+    "role": "Attacker",
+    "note": "Rychlá energie, slušné pokrytí",
+    "matchNames": [
+     "politoed"
+    ]
+   },
+   {
+    "rank": 10,
+    "pokemon": "Guzzlord",
+    "types": "Dark/Dragon",
+    "cpLimit": 2500,
+    "fastMove": "Dragon Tail",
+    "charged1": "Dragon Claw",
+    "charged2": "Stone Edge",
+    "role": "Tank",
+    "note": "Obří HP, Ultra Beast",
+    "matchNames": [
+     "guzzlord"
+    ]
+   },
+   {
+    "rank": 11,
+    "pokemon": "Steelix",
+    "types": "Steel/Ground",
+    "cpLimit": 2500,
+    "fastMove": "Dragon Tail",
+    "charged1": "Crunch",
+    "charged2": "Earthquake",
+    "role": "Wall",
+    "note": "Vysoká Defense",
+    "matchNames": [
+     "steelix"
+    ]
+   },
+   {
+    "rank": 12,
+    "pokemon": "Umbreon",
+    "types": "Dark",
+    "cpLimit": 2500,
+    "fastMove": "Snarl",
+    "charged1": "Foul Play",
+    "charged2": "Last Resort",
+    "role": "Safe swap",
+    "note": "Dobrá výdrž, bez typových slabin proti Psychic/Ghost",
+    "matchNames": [
+     "umbreon"
+    ]
+   }
+  ],
+  "master": [
+   {
+    "rank": 1,
+    "pokemon": "Dialga",
+    "types": "Steel/Dragon",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Dragon Breath",
+    "charged1": "Iron Head",
+    "charged2": "Draco Meteor",
+    "role": "All-round",
+    "note": "Jeden z nejlepších all-round picků v lize",
+    "matchNames": [
+     "dialga"
+    ]
+   },
+   {
+    "rank": 2,
+    "pokemon": "Giratina",
+    "types": "Ghost/Dragon (Origin)",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Shadow Claw",
+    "charged1": "Shadow Ball",
+    "charged2": "Dragon Claw",
+    "role": "Attacker",
+    "note": "Vysoký útok i výdrž",
+    "matchNames": [
+     "giratina"
+    ]
+   },
+   {
+    "rank": 3,
+    "pokemon": "Lugia",
+    "types": "Psychic/Flying",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Extrasensory",
+    "charged1": "Sky Attack",
+    "charged2": "Future Sight",
+    "role": "Safe swap",
+    "note": "Extrémní výdrž proti fyzickým útočníkům",
+    "matchNames": [
+     "lugia"
+    ]
+   },
+   {
+    "rank": 4,
+    "pokemon": "Metagross",
+    "types": "Steel/Psychic",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Bullet Punch",
+    "charged1": "Meteor Mash",
+    "charged2": "Earthquake",
+    "role": "Attacker",
+    "note": "Vysoký výkon proti většině metagame",
+    "matchNames": [
+     "metagross"
+    ]
+   },
+   {
+    "rank": 5,
+    "pokemon": "Melmetal",
+    "types": "Steel",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Thunder Shock",
+    "charged1": "Superpower",
+    "charged2": "Rock Slide",
+    "role": "Tank",
+    "note": "Obrovské HP, silné pokrytí",
+    "matchNames": [
+     "melmetal"
+    ]
+   },
+   {
+    "rank": 6,
+    "pokemon": "Zacian (Crowned Sword)",
+    "types": "Fairy/Steel",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Snarl",
+    "charged1": "Close Combat",
+    "charged2": "Wild Charge",
+    "role": "Attacker",
+    "note": "Extrémně silný útok",
+    "matchNames": [
+     "zacian"
+    ]
+   },
+   {
+    "rank": 7,
+    "pokemon": "Excadrill",
+    "types": "Ground/Steel",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Mud Slap",
+    "charged1": "Drill Run",
+    "charged2": "Rock Slide",
+    "role": "Attacker",
+    "note": "Dobrý proti steel-heavy metagame",
+    "matchNames": [
+     "excadrill"
+    ]
+   },
+   {
+    "rank": 8,
+    "pokemon": "Yveltal",
+    "types": "Dark/Flying",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Snarl",
+    "charged1": "Dark Pulse",
+    "charged2": "Focus Blast",
+    "role": "Attacker",
+    "note": "Legendární útočný tlak",
+    "matchNames": [
+     "yveltal"
+    ]
+   },
+   {
+    "rank": 9,
+    "pokemon": "Ho-Oh",
+    "types": "Fire/Flying",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Incinerate",
+    "charged1": "Brave Bird",
+    "charged2": "Earthquake",
+    "role": "Attacker",
+    "note": "Vysoký útok, dobré pokrytí",
+    "matchNames": [
+     "ho-oh"
+    ]
+   },
+   {
+    "rank": 10,
+    "pokemon": "Kyogre (Primal)",
+    "types": "Water",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Waterfall",
+    "charged1": "Origin Pulse",
+    "charged2": "Blizzard",
+    "role": "Attacker",
+    "note": "Nejsilnější Water pick do Master League",
+    "matchNames": [
+     "kyogre"
+    ]
+   },
+   {
+    "rank": 11,
+    "pokemon": "Groudon (Primal)",
+    "types": "Ground/Fire",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Mud Shot",
+    "charged1": "Precipice Blades",
+    "charged2": "Fire Punch",
+    "role": "Attacker",
+    "note": "Silný proti Steel/Electric",
+    "matchNames": [
+     "groudon"
+    ]
+   },
+   {
+    "rank": 12,
+    "pokemon": "Landorus (Therian)",
+    "types": "Ground/Flying",
+    "cpLimit": "Bez limitu",
+    "fastMove": "Mud Shot",
+    "charged1": "Earthquake",
+    "charged2": "Rock Slide",
+    "role": "Attacker",
+    "note": "Dobrá rychlá energie",
+    "matchNames": [
+     "landorus"
+    ]
+   }
+  ]
+ },
+ "megaEvolutions": [
+  {
+   "pokemon": "Venusaur",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Charizard",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Blastoise",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Beedrill",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Pidgeot",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Alakazam",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Slowbro",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Gengar",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Kangaskhan",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Pinsir",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Gyarados",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Aerodactyl",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Ampharos",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Steelix",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Scizor",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Heracross",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Houndoom",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Tyranitar",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Sceptile",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Blaziken",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Swampert",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Gardevoir",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Sableye",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Mawile",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Aggron",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Medicham",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Manectric",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Sharpedo",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Camerupt",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Altaria",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Banette",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Absol",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Glalie",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Salamence",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Metagross",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Latias",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Latios",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Rayquaza",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Lopunny",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Garchomp",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Lucario",
+   "kind": "Mega",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Abomasnow",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Gallade",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Audino",
+   "kind": "Mega",
+   "raidPriority": "Nízká"
+  },
+  {
+   "pokemon": "Diancie",
+   "kind": "Mega",
+   "raidPriority": "Střední"
+  },
+  {
+   "pokemon": "Kyogre",
+   "kind": "Primal",
+   "raidPriority": "Vysoká"
+  },
+  {
+   "pokemon": "Groudon",
+   "kind": "Primal",
+   "raidPriority": "Vysoká"
+  }
+ ],
+ "tradeEvolutions": [
+  {
+   "pokemon": "Kadabra",
+   "evolvesTo": "Alakazam"
+  },
+  {
+   "pokemon": "Machoke",
+   "evolvesTo": "Machamp"
+  },
+  {
+   "pokemon": "Graveler",
+   "evolvesTo": "Golem"
+  },
+  {
+   "pokemon": "Haunter",
+   "evolvesTo": "Gengar"
+  },
+  {
+   "pokemon": "Boldore",
+   "evolvesTo": "Gigalith"
+  },
+  {
+   "pokemon": "Gurdurr",
+   "evolvesTo": "Conkeldurr"
+  },
+  {
+   "pokemon": "Karrablast",
+   "evolvesTo": "Escavalier"
+  },
+  {
+   "pokemon": "Shelmet",
+   "evolvesTo": "Accelgor"
+  },
+  {
+   "pokemon": "Phantump",
+   "evolvesTo": "Trevenant"
+  },
+  {
+   "pokemon": "Pumpkaboo",
+   "evolvesTo": "Gourgeist"
+  }
+ ],
+ "typeChart": {
+  "Bug": {
+   "Bug": 1.0,
+   "Dark": 1.6,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 0.625,
+   "Fighting": 0.625,
+   "Fire": 0.625,
+   "Flying": 0.625,
+   "Ghost": 0.625,
+   "Grass": 1.6,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 0.625,
+   "Psychic": 1.6,
+   "Rock": 1.0,
+   "Steel": 0.625,
+   "Water": 1.0
+  },
+  "Dark": {
+   "Bug": 1.0,
+   "Dark": 0.625,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 0.625,
+   "Fighting": 0.625,
+   "Fire": 1.0,
+   "Flying": 1.0,
+   "Ghost": 1.6,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.6,
+   "Rock": 1.0,
+   "Steel": 1.0,
+   "Water": 1.0
+  },
+  "Dragon": {
+   "Bug": 1.0,
+   "Dark": 1.0,
+   "Dragon": 1.6,
+   "Electric": 1.0,
+   "Fairy": 0.3906,
+   "Fighting": 1.0,
+   "Fire": 1.0,
+   "Flying": 1.0,
+   "Ghost": 1.0,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 1.0,
+   "Steel": 0.625,
+   "Water": 1.0
+  },
+  "Electric": {
+   "Bug": 1.0,
+   "Dark": 1.0,
+   "Dragon": 0.625,
+   "Electric": 0.625,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 1.0,
+   "Flying": 1.6,
+   "Ghost": 1.0,
+   "Grass": 0.625,
+   "Ground": 0.3906,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 1.0,
+   "Steel": 1.0,
+   "Water": 1.6
+  },
+  "Fairy": {
+   "Bug": 1.0,
+   "Dark": 1.6,
+   "Dragon": 1.6,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.6,
+   "Fire": 0.625,
+   "Flying": 1.0,
+   "Ghost": 1.0,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 0.625,
+   "Psychic": 1.0,
+   "Rock": 1.0,
+   "Steel": 0.625,
+   "Water": 1.0
+  },
+  "Fighting": {
+   "Bug": 0.625,
+   "Dark": 1.6,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 0.625,
+   "Fighting": 1.0,
+   "Fire": 1.0,
+   "Flying": 0.625,
+   "Ghost": 0.3906,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.6,
+   "Normal": 1.6,
+   "Poison": 0.625,
+   "Psychic": 0.625,
+   "Rock": 1.6,
+   "Steel": 1.6,
+   "Water": 1.0
+  },
+  "Fire": {
+   "Bug": 1.6,
+   "Dark": 1.0,
+   "Dragon": 0.625,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 0.625,
+   "Flying": 1.0,
+   "Ghost": 1.0,
+   "Grass": 1.6,
+   "Ground": 1.0,
+   "Ice": 1.6,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 0.625,
+   "Steel": 1.6,
+   "Water": 0.625
+  },
+  "Flying": {
+   "Bug": 1.6,
+   "Dark": 1.0,
+   "Dragon": 1.0,
+   "Electric": 0.625,
+   "Fairy": 1.0,
+   "Fighting": 1.6,
+   "Fire": 1.0,
+   "Flying": 1.0,
+   "Ghost": 1.0,
+   "Grass": 1.6,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 0.625,
+   "Steel": 0.625,
+   "Water": 1.0
+  },
+  "Ghost": {
+   "Bug": 1.0,
+   "Dark": 0.625,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 1.0,
+   "Flying": 1.0,
+   "Ghost": 1.6,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 0.3906,
+   "Poison": 1.0,
+   "Psychic": 1.6,
+   "Rock": 1.0,
+   "Steel": 1.0,
+   "Water": 1.0
+  },
+  "Grass": {
+   "Bug": 0.625,
+   "Dark": 1.0,
+   "Dragon": 0.625,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 0.625,
+   "Flying": 0.625,
+   "Ghost": 1.0,
+   "Grass": 0.625,
+   "Ground": 1.6,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 0.625,
+   "Psychic": 1.0,
+   "Rock": 1.6,
+   "Steel": 0.625,
+   "Water": 1.6
+  },
+  "Ground": {
+   "Bug": 0.625,
+   "Dark": 1.0,
+   "Dragon": 1.0,
+   "Electric": 1.6,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 1.6,
+   "Flying": 0.3906,
+   "Ghost": 1.0,
+   "Grass": 0.625,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.6,
+   "Psychic": 1.0,
+   "Rock": 1.6,
+   "Steel": 1.6,
+   "Water": 1.0
+  },
+  "Ice": {
+   "Bug": 1.0,
+   "Dark": 1.0,
+   "Dragon": 1.6,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 0.625,
+   "Flying": 1.6,
+   "Ghost": 1.0,
+   "Grass": 1.6,
+   "Ground": 1.6,
+   "Ice": 0.625,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 1.0,
+   "Steel": 0.625,
+   "Water": 0.625
+  },
+  "Normal": {
+   "Bug": 1.0,
+   "Dark": 1.0,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 1.0,
+   "Flying": 1.0,
+   "Ghost": 0.3906,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 0.625,
+   "Steel": 0.625,
+   "Water": 1.0
+  },
+  "Poison": {
+   "Bug": 1.0,
+   "Dark": 1.0,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 1.6,
+   "Fighting": 1.0,
+   "Fire": 1.0,
+   "Flying": 1.0,
+   "Ghost": 0.625,
+   "Grass": 1.6,
+   "Ground": 0.625,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 0.625,
+   "Psychic": 1.0,
+   "Rock": 0.625,
+   "Steel": 0.3906,
+   "Water": 1.0
+  },
+  "Psychic": {
+   "Bug": 1.0,
+   "Dark": 0.3906,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.6,
+   "Fire": 1.0,
+   "Flying": 1.0,
+   "Ghost": 1.0,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.6,
+   "Psychic": 0.625,
+   "Rock": 1.0,
+   "Steel": 0.625,
+   "Water": 1.0
+  },
+  "Rock": {
+   "Bug": 1.6,
+   "Dark": 1.0,
+   "Dragon": 1.0,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 0.625,
+   "Fire": 1.6,
+   "Flying": 1.6,
+   "Ghost": 1.0,
+   "Grass": 1.0,
+   "Ground": 0.625,
+   "Ice": 1.6,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 1.0,
+   "Steel": 0.625,
+   "Water": 1.0
+  },
+  "Steel": {
+   "Bug": 1.0,
+   "Dark": 1.0,
+   "Dragon": 1.0,
+   "Electric": 0.625,
+   "Fairy": 1.6,
+   "Fighting": 1.0,
+   "Fire": 0.625,
+   "Flying": 1.0,
+   "Ghost": 1.0,
+   "Grass": 1.0,
+   "Ground": 1.0,
+   "Ice": 1.6,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 1.6,
+   "Steel": 0.625,
+   "Water": 0.625
+  },
+  "Water": {
+   "Bug": 1.0,
+   "Dark": 1.0,
+   "Dragon": 0.625,
+   "Electric": 1.0,
+   "Fairy": 1.0,
+   "Fighting": 1.0,
+   "Fire": 1.6,
+   "Flying": 1.0,
+   "Ghost": 1.0,
+   "Grass": 0.625,
+   "Ground": 1.6,
+   "Ice": 1.0,
+   "Normal": 1.0,
+   "Poison": 1.0,
+   "Psychic": 1.0,
+   "Rock": 1.6,
+   "Steel": 1.0,
+   "Water": 0.625
+  }
+ },
+ "weather": [
+  {
+   "en": "Clear",
+   "cz": "Slunečno",
+   "types": [
+    "Grass",
+    "Ground",
+    "Fire"
+   ]
+  },
+  {
+   "en": "Fog",
+   "cz": "Mlha",
+   "types": [
+    "Dark",
+    "Ghost"
+   ]
+  },
+  {
+   "en": "Overcast",
+   "cz": "Zataženo",
+   "types": [
+    "Fairy",
+    "Fighting",
+    "Poison"
+   ]
+  },
+  {
+   "en": "Partly Cloudy",
+   "cz": "Polojasno",
+   "types": [
+    "Normal",
+    "Rock"
+   ]
+  },
+  {
+   "en": "Rainy",
+   "cz": "Déšť",
+   "types": [
+    "Water",
+    "Electric",
+    "Bug"
+   ]
+  },
+  {
+   "en": "Snow",
+   "cz": "Sníh",
+   "types": [
+    "Ice",
+    "Steel"
+   ]
+  },
+  {
+   "en": "Windy",
+   "cz": "Vítr",
+   "types": [
+    "Dragon",
+    "Flying",
+    "Psychic"
+   ]
+  }
+ ]
+}

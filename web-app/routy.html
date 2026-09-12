@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Routy — plánovač cesty</title>
+<!-- Mapový podklad. Jediné místo v celé sadě, které sahá na internet:
+     doma to je to, co chceš (ulice pod body), venku se to prostě nenačte
+     a stránka se překreslí jako schéma z týchž souřadnic. -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  /* Stejný tmavý rukopis jako tracker, jen samostatně: tenhle soubor se
+     otevírá zvlášť a jako jediný v celé sadě smí sáhnout na internet
+     (mapový podklad). Bez sítě se mapa překreslí jako schéma, viz níž. */
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #17171a; --surface-2: #1e1e22;
+    --grid: #33333a; --text-primary: #eceae4; --text-secondary: #b9b6ae;
+    --text-muted: #86837c;
+    --good: #35b06a; --warn: #d99a25; --crit: #d9534f; --modra: #4a8fd6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--page); color: var(--text-primary); }
+  .obal { max-width: 1500px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .lead { color: var(--text-secondary); margin: 0 0 14px; font-size: 13px; }
+
+  .zalozky { display: flex; gap: 4px; border-bottom: 1px solid var(--grid);
+    margin-bottom: 14px; flex-wrap: wrap; }
+  .zal { padding: 8px 14px; background: none; border: 0; border-bottom: 2px solid transparent;
+    color: var(--text-secondary); font: inherit; cursor: pointer; }
+  .zal.aktivni { color: var(--text-primary); border-bottom-color: var(--modra); font-weight: 600; }
+  .panel { display: none; }
+  .panel.aktivni { display: block; }
+
+  .karta { background: var(--surface-1); border: 1px solid var(--grid);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  .karta h2 { font-size: 14px; margin: 0 0 8px; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--text-secondary); }
+  .hint { color: var(--text-muted); font-size: 12.5px; margin: 6px 0 0; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-muted); padding: 5px 8px; border-bottom: 1px solid var(--grid);
+    font-weight: 600; }
+  td { padding: 4px 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  input, select, button { font: inherit; }
+  input[type="text"], input[type="number"], select {
+    background: var(--surface-2); border: 1px solid var(--grid); border-radius: 6px;
+    color: var(--text-primary); padding: 4px 7px; width: 100%; }
+  input:focus, select:focus { outline: 1px solid var(--modra); }
+  .uzky { width: 92px; }
+  .btn { background: var(--surface-2); border: 1px solid var(--grid); border-radius: 7px;
+    color: var(--text-primary); padding: 6px 12px; cursor: pointer; }
+  .btn:hover { border-color: var(--text-muted); }
+  .btn.hlavni { background: var(--modra); border-color: var(--modra); color: #fff; font-weight: 600; }
+  .btn.nebezpecny { color: var(--crit); }
+  .btn.aktivni { background: var(--good); border-color: var(--good); color: #fff; }
+  .radek-akci { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .smazat { background: none; border: 0; color: var(--text-muted); cursor: pointer;
+    font-size: 15px; padding: 2px 6px; }
+  .smazat:hover { color: var(--crit); }
+
+  /* Mapa. Výška je pevná, ať se stránka nehýbe při překreslení. */
+  #mapa { height: 560px; border-radius: 10px; border: 1px solid var(--grid);
+    background: var(--surface-1); }
+  #schema { width: 100%; height: 560px; display: block; }
+  .mapa-plocha { position: relative; }
+  .mapa-lista { display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 8px; }
+
+  /* Kartička nad mapou. Přejmenovat stopu jde i v tabulce, jenže to znamená
+     odejít z mapy a ztratit výřez — proto se editor otevírá pravým tlačítkem
+     rovnou nad bodem. */
+  .editor { position: absolute; z-index: 900; width: 232px; background: var(--surface-1);
+    border: 1px solid var(--grid); border-radius: 10px; padding: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .55); }
+  .editor h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--text-muted); margin: 0 0 7px; }
+  .editor label { display: flex; align-items: center; gap: 6px; font-size: 12.5px;
+    color: var(--text-secondary); margin-top: 8px; }
+  .editor label input[type="checkbox"] { width: auto; }
+  .editor .radek-akci { margin-top: 9px; gap: 6px; }
+  .editor .btn { padding: 4px 9px; font-size: 12.5px; }
+  .editor .souradnice { font-size: 11.5px; color: var(--text-muted); margin: 8px 0 0; }
+
+  /* Lišta kreslení trasy. Je nápadná schválně: dokud svítí, chová se klik do
+     mapy jinak než jindy. */
+  .uprava-lista { display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    background: rgba(217, 154, 37, .13); border: 1px solid var(--warn);
+    border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 12.5px; }
+  /* `display:flex` přebíjí to, co s `hidden` dělá prohlížeč sám, takže by
+     lišta svítila i schovaná. */
+  .uprava-lista[hidden] { display: none; }
+  .uprava-lista b { color: var(--warn); }
+  .uprava-lista .hint { margin: 0; }
+  .bod-trasy { width: 11px; height: 11px; border-radius: 3px; background: var(--warn);
+    border: 2px solid #0d0d0d; box-sizing: border-box; cursor: move; }
+
+  /* Okno na založení routy. Otevírá se z mapy, když jsou vybrané oba konce —
+     tam se routa zakládá nejpřirozeněji, ne v tabulce o dvě záložky vedle. */
+  .zaclona { position: fixed; inset: 0; z-index: 1200; background: rgba(0, 0, 0, .6);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .zaclona[hidden] { display: none; }
+  .okno { width: 100%; max-width: 420px; background: var(--surface-1);
+    border: 1px solid var(--grid); border-radius: 12px; padding: 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .6); }
+  .okno h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--text-secondary); }
+  .okno label { display: block; font-size: 12px; color: var(--text-muted);
+    margin-top: 10px; }
+  .okno label:first-of-type { margin-top: 0; }
+  .okno .dvojice { display: flex; gap: 10px; }
+  .okno .dvojice label { flex: 1; }
+  .okno .radek-akci { justify-content: flex-end; }
+  .odznak { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px;
+    border-radius: 999px; border: 1px solid var(--grid); font-size: 11.5px;
+    color: var(--text-secondary); }
+  .odznak i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+
+  .varovani { background: rgba(217,154,37,.13); border: 1px solid var(--warn);
+    border-radius: 8px; padding: 9px 12px; font-size: 12.5px; margin-bottom: 12px; }
+  .varovani b { color: var(--warn); }
+
+  /* Výsledná trasa */
+  .krok { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0;
+    border-bottom: 1px solid var(--grid); }
+  .krok:last-child { border-bottom: 0; }
+  .krok-c { flex: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--grid); color: var(--text-secondary); font-size: 11px;
+    font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .krok.routa .krok-c { background: var(--good); color: #fff; }
+  .krok-t { min-width: 0; }
+  .krok-t b { font-size: 13.5px; }
+  .krok-t span { display: block; font-size: 11.5px; color: var(--text-muted); }
+  .souhrn { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 10px; }
+  .souhrn div { font-size: 12px; color: var(--text-muted); }
+  .souhrn b { display: block; font-size: 20px; color: var(--text-primary); }
+  .prazdno { color: var(--text-muted); font-style: italic; padding: 10px 0; }
+</style>
+</head>
+<body>
+<div class="obal">
+  <h1>Routy — plánovač cesty</h1>
+  <p class="lead">Zadané routy, mapa a hledání trasy „odkud kam a co nejvíc rout".
+    Data jsou jen v tomhle prohlížeči — <b>zálohuj si je do souboru</b>.</p>
+
+  <div class="zalozky">
+    <button class="zal aktivni" data-panel="pMapa">Mapa</button>
+    <button class="zal" data-panel="pPlan">Naplánovat cestu</button>
+    <button class="zal" data-panel="pRouty">Routy</button>
+    <button class="zal" data-panel="pStopy">Stopy a gymy</button>
+    <button class="zal" data-panel="pData">Záloha</button>
+  </div>
+
+  <!-- ------------------------------------------------------------ MAPA -->
+  <div class="panel aktivni" id="pMapa">
+    <div class="mapa-lista">
+      <button class="btn" id="rezimPridat">Přidat stopu kliknutím do mapy</button>
+      <button class="btn" id="vycentrovat">Vycentrovat</button>
+      <select id="podklad" style="width:auto" title="Mapový podklad"></select>
+      <select id="zobrazRouty" style="width:auto" title="Které routy kreslit">
+        <option value="vse">Všechny routy</option>
+        <option value="vybranou">Jen vybranou</option>
+        <option value="nic">Bez rout</option>
+      </select>
+      <span class="odznak"><i style="background:#4a8fd6"></i>stop</span>
+      <span class="odznak"><i style="background:#d9534f"></i>gym</span>
+      <span class="odznak"><i style="background:#35b06a"></i>routa</span>
+      <span class="odznak" id="pocty"></span>
+    </div>
+    <div class="uprava-lista" id="upravaLista" hidden></div>
+    <div class="mapa-plocha">
+      <div id="mapaObal"></div>
+      <div class="editor" id="editor" hidden></div>
+    </div>
+    <p class="hint" id="mapaHint">Levým kliknutím na stopu ji nastavíš jako začátek,
+      druhým na jinou jako cíl. Pravé tlačítko otevře stopu k přejmenování,
+      pravé tlačítko na routu ji pustí do kreslení skutečné trasy.</p>
+  </div>
+
+  <!-- ------------------------------------------------- OKNO: nová routa -->
+  <div class="zaclona" id="oknoRouty" hidden>
+    <div class="okno" role="dialog" aria-modal="true" aria-labelledby="oknoNadpis">
+      <h2 id="oknoNadpis">Nová routa</h2>
+      <label>Název routy (jako ve hře)
+        <input type="text" id="orNazev" placeholder="např. Kolem Jeseniáku"></label>
+      <div class="dvojice">
+        <label>Odkud<select id="orOd"></select></label>
+        <label>Kam<select id="orDo"></select></label>
+      </div>
+      <div class="dvojice">
+        <label>Metrů<input type="number" id="orMetry" step="10" min="0"></label>
+        <label>Minut<input type="number" id="orMinut" step="1" min="0"></label>
+      </div>
+      <p class="hint" id="orStav"></p>
+      <div class="radek-akci">
+        <button class="btn" id="orZrusit">Zrušit</button>
+        <button class="btn hlavni" id="orUlozit">Uložit routu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------ PLÁN -->
+  <div class="panel" id="pPlan">
+    <div class="karta">
+      <h2>Odkud, kam a kolik na to mám</h2>
+      <table>
+        <tr>
+          <td style="width:150px">Začátek</td><td><select id="plOd"></select></td>
+          <td style="width:150px">Cíl</td><td><select id="plDo"></select></td>
+        </tr>
+        <tr>
+          <td>Kolik mám času</td>
+          <td><input type="number" id="plRozpocet" value="90" min="5" step="5" class="uzky">
+            minut</td>
+          <td>Tempo chůze</td>
+          <td><input type="number" id="plTempo" value="4.5" min="2" max="8" step="0.1" class="uzky">
+            km/h</td>
+        </tr>
+        <tr>
+          <td>Routy, co už mám</td>
+          <td colspan="3"><label><input type="checkbox" id="plVynechatHotove">
+            vynechat ty, které mám v tomhle týdnu odchozené</label></td>
+        </tr>
+      </table>
+      <div class="radek-akci">
+        <button class="btn hlavni" id="plSpocitat">Najít trasu</button>
+        <button class="btn" id="plDoMobilu">Uložit plán do mobilu</button>
+        <button class="btn" id="plText">Zkopírovat jako text</button>
+      </div>
+      <p class="hint">„Co nejvíc rout" je jiná úloha než nejkratší cesta — bez
+        stropu by odpověď byla „projdi všechny". Proto ten čas.</p>
+    </div>
+    <div class="karta" id="plVysledek"><p class="prazdno">Zatím nic nespočítáno.</p></div>
+  </div>
+
+  <!-- ----------------------------------------------------------- ROUTY -->
+  <div class="panel" id="pRouty">
+    <div class="karta">
+      <h2>Routy</h2>
+      <table id="tabRouty"></table>
+      <div class="radek-akci">
+        <button class="btn" id="pridatRoutu">Přidat routu</button>
+        <span class="hint" style="margin:0">Délku nech prázdnou a dopočítá se:
+          z nakreslené trasy přesně, bez ní vzdušnou čarou mezi stopami
+          (+35 % na to, že ulice nejsou rovné).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ----------------------------------------------------------- STOPY -->
+  <div class="panel" id="pStopy">
+    <div class="karta">
+      <h2>Stopy a gymy</h2>
+      <table id="tabStopy"></table>
+      <div class="radek-akci">
+        <button class="btn" id="pridatStopu">Přidat stopu</button>
+        <span class="hint" style="margin:0">Souřadnice nejsou povinné, ale bez nich
+          se nedá kreslit mapa ani počítat vzdálenost mezi konci rout.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------------------------------------------------- ZÁLOHA -->
+  <div class="panel" id="pData">
+    <div class="varovani"><b>Data jsou jen v tomhle prohlížeči.</b>
+      Když si smažeš historii, přejdeš na jiný prohlížeč nebo přesuneš soubor
+      jinam, zmizí. Stáhni si zálohu po každém větším doplňování.</div>
+    <div class="karta">
+      <h2>Záloha do souboru</h2>
+      <div class="radek-akci">
+        <button class="btn hlavni" id="zalohaStahnout">Stáhnout zálohu</button>
+        <button class="btn" id="zalohaNacist">Načíst ze zálohy</button>
+        <input type="file" id="zalohaSoubor" accept=".json" hidden>
+        <button class="btn nebezpecny" id="zalohaSmazat">Smazat všechno</button>
+      </div>
+      <p class="hint" id="zalohaStav"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =====================================================================
+     DATA
+     Stopa: { id, nazev, lat, lon, gym }
+     Routa: { id, nazev, od, do, km, min, hotovo, body }
+     Routa je SMĚROVÁ: odměna se počítá, jen když ji projdeš od začátku
+     ke konci. Zpátky se dá jít pěšky, ale jako routa se to nepočítá.
+
+     `body` jsou ručně naklikané průchozí body mezi začátkem a koncem: pole
+     { lat, lon }. Hra vede routu tudy, kudy ji autor nakreslil, a to skoro
+     nikdy není nejkratší cesta — bez nich by se počítalo s čarou, po které
+     se ve skutečnosti nejde.
+
+     `tvar` je cesta po silnici, kterou k těm bodům dopočítal směrovač, a
+     `tvarZ` je otisk zadání, ze kterého vznikla. Když otisk nesedí, tvar
+     patří k jiným bodům než jaké tam teď jsou a nesmí se kreslit — jinak by
+     na mapě zůstala viset cesta, kterou uživatel před chvílí přepsal.
+
+     Chybějící `body` i `tvar` jsou v pořádku: starší zálohy je nemají a
+     počítá se jim po staru, vzdušnou čarou s přirážkou.
+     ================================================================== */
+  var KLIC = "pgo_routy_data";
+  var data = { stopy: [], routy: [] };
+  var vybranyOd = null, vybranyDo = null;
+  var posledniPlan = null;
+
+  function nacti() {
+    try {
+      var s = localStorage.getItem(KLIC);
+      if (s) {
+        var d = JSON.parse(s);
+        if (d && d.stopy && d.routy) data = d;
+      }
+    } catch (e) { /* poškozená data raději ignorovat než spadnout */ }
+  }
+  function uloz() {
+    try { localStorage.setItem(KLIC, JSON.stringify(data)); }
+    catch (e) { stav("Uložení selhalo: " + e.message); }
+  }
+  function noveId() {
+    return "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+  function stopa(id) {
+    for (var i = 0; i < data.stopy.length; i++) {
+      if (data.stopy[i].id === id) return data.stopy[i];
+    }
+    return null;
+  }
+  function stav(t) { document.getElementById("zalohaStav").textContent = t || ""; }
+
+  /* --------------------------------------------------------- vzdálenost */
+  /** Vzdušná čára v km (haversine). */
+  function vzdusne(a, b) {
+    if (!a || !b || a.lat == null || b.lat == null) return null;
+    var R = 6371, rad = Math.PI / 180;
+    var dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+    var x = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+      + Math.cos(a.lat * rad) * Math.cos(b.lat * rad)
+      * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+  /** Pěšky se nikdy nejde vzdušnou čarou. 1,35 je běžný městský odhad. */
+  var KLIKATOST = 1.35;
+  function pesky(aId, bId) {
+    if (aId === bId) return 0;
+    var d = vzdusne(stopa(aId), stopa(bId));
+    return d === null ? null : d * KLIKATOST;
+  }
+  /** Lomená čára routy: začátek, ručně naklikané body, konec. */
+  function bodyRouty(r) {
+    var a = stopa(r.od), b = stopa(r.do);
+    if (!a || !b || a.lat == null || b.lat == null) return null;
+    return [a].concat(r.body || []).concat([b]);
+  }
+  /** Otisk zadání trasy. Podle něj se pozná, že uložená cesta po silnici
+   *  patří k jiným bodům, než jaké tam teď jsou. */
+  function podpisTrasy(r) {
+    return [r.od, r.do].concat((r.body || []).map(function (p) {
+      return (+p.lat).toFixed(6) + "," + (+p.lon).toFixed(6);
+    })).join("|");
+  }
+  /** Je dopočítaná cesta po silnici ještě platná pro současné body? */
+  function maCestuPoSilnici(r) {
+    return !!(r.tvar && r.tvar.length > 1 && r.tvarZ === podpisTrasy(r));
+  }
+  /** Co se doopravdy kreslí a měří: cesta po silnici, když je čerstvá,
+   *  jinak lomená čára mezi naklikanými body. */
+  function tvarRouty(r) {
+    return maCestuPoSilnici(r) ? r.tvar : bodyRouty(r);
+  }
+  function delkaLomene(body) {
+    var km = 0;
+    for (var i = 1; i < body.length; i++) km += vzdusne(body[i - 1], body[i]);
+    return km;
+  }
+  /** Délka routy: co je zadané ručně, pak cesta po silnici, pak naklikaná
+   *  lomená čára, teprve nakonec odhad. Skutečná cesta se klikatostí
+   *  NEnásobí — přirážka je odhad za to, že ulice nejsou rovné, a tady už
+   *  se po těch ulicích jde. */
+  function delkaRouty(r) {
+    if (r.km) return +r.km;
+    if (maCestuPoSilnici(r)) return delkaLomene(r.tvar);
+    var lomena = bodyRouty(r);
+    if (!lomena) return null;
+    if (lomena.length > 2) return delkaLomene(lomena);
+    return vzdusne(lomena[0], lomena[1]) * KLIKATOST;
+  }
+  /** Vzdálenost bodu od úsečky. Na pár set metrů stačí rovina; zeměpisná
+   *  délka se jen zúží podle šířky, jinak by na severu vycházela širší,
+   *  než ve skutečnosti je. */
+  function odUsecky(lat, lon, a, b) {
+    var k = Math.cos(lat * Math.PI / 180);
+    var px = (lon - a.lon) * k, py = lat - a.lat;
+    var vx = (b.lon - a.lon) * k, vy = b.lat - a.lat;
+    var delka = vx * vx + vy * vy;
+    var t = delka === 0 ? 0 : Math.max(0, Math.min(1, (px * vx + py * vy) / delka));
+    var dx = px - t * vx, dy = py - t * vy;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  /** Vloží bod do toho úseku lomené čáry, ke kterému je klik nejblíž. Proto
+   *  jde tvar opravovat i uprostřed, ne jen přidávat na konec — jinak by se
+   *  špatně nakreslená druhá zatáčka musela smazat celá. */
+  function vlozBod(r, lat, lon) {
+    var lomena = bodyRouty(r);
+    if (!lomena) return null;
+    var kam = 0, nejbliz = Infinity;
+    for (var i = 1; i < lomena.length; i++) {
+      var d = odUsecky(lat, lon, lomena[i - 1], lomena[i]);
+      if (d < nejbliz) { nejbliz = d; kam = i - 1; }
+    }
+    if (!r.body) r.body = [];
+    r.body.splice(kam, 0, { lat: +(+lat).toFixed(6), lon: +(+lon).toFixed(6) });
+    return kam;
+  }
+  function minutRouty(r, tempo) {
+    if (r.min) return +r.min;
+    var km = delkaRouty(r);
+    return km === null ? null : (km / tempo) * 60;
+  }
+
+  /* =====================================================================
+     CESTA PO SILNICI
+
+     Klikat routu ručně po ulicích je otrava a stejně to nesedí — spojnice
+     mezi dvěma kliky vede přes domy. Tohle se zeptá směrovače, kudy se tam
+     dojde pěšky, a nakreslí jeho odpověď. Naklikané body zůstávají zadáním:
+     směrovač jimi jen musí projít.
+
+     Služba je Valhalla od FOSSGIS nad daty OpenStreetMap — bez klíče, bez
+     registrace, s pěším profilem. Veřejný OSRM by byl po ruce taky, jenže
+     umí jen auto: na osmi stech metrech chůze vracel skoro dvanáct kilometrů
+     objížďky jednosměrkami.
+     ================================================================== */
+  var CESTA_URL = "https://valhalla1.openstreetmap.de/route";
+  // Odpovědi chodí mimo pořadí. Kdo se ptal naposled, ten jediný smí zapsat
+  // výsledek — jinak by pomalejší starší odpověď přepsala novější cestu.
+  var cestaPocitadlo = 0;
+
+  /** Valhalla vrací tvar zabalený jako polyline s přesností na šest míst. */
+  function rozbalPolyline(text) {
+    var body = [], i = 0, lat = 0, lon = 0;
+    while (i < text.length) {
+      var v = 0, posun = 0, b;
+      do { b = text.charCodeAt(i++) - 63; v |= (b & 0x1f) << posun; posun += 5; } while (b >= 0x20);
+      lat += (v & 1) ? ~(v >> 1) : (v >> 1);
+      v = 0; posun = 0;
+      do { b = text.charCodeAt(i++) - 63; v |= (b & 0x1f) << posun; posun += 5; } while (b >= 0x20);
+      lon += (v & 1) ? ~(v >> 1) : (v >> 1);
+      body.push({ lat: lat / 1e6, lon: lon / 1e6 });
+    }
+    return body;
+  }
+
+  /** Zeptá se směrovače na pěší cestu a uloží ji do routy. `hotovo` dostane
+   *  text chyby, nebo `null`, délku v kilometrech a čas v minutách. */
+  function najdiCestu(r, hotovo) {
+    var lomena = bodyRouty(r);
+    if (!lomena) { hotovo("routa nemá oba konce se souřadnicemi"); return; }
+    if (r.od === r.do) { hotovo("začátek i konec je tatáž stopa"); return; }
+    var mista = lomena.map(function (p, i) {
+      var m = { lat: +p.lat, lon: +p.lon };
+      // Průchozí bod se nesmí tvářit jako zastávka, jinak u něj směrovač
+      // cestu otáčí a započítává čekání.
+      if (i > 0 && i < lomena.length - 1) m.type = "through";
+      return m;
+    });
+    var moje = ++cestaPocitadlo;
+    var dotaz = CESTA_URL + "?json=" + encodeURIComponent(JSON.stringify({
+      locations: mista, costing: "pedestrian",
+      directions_options: { units: "kilometers" }
+    }));
+    fetch(dotaz).then(function (o) { return o.json(); }).then(function (j) {
+      if (moje !== cestaPocitadlo) return;          // mezitím přišel novější dotaz
+      if (!j || !j.trip || !j.trip.legs || !j.trip.legs.length) {
+        hotovo("směrovač cestu nenašel"); return;
+      }
+      var tvar = [];
+      j.trip.legs.forEach(function (leg) {
+        rozbalPolyline(leg.shape || "").forEach(function (p, i) {
+          // Konec jednoho úseku je začátek dalšího — nesmí tam být dvakrát.
+          if (i === 0 && tvar.length) return;
+          tvar.push(p);
+        });
+      });
+      if (tvar.length < 2) { hotovo("směrovač vrátil prázdnou cestu"); return; }
+      r.tvar = tvar;
+      r.tvarZ = podpisTrasy(r);
+      hotovo(null, j.trip.summary ? j.trip.summary.length : null,
+        j.trip.summary ? j.trip.summary.time / 60 : null);
+    }).catch(function (e) {
+      if (moje !== cestaPocitadlo) return;
+      hotovo("směrovač neodpověděl (" + (e && e.message ? e.message : "bez sítě") + ")");
+    });
+  }
+
+  /* =====================================================================
+     TABULKY
+     ================================================================== */
+  function moznostiStop(vybrane) {
+    return data.stopy.map(function (s) {
+      return '<option value="' + s.id + '"' + (s.id === vybrane ? " selected" : "")
+        + ">" + escHtml(s.nazev || "(bez názvu)") + "</option>";
+    }).join("");
+  }
+  function escHtml(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  /** „1 bod, 2 body, 5 bodů" — číslo bez skloňování vypadá jako chyba. */
+  function tvarBodu(n) { return n === 1 ? "bod" : (n >= 2 && n <= 4 ? "body" : "bodů"); }
+
+  /* Routa má pár set metrů. „0,42 km" se čte hůř než „420 m" a hra délku
+     hlásí taky v metrech, takže se opisuje beze změny. Uloženo zůstává
+     v kilometrech — starší zálohy mají km a nemají se proč přepočítávat. */
+  function naMetry(km) {
+    return (km === null || km === undefined || isNaN(km)) ? null : Math.round(km * 1000);
+  }
+  function metryText(km) {
+    var m = naMetry(km);
+    return m === null ? "?" : String(m);
+  }
+
+  function kresliStopy() {
+    var t = document.getElementById("tabStopy");
+    var h = "<tr><th>Název</th><th>Zeměpisná šířka</th><th>Délka</th>"
+      + "<th>Gym</th><th></th></tr>";
+    if (!data.stopy.length) {
+      h += '<tr><td colspan="5" class="prazdno">Zatím žádná stopa.</td></tr>';
+    }
+    data.stopy.forEach(function (s) {
+      h += '<tr data-id="' + s.id + '">'
+        + '<td><input type="text" data-pole="nazev" value="' + escHtml(s.nazev || "") + '"></td>'
+        + '<td><input type="number" step="0.000001" data-pole="lat" class="uzky" value="'
+        + (s.lat == null ? "" : s.lat) + '"></td>'
+        + '<td><input type="number" step="0.000001" data-pole="lon" class="uzky" value="'
+        + (s.lon == null ? "" : s.lon) + '"></td>'
+        + '<td><input type="checkbox" data-pole="gym"' + (s.gym ? " checked" : "") + "></td>"
+        + '<td><button class="smazat" data-smazat="stopa">✕</button></td></tr>';
+    });
+    t.innerHTML = h;
+  }
+
+  function kresliRouty() {
+    var t = document.getElementById("tabRouty");
+    var h = "<tr><th>Název routy</th><th>Odkud</th><th>Kam</th><th>metrů</th>"
+      + "<th>minut</th><th>Mám</th><th>Trasa</th><th></th></tr>";
+    if (!data.routy.length) {
+      h += '<tr><td colspan="8" class="prazdno">Zatím žádná routa.</td></tr>';
+    }
+    data.routy.forEach(function (r) {
+      var km = delkaRouty(r);
+      h += '<tr data-id="' + r.id + '">'
+        + '<td><input type="text" data-pole="nazev" value="' + escHtml(r.nazev || "") + '"></td>'
+        + '<td><select data-pole="od">' + moznostiStop(r.od) + "</select></td>"
+        + '<td><select data-pole="do">' + moznostiStop(r.do) + "</select></td>"
+        + '<td><input type="number" step="10" data-pole="metry" class="uzky" value="'
+        + (r.km ? naMetry(r.km) : "") + '" placeholder="' + metryText(km) + '"></td>'
+        + '<td><input type="number" step="1" data-pole="min" class="uzky" value="'
+        + (r.min || "") + '"></td>'
+        + '<td><input type="checkbox" data-pole="hotovo"' + (r.hotovo ? " checked" : "") + "></td>"
+        + '<td><button class="btn" data-tvar="1" style="white-space:nowrap">'
+        + ((r.body || []).length ? "✎ " + (r.body || []).length + " " + tvarBodu((r.body || []).length)
+          : "✎ nakreslit") + "</button></td>"
+        + '<td><button class="smazat" data-smazat="routa">✕</button></td></tr>';
+    });
+    t.innerHTML = h;
+  }
+
+  function kresliVyber() {
+    ["plOd", "plDo"].forEach(function (id) {
+      var el = document.getElementById(id);
+      var vyb = id === "plOd" ? vybranyOd : vybranyDo;
+      el.innerHTML = '<option value="">— vyber —</option>' + moznostiStop(vyb);
+    });
+    document.getElementById("pocty").textContent =
+      data.stopy.length + " stop · " + data.routy.length + " rout";
+  }
+
+  function prekresli() {
+    kresliStopy(); kresliRouty(); kresliVyber(); kresliUpravu(); kresliMapu();
+  }
+
+  /* ------------------------------------------------------- editace polí */
+  document.addEventListener("input", function (e) {
+    var pole = e.target.getAttribute && e.target.getAttribute("data-pole");
+    if (!pole) return;
+    var tr = e.target.closest("tr");
+    if (!tr) return;
+    var id = tr.getAttribute("data-id");
+    var seznam = tr.closest("#tabStopy") ? data.stopy : data.routy;
+    seznam.forEach(function (x) {
+      if (x.id !== id) return;
+      if (e.target.type === "checkbox") x[pole] = e.target.checked;
+      // Metry jsou jen jednotka pro člověka; uvnitř se drží kilometry, ať
+      // starší zálohy i výpočty zůstanou beze změny.
+      else if (pole === "metry") x.km = e.target.value === "" ? null : +e.target.value / 1000;
+      else if (e.target.type === "number") x[pole] = e.target.value === "" ? null : +e.target.value;
+      else x[pole] = e.target.value;
+    });
+    uloz();
+    // Mapa a nabídky se musí obnovit, tabulka pod rukama ne — přepisovala by
+    // se právě editovaná buňka.
+    kresliVyber(); kresliMapu();
+  });
+
+  document.addEventListener("click", function (e) {
+    var co = e.target.getAttribute && e.target.getAttribute("data-smazat");
+    if (!co) return;
+    var id = e.target.closest("tr").getAttribute("data-id");
+    if (co === "stopa") {
+      data.stopy = data.stopy.filter(function (s) { return s.id !== id; });
+      // Routa bez konce nedává smysl.
+      data.routy = data.routy.filter(function (r) { return r.od !== id && r.do !== id; });
+    } else {
+      data.routy = data.routy.filter(function (r) { return r.id !== id; });
+    }
+    // Co zmizelo, se nedá dál upravovat.
+    if (editovanaStopa && !stopa(editovanaStopa)) zavriEditor();
+    if (upravovanaRouta && !routaPodleId(upravovanaRouta)) upravovanaRouta = null;
+    uloz(); prekresli();
+  });
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-tvar]");
+    if (!b) return;
+    zacniUpravu(b.closest("tr").getAttribute("data-id"));
+  });
+
+  document.getElementById("pridatStopu").addEventListener("click", function () {
+    data.stopy.push({ id: noveId(), nazev: "", lat: null, lon: null, gym: false });
+    uloz(); prekresli();
+  });
+  document.getElementById("pridatRoutu").addEventListener("click", function () {
+    // Dvě RŮZNÉ stopy. Se stejným začátkem i koncem se routa kreslí jako
+    // smyčka, spojnice vede od posledního bodu zpátky na první a vypadá to
+    // jako chyba kreslení. Routa je cesta, ne okruh.
+    var prvni = data.stopy[0] ? data.stopy[0].id : "";
+    var druha = data.stopy[1] ? data.stopy[1].id : prvni;
+    data.routy.push({ id: noveId(), nazev: "", od: prvni, do: druha,
+      km: null, min: null, hotovo: false, body: [] });
+    uloz(); prekresli();
+  });
+
+  /* =====================================================================
+     MAPA
+     Leaflet se tahá z internetu. Doma je to to, co chceš — ulice pod body.
+     Venku nebo bez sítě se nenačte, a proto je pod tím schéma z týchž
+     souřadnic: nakreslené rovnou do SVG, bez čehokoli staženého.
+     ================================================================== */
+  var mapa = null, vrstva = null, rezimPridat = false;
+  var podkladVrstva = null;
+  var editovanaStopa = null;   // stopa otevřená v kartičce nad mapou
+  var upravovanaRouta = null;  // routa, které se právě kreslí trasa
+  var schemaPrevod = null;     // převod pixelů schématu zpátky na souřadnice
+
+  /* ------------------------------------------------------- podklady mapy
+     Každý podklad je k něčemu jinému: satelit ukáže pěšinu, kterou do mapy
+     nikdo nezakreslil, světlá se nepere s barevnými body, tmavá sedí ke
+     zbytku stránky. Všechny jsou volně dostupné a bez klíče. */
+  /* Všechny musí jet bez registrace a bez klíče. CARTO (Voyager, Positron)
+     by se sem hodilo nejvíc, jenže od letoška maluje přes dlaždice
+     „API KEY REQUIRED" — proto tu není. */
+  var PODKLADY = {
+    prehledna: { nazev: "Přehledná", subdomains: "abc", maxZoom: 19,
+      url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+      popis: "© OpenStreetMap, Humanitarian OSM Team" },
+    ulice: { nazev: "Ulice", maxZoom: 19,
+      url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      popis: "© OpenStreetMap" },
+    svetla: { nazev: "Světlá", maxZoom: 18,
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      popis: "© Esri" },
+    pesiny: { nazev: "Pěšiny", subdomains: "abc", maxZoom: 17,
+      url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+      popis: "© OpenStreetMap, © OpenTopoMap" },
+    satelit: { nazev: "Satelit", maxZoom: 19,
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      popis: "© Esri" }
+  };
+  var KLIC_PODKLAD = "pgo_routy_podklad";
+  var KLIC_ZOBRAZ = "pgo_routy_zobraz";
+
+  /* Které routy se kreslí. Ve městě se jich přes sebe navrství tolik, že
+     pod nimi není vidět mapa — a při kreslení jedné konkrétní jsou ostatní
+     jen šum. */
+  function zvoleneZobrazeni() {
+    var v = null;
+    try { v = localStorage.getItem(KLIC_ZOBRAZ); } catch (e) { v = null; }
+    return (v === "vybranou" || v === "nic") ? v : "vse";
+  }
+  /** Patří routa do toho, co se teď má kreslit? */
+  function routaViditelna(r) {
+    var jak = zvoleneZobrazeni();
+    if (jak === "vse") return true;
+    if (jak === "nic") return r.id === upravovanaRouta;   // kreslenou schovat nelze
+    if (r.id === upravovanaRouta) return true;
+    // Bez kreslení se „vybranou" vztahuje na vybraný začátek a cíl: ukáže
+    // se to, co mezi nimi vede, ať je vidět, jestli tam routa vůbec je.
+    if (!vybranyOd && !vybranyDo) return false;
+    return (r.od === vybranyOd && r.do === vybranyDo)
+      || (r.od === vybranyDo && r.do === vybranyOd)
+      || (!vybranyDo && (r.od === vybranyOd || r.do === vybranyOd));
+  }
+  (function naplnZobrazeni() {
+    var sel = document.getElementById("zobrazRouty");
+    sel.value = zvoleneZobrazeni();
+    sel.addEventListener("change", function () {
+      try { localStorage.setItem(KLIC_ZOBRAZ, this.value); } catch (e) { /* soukromé okno */ }
+      kresliMapu();
+    });
+  })();
+
+  function zvolenyPodklad() {
+    var k = null;
+    try { k = localStorage.getItem(KLIC_PODKLAD); } catch (e) { k = null; }
+    return PODKLADY[k] ? k : "prehledna";
+  }
+  function nastavPodklad(kod) {
+    if (!PODKLADY[kod]) kod = "prehledna";
+    try { localStorage.setItem(KLIC_PODKLAD, kod); } catch (e) { /* soukromé okno */ }
+    var sel = document.getElementById("podklad");
+    if (sel) sel.value = kod;
+    if (!mapa) return;
+    if (podkladVrstva) mapa.removeLayer(podkladVrstva);
+    var p = PODKLADY[kod];
+    podkladVrstva = L.tileLayer(p.url, { maxZoom: p.maxZoom,
+      subdomains: p.subdomains || "abc", attribution: p.popis }).addTo(mapa);
+    podkladVrstva.bringToBack();
+  }
+  (function naplnPodklady() {
+    var sel = document.getElementById("podklad");
+    sel.innerHTML = Object.keys(PODKLADY).map(function (k) {
+      return '<option value="' + k + '">' + PODKLADY[k].nazev + "</option>";
+    }).join("");
+    sel.value = zvolenyPodklad();
+    sel.addEventListener("change", function () { nastavPodklad(this.value); });
+  })();
+
+  /* --------------------------------------------------- kartička nad mapou
+     Přejmenovat stopu jde i v tabulce, jenže to znamená odejít z mapy a
+     ztratit výřez, který si člověk pracně nastavil. Pravé tlačítko otevře
+     editor rovnou nad bodem a mapa zůstane, kde byla. */
+  function vObalu(ev) {
+    var plocha = document.getElementById("editor").parentNode.getBoundingClientRect();
+    return { x: ev.clientX - plocha.left, y: ev.clientY - plocha.top };
+  }
+  function umistiEditor(el, x, y) {
+    var plocha = el.parentNode.getBoundingClientRect();
+    var w = el.offsetWidth || 232, h = el.offsetHeight || 180;
+    el.style.left = Math.max(6, Math.min(x + 10, plocha.width - w - 6)) + "px";
+    el.style.top = Math.max(6, Math.min(y + 10, plocha.height - h - 6)) + "px";
+  }
+  function zavriEditor() {
+    editovanaStopa = null;
+    var el = document.getElementById("editor");
+    el.hidden = true; el.innerHTML = "";
+  }
+  function otevriEditor(id, x, y) {
+    var s = stopa(id);
+    if (!s) { zavriEditor(); return; }
+    var el = document.getElementById("editor");
+    editovanaStopa = id;
+    el.innerHTML = "<h3>Stopa</h3>"
+      + '<input type="text" id="edNazev" placeholder="název jako ve hře" value="'
+      + escHtml(s.nazev || "") + '">'
+      + '<label><input type="checkbox" id="edGym"' + (s.gym ? " checked" : "")
+      + "> je to gym</label>"
+      + '<p class="souradnice">' + (s.lat == null ? "bez souřadnic"
+        : (+s.lat).toFixed(5) + ", " + (+s.lon).toFixed(5)) + "</p>"
+      + '<div class="radek-akci">'
+      + '<button class="btn" id="edOd">Začátek</button>'
+      + '<button class="btn" id="edDo">Cíl</button>'
+      + '<button class="btn nebezpecny" id="edSmazat">Smazat</button>'
+      + "</div>";
+    el.hidden = false;
+    umistiEditor(el, x, y);
+
+    // Stopa se dohledává při každé změně znovu. Kdyby se držel objekt,
+    // načtená záloha by se psala do kusu dat, který už nikde není.
+    var nazev = document.getElementById("edNazev");
+    nazev.addEventListener("input", function () {
+      var akt = stopa(id);
+      if (!akt) return;
+      akt.nazev = this.value;
+      uloz(); kresliStopy(); kresliRouty(); kresliVyber(); kresliUpravu(); kresliMapu();
+    });
+    nazev.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === "Escape") zavriEditor();
+    });
+    document.getElementById("edGym").addEventListener("change", function () {
+      var akt = stopa(id);
+      if (!akt) return;
+      akt.gym = this.checked;
+      uloz(); kresliStopy(); kresliMapu();
+    });
+    document.getElementById("edOd").addEventListener("click", function () {
+      vybranyOd = id;
+      if (vybranyDo === id) vybranyDo = null;
+      popisVyberu(); kresliVyber(); kresliMapu();
+    });
+    document.getElementById("edDo").addEventListener("click", function () {
+      if (id === vybranyOd) return;
+      vybranyDo = id;
+      popisVyberu(); kresliVyber(); kresliMapu();
+    });
+    document.getElementById("edSmazat").addEventListener("click", function () {
+      data.stopy = data.stopy.filter(function (x) { return x.id !== id; });
+      // Routa bez konce nedává smysl.
+      data.routy = data.routy.filter(function (r) { return r.od !== id && r.do !== id; });
+      if (upravovanaRouta && !routaPodleId(upravovanaRouta)) upravovanaRouta = null;
+      zavriEditor(); uloz(); prekresli();
+    });
+    nazev.focus();
+    nazev.select();
+  }
+
+  /* ------------------------------------------------------ kreslení trasy
+     Nejkratší čára mezi konci není trasa routy: hra ji vede tudy, kudy ji
+     autor nakreslil. Dokud lišta svítí, klik do mapy tvar doplňuje. */
+  function zacniUpravu(id) {
+    var r = routaPodleId(id);
+    if (!r) return;
+    upravovanaRouta = id;
+    upravaZprava = null;
+    prepniPridavani(false);
+    zavriEditor();
+    prepniPanel("pMapa");
+    kresliUpravu(); kresliMapu();
+    if (mapa) mapa.invalidateSize();
+    // Rovnou se zeptáme na cestu. Tohle je to hlavní: uživatel nemá kreslit
+    // po ulicích ručně, má dostat cestu nakreslenou a jen ji opravit.
+    if (!maCestuPoSilnici(r)) prepocitejCestu();
+  }
+  function konecUpravy() {
+    upravovanaRouta = null;
+    upravaZprava = null;
+    kresliUpravu(); kresliRouty(); kresliMapu();
+  }
+
+  /** Zadání se změnilo, uložená cesta po silnici k němu už nepatří. Nechá
+   *  se spočítat nová; než dorazí, kreslí se rovné spojnice. Vteřinka
+   *  odkladu je kvůli tomu, aby se při rychlém klikání neposílal dotaz
+   *  na každý klik zvlášť. */
+  var cestaCasovac = null;
+  function prepocitejCestu(hned) {
+    if (cestaCasovac) { clearTimeout(cestaCasovac); cestaCasovac = null; }
+    var spustit = function () {
+      var r = routaPodleId(upravovanaRouta);
+      if (!r) return;
+      stavUpravy("Hledám cestu po silnici…");
+      najdiCestu(r, function (chyba, km) {
+        if (chyba) {
+          stavUpravy("Cesta po silnici nevyšla: " + chyba
+            + ". Kreslí se rovné spojnice mezi body.");
+        } else {
+          uloz();
+          stavUpravy("Cesta po silnici nalezena"
+            + (km ? ", " + naMetry(km) + " m" : "") + ".");
+        }
+        kresliUpravu(); kresliRouty(); kresliMapu();
+      });
+    };
+    if (hned) spustit();
+    else cestaCasovac = setTimeout(spustit, 500);
+  }
+  // Hláška o hledání cesty musí přežít překreslení lišty. Bez tohohle se
+  // „Cesta po silnici nalezena" objevila a v tomtéž kroku ji zas přepsala
+  // výchozí nápověda, takže se nikdy nestihla přečíst.
+  var upravaZprava = null;
+  function stavUpravy(text) {
+    upravaZprava = text;
+    var el = document.getElementById("upravaStav");
+    if (el) el.textContent = text;
+  }
+  /** Naklikané body se změnily: stará cesta po silnici je tím neplatná. */
+  function poZmeneBodu() {
+    uloz();
+    kresliUpravu(); kresliRouty(); kresliMapu();
+    prepocitejCestu();
+  }
+
+  function kresliUpravu() {
+    var l = document.getElementById("upravaLista");
+    var r = upravovanaRouta ? routaPodleId(upravovanaRouta) : null;
+    if (!r) { l.hidden = true; l.innerHTML = ""; return; }
+    var n = (r.body || []).length;
+    var smycka = r.od === r.do;
+    l.hidden = false;
+    l.innerHTML = "<b>Kreslíš trasu:</b> " + escHtml(r.nazev || "routa bez názvu")
+      + ' <label>z <select id="upravaOd">' + moznostiStop(r.od) + "</select></label>"
+      + ' <label>do <select id="upravaDo">' + moznostiStop(r.do) + "</select></label>"
+      + " · " + n + " " + tvarBodu(n)
+      + (maCestuPoSilnici(r) ? " · po silnici" : "")
+      + '<button class="btn" id="upravaCesta">Najít cestu po silnici</button>'
+      + '<button class="btn nebezpecny" id="upravaVymazat">Vymazat tvar</button>'
+      + '<button class="btn" id="upravaHotovo">Hotovo</button>'
+      + '<span class="hint" id="upravaStav">' + escHtml(upravaZprava || (smycka
+        ? "Začátek i konec je tatáž stopa, takže se routa kreslí jako smyčka."
+          + " Vyber konec."
+        : "Klik do mapy přidá bod, kterým má cesta projít. Tažením se posune,"
+          + " pravým tlačítkem zmizí.")) + "</span>";
+
+    document.getElementById("upravaHotovo").addEventListener("click", konecUpravy);
+    document.getElementById("upravaCesta").addEventListener("click", function () {
+      prepocitejCestu(true);
+    });
+    document.getElementById("upravaVymazat").addEventListener("click", function () {
+      var akt = routaPodleId(upravovanaRouta);
+      if (!akt) return;
+      akt.body = [];
+      akt.tvar = null; akt.tvarZ = null;
+      uloz(); kresliUpravu(); kresliRouty(); kresliMapu();
+    });
+    // Konec routy se dosud dal vybrat jen v tabulce. Kdo kreslí na mapě, tam
+    // nechodí — a bez vybraného konce se routa uzavírala sama do sebe.
+    ["upravaOd", "upravaDo"].forEach(function (id) {
+      document.getElementById(id).addEventListener("change", function () {
+        var akt = routaPodleId(upravovanaRouta);
+        if (!akt) return;
+        akt[id === "upravaOd" ? "od" : "do"] = this.value;
+        akt.tvar = null; akt.tvarZ = null;
+        upravaZprava = null;
+        poZmeneBodu();
+      });
+    });
+  }
+  /** Nová stopa i s otevřenou kartičkou. Jméno se dopisuje hned na místě,
+   *  ne až někde v jiné záložce po dvaceti kliknutích. */
+  function novaStopaTady(lat, lon, kde) {
+    var s = { id: noveId(), nazev: "Stopa " + (data.stopy.length + 1),
+      lat: +lat.toFixed(6), lon: +lon.toFixed(6), gym: false };
+    data.stopy.push(s);
+    uloz(); prekresli();
+    otevriEditor(s.id, kde.x, kde.y);
+  }
+
+  function kresliMapu() {
+    if (mapa) { kresliDoLeafletu(); return; }
+    kresliSchema();
+  }
+
+  function kresliDoLeafletu() {
+    if (vrstva) vrstva.clearLayers();
+    vrstva = L.layerGroup().addTo(mapa);
+    data.routy.forEach(function (r) {
+      if (!routaViditelna(r)) return;
+      var lomena = tvarRouty(r);
+      if (!lomena) return;
+      var kreslena = r.id === upravovanaRouta;
+      L.polyline(lomena.map(function (p) { return [p.lat, p.lon]; }), {
+        color: kreslena ? "#d99a25" : (r.hotovo ? "#86837c" : "#35b06a"),
+        weight: kreslena ? 5 : 4, opacity: .85
+      })
+        .bindTooltip(escHtml(r.nazev || "routa") + " · "
+          + escHtml((stopa(r.od) || {}).nazev || "?") + " → "
+          + escHtml((stopa(r.do) || {}).nazev || "?"))
+        .on("contextmenu", function (e) {
+          L.DomEvent.stopPropagation(e);
+          zacniUpravu(r.id);
+        })
+        .addTo(vrstva);
+      if (!kreslena) return;
+      (r.body || []).forEach(function (p, i) {
+        L.marker([p.lat, p.lon], {
+          draggable: true,
+          icon: L.divIcon({ className: "", iconSize: [11, 11], iconAnchor: [5, 5],
+            html: '<div class="bod-trasy"></div>' })
+        })
+          .on("dragend", function (ev) {
+            var ll = ev.target.getLatLng();
+            p.lat = +ll.lat.toFixed(6); p.lon = +ll.lng.toFixed(6);
+            poZmeneBodu();
+          })
+          .on("contextmenu", function (ev) {
+            L.DomEvent.stopPropagation(ev);
+            r.body.splice(i, 1);
+            poZmeneBodu();
+          })
+          .addTo(vrstva);
+      });
+    });
+    data.stopy.forEach(function (s) {
+      if (s.lat == null) return;
+      var barva = s.id === vybranyOd ? "#d99a25"
+        : s.id === vybranyDo ? "#8e6bd6" : (s.gym ? "#d9534f" : "#4a8fd6");
+      L.circleMarker([s.lat, s.lon], { radius: 7, color: "#0d0d0d", weight: 2,
+        fillColor: barva, fillOpacity: 1 })
+        .bindTooltip(escHtml(s.nazev || "stopa"))
+        .on("click", function (e) { L.DomEvent.stopPropagation(e); vyberStopu(s.id); })
+        .on("contextmenu", function (e) {
+          L.DomEvent.stopPropagation(e);
+          var kde = vObalu(e.originalEvent);
+          otevriEditor(s.id, kde.x, kde.y);
+        })
+        .addTo(vrstva);
+    });
+    if (!mapa.__uzCentrovano && vycentruj()) mapa.__uzCentrovano = true;
+  }
+
+  /** Náhrada mapy bez internetu: body na správných souřadnicích, jen bez ulic. */
+  function kresliSchema() {
+    var obal = document.getElementById("mapaObal");
+    var body = data.stopy.filter(function (s) { return s.lat != null && s.lon != null; });
+    if (!body.length) {
+      obal.innerHTML = '<p class="prazdno">Zatím není co kreslit — přidej stopy'
+        + " se souřadnicemi.</p>";
+      return;
+    }
+    var latMin = Math.min.apply(null, body.map(function (s) { return s.lat; }));
+    var latMax = Math.max.apply(null, body.map(function (s) { return s.lat; }));
+    var lonMin = Math.min.apply(null, body.map(function (s) { return s.lon; }));
+    var lonMax = Math.max.apply(null, body.map(function (s) { return s.lon; }));
+    var W = 1200, H = 540, okraj = 40;
+    var rozLat = Math.max(1e-6, latMax - latMin), rozLon = Math.max(1e-6, lonMax - lonMin);
+    var x = function (lon) { return okraj + ((lon - lonMin) / rozLon) * (W - 2 * okraj); };
+    // Sever nahoru: zeměpisná šířka roste vzhůru, y v SVG dolů.
+    var y = function (lat) { return H - okraj - ((lat - latMin) / rozLat) * (H - 2 * okraj); };
+    schemaPrevod = { W: W, H: H, okraj: okraj, latMin: latMin, lonMin: lonMin,
+      rozLat: rozLat, rozLon: rozLon };
+    var h = '<svg id="schema" viewBox="0 0 ' + W + " " + H + '">';
+    data.routy.forEach(function (r) {
+      if (!routaViditelna(r)) return;
+      var lomena = tvarRouty(r);
+      if (!lomena) return;
+      var kreslena = r.id === upravovanaRouta;
+      h += '<polyline data-routa="' + r.id + '" points="'
+        + lomena.map(function (p) { return x(p.lon) + "," + y(p.lat); }).join(" ")
+        + '" fill="none" stroke="' + (kreslena ? "#d99a25"
+          : (r.hotovo ? "#86837c" : "#35b06a"))
+        + '" stroke-width="' + (kreslena ? 4 : 3) + '" style="cursor:pointer">'
+        + "<title>" + escHtml(r.nazev || "routa") + "</title></polyline>";
+      if (!kreslena) return;
+      (r.body || []).forEach(function (p, i) {
+        h += '<rect data-bod="' + i + '" x="' + (x(p.lon) - 5) + '" y="' + (y(p.lat) - 5)
+          + '" width="10" height="10" rx="2" fill="#d99a25" stroke="#0d0d0d"'
+          + ' stroke-width="2" style="cursor:pointer"><title>bod trasy</title></rect>';
+      });
+    });
+    body.forEach(function (s) {
+      var barva = s.id === vybranyOd ? "#d99a25"
+        : s.id === vybranyDo ? "#8e6bd6" : (s.gym ? "#d9534f" : "#4a8fd6");
+      h += '<circle data-stopa="' + s.id + '" cx="' + x(s.lon) + '" cy="' + y(s.lat)
+        + '" r="7" fill="' + barva + '" stroke="#0d0d0d" stroke-width="2"'
+        + ' style="cursor:pointer"><title>' + escHtml(s.nazev || "stopa") + "</title></circle>";
+      h += '<text x="' + (x(s.lon) + 11) + '" y="' + (y(s.lat) + 4)
+        + '" fill="#b9b6ae" font-size="11">' + escHtml(s.nazev || "") + "</text>";
+    });
+    obal.innerHTML = h + "</svg>";
+    obal.querySelectorAll("[data-stopa]").forEach(function (el) {
+      var id = el.getAttribute("data-stopa");
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        vyberStopu(id);
+      });
+      el.addEventListener("contextmenu", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var kde = vObalu(e);
+        otevriEditor(id, kde.x, kde.y);
+      });
+    });
+    obal.querySelectorAll("[data-routa]").forEach(function (el) {
+      el.addEventListener("contextmenu", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        zacniUpravu(el.getAttribute("data-routa"));
+      });
+    });
+    obal.querySelectorAll("[data-bod]").forEach(function (el) {
+      el.addEventListener("contextmenu", function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var r = routaPodleId(upravovanaRouta);
+        if (!r || !r.body) return;
+        r.body.splice(+el.getAttribute("data-bod"), 1);
+        poZmeneBodu();
+      });
+    });
+    // Klik do plochy schématu dělá totéž co do mapy — přidá stopu, nebo
+    // bod kreslené trasy. Bez toho by se bez internetu dalo jen koukat.
+    obal.querySelector("#schema").addEventListener("click", function (e) {
+      var kam = zeSchematu(e);
+      if (!kam) return;
+      if (upravovanaRouta) { pridejBodTrasy(kam.lat, kam.lon); return; }
+      if (rezimPridat) { novaStopaTady(kam.lat, kam.lon, vObalu(e)); return; }
+      zavriEditor();
+    });
+  }
+
+  /** Z pixelů schématu zpátky na souřadnice, aby i bez internetu šlo do
+   *  „mapy" klikat, ne jen koukat. */
+  function zeSchematu(ev) {
+    var svg = document.getElementById("schema");
+    if (!svg || !schemaPrevod) return null;
+    var r = svg.getBoundingClientRect();
+    var p = schemaPrevod;
+    var vx = (ev.clientX - r.left) / r.width * p.W;
+    var vy = (ev.clientY - r.top) / r.height * p.H;
+    return {
+      lon: p.lonMin + (vx - p.okraj) / (p.W - 2 * p.okraj) * p.rozLon,
+      lat: p.latMin + (p.H - p.okraj - vy) / (p.H - 2 * p.okraj) * p.rozLat
+    };
+  }
+  function pridejBodTrasy(lat, lon) {
+    var r = routaPodleId(upravovanaRouta);
+    if (!r) return;
+    vlozBod(r, lat, lon);
+    poZmeneBodu();
+  }
+
+  /** Posune mapu tak, aby byly vidět všechny stopy. Volá se sama při prvním
+   *  naplnění dat a pak už jen tlačítkem — jinak by mapa skákala zpátky
+   *  pokaždé, když si člověk odjede jinam. */
+  function vycentruj() {
+    if (!mapa) return false;
+    var body = data.stopy.filter(function (s) { return s.lat != null; });
+    if (!body.length) return false;
+    // Kontejner vzniká až za běhu, takže Leaflet o jeho velikosti nemusí
+    // vědět — bez tohohle vyjde výřez podle nulových rozměrů.
+    mapa.invalidateSize(false);
+    var rohy = body.map(function (s) { return [s.lat, s.lon]; });
+    // Výřez se musí počítat AŽ po přeměření, ne ve stejném kroku: jinak si
+    // Leaflet vezme starou velikost a přiblíží na maximum.
+    setTimeout(function () { mapa.fitBounds(rohy, { padding: [40, 40] }); }, 0);
+    return true;
+  }
+
+  function vyberStopu(id) {
+    if (rezimPridat || upravovanaRouta) return;
+    if (!vybranyOd || (vybranyOd && vybranyDo)) { vybranyOd = id; vybranyDo = null; }
+    else if (id !== vybranyOd) { vybranyDo = id; }
+    kresliVyber(); kresliMapu(); popisVyberu();
+  }
+  function popisVyberu() {
+    var a = stopa(vybranyOd), b = stopa(vybranyDo);
+    var el = document.getElementById("mapaHint");
+    el.innerHTML = "Začátek: <b>" + escHtml(a ? a.nazev : "—")
+      + "</b> · Cíl: <b>" + escHtml(b ? b.nazev : "—")
+      + "</b> (další klik začátek přepíše)"
+      // Routa se zakládá tady, ne o dvě záložky vedle: konce jsou vybrané,
+      // stačí je převzít.
+      + (a && b ? ' <button class="btn" id="zalozitRoutu">Založit routu odsud tam</button>' : "");
+    var btn = document.getElementById("zalozitRoutu");
+    if (btn) btn.addEventListener("click", function () { otevriOknoRouty(vybranyOd, vybranyDo); });
+  }
+
+  /* =====================================================================
+     OKNO: NOVÁ ROUTA
+     Konce jsou vybrané z mapy, zbytek se předvyplní z toho, co najde
+     směrovač — metry i minuty. Ručně se opraví, co hra hlásí jinak.
+     ================================================================== */
+  var oknoTvar = null;   // cesta po silnici, kterou se podařilo najít
+
+  function orStav(text) {
+    document.getElementById("orStav").textContent = text || "";
+  }
+  function zavriOknoRouty() {
+    document.getElementById("oknoRouty").hidden = true;
+    oknoTvar = null;
+  }
+  function otevriOknoRouty(odId, doId) {
+    var o = document.getElementById("oknoRouty");
+    document.getElementById("orOd").innerHTML = moznostiStop(odId);
+    document.getElementById("orDo").innerHTML = moznostiStop(doId);
+    document.getElementById("orNazev").value = "";
+    document.getElementById("orMetry").value = "";
+    document.getElementById("orMinut").value = "";
+    oknoTvar = null;
+    o.hidden = false;
+    document.getElementById("orNazev").focus();
+    predvyplnOkno();
+  }
+  /** Zeptá se směrovače na cestu mezi vybranými konci a předvyplní z ní
+   *  metry i minuty. Když se nedovolá, nechá odhad ze vzdušné čáry a řekne
+   *  to — prázdná políčka by vypadala jako chyba. */
+  function predvyplnOkno() {
+    var od = document.getElementById("orOd").value;
+    var doc = document.getElementById("orDo").value;
+    if (!od || !doc || od === doc) {
+      orStav("Vyber dva různé konce.");
+      return;
+    }
+    orStav("Hledám cestu po silnici…");
+    var docasna = { id: "__okno", od: od, do: doc, body: [] };
+    najdiCestu(docasna, function (chyba, km, minut) {
+      if (chyba) {
+        oknoTvar = null;
+        var odhad = pesky(od, doc);
+        document.getElementById("orMetry").value = odhad === null ? "" : naMetry(odhad);
+        orStav("Cesta po silnici nevyšla (" + chyba + "). Metry jsou jen odhad"
+          + " ze vzdušné čáry, oprav je podle hry.");
+        return;
+      }
+      oknoTvar = { tvar: docasna.tvar, tvarZ: docasna.tvarZ };
+      document.getElementById("orMetry").value = naMetry(km);
+      if (minut) document.getElementById("orMinut").value = Math.max(1, Math.round(minut));
+      orStav("Předvyplněno podle nalezené cesty. Co hlásí hra jinak, přepiš.");
+    });
+  }
+
+  ["orOd", "orDo"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", predvyplnOkno);
+  });
+  document.getElementById("orZrusit").addEventListener("click", zavriOknoRouty);
+  document.getElementById("oknoRouty").addEventListener("click", function (e) {
+    if (e.target === this) zavriOknoRouty();   // klik vedle okna = zrušit
+  });
+  document.getElementById("orUlozit").addEventListener("click", function () {
+    var od = document.getElementById("orOd").value;
+    var doc = document.getElementById("orDo").value;
+    if (!od || !doc || od === doc) { orStav("Vyber dva různé konce."); return; }
+    var metry = document.getElementById("orMetry").value;
+    var minut = document.getElementById("orMinut").value;
+    var r = {
+      id: noveId(),
+      nazev: document.getElementById("orNazev").value.trim(),
+      od: od, do: doc,
+      // Metry se zadávají, kilometry se ukládají — jedna jednotka uvnitř.
+      km: metry === "" ? null : +metry / 1000,
+      min: minut === "" ? null : +minut,
+      hotovo: false, body: []
+    };
+    // Cesta, kterou okno našlo, se rovnou veze s sebou. Jinak by se po
+    // uložení musela hledat znovu a routa by chvíli vedla přes domy.
+    if (oknoTvar) { r.tvar = oknoTvar.tvar; r.tvarZ = podpisTrasy(r); }
+    data.routy.push(r);
+    zavriOknoRouty();
+    uloz(); prekresli();
+  });
+
+  document.getElementById("vycentrovat").addEventListener("click", function () {
+    if (!vycentruj()) kresliMapu();
+  });
+
+  function prepniPridavani(zap) {
+    rezimPridat = !!zap;
+    var b = document.getElementById("rezimPridat");
+    b.classList.toggle("aktivni", rezimPridat);
+    b.textContent = rezimPridat ? "Klikni do mapy (hotovo = klikni sem)"
+      : "Přidat stopu kliknutím do mapy";
+  }
+  document.getElementById("rezimPridat").addEventListener("click", function () {
+    if (upravovanaRouta) konecUpravy();
+    prepniPridavani(!rezimPridat);
+  });
+
+  // Nad mapou se pravé tlačítko používá k editaci, takže nabídka prohlížeče
+  // by jen překážela.
+  document.querySelector(".mapa-plocha").addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    if (!document.getElementById("oknoRouty").hidden) zavriOknoRouty();
+    else if (editovanaStopa) zavriEditor();
+    else if (upravovanaRouta) konecUpravy();
+  });
+
+  /** Leaflet se načítá až po zbytku stránky; bez sítě se prostě neobjeví. */
+  function zkusMapu() {
+    if (typeof L === "undefined") { kresliSchema(); return; }
+    var obal = document.getElementById("mapaObal");
+    obal.innerHTML = '<div id="mapa"></div>';
+    mapa = L.map("mapa", { center: [49.2, 16.6], zoom: 12 });
+    nastavPodklad(zvolenyPodklad());
+    mapa.on("click", function (e) {
+      if (upravovanaRouta) { pridejBodTrasy(e.latlng.lat, e.latlng.lng); return; }
+      if (rezimPridat) {
+        novaStopaTady(e.latlng.lat, e.latlng.lng, vObalu(e.originalEvent));
+        return;
+      }
+      zavriEditor();
+    });
+    // Pravé tlačítko do prázdna založí stopu i s okénkem na jméno. Při
+    // kreslení trasy se nesmí stát nic: tam se pravým tlačítkem mažou body.
+    mapa.on("contextmenu", function (e) {
+      if (upravovanaRouta) return;
+      novaStopaTady(e.latlng.lat, e.latlng.lng, vObalu(e.originalEvent));
+    });
+    kresliDoLeafletu();
+  }
+
+  /* =====================================================================
+     HLEDÁNÍ TRASY
+     „Co nejvíc rout z A do B do X minut" je orienteering: maximalizuje se
+     počet posbíraných hran při stropu na čas. Přesně se to při dvaceti až
+     padesáti routách spočítat dá, jen se musí prořezávat — proto ten strop
+     na počet prohledaných stavů.
+     ================================================================== */
+  function najdiTrasu(odId, doId, rozpocetMin, tempo, vynechatHotove) {
+    var routy = data.routy.filter(function (r) {
+      if (vynechatHotove && r.hotovo) return false;
+      return stopa(r.od) && stopa(r.do) && minutRouty(r, tempo) !== null;
+    });
+    var nejlepsi = { pocet: -1, cas: Infinity, kroky: [] };
+    var stavu = 0, STROP_STAVU = 250000;
+    var dosahloStropu = false;
+
+    // Z každé stopy se routy zkoušejí od té nejbližší. Prohledávání se pak
+    // trefí do dobrého řešení hned napoprvé, takže i když se narazí na strop,
+    // je výsledek použitelný. Bez toho se chodilo v pořadí, v jakém jsou
+    // routy zapsané, a to je náhoda.
+    var poradiZ = {};
+    data.stopy.forEach(function (sp) {
+      poradiZ[sp.id] = routy.slice().sort(function (x, y) {
+        var dx = x.od === sp.id ? 0 : (pesky(sp.id, x.od) === null ? 1e9 : pesky(sp.id, x.od));
+        var dy = y.od === sp.id ? 0 : (pesky(sp.id, y.od) === null ? 1e9 : pesky(sp.id, y.od));
+        return dx - dy;
+      });
+    });
+
+    /** Nejoptimističtější možný zbytek cesty do cíle: vzdušnou čarou, bez
+     *  přirážky za to, že ulice nejsou rovné. Musí to být odhad, který se
+     *  NEDÁ podstřelit — jinak se ořízne i řešení, které existuje. Přirážka
+     *  1,35 tenhle odhad nafoukla nad délku cesty po routách a hledání
+     *  skončilo hned v kořeni. */
+    function odhadMin(kde) {
+      if (kde === doId) return 0;
+      var km = vzdusne(stopa(kde), stopa(doId));
+      return km === null ? Infinity : (km / tempo) * 60;
+    }
+    /** Skutečná dochůzka do cíle, tedy včetně přirážky. */
+    function dochuzkaMin(kde) {
+      var km = pesky(kde, doId);
+      return km === null ? Infinity : (km / tempo) * 60;
+    }
+
+    function dal(kde, cas, pouzite, kroky) {
+      stavu += 1;
+      if (stavu > STROP_STAVU) { dosahloStropu = true; return; }
+      if (cas + odhadMin(kde) > rozpocetMin) return;
+      // Dojít do cíle se dá kdykoli — ale jen když se ta dochůzka do
+      // rozpočtu opravdu vejde, je to platné řešení.
+      var doCile = dochuzkaMin(kde);
+      var celkem = cas + doCile;
+      if (celkem <= rozpocetMin
+          && (pouzite.length > nejlepsi.pocet
+            || (pouzite.length === nejlepsi.pocet && celkem < nejlepsi.cas))) {
+        nejlepsi = { pocet: pouzite.length, cas: celkem,
+          kroky: kroky.concat(doCile > 0.1
+            ? [{ typ: "pesky", od: kde, do: doId, min: doCile,
+                km: pesky(kde, doId) }] : []) };
+      }
+      (poradiZ[kde] || routy).forEach(function (r) {
+        if (pouzite.indexOf(r.id) !== -1) return;
+        var naStart = kde === r.od ? 0 : pesky(kde, r.od);
+        if (naStart === null) return;
+        var minNaStart = (naStart / tempo) * 60;
+        var minRouty = minutRouty(r, tempo);
+        var novyCas = cas + minNaStart + minRouty;
+        if (novyCas + odhadMin(r.do) > rozpocetMin) return;
+        var noveKroky = kroky.slice();
+        if (minNaStart > 0.1) {
+          noveKroky.push({ typ: "pesky", od: kde, do: r.od, min: minNaStart,
+            km: naStart });
+        }
+        noveKroky.push({ typ: "routa", routa: r.id, od: r.od, do: r.do,
+          min: minRouty, km: delkaRouty(r) });
+        dal(r.do, novyCas, pouzite.concat([r.id]), noveKroky);
+      });
+    }
+
+    dal(odId, 0, [], []);
+    return { kroky: nejlepsi.kroky, pocet: Math.max(0, nejlepsi.pocet),
+      cas: nejlepsi.cas === Infinity ? null : nejlepsi.cas,
+      dosahloStropu: dosahloStropu };
+  }
+
+  function routaPodleId(id) {
+    for (var i = 0; i < data.routy.length; i++) {
+      if (data.routy[i].id === id) return data.routy[i];
+    }
+    return null;
+  }
+
+  document.getElementById("plSpocitat").addEventListener("click", function () {
+    var od = document.getElementById("plOd").value;
+    var doc = document.getElementById("plDo").value;
+    var box = document.getElementById("plVysledek");
+    if (!od || !doc || od === doc) {
+      box.innerHTML = '<p class="prazdno">Vyber začátek a cíl, a ať to nejsou'
+        + " tytéž stopy.</p>";
+      return;
+    }
+    var tempo = +document.getElementById("plTempo").value || 4.5;
+    var rozpocet = +document.getElementById("plRozpocet").value || 90;
+    var vynechat = document.getElementById("plVynechatHotove").checked;
+    box.innerHTML = '<p class="prazdno">Počítám…</p>';
+    // Ať se stihne vykreslit „Počítám" dřív, než se zablokuje vlákno.
+    setTimeout(function () {
+      var v = najdiTrasu(od, doc, rozpocet, tempo, vynechat);
+      posledniPlan = v;
+      box.innerHTML = vysledekHtml(v, od, doc);
+    }, 30);
+  });
+
+  function vysledekHtml(v, od, doc) {
+    if (!v.kroky.length) {
+      return '<p class="prazdno">Do ' + document.getElementById("plRozpocet").value
+        + " minut se z „" + escHtml((stopa(od) || {}).nazev || "")
+        + "\" do „" + escHtml((stopa(doc) || {}).nazev || "")
+        + "\" nedostaneš ani pěšky. Přidej čas, nebo doplň souřadnice stop.</p>";
+    }
+    var km = 0;
+    v.kroky.forEach(function (k) { km += k.km || 0; });
+    var h = '<div class="souhrn">'
+      + "<div><b>" + v.pocet + "</b>rout po cestě</div>"
+      + "<div><b>" + naMetry(km) + "</b>metrů celkem</div>"
+      + "<div><b>" + Math.round(v.cas) + "</b>minut</div>"
+      + "</div>";
+    if (v.dosahloStropu) {
+      h += '<div class="varovani">Rout je hodně, tak jsem hledání po chvíli'
+        + " zastavil — tohle je <b>nejlepší nalezená</b> trasa, ne nutně"
+        + " úplně nejlepší možná.</div>";
+    }
+    h += krokyHtml(v.kroky);
+    return h;
+  }
+
+  function krokyHtml(kroky) {
+    var i = 0;
+    return kroky.map(function (k) {
+      var a = stopa(k.od), b = stopa(k.do);
+      if (k.typ === "routa") {
+        i += 1;
+        var r = routaPodleId(k.routa);
+        return '<div class="krok routa"><span class="krok-c">' + i + "</span>"
+          + '<span class="krok-t"><b>Aktivuj routu: '
+          + escHtml((r && r.nazev) || "bez názvu") + "</b>"
+          + "<span>" + escHtml((a || {}).nazev || "?") + " → "
+          + escHtml((b || {}).nazev || "?") + " · "
+          + metryText(k.km || 0) + " m · " + Math.round(k.min)
+          + " min</span></span></div>";
+      }
+      return '<div class="krok"><span class="krok-c">→</span>'
+        + '<span class="krok-t"><b>Přejdi k ' + escHtml((b || {}).nazev || "?") + "</b>"
+        + "<span>od " + escHtml((a || {}).nazev || "?") + " · "
+        + metryText(k.km || 0) + " m · " + Math.round(k.min)
+        + " min pěšky</span></span></div>";
+    }).join("");
+  }
+
+  /* =====================================================================
+     DO MOBILU
+     Do telefonu jede JEN naplánovaná cesta — seznam kroků k odškrtání.
+     Žádná mapa, žádná databáze rout: venku jde o to vědět, co aktivovat
+     a kam jít dál.
+     ================================================================== */
+  function mobilHtml() {
+    if (!posledniPlan || !posledniPlan.kroky.length) return null;
+    var polozky = posledniPlan.kroky.map(function (k) {
+      var a = stopa(k.od), b = stopa(k.do);
+      var r = k.typ === "routa" ? routaPodleId(k.routa) : null;
+      return {
+        typ: k.typ,
+        nadpis: k.typ === "routa" ? ((r && r.nazev) || "routa bez názvu")
+          : ((b && b.nazev) || "?"),
+        od: (a && a.nazev) || "?", doo: (b && b.nazev) || "?",
+        m: naMetry(k.km || 0), min: Math.round(k.min)
+      };
+    });
+    var json = JSON.stringify(polozky).replace(/</g, "\\u003c");
+    return '<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8">'
+      + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+      + "<title>Plán cesty — routy</title><style>"
+      + ":root{color-scheme:dark}body{margin:0;padding:14px;background:#0d0d0d;color:#eceae4;"
+      + "font:15px/1.5 -apple-system,'Segoe UI',Roboto,sans-serif}"
+      + "h1{font-size:17px;margin:0 0 2px}p.l{color:#b9b6ae;font-size:12.5px;margin:0 0 14px}"
+      + ".k{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #33333a}"
+      + ".k.hotovo{opacity:.42}.k.hotovo b{text-decoration:line-through}"
+      + ".c{flex:none;width:26px;height:26px;border-radius:50%;background:#33333a;color:#b9b6ae;"
+      + "font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}"
+      + ".k.routa .c{background:#35b06a;color:#fff}"
+      + ".k.ted{background:rgba(53,176,106,.12);border-radius:8px;padding:12px 10px}"
+      + ".t b{font-size:15px}.t span{display:block;font-size:12px;color:#86837c}"
+      + ".ted-znak{font-size:10.5px;color:#35b06a;font-weight:700;letter-spacing:.05em}"
+      + "button{margin-top:14px;background:#1e1e22;border:1px solid #33333a;border-radius:8px;"
+      + "color:#eceae4;font:inherit;padding:8px 14px}</style></head><body>"
+      + "<h1>Plán cesty</h1><p class=l>Ťukni na krok, až ho máš za sebou.</p>"
+      + '<div id="s"></div><button id="reset">Odškrtat všechno</button>'
+      + "<script>(function(){var P=" + json + ";"
+      + "var K='pgo_routy_plan_hotovo';var h=[];"
+      + "try{h=JSON.parse(localStorage.getItem(K)||'[]')}catch(e){h=[]}"
+      + "function ulozH(){try{localStorage.setItem(K,JSON.stringify(h))}catch(e){}}"
+      + "function kresli(){var ted=-1;for(var i=0;i<P.length;i++){if(h.indexOf(i)===-1){ted=i;break}}"
+      + "document.getElementById('s').innerHTML=P.map(function(p,i){"
+      + "var done=h.indexOf(i)!==-1;var cislo=p.typ==='routa'?'R':'\\u2192';"
+      + "return '<div class=\"k '+(p.typ==='routa'?'routa ':'')+(done?'hotovo ':'')"
+      + "+(i===ted?'ted':'')+'\" data-i=\"'+i+'\">'"
+      + "+'<span class=c>'+cislo+'</span><span class=t>'"
+      + "+(i===ted?'<span class=ted-znak>TEĎ</span>':'')"
+      + "+'<b>'+(p.typ==='routa'?'Aktivuj: ':'Přejdi k ')+p.nadpis+'</b>'"
+      + "+'<span>'+p.od+' \\u2192 '+p.doo+' \\u00b7 '+p.m+' m \\u00b7 '+p.min+' min</span>'"
+      + "+'</span></div>'}).join('')}"
+      + "document.getElementById('s').addEventListener('click',function(e){"
+      + "var d=e.target.closest('[data-i]');if(!d)return;var i=+d.getAttribute('data-i');"
+      + "var p=h.indexOf(i);if(p===-1)h.push(i);else h.splice(p,1);ulozH();kresli()});"
+      + "document.getElementById('reset').addEventListener('click',function(){"
+      + "h=[];ulozH();kresli()});kresli()})();<\/script></body></html>";
+  }
+
+  function stahni(nazev, obsah, typ) {
+    var b = new Blob([obsah], { type: typ || "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(b);
+    a.download = nazev;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  document.getElementById("plDoMobilu").addEventListener("click", function () {
+    var h = mobilHtml();
+    if (!h) { alert("Nejdřív spočítej trasu."); return; }
+    stahni("routy_plan.html", h, "text/html;charset=utf-8");
+  });
+
+  document.getElementById("plText").addEventListener("click", function () {
+    if (!posledniPlan || !posledniPlan.kroky.length) { alert("Nejdřív spočítej trasu."); return; }
+    var t = posledniPlan.kroky.map(function (k, i) {
+      var a = stopa(k.od), b = stopa(k.do);
+      var r = k.typ === "routa" ? routaPodleId(k.routa) : null;
+      return (i + 1) + ". " + (k.typ === "routa"
+        ? "AKTIVUJ " + ((r && r.nazev) || "routa")
+        : "přejdi") + ": " + ((a || {}).nazev || "?") + " → " + ((b || {}).nazev || "?")
+        + " (" + metryText(k.km || 0) + " m, " + Math.round(k.min) + " min)";
+    }).join("\n");
+    if (navigator.clipboard) navigator.clipboard.writeText(t);
+    alert(t);
+  });
+
+  /* ========================================================== ZÁLOHA */
+  document.getElementById("zalohaStahnout").addEventListener("click", function () {
+    stahni("routy-zaloha.json", JSON.stringify(data, null, 1), "application/json");
+    stav("Záloha stažena " + new Date().toLocaleString("cs-CZ") + ".");
+  });
+  document.getElementById("zalohaNacist").addEventListener("click", function () {
+    document.getElementById("zalohaSoubor").click();
+  });
+  document.getElementById("zalohaSoubor").addEventListener("change", function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var d = JSON.parse(r.result);
+        if (!d.stopy || !d.routy) throw new Error("tohle není záloha rout");
+        // Rozdělaná editace patří k datům, která právě zmizela.
+        zavriEditor(); upravovanaRouta = null;
+        vybranyOd = null; vybranyDo = null;
+        data = d; uloz(); prekresli();
+        stav("Načteno: " + data.stopy.length + " stop, " + data.routy.length + " rout.");
+      } catch (err) { stav("Nepovedlo se: " + err.message); }
+    };
+    r.readAsText(f);
+  });
+  document.getElementById("zalohaSmazat").addEventListener("click", function () {
+    if (!confirm("Opravdu smazat všechny stopy i routy? Zálohu si stáhni předem.")) return;
+    zavriEditor(); upravovanaRouta = null;
+    vybranyOd = null; vybranyDo = null;
+    data = { stopy: [], routy: [] };
+    uloz(); prekresli(); stav("Smazáno.");
+  });
+
+  /* ========================================================== ZÁLOŽKY */
+  function prepniPanel(id) {
+    document.querySelectorAll(".zal").forEach(function (x) {
+      x.classList.toggle("aktivni", x.getAttribute("data-panel") === id);
+    });
+    document.querySelectorAll(".panel").forEach(function (x) {
+      x.classList.toggle("aktivni", x.id === id);
+    });
+    if (id !== "pMapa") return;
+    kresliMapu();
+    // Skrytý kontejner má nulové rozměry; po odkrytí se to musí říct.
+    if (mapa) mapa.invalidateSize();
+  }
+  document.querySelectorAll(".zal").forEach(function (b) {
+    b.addEventListener("click", function () {
+      prepniPanel(b.getAttribute("data-panel"));
+    });
+  });
+
+  nacti();
+  prekresli();
+  window.__routy = {
+    data: function () { return data; },
+    setData: function (d) {
+      // Rozdělaná práce patří k datům, která se právě vyměnila — včetně
+      // vybraného začátku a cíle. Ukazovaly by na stopy, které v nových
+      // datech nemusí vůbec být.
+      zavriEditor(); upravovanaRouta = null;
+      vybranyOd = null; vybranyDo = null;
+      data = d; uloz(); prekresli(); popisVyberu();
+    },
+    najdiTrasu: najdiTrasu,
+    vycentruj: vycentruj,
+    mapa: function () { return mapa; },
+    mobilHtml: mobilHtml,
+    vzdusne: vzdusne,
+    // pro testy a pro ruční šťourání v konzoli
+    delkaRouty: delkaRouty,
+    bodyRouty: bodyRouty,
+    tvarRouty: tvarRouty,
+    podpisTrasy: podpisTrasy,
+    maCestuPoSilnici: maCestuPoSilnici,
+    rozbalPolyline: rozbalPolyline,
+    najdiCestu: najdiCestu,
+    vlozBod: vlozBod,
+    otevriEditor: otevriEditor,
+    otevriOknoRouty: otevriOknoRouty,
+    zavriOknoRouty: zavriOknoRouty,
+    naMetry: naMetry,
+    routaViditelna: routaViditelna,
+    zavriEditor: zavriEditor,
+    zacniUpravu: zacniUpravu,
+    konecUpravy: konecUpravy,
+    upravovana: function () { return upravovanaRouta; },
+    editovana: function () { return editovanaStopa; },
+    podklady: PODKLADY,
+    nastavPodklad: nastavPodklad,
+    zvolenyPodklad: zvolenyPodklad
+  };
+  zkusMapu();
+})();
+</script>
+</body>
+</html>
