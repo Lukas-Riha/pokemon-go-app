@@ -14296,6 +14296,94 @@ try {
   // Mega nic neprebiji: raidova role se hlasi dal.
   check("mega neprebije raidove doporuceni", odznakRoli.raid !== "Ne", odznakRoli.raid);
 
+  console.log("\n231) hromadne doplneni utoku");
+  await page.goto(URL);
+  await page.waitForTimeout(800);
+
+  const doplnit = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      // drzeny kus bez utoku — patri do seznamu
+      { pokemon: "Machamp", cp: 2200, level: 28, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      // drzeny kus, ktery utoky uz ma — do seznamu nepatri
+      { pokemon: "Metagross", cp: 3000, level: 30, ivAtk: 15, ivDef: 15, ivSta: 14,
+        fastMove: "Bullet Punch", charged1: "Meteor Mash" },
+      // odpad bez utoku — do seznamu taky nepatri, u nej jsou utoky k nicemu
+      { pokemon: "Pidgey", cp: 40, level: 5, ivAtk: 1, ivDef: 1, ivSta: 1 },
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const c = P.getComputed();
+    const rows = P.getRows();
+    const verdikty = rows.map((r) => c[r.id].keep);
+    const seznam = P.kusyBezUtoku();
+    const jmena = seznam.map((id) => (rows.filter((r) => r.id === id)[0] || {}).pokemon);
+    return { verdikty, jmena, kolik: seznam.length };
+  });
+  check("do seznamu jde kus, ktery si nechavas a nema utoky",
+    doplnit.jmena.indexOf("Machamp") > -1, doplnit.jmena.join(", "));
+  check("kus s vyplnenymi utoky se uz nenabizi",
+    doplnit.jmena.indexOf("Metagross") === -1, doplnit.jmena.join(", "));
+  // Odpadu je v rosteru trikrat tolik nez drzenych kusu; doplnovat u nej
+  // utoky je prace, ktera se druhy den zahodi s kusem.
+  check("odpad se nenabizi, i kdyz utoky nema",
+    doplnit.jmena.indexOf("Pidgey") === -1,
+    doplnit.jmena.join(", ") + " | verdikty: " + doplnit.verdikty.join(", "));
+
+  const prubeh = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Machamp", cp: 2200, level: 28, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { pokemon: "Tyranitar", cp: 3100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 14 },
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const otevrel = P.duOtevri();
+    await new Promise((r) => setTimeout(r, 400));
+    // Stav se musi precist TED, ne az v return: nize se okno zavira.
+    const otevrene = !document.getElementById("doplnitBox").hidden;
+    const prvni = (document.querySelector("#duTelo h3") || {}).textContent;
+    const poli = document.querySelectorAll("#duTelo .uv-pole").length;
+    const pocet = (document.getElementById("duPocet") || {}).textContent;
+    P.duPosun(1);
+    await new Promise((r) => setTimeout(r, 300));
+    const druhy = (document.querySelector("#duTelo h3") || {}).textContent;
+    // Za poslednim kusem uz neni kam jit — okno se zavre.
+    P.duPosun(1);
+    await new Promise((r) => setTimeout(r, 300));
+    const poKonci = document.getElementById("doplnitBox").hidden;
+    return { otevrel, otevrene, prvni, druhy, poli, pocet, poKonci };
+  });
+  eq("okno se otevre", prubeh.otevrel, true);
+  eq("…a je opravdu videt", prubeh.otevrene, true);
+  eq("ukazuje tri vybery: rychly, nabity, druhy nabity", prubeh.poli, 3);
+  check("hlasi, kolikaty kus z kolika", /1 z 2/.test(prubeh.pocet), prubeh.pocet);
+  check("posun ukaze jiny kus", prubeh.druhy && prubeh.druhy !== prubeh.prvni,
+    prubeh.prvni + " -> " + prubeh.druhy);
+  eq("za poslednim kusem se okno zavre", prubeh.poKonci, true);
+
+  // Vybrany utok se opravdu zapise do rosteru.
+  const zapis = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([{ pokemon: "Machamp", cp: 2200, level: 28, ivAtk: 15, ivDef: 14, ivSta: 13 }]);
+    await new Promise((r) => setTimeout(r, 900));
+    P.duOtevri();
+    await new Promise((r) => setTimeout(r, 400));
+    const tlacitko = document.querySelector("#duTelo .uv-pole");
+    tlacitko.click();
+    await new Promise((r) => setTimeout(r, 300));
+    const polozky = document.querySelectorAll(".uv-seznam .uv-polozka");
+    // prvni polozka je "nevyplneno", takze druha je prvni skutecny utok
+    const jmeno = polozky[1].textContent;
+    polozky[1].click();
+    await new Promise((r) => setTimeout(r, 400));
+    const r0 = P.getRows()[0];
+    P.duZavri();
+    return { nabidek: polozky.length, jmeno, ulozeno: r0.fastMove };
+  });
+  check("seznam utoku se otevre a neco nabidne", zapis.nabidek > 1, String(zapis.nabidek));
+  check("vybrany utok se ulozi ke kusu",
+    !!zapis.ulozeno && zapis.jmeno.indexOf(zapis.ulozeno) > -1,
+    zapis.jmeno + " -> " + zapis.ulozeno);
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

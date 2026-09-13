@@ -179,3 +179,35 @@ jinak vypadne do výchozí větve.
   první podmínka na zavření seznamu.
 
 Nic z toho není nasazené a `PRODUKCE_ZAMCENA.txt` leží dál.
+
+## Co zkontrolovat po backendových změnách (13. 9.)
+
+Testovací verze byla dva dny pozadu — postavená 11. 9., zatímco engine se
+měnil ještě 12. a 13. Teď je přestavěná z aktuálního enginu a ověřená:
+naskočí za 390 ms, žádná chyba v konzoli, oddělené úložiště drží.
+Od teď ji stavím po každé změně enginu, ne až na vyžádání.
+
+**Projdi prosím u sebe tohle:**
+
+1. **`utoky[].stav` má hodnotu `poEvoluci`.** Když si stav mapuješ na barvu
+   nebo ikonu, dopadne jinak do výchozí větve. Znamená to „nepřeučuj teď,
+   evolucí se moveset losuje znovu".
+2. **Nová pole `movesBestFinal` a `finalFormaJmeno`.** Sestava formy, kterou
+   se kus teprve stane. U finální evoluce jsou prázdná.
+3. **`keepSub` teď u kusu s víc rolemi končí na `+N`** (třeba `Ground 1/6 +3`).
+   Když ho někde ořezáváš na pevnou délku, ten přípis zmizí jako první.
+4. **Obrázky Shellose a Gastrodona** mají nově v adrese příponu moře. Pokud
+   máš vlastní mapování v `ATLAS_ART`, zkontroluj, že se nepere s tím z enginu.
+5. **Detail má dva nové kusy obsahu:** `<span class="hra-pruh">` v hlavičce
+   vedle křížku a sekci `[data-sekce="sestavy"]` s `div.d-sestavy`.
+   `bezVerdiktu()` obojí odstraňuje, takže v prohlídce a v čištění boxu to
+   není. Když detail skládáš jinak, počítej s tím.
+6. **Nové okno `#doplnitBox`** (hromadné doplnění útoků) používá třídu
+   `rucni-box`, takže dědí tvůj vzhled oken. Otevírá se tlačítkem
+   `#doplnitBtn` v liště rosteru.
+7. **`#rucniBox` se po přidání kusu sám zavírá** a nově přidanému kusu se
+   otevře detail. Kdybys na to navazovala, tohle je změna chování.
+
+**Co se nesmí vracet zpátky:** systémový `title` na `.d-evo-kus` (appka si
+ho přepisuje do vlastní bubliny a přepsal by její obsah) a natvrdo psané
+„Ano" v kartičce Doskenovat.

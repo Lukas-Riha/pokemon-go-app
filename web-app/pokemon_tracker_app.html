@@ -270,6 +270,29 @@
   .roster-sprite { width: 26px; height: 26px; object-fit: contain;
     vertical-align: middle; }
   #zrusitFiltry:disabled { opacity: .4; cursor: default; }
+  /* Hromadné doplňování útoků. Jeden kus přes celou obrazovku — cílem je
+     projet jich padesát za sebou, ne hledat řádky v tabulce. */
+  .rucni-box > .du-okno { width: min(760px, 100%); }
+  .du-hlava { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+  .du-hlava .hint { display: block; margin-top: 2px; }
+  .du-pocet { margin-left: auto; font-size: 12.5px; color: var(--text-muted);
+    white-space: nowrap; }
+  .du-pruh-obal { height: 4px; border-radius: 999px; background: var(--grid);
+    overflow: hidden; margin-bottom: 14px; }
+  .du-pruh-obal i { display: block; height: 100%; background: var(--status-good);
+    transition: width .2s; }
+  .du-kus { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+  .du-kus h3 { margin: 0 0 2px; font-size: 19px; }
+  .du-obr { width: 84px; height: 84px; flex: none; }
+  .du-radek { font-size: 12.5px; color: var(--text-secondary); }
+  .du-verdikt { margin-top: 4px; font-weight: 600; font-size: 13px; }
+  .du-verdikt span { font-weight: 400; color: var(--text-muted); }
+  .du-tip { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .du-vybery { display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .du-popis { font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-muted); margin-bottom: 3px; }
+
   /* Nově přidaný kus na chvíli probliká, ať je vidět, kam tabulka sjela. */
   tr.novy-kus > td { background: rgba(53,176,106,.16) !important; }
   tr.novy-kus > td:first-child { box-shadow: inset 3px 0 0 var(--status-good); }
@@ -3102,6 +3125,8 @@
     </div>
     <div class="toolbar">
       <button class="primary" id="addRowBtn">+ Přidat pokémona</button>
+      <button id="doplnitBtn" title="Projde kusy, které si necháváš, a doplní
+u nich útoky jeden po druhém">Doplnit útoky</button>
       <button id="toggleImportBtn">Importovat data</button>
       <button id="exportBtn">Exportovat CSV</button>
       <input type="search" id="searchInput" placeholder="Hledat pokémona…" autocomplete="off" />
@@ -3231,6 +3256,25 @@
         <div class="actions">
           <button class="primary" id="hraUlozit">Uložit</button>
           <button id="hraZrusit">Zrušit</button>
+        </div>
+      </div>
+    </div>
+    <!-- Okno: doplnit útoky hromadně. Jeden kus přes celou obrazovku,
+         tři výběry, další. -->
+    <div class="rucni-box" id="doplnitBox" hidden>
+      <div class="rb-okno du-okno">
+        <div class="du-hlava">
+          <div><b>Doplnit útoky</b>
+            <span class="hint">Jen kusy, které si necháváš — u těch ostatních
+              jsou útoky k ničemu.</span></div>
+          <span class="du-pocet" id="duPocet"></span>
+          <button class="db-x" id="duZavrit" title="Zavřít (Esc)">&#10005;</button>
+        </div>
+        <div class="du-pruh-obal"><i id="duPruh"></i></div>
+        <div id="duTelo"></div>
+        <div class="actions">
+          <button id="duZpet">&larr; Předchozí</button>
+          <button class="primary" id="duDal">Další &rarr;</button>
         </div>
       </div>
     </div>
@@ -12175,6 +12219,137 @@
   }
 
   /* =====================================================================
+     DOPLNIT ÚTOKY HROMADNĚ
+
+     Calcy útoky ve skenu skoro nikdy nemá, takže je v rosteru bez nich
+     většina kusů. Bez útoků se role počítá z odhadu — appka ví, co ten DRUH
+     umí nejlíp, ale ne co má zrovna tenhle kus.
+
+     Doplňovat je po jednom přes tabulku znamená u každého kusu najít řádek,
+     kliknout do buňky, vybrat, zavřít. Tohle je průchod: jeden kus přes celou
+     obrazovku, tři výběry, další.
+
+     Nabízí se JEN kusy, které si podle rozpočtu necháváš. U kusu, který
+     druhý den pustíš, jsou útoky k ničemu — a je jich v rosteru třikrát tolik.
+     ================================================================== */
+  var duState = { poradi: [], kde: 0 };
+
+  /**
+   * Kusy, kterým chybí útoky a stojí za to je doplnit.
+   *
+   * Řazení: nejdřív ty, co drží slot v rozpočtu (na nich rozhodnutí opravdu
+   * visí), pak podle role a nakonec podle CP. Kdo začne odshora a přestane
+   * kdykoli, má doplněné to podstatné.
+   */
+  function kusyBezUtoku() {
+    var computed = analyze();
+    var kandidati = [];
+    lastBase.forEach(function (b) {
+      var c = computed[b.row.id];
+      if (!c) return;
+      if (String(c.keep || "").indexOf("Zahodit") === 0) return;
+      if (b.row.fastMove && b.row.charged1) return;
+      if (!dexEntry(b.row.pokemon)) return;
+      kandidati.push({
+        b: b,
+        maSlot: !!b.slotHlavni,
+        sila: Math.max(c.raidPct || 0, c.gymPct || 0),
+        cp: num(b.row.cp) || 0
+      });
+    });
+    kandidati.sort(function (x, y) {
+      if (x.maSlot !== y.maSlot) return x.maSlot ? -1 : 1;
+      if (y.sila !== x.sila) return y.sila - x.sila;
+      return y.cp - x.cp;
+    });
+    return kandidati.map(function (k) { return k.b.row.id; });
+  }
+
+  function duZavri() {
+    document.getElementById("doplnitBox").hidden = true;
+    duState = { poradi: [], kde: 0 };
+    renderBody(); renderTiles(); persist(true);
+  }
+
+  function duOtevri() {
+    duState.poradi = kusyBezUtoku();
+    duState.kde = 0;
+    if (!duState.poradi.length) {
+      window.alert("Všechny kusy, které si necháváš, mají útoky vyplněné.");
+      return false;
+    }
+    document.getElementById("doplnitBox").hidden = false;
+    duVykresli();
+    return true;
+  }
+
+  function duPosun(o) {
+    var novy = duState.kde + o;
+    if (novy < 0) novy = 0;
+    if (novy >= duState.poradi.length) { duZavri(); return; }
+    duState.kde = novy;
+    duVykresli();
+  }
+
+  function duVykresli() {
+    var telo = document.getElementById("duTelo");
+    var id = duState.poradi[duState.kde];
+    var r = radekPodleId(id);
+    if (!r) { duPosun(1); return; }
+    var computed = analyze();
+    var c = computed[id] || {};
+    var b = null;
+    lastBase.forEach(function (x) { if (x.row.id === id) b = x; });
+
+    document.getElementById("duPocet").textContent =
+      (duState.kde + 1) + " z " + duState.poradi.length;
+    var hotovo = duState.poradi.filter(function (x) {
+      var rr = radekPodleId(x);
+      return rr && rr.fastMove && rr.charged1;
+    }).length;
+    var pruh = document.getElementById("duPruh");
+    pruh.style.width = Math.round(hotovo / duState.poradi.length * 100) + "%";
+
+    telo.innerHTML = '<div class="du-kus">'
+      + obrazekHtml(r.pokemon, b && b.dex, "du-obr")
+      + "<div><h3>" + escHtml(r.pokemon) + "</h3>"
+      + '<div class="du-radek">' + escHtml(r.cp ? r.cp + " CP" : "")
+      + (r.level ? " · L" + escHtml(String(r.level)) : "")
+      + (c.ivPct != null ? " · " + Math.round(c.ivPct * 100) + " % IV" : "")
+      + "</div>"
+      + '<div class="du-verdikt ' + (c.keepTone || "") + '">' + escHtml(c.keep || "")
+      + (c.keepSub ? ' <span>' + escHtml(c.keepSub) + "</span>" : "") + "</div>"
+      + (c.movesBest ? '<div class="du-tip">Nejlepší sestava druhu: <b>'
+          + escHtml(c.movesBest) + "</b></div>" : "")
+      + (c.movesBestFinal ? '<div class="du-tip">Po evoluci na '
+          + escHtml(c.finalFormaJmeno) + ": <b>" + escHtml(c.movesBestFinal)
+          + "</b></div>" : "")
+      + "</div></div>"
+      + '<div class="du-vybery"></div>';
+
+    var vybery = telo.querySelector(".du-vybery");
+    [["fastMove", "Rychlý útok"], ["charged1", "Nabitý útok"],
+     ["charged2", "Druhý nabitý"]].forEach(function (par) {
+      var obal = document.createElement("div");
+      obal.className = "du-pole";
+      var popis = document.createElement("div");
+      popis.className = "du-popis";
+      popis.textContent = par[1];
+      obal.appendChild(popis);
+      var misto = document.createElement("div");
+      obal.appendChild(misto);
+      vybery.appendChild(obal);
+      if (window.__pgoUtoky) {
+        window.__pgoUtoky.vyber(misto, r, par[0], function () {
+          zapamatovatUtoky(r);
+          persist(true);
+          duVykresli();
+        });
+      }
+    });
+  }
+
+  /* =====================================================================
      CO SE S KUSEM STALO VE HŘE
 
      Vyvinutý nebo vylepšený kus znamenal dosud jedinou cestu: naskenovat ho
@@ -20511,6 +20686,24 @@
     b.addEventListener("click", zrusitVsechnyFiltry);
   })();
 
+  (function duObsluha() {
+    var box = document.getElementById("doplnitBox");
+    if (!box) return;
+    document.getElementById("duZavrit").addEventListener("click", duZavri);
+    document.getElementById("duDal").addEventListener("click", function () { duPosun(1); });
+    document.getElementById("duZpet").addEventListener("click", function () { duPosun(-1); });
+    box.addEventListener("click", function (e) { if (e.target === box) duZavri(); });
+    document.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      // Šipky posouvají mezi kusy. Ve výběru útoku je ale šipka na pohyb
+      // v seznamu, takže se tam nesmí sahat.
+      if (e.target && e.target.closest && e.target.closest(".uv-seznam, .uv-pole")) return;
+      if (e.key === "Escape") { e.preventDefault(); duZavri(); }
+      else if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); duPosun(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); duPosun(-1); }
+    });
+  })();
+
   (function hraOknoObsluha() {
     var box = document.getElementById("hraBox");
     if (!box) return;
@@ -20531,6 +20724,8 @@
       }
     });
   })();
+
+  document.getElementById("doplnitBtn").addEventListener("click", duOtevri);
 
   document.getElementById("addRowBtn").addEventListener("click", function () {
     // Dřív to vložilo prázdný řádek do tabulky, který se musel dovyplnit —
@@ -23128,6 +23323,11 @@
     renderMapPreview: renderMapPreview,
     tradePairs: tradePairs,
     hraOtevri: hraOtevri,
+    duOtevri: duOtevri,
+    duZavri: duZavri,
+    duPosun: duPosun,
+    duStav: function () { return { poradi: duState.poradi.slice(), kde: duState.kde }; },
+    kusyBezUtoku: kusyBezUtoku,
     hraUloz: hraUloz,
     hraZavri: hraZavri,
     evoKroky: evoKroky,
