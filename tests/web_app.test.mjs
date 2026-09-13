@@ -5146,11 +5146,26 @@ try {
     const zmer = () => Array.from(document.querySelectorAll("#catchBody .ch-sloupce"))
       .map((c) => new Set(Array.from(c.children)
         .map((x) => Math.round(x.getBoundingClientRect().left))).size);
-    return { pocty: zmer(), mrizek: document.querySelectorAll("#catchBody .ch-sloupce").length };
+    const mrizky = Array.from(document.querySelectorAll("#catchBody .ch-sloupce"));
+    return { pocty: zmer(), mrizek: mrizky.length,
+      // Kolik bloků v mřížkách vůbec je. Počet běžících akcí se den ode dne
+      // mění, takže „musí být aspoň dva sloupce" je podmínka, kterou splní
+      // jen některé dny.
+      bloku: mrizky.map((c) => c.children.length),
+      stopy: mrizky.map((c) => getComputedStyle(c).gridTemplateColumns.split(" ").length) };
   });
   check("bloky jsou zabalené do sloupcových mřížek", chSloupce.mrizek > 0, String(chSloupce.mrizek));
-  check("aspoň jedna mřížka má víc než jeden sloupec vedle sebe",
-    chSloupce.pocty.some((n) => n > 1), chSloupce.pocty.join(","));
+  // Dřív se tu kontrolovalo „aspoň jedna mřížka má dva sloupce vedle sebe".
+  // Jenže bloků je tolik, kolik zrovna běží akcí — a v den, kdy běží jediná,
+  // se dva sloupce udělat nedají. Kontroluje se proto to, co je na appce:
+  // že je to vícesloupcová mřížka. Kolik se do ní dnes vejde bloků, je otázka
+  // pro Niantic, ne pro appku.
+  check("mřížka je vícesloupcová",
+    chSloupce.stopy.some((n) => n > 1), JSON.stringify(chSloupce.stopy));
+  // A když bloky dva jsou, opravdu musí stát vedle sebe.
+  check("…a když je bloků víc, stojí vedle sebe",
+    chSloupce.bloku.every((n, i) => n < 2 || chSloupce.pocty[i] > 1),
+    JSON.stringify(chSloupce.bloku) + " / " + JSON.stringify(chSloupce.pocty));
 
   const nesty = await page.evaluate(() => {
     const t = document.getElementById("catchBody").textContent;
@@ -14359,6 +14374,105 @@ try {
   check("posun ukaze jiny kus", prubeh.druhy && prubeh.druhy !== prubeh.prvni,
     prubeh.prvni + " -> " + prubeh.druhy);
   eq("za poslednim kusem se okno zavre", prubeh.poKonci, true);
+
+  // Poradi musi sedet s tabulkou. Vlastni razeni podle dulezitosti znelo
+  // rozumne, jenze pak clovek nevi, kde v rosteru je: seradi si tabulku
+  // podle CP a doplnovani mu nabidne kusy v uplne jinem sledu.
+  const poradiDU = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Machamp", cp: 1000, level: 20, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { pokemon: "Tyranitar", cp: 3100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 14 },
+      { pokemon: "Metagross", cp: 2000, level: 25, ivAtk: 15, ivDef: 15, ivSta: 14 },
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const jmena = (ids) => ids.map((id) =>
+      (P.getRows().filter((r) => r.id === id)[0] || {}).pokemon);
+    P.atlasSort("cp", -1);
+    await new Promise((r) => setTimeout(r, 400));
+    const sestupne = jmena(P.kusyBezUtoku());
+    P.atlasSort("cp", 1);
+    await new Promise((r) => setTimeout(r, 400));
+    const vzestupne = jmena(P.kusyBezUtoku());
+    // Filtr taky plati: kdyz si vyfiltrujes jedno jmeno, projdes jen to.
+    const hledani = document.getElementById("searchInput");
+    hledani.value = "Tyranitar";
+    hledani.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 500));
+    const sFiltrem = jmena(P.kusyBezUtoku());
+    hledani.value = "";
+    hledani.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 400));
+    return { sestupne, vzestupne, sFiltrem };
+  });
+  check("poradi sedi s tabulkou serazenou sestupne",
+    poradiDU.sestupne.join(",") === "Tyranitar,Metagross,Machamp",
+    poradiDU.sestupne.join(", "));
+  check("…a s tabulkou serazenou vzestupne",
+    poradiDU.vzestupne.join(",") === "Machamp,Metagross,Tyranitar",
+    poradiDU.vzestupne.join(", "));
+  check("filtr v tabulce plati i tady",
+    poradiDU.sFiltrem.join(",") === "Tyranitar", poradiDU.sFiltrem.join(", "));
+
+  // Klavesy: sipky i A/D, a okno musi mit fokus hned po otevreni.
+  const duKlavesy = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Machamp", cp: 3000, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { pokemon: "Tyranitar", cp: 2000, level: 25, ivAtk: 15, ivDef: 14, ivSta: 14 },
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    P.duOtevri();
+    await new Promise((r) => setTimeout(r, 500));
+    // Okno musí mít fokus hned po otevření, jinak by klávesy nefungovaly,
+    // dokud do něj někdo neklikne.
+    //
+    // Headless prohlížeč umí po dlouhém běhu přestat fokus přidělovat vůbec
+    // — pak neprojde ani fokus na obyčejné tlačítko. V takovém případě se
+    // kontrola přeskočí: netestovala by appku, ale prohlížeč.
+    const a0 = document.activeElement;
+    const fokus = !!(a0 && a0.classList && a0.classList.contains("du-okno"));
+    const kdoMaFokus = a0 ? (a0.tagName + "." + (a0.className || "")) : "nic";
+    document.getElementById("duDal").focus();
+    const fokusVubecJde = document.activeElement
+      && document.activeElement.id === "duDal";
+    document.querySelector(".du-okno").focus();
+    const jm = () => (document.querySelector("#duTelo h3") || {}).textContent;
+    const start = jm();
+    const stisk = async (key) => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: key, bubbles: true }));
+      await new Promise((r) => setTimeout(r, 250));
+      return jm();
+    };
+    const poD = await stisk("d");
+    const poA = await stisk("a");
+    const poSipce = await stisk("ArrowRight");
+    const poSipceZpet = await stisk("ArrowLeft");
+    P.duZavri();
+    return { fokus, kdoMaFokus, fokusVubecJde, start, poD, poA, poSipce, poSipceZpet };
+  });
+  if (!duKlavesy.fokusVubecJde) {
+    console.log("  -- fokus v tomhle behu prohlizec neprideluje, kontrola preskocena");
+  } else {
+    check("okno ma fokus hned po otevreni", duKlavesy.fokus, duKlavesy.kdoMaFokus);
+  }
+  check("D posune na dalsi", duKlavesy.poD !== duKlavesy.start,
+    duKlavesy.start + " -> " + duKlavesy.poD);
+  eq("A se vrati na predchozi", duKlavesy.poA, duKlavesy.start);
+  check("sipka doprava posune taky", duKlavesy.poSipce !== duKlavesy.start,
+    duKlavesy.poSipce);
+  eq("a sipka doleva se vrati", duKlavesy.poSipceZpet, duKlavesy.start);
+
+  // Tlacitko patri do hlavni rady prikazu, ne na vlastni radek pod ni.
+  const duUmisteni = await page.evaluate(() => {
+    const b = document.getElementById("doplnitBtn");
+    const rada = b ? b.closest(".tb-radek") : null;
+    return { vRade: !!(rada && rada.classList.contains("tb-hlavni")),
+      sousedi: rada ? Array.prototype.map.call(rada.children, (c) => c.id).join(",") : "" };
+  });
+  eq("tlacitko je v hlavni rade prikazu", duUmisteni.vRade, true);
+  check("a stoji hned vedle Cistit box",
+    /boxModeBtn,doplnitBtn/.test(duUmisteni.sousedi), duUmisteni.sousedi);
 
   // Vybrany utok se opravdu zapise do rosteru.
   const zapis = await page.evaluate(async () => {

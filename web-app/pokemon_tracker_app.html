@@ -3262,11 +3262,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     <!-- Okno: doplnit útoky hromadně. Jeden kus přes celou obrazovku,
          tři výběry, další. -->
     <div class="rucni-box" id="doplnitBox" hidden>
-      <div class="rb-okno du-okno">
+      <div class="rb-okno du-okno" tabindex="-1">
         <div class="du-hlava">
           <div><b>Doplnit útoky</b>
-            <span class="hint">Jen kusy, které si necháváš — u těch ostatních
-              jsou útoky k ničemu.</span></div>
+            <span class="hint">Jen kusy, které si necháváš, v pořadí podle
+              tabulky. Šipky nebo <b>A</b> a <b>D</b> posouvají, Esc zavře.</span></div>
           <span class="du-pocet" id="duPocet"></span>
           <button class="db-x" id="duZavrit" title="Zavřít (Esc)">&#10005;</button>
         </div>
@@ -9062,6 +9062,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         evolveSub = "";
       }
 
+      // Sestava formy, kterou se kus teprve stane. Počítá se JEDNOU: prochází
+      // možné finální formy a u každé skládá nejlepší dvojici útoků, takže
+      // dvakrát na kus se to při čtyřech stech kusech pozná na době přepočtu.
+      var finKus = finalniSestava(b);
+
       // --- vyplatí se doskenovat s Appraisal? ---
       // Přesná IV mají cenu jen tam, kde se podle nich rozhoduje. U odpadu ne.
       var rescan = "Ne", rescanTone = "muted", rescanTitle = "";
@@ -9350,14 +9355,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // Sestava formy, kterou se kus teprve stane. `movesBest` je o druhu,
         // kterým je TEĎ — a s Fletchlingem do raidu nikdo nejde. Prázdné
         // u kusu, který je na konci řady.
-        movesBestFinal: (function () {
-          var fs = finalniSestava(b);
-          return fs ? fs.text : "";
-        })(),
-        finalFormaJmeno: (function () {
-          var fs = finalniSestava(b);
-          return fs ? fs.jmeno : "";
-        })(),
+        movesBestFinal: finKus ? finKus.text : "",
+        finalFormaJmeno: finKus ? finKus.jmeno : "",
         // Tvrdé rozpory ve vstupu (CP vs level a IV). Prázdné pole = v pořádku.
         validationIssues: overitVstup(b),
         // Posudek KAŽDÉHO útoku zvlášť. Počítá se tady, aby ho tabulka
@@ -11340,13 +11339,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    * se nemusela přepisovat lišta a nerozbily se odkazy na tlačítka v kódu.
    */
   // Pořadí tlačítek v hlavní řadě lišty.
-  var LISTA_HLAVNI = ["addRowBtn", "boxModeBtn", "toggleImportBtn", "exportBtn",
+  var LISTA_HLAVNI = ["addRowBtn", "boxModeBtn", "doplnitBtn", "toggleImportBtn", "exportBtn",
     "starKeepersBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn",
     "clearUnstarredBtn", "clearBtn"];
   // Práce od stolu. Mobilní verze je doplněk na kontrolu — přidávání kusů,
   // ruční zápis, import a hromadné označení se dělají u počítače. V liště
   // pod prstem by je nikdo nehledal a osm tlačítek se do telefonu nevejde.
-  var LISTA_OD_STOLU = ["addRowBtn", "toggleImportBtn", "exportBtn", "starKeepersBtn",
+  var LISTA_OD_STOLU = ["addRowBtn", "doplnitBtn", "toggleImportBtn", "exportBtn", "starKeepersBtn",
     "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearUnstarredBtn", "clearBtn"];
 
   function usporadatListu() {
@@ -12237,32 +12236,31 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   /**
    * Kusy, kterým chybí útoky a stojí za to je doplnit.
    *
-   * Řazení: nejdřív ty, co drží slot v rozpočtu (na nich rozhodnutí opravdu
-   * visí), pak podle role a nakonec podle CP. Kdo začne odshora a přestane
-   * kdykoli, má doplněné to podstatné.
+   * Pořadí je TAKOVÉ, JAKÉ JE V TABULCE — stejně jako v čištění boxu. Vlastní
+   * řazení podle důležitosti znělo rozumně, jenže pak člověk nevěděl, kde
+   * v rosteru zrovna je: seřadí si tabulku podle CP, spustí doplňování a
+   * dostane kusy v úplně jiném sledu. Filtr platí taky, takže když si
+   * vyfiltruješ jen raidové útočníky, projdeš jen je.
+   *
+   * Nenabízí se kusy, které se podle rozpočtu pouští: útoky u nich k ničemu
+   * nejsou a je jich v rosteru třikrát tolik.
    */
   function kusyBezUtoku() {
+    renderBody();                 // ať lastVisibleIds odpovídá tomu, co je vidět
     var computed = analyze();
-    var kandidati = [];
-    lastBase.forEach(function (b) {
-      var c = computed[b.row.id];
-      if (!c) return;
+    var rowById = {};
+    rows.forEach(function (r) { rowById[r.id] = r; });
+    var out = [];
+    lastVisibleIds.forEach(function (id) {
+      var r = rowById[id], c = computed[id];
+      if (!r || !c) return;
+      if (!String(r.pokemon || "").trim()) return;
       if (String(c.keep || "").indexOf("Zahodit") === 0) return;
-      if (b.row.fastMove && b.row.charged1) return;
-      if (!dexEntry(b.row.pokemon)) return;
-      kandidati.push({
-        b: b,
-        maSlot: !!b.slotHlavni,
-        sila: Math.max(c.raidPct || 0, c.gymPct || 0),
-        cp: num(b.row.cp) || 0
-      });
+      if (r.fastMove && r.charged1) return;
+      if (!dexEntry(r.pokemon)) return;
+      out.push(id);
     });
-    kandidati.sort(function (x, y) {
-      if (x.maSlot !== y.maSlot) return x.maSlot ? -1 : 1;
-      if (y.sila !== x.sila) return y.sila - x.sila;
-      return y.cp - x.cp;
-    });
-    return kandidati.map(function (k) { return k.b.row.id; });
+    return out;
   }
 
   function duZavri() {
@@ -12278,8 +12276,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       window.alert("Všechny kusy, které si necháváš, mají útoky vyplněné.");
       return false;
     }
-    document.getElementById("doplnitBox").hidden = false;
+    var box = document.getElementById("doplnitBox");
+    box.hidden = false;
     duVykresli();
+    // Bez fokusu by klávesy nefungovaly, dokud do okna někdo neklikne.
     return true;
   }
 
@@ -12289,6 +12289,25 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (novy >= duState.poradi.length) { duZavri(); return; }
     duState.kde = novy;
     duVykresli();
+  }
+
+  /**
+   * Vrátí fokus do okna, když je zrovna mimo.
+   *
+   * Volá se po každém překreslení, ne jen při otevření: překreslení tabulky
+   * si fokus přetahuje zpátky k sobě a jednorázové zaostření po otevření
+   * se tím tiše ztratilo — klávesy pak nefungovaly, dokud do okna někdo
+   * neklikl. Když už fokus uvnitř okna je (třeba ve výběru útoku), nesahá
+   * se na něj: přebít výběr uprostřed vybírání by bylo horší.
+   */
+  function duFokus() {
+    var box = document.getElementById("doplnitBox");
+    if (!box || box.hidden) return;
+    var a = document.activeElement;
+    if (a && a !== document.body && box.contains(a)) return;
+    var okno = box.querySelector(".du-okno");
+    if (!okno) return;
+    try { okno.focus({ preventScroll: true }); } catch (e) { okno.focus(); }
   }
 
   function duVykresli() {
@@ -12347,6 +12366,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         });
       }
     });
+    duFokus();
   }
 
   /* =====================================================================
@@ -20695,12 +20715,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     box.addEventListener("click", function (e) { if (e.target === box) duZavri(); });
     document.addEventListener("keydown", function (e) {
       if (box.hidden) return;
-      // Šipky posouvají mezi kusy. Ve výběru útoku je ale šipka na pohyb
-      // v seznamu, takže se tam nesmí sahat.
-      if (e.target && e.target.closest && e.target.closest(".uv-seznam, .uv-pole")) return;
+      // Ve výběru útoku dělají šipky něco jiného (pohyb v seznamu) a do
+      // psaného textu se taky sahat nesmí — jinak by „a" místo písmene
+      // přeskočilo na předchozí kus.
+      var t = e.target;
+      if (t && t.closest && t.closest(".uv-seznam, .uv-pole")) return;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA"
+          || t.tagName === "SELECT" || t.isContentEditable)) return;
+      var k = (e.key || "").toLowerCase();
       if (e.key === "Escape") { e.preventDefault(); duZavri(); }
-      else if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); duPosun(1); }
-      else if (e.key === "ArrowLeft") { e.preventDefault(); duPosun(-1); }
+      else if (e.key === "ArrowRight" || k === "d" || e.key === "Enter") {
+        e.preventDefault(); duPosun(1);
+      } else if (e.key === "ArrowLeft" || k === "a") {
+        e.preventDefault(); duPosun(-1);
+      }
     });
   })();
 

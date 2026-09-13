@@ -161,7 +161,8 @@ if TEST_BUILD:
     # se vzhledovou vrstvou navíc.
     from atlas_test_hooks import prepare_atlas_test
     from atlas_import_hooks import prepare_atlas_import
-    TEST_APP.write_text(prepare_atlas_import(prepare_atlas_test("\n".join(lines))), encoding="utf-8")
+    from atlas_ui_hooks import prepare_atlas_ui
+    TEST_APP.write_text(prepare_atlas_ui(prepare_atlas_import(prepare_atlas_test("\n".join(lines)))), encoding="utf-8")
 else:
     APP.write_text("\n".join(lines), encoding="utf-8")
 
