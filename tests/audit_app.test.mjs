@@ -689,6 +689,12 @@ try {
       ["necháváš si ho, ale podtitulek zní jako důvod k puštění",
         (v) => !pustis(v) && /pouštíš ho|lepší máš|horší kopie/.test(v.keepSub || "")],
       ["vylepšit a zároveň lepší kopie", (v) => v.powerup === "Ano" && !!v.worseCopy],
+      // Držitel mega slotu měl ve sloupci Mega napsáno "Lepší kopie", protože
+      // sloupec si "nejlepší kopii" počítal sám, nezávisle na rozpočtu.
+      ["drží mega slot, a přesto Lepší kopie",
+        (v) => v.megaDrzi && /kopie/i.test(v.mega || "")],
+      ["verdikt ho drží kvůli meze, ale mega slot má někdo jiný",
+        (v) => /^mega/.test(v.keepSub || "") && !v.megaDrzi],
     ];
     const nalezy = [];
     base.forEach((x) => {
@@ -830,6 +836,84 @@ try {
     check("„" + x.niz + "“ nese hodnotu svého vývinu, nebo roli zastane sám",
       !x.chybi && (x.mluviOVyvinu || x.maRoliSam), JSON.stringify(x));
   });
+
+  /* ====================================================================
+     KDO Z DRUHU DOSTANE MEGA SLOT
+     Tři pravidla, a musí platit všechna tři najednou:
+       1. přednost má kus, který si necháváš kvůli JINÉ roli (mega se sveze),
+       2. mezi kusy bez role vyhraje lepší kopie — a při shodném IV je to
+          ten VÝŠ LEVELEM, protože toho druhého bys musel dotáhnout prachem,
+       3. kdo slot nedrží, má ve sloupci „Lepší kopie" — a kdo ho drží, nikdy.
+     Bod 2 je přesně případ dvou Houndoomů po 82 %: megu dostal kus za
+     1026 CP jen proto, že byl dřív v poli, a ten za 1249 CP se pouštěl.
+     ==================================================================== */
+  console.log("\nkomu z druhu patří mega");
+  const megaVyber = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const sber = (rows) => {
+      P.setRows(rows);
+      const c = P.getComputed();
+      return P.getRows().map((r) => ({
+        cp: r.cp, drzi: !!c[r.id].megaDrzi, mega: c[r.id].mega,
+        keepSub: c[r.id].keepSub || "", megaSub: c[r.id].megaSub || ""
+      }));
+    };
+    // a) shodné IV (15/10/12 i 13/12/12 = 37/45 = 82,2 %), různý level
+    const shoda = sber([
+      { pokemon: "Houndoom", cp: 1026, level: 20, ivAtk: 15, ivDef: 10, ivSta: 12,
+        fastMove: "Snarl", charged1: "Foul Play" },
+      { pokemon: "Houndoom", cp: 1249, level: 25, ivAtk: 13, ivDef: 12, ivSta: 12,
+        fastMove: "Snarl", charged1: "Foul Play" }
+    ]);
+    // b) plný roster: mega nikdy nekotví na kusu, který si nenecháváš, a
+    //    drží ji vždycky nejvýš postavená kopie druhu, co slot má
+    const rows = [];
+    ["Gyarados", "Charizard", "Houndoom", "Venusaur", "Alakazam", "Gengar",
+     "Manectric", "Steelix", "Ampharos", "Beedrill"].forEach((d, i) => {
+      [[15, 15, 15], [13, 12, 12], [15, 10, 12], [6, 7, 8]].forEach((iv, k) => {
+        rows.push({ pokemon: d, cp: 900 + i * 30 + k * 250, level: 15 + k * 6,
+          ivAtk: iv[0], ivDef: iv[1], ivSta: iv[2] });
+      });
+    });
+    P.setRows(rows);
+    const c = P.getComputed();
+    const podleDruhu = {};
+    P.getRows().forEach((r) => {
+      (podleDruhu[r.pokemon] = podleDruhu[r.pokemon] || []).push(c[r.id]);
+    });
+    const plny = Object.keys(podleDruhu).map((d) => {
+      const g = podleDruhu[d];
+      const drzitel = g.filter((v) => v.megaDrzi);
+      return {
+        druh: d, drzitelu: drzitel.length,
+        pustis: drzitel.some((v) => String(v.keep || "").indexOf("Zahodit") === 0),
+        kopieUDrzitele: drzitel.map((v) => v.mega),
+        jinyMaLepsiKopii: g.filter((v) => !v.megaDrzi)
+          .every((v) => v.mega === "Lepší kopie" || v.mega === "Ne")
+      };
+    });
+    return { shoda, plny };
+  });
+  const megaDrzitel = (pole) => pole.filter((x) => x.drzi);
+  check("při shodném IV drží megu jen jeden kus",
+    megaDrzitel(megaVyber.shoda).length === 1, JSON.stringify(megaVyber.shoda));
+  check("při shodném IV dostane megu ten výš levelem (1249 CP, ne 1026 CP)",
+    (megaDrzitel(megaVyber.shoda)[0] || {}).cp === 1249, JSON.stringify(megaVyber.shoda));
+  check("horší kopie má ve sloupci Lepší kopie",
+    megaVyber.shoda.filter((x) => !x.drzi).every((x) => x.mega === "Lepší kopie"),
+    JSON.stringify(megaVyber.shoda));
+  check("držitel megy nikdy nehlásí Lepší kopie",
+    megaVyber.shoda.filter((x) => x.drzi).every((x) => !/kopie/i.test(x.mega)),
+    JSON.stringify(megaVyber.shoda));
+  check("každý mega druh má nejvýš jednoho držitele",
+    megaVyber.plny.every((x) => x.drzitelu <= 1),
+    JSON.stringify(megaVyber.plny.filter((x) => x.drzitelu > 1)));
+  check("mega nikdy nekotví na kusu, který podle verdiktu pouštíš",
+    megaVyber.plny.every((x) => !x.pustis),
+    JSON.stringify(megaVyber.plny.filter((x) => x.pustis)));
+  check("u druhu s mega slotem hlásí Lepší kopie jen ti ostatní",
+    megaVyber.plny.every((x) => x.jinyMaLepsiKopii && !x.kopieUDrzitele.some((m) => /kopie/i.test(m))),
+    JSON.stringify(megaVyber.plny.filter((x) => !x.jinyMaLepsiKopii)));
 
 } finally {
   await browser.close();

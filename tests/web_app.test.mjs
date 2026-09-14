@@ -14518,6 +14518,62 @@ try {
   await page.goto(URL);
   await page.waitForTimeout(700);
 
+  /* ------------------------------------------------------------------
+     232) KOMU PATRI MEGA — v tabulce i v dokumentaci
+     Sloupec Mega si driv "lepsi kopii" pocital sam, nezavisle na rozpoctu,
+     takze umel napsat "Lepsi kopie" u kusu, ktery megu podle verdiktu drzi.
+     ------------------------------------------------------------------ */
+  console.log("\n232) komu patri mega");
+  const megaUI = await page.evaluate(async () => {
+    const P = window.__pgo;
+    // Obe IV davaji 37/45 = 82,2 %, takze o megu rozhoduje az level.
+    P.setRows([
+      { pokemon: "Houndoom", cp: 1026, level: 20, ivAtk: 15, ivDef: 10, ivSta: 12,
+        fastMove: "Snarl", charged1: "Foul Play" },
+      { pokemon: "Houndoom", cp: 1249, level: 25, ivAtk: 13, ivDef: 12, ivSta: 12,
+        fastMove: "Snarl", charged1: "Foul Play" }
+    ]);
+    await new Promise((r) => setTimeout(r, 900));
+    const c = P.getComputed();
+    const radky = [...document.querySelectorAll("#tbody tr")].map((tr) => {
+      const bunky = [...tr.querySelectorAll("td")].map((td) => td.textContent.trim());
+      return { cp: bunky.find((t) => /^1026|^1249/.test(t)) || "", text: bunky.join(" | ") };
+    }).filter((x) => x.cp);
+    return {
+      radky,
+      drzitel: P.getRows().filter((r) => c[r.id].megaDrzi).map((r) => r.cp),
+      megy: P.getRows().map((r) => ({ cp: r.cp, mega: c[r.id].mega }))
+    };
+  });
+  check("mega pri shodnem IV pripadne kusu vys levelem",
+    megaUI.drzitel.length === 1 && megaUI.drzitel[0] === 1249, JSON.stringify(megaUI.drzitel));
+  check("v tabulce ma horsi kopie napsano Lepsi kopie",
+    (megaUI.megy.find((x) => x.cp === 1026) || {}).mega === "Lepší kopie",
+    JSON.stringify(megaUI.megy));
+  check("a drzitel megy v tabulce Lepsi kopie nema",
+    !/Lepší kopie/.test((megaUI.radky.find((x) => /^1249/.test(x.cp)) || {}).text || ""),
+    JSON.stringify(megaUI.radky.map((x) => x.text)));
+
+  const megaDoc = await page.evaluate(() => {
+    window.__pgo.renderDocs();
+    const t = (document.getElementById("docsBody") || document.body).textContent;
+    return {
+      kdoDostane: /Který to je: přednost má kus, který si necháváš/.test(t),
+      kCemuJe: /Mega — k čemu vlastně je/.test(t),
+      aura: /nezávislý/.test(t) && /\+30 %/.test(t),
+      jednaNajednou: /aktivní může být jen jedna/.test(t),
+      kdyPouzit: /Mega — kdy ji použít/.test(t)
+    };
+  });
+  check("dokumentace rika, komu mega slot pripadne", megaDoc.kdoDostane);
+  check("dokumentace vysvetluje, co mega dava", megaDoc.kCemuJe);
+  check("…vcetne toho, ze boost na IV nezalezi", megaDoc.aura);
+  check("…a ze aktivni muze byt jen jedna", megaDoc.jednaNajednou);
+  check("dokumentace rika, kdy megu pouzit", megaDoc.kdyPouzit);
+
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
 } finally {

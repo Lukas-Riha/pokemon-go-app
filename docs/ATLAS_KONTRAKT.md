@@ -124,7 +124,7 @@ ne funkce — datumy zdrojů),
 | `gym`, `gymPct`, `gymRec`, `gymTitle` | gymová role |
 | `pvpRec`, `pvpLigy`, `pvpPot`, `pvpSub` | ligy |
 | `evolve`, `evolveSub`, `evolveTone` | evoluce |
-| `mega`, `megaKandidat`, `megaSub` | mega |
+| `mega`, `megaKandidat`, `megaSub`, `megaDrzi` | mega; `megaDrzi` je jediný kus druhu, kterému rozpočet mega slot dal — ostatní mají `mega: "Lepší kopie"` |
 | `trade`, `tradeFree`, `tradeSub` | výměna |
 | `purify`, `purifySub` | očista |
 | `worseCopy`, `copies`, `procKopie` | kopie téhož druhu |

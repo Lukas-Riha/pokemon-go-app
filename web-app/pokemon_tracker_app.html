@@ -7367,7 +7367,22 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         if (maSlot) megaNej[b.groupKey] = b;
         return;
       }
-      if ((b.ivPct || 0) > (g.ivPct || 0)) megaNej[b.groupKey] = b;
+      /* Mezi kusy, které jsou na tom jinak stejně, rozhoduje POŘADÍ KOPIÍ,
+         ne samotné IV %. Dva Houndoomi po 82 % měli IV % na desetinu shodné,
+         takže porovnání `>` neudělalo nic a megu dostal ten, co byl dřív
+         v poli — kus za 1026 CP, kdežto ten za 1249 CP se pouštěl. Pořadí
+         kopií přitom umí přesně to, co tu chybělo: IV i cenu dotažení
+         na strop, takže při shodném IV vyhraje ten, co je výš levelem. */
+      if ((b.dupIndex || 999) < (g.dupIndex || 999)) megaNej[b.groupKey] = b;
+    });
+    /* Držitel megy je JEDEN výpočet pro celou appku. Dřív si sloupec Mega
+       určoval „lepší kopii“ sám (podle pořadí kopií a nejlepšího raidového
+       kusu), takže uměl napsat „Lepší kopie“ u kusu, který megu podle
+       rozpočtu drží — a ve verdiktu u něj zároveň stálo „mega“. */
+    base.forEach(function (b) {
+      var drzitel = b.groupKey ? megaNej[b.groupKey] : null;
+      b.megaDrzi = !!drzitel && drzitel === b;
+      b.megaLepsiKopie = !!drzitel && drzitel !== b;
     });
     Object.keys(megaNej).forEach(function (k) {
       var b = megaNej[k];
@@ -8420,7 +8435,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
       var mega, megaTone, megaSub = "";
       if (!b.megaEntry) { mega = "Ne"; megaTone = "muted"; }
-      else if (b.dupIndex > 1 && !b.isBestRaid) { mega = "Lepší kopie"; megaTone = "muted"; }
+      // Megu drží někdo jiný z téhož druhu — a je to TEN kus, kterému ji dal
+      // rozpočet, ne nezávisle dopočítaná „nejlepší kopie".
+      else if (b.megaLepsiKopie) { mega = "Lepší kopie"; megaTone = "muted"; }
+      // Druh, kterému rozpočet mega slot vůbec nedává (nízká nebo neznámá
+      // priorita): držitel neexistuje, takže se řadí aspoň podle kopií.
+      else if (!b.megaDrzi && b.dupIndex > 1 && !b.isBestRaid) { mega = "Lepší kopie"; megaTone = "muted"; }
       else {
         // Priorita je to, podle čeho se rozhoduje — musí být vidět i u kusu,
         // který se ještě musí vyvinout. Dřív se u něj psalo jen „Nejdřív
@@ -8429,7 +8449,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         megaSub = b.megaEntry.poEvoluci
           ? "až po evoluci na " + b.megaEntry.pres
           : (b.isFinalEvo === false ? "nejdřív evolvovat"
-             : (b.megaEntry.kind === "Primal" ? b.megaEntry.raidPriority.toLowerCase() : "priorita"));
+             : (b.megaEntry.kind === "Primal" ? b.megaEntry.raidPriority.toLowerCase()
+                // Mega se veze na kusu, který si necháváš kvůli jiné roli.
+                // Bez téhle věty vypadá slot u horší kopie jako chyba.
+                : (b.megaDrzi && b.dupIndex > 1 ? "veze se na roli" : "priorita")));
         megaTone = b.megaEntry.raidPriority === "Vysoká" ? "good"
           : b.megaEntry.raidPriority === "Střední" ? "warning" : "muted";
         if (b.megaEntry.raidPriority === "Neznámá") megaSub = "seznam ji ještě nezná";
@@ -8545,7 +8568,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var copiesTitle = b.copies > 1
         ? (procText ? procText + ". " : "")
           + "Máš " + b.copies + " kusů tohohle druhu; tenhle je v pořadí kvality " + b.dupIndex
-          + ". Řadí se podle PvP ranku, pak IV, pak CP. Kolik si jich nechat, je v Nastavení (teď " + s.keepCopies + ")."
+          // Calcy rank se v pořadí kopií SCHVÁLNĚ nepoužívá (je to druhý výpočet
+          // z týchž IV) — tenhle popisek to roky tvrdil a odporoval kódu.
+          + ". Řadí se podle elitního útoku do ligy, pak podle IV mínus cena"
+          + " dotažení na strop, pak podle IV a nakonec podle CP."
+          + " Kolik si jich nechat, je v Nastavení (teď " + s.keepCopies + ")."
         : "Tenhle druh máš jen jednou.";
 
       var megaTitle = !b.megaEntry
@@ -8558,8 +8585,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + " proto zatím nic nedrží. Doplní se obnovením dat."
         : "Mega forma: " + b.megaEntry.names
           + (b.megaEntry.poEvoluci ? " (až po evoluci na " + b.megaEntry.pres + ")" : "")
-          + ". Mega boost pomáhá celé skupině v raidu, "
-          + "takže se vyplatí u nejlepší kopie druhu.";
+          + ". Mega boost pomáhá celé skupině v raidu a je na IV nezávislý, "
+          + "takže stačí JEDEN kus druhu. Slot dostane přednostně ten, co si "
+          + "necháváš kvůli jiné roli — mega se na něm sveze a druhý kus"
+          + " nezabírá místo. Teprve mezi kusy bez role rozhoduje pořadí kopií."
+          + (b.megaDrzi ? " Tenhle kus megu drží." : "")
+          + (b.megaLepsiKopie ? " Megu tohohle druhu drží jiný kus." : "");
 
       function metaTag(league) {
         var m = metaIn(b, league);
@@ -9370,6 +9401,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         mega: mega, megaTone: megaTone, megaSub: megaSub, isMega: !!b.megaEntry,
         // Kandidát = druh mega má A tenhle kus je ten, co se má mega evolvovat.
         // "Nejdřív evolvovat" a "Lepší kopie" znamenají, že to není on.
+        // Drží mega slot z rozpočtu. Na rozdíl od `megaKandidat` to není
+        // odvozeno z textu sloupce, ale je to přímo ten kus, kterému rozpočet
+        // megu dal — u druhu bez mega slotu ho nemá nikdo.
+        megaDrzi: !!b.megaDrzi,
         megaKandidat: !!b.megaEntry && mega !== "Ne"
           && mega !== "Nejdřív evolvovat" && mega !== "Lepší kopie",
         megaNames: b.megaEntry ? b.megaEntry.names : "",
@@ -13741,7 +13776,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (b.specialForm && b.formaStojiZa) {
         mark(b.row, "Speciální formy", b.formaText + (b.out.keepSub ? " · " + b.out.keepSub : ""));
       }
-      if (b.out.mega.indexOf("Ne") !== 0 && b.megaEntry && b.dupIndex === 1) {
+      // Do skupiny „Mega evoluce" patří ten kus, kterému megu dal rozpočet —
+      // ne první kopie v pořadí. U druhu, kde se mega veze na kusu s jinou
+      // rolí, to jsou dva různé kusy.
+      if (b.out.mega.indexOf("Ne") !== 0 && b.megaEntry && b.megaDrzi) {
         mark(b.row, "Mega evoluce", b.megaEntry.raidPriority.toLowerCase() + " priorita");
       }
       if (b.highIV && b.ivPct !== null) mark(b.row, "Vysoké IV", Math.round(b.ivPct * 100) + " %");
@@ -21596,12 +21634,37 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "bonus +20 % útoku, který je cennější než IV.</td></tr>"
       + "<tr><td><b>Mega — kolik kusů se nechává</b></td><td>ne. Mega je "
       + "<b>trvalé odemčení druhu</b> a energie se sbírá po druzích, takže stačí "
-      + "<b>jeden kus na druh</b> (ten s nejvyšším IV). Slot navíc nedostane "
+      + "<b>jeden kus na druh</b>. Který to je: přednost má kus, který si "
+      + "necháváš <b>kvůli jiné roli</b> (raid, liga, gym) — mega se na něm "
+      + "sveze a nezabíráš místo druhým kusem. Teprve mezi kusy <b>bez role</b> "
+      + "rozhoduje pořadí kopií, tedy IV mínus cena dotažení na strop; při "
+      + "shodném IV proto vyhraje ten <b>výš levelem</b>. Slot navíc nedostane "
       + "mega s <b>nízkou</b> ani <b>neznámou</b> raidovou prioritou (držet kus "
       + "kvůli meze, kterou nikdy nepoužiješ, je jen zabrané místo) a kus, který "
       + "se na tu megu teprve musí <b>vyvinout</b>, jen když je priorita "
       + "<b>vysoká</b> — cesta stojí bonbóny a teprve pak mega energii. Ostatní "
-      + "kopie mají ve sloupci <b>Lepší kopie</b>.</td></tr>"
+      + "kopie mají ve sloupci <b>Lepší kopie</b> — a to <b>vždycky ten druhý</b> "
+      + "kus, ne ten, kterému slot patří.</td></tr>"
+      + "<tr><td><b>Mega — k čemu vlastně je</b></td><td>mega evoluce je "
+      + "<b>dočasná</b> (osm hodin) a <b>aktivní může být jen jedna</b>. Dává "
+      + "tři věci. Zaprvé <b>silnější staty</b> toho kusu — mega forma má vlastní "
+      + "základní hodnoty a počítá se s <b>IV a levelem toho konkrétního kusu</b>, "
+      + "takže jako útočník je 96% mega lepší než 82%. Zadruhé <b>boost pro celou "
+      + "skupinu</b> v raidu: útoky <b>stejného typu</b> jako mega mají +30 %, "
+      + "ostatní +10 % — a ten je na IV <b>úplně nezávislý</b>, přidá ho i mega "
+      + "s 0 %. Zatřetí <b>bonbóny navíc</b> za chycení po raidu. Protože dvě "
+      + "ze tří výhod na IV nezáleží, appka kvůli meze nedrží druhý kus."
+      + "</td></tr>"
+      + "<tr><td><b>Mega — kdy ji použít</b></td><td>appka to nesleduje (mega "
+      + "energii ani úroveň megy neeviduje), takže tohle je jen pravidlo. "
+      + "Mega se vyplatí zapnout <b>před raidem</b> nebo <b>před sérií raidů</b> "
+      + "a vybrat ji podle <b>typu, kterým na bosse útočíš</b>, ne podle toho, "
+      + "která mega je nejsilnější — +30 % pro šestičlennou skupinu je víc než "
+      + "rozdíl mezi tvým a cizím útočníkem. Mimo raidy je zbytečná: v lize "
+      + "megy nejsou a v gymu se boost neuplatní. Mega <b>úroveň</b> roste "
+      + "megováním (a nejvýš jednou za den u druhu), s ní klesá cena energie — "
+      + "takže má smysl točit <b>pár stálých</b> mega druhů, ne pokaždé jinou."
+      + "</td></tr>"
       + "<tr><td><b>Vrácení už puštěného kusu</b></td><td>když puštěním "
       + "kusu uvolníš místo, může se do rozpočtu vejít někdo, koho jsi "
       + "zahodil dřív. Appka to <b>nikdy neudělá sama</b> — jen nad tlačítky "

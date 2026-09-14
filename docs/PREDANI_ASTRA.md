@@ -211,3 +211,32 @@ Od teď ji stavím po každé změně enginu, ne až na vyžádání.
 **Co se nesmí vracet zpátky:** systémový `title` na `.d-evo-kus` (appka si
 ho přepisuje do vlastní bubliny a přepsal by její obsah) a natvrdo psané
 „Ano" v kartičce Doskenovat.
+
+---
+
+## Změna z 14. 9.: mega slot má jednoho vlastníka
+
+Sloupec **Mega** si „lepší kopii" počítal sám — z pořadí kopií a z toho, kdo
+je nejlepší raidový kus druhu. Rozpočet si přitom držitele megy vybíral
+jinak (podle IV %). Ty dva výpočty se rozcházely, takže u kusu, který megu
+podle verdiktu drží (`keepSub: "mega"`), mohlo ve sloupci stát **Lepší
+kopie**. Teď je zdroj jeden: kdo dostal mega slot z rozpočtu.
+
+**Projdi prosím u sebe tohle:**
+
+1. **Nové pole `megaDrzi`** v `getComputed()`. `true` má nejvýš jeden kus
+   druhu — ten, kterému rozpočet mega slot dal. Všechny ostatní kusy toho
+   druhu mají `mega: "Lepší kopie"`. Pokud si někde držitele megy dopočítáváš
+   z `dupIndex` nebo z `megaKandidat`, přepni na `megaDrzi`.
+2. **`megaSub` má novou hodnotu `"veze se na roli"`.** Je u držitele, který
+   není první kopií — mega se veze na kusu, co si necháváš kvůli jiné roli
+   (typicky Dmax kus). Když `megaSub` mapuješ na výčet hodnot, tahle tam
+   dosud nebyla.
+3. **Pořadí kopií rozhoduje i o meze.** Při shodném IV % vyhraje kus **výš
+   levelem** (dřív o tom rozhodovalo pořadí v poli, tedy náhoda).
+4. **Dokumentace má dva nové řádky** — „Mega — k čemu vlastně je" a
+   „Mega — kdy ji použít". Jsou v `renderDocs()`, ne v `renderDataInfo()`.
+
+**Co appka pořád nesleduje:** mega energii ani úroveň megy. V žádném poli to
+není, takže to neukazuj — doporučení „kdy megovat" je v dokumentaci jako
+pravidlo, ne jako spočítaný údaj.
