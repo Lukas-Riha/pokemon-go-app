@@ -335,3 +335,22 @@ Nově u nich `evolve: "Ano"`, **tón `warning` místo `good`** (zatím to nehraj
 tak to nemá být zelené), podřádek zůstává cena v bonbónech a bublina jmenuje
 rozpočet. Když si tón mapuješ na barvu, tohle je nová kombinace: `Ano` +
 `warning`. Hlídá to nové pravidlo v auditu rozporů.
+
+## 6. Shadow se počítá z obou stran a jedním číslem
+
+Shadow má útok ×1,2, ale zároveň **schytá o pětinu víc** (obrana ×1/1,2).
+Appka to počítala na třech místech třemi způsoby:
+
+| kde | dřív | teď |
+| --- | --- | --- |
+| rozdávání raidových slotů | ×1,2 (jen útok) | ×1,2^0,75 ≈ **1,1465** |
+| `raidPct` (sloupec RAID) | ×1,2 a ×1/1,2 | totéž, ale ze sdílené konstanty |
+| `gymPct` (sloupec GYM) | **bez srážky** | ×1/1,2 |
+| řazení gymových slotů | ×1/1,2 | čte přímo `gymPct` |
+
+Prakticky: u shadow kusu svítilo ve slotu „83 % špičky" a ve sloupci 80 %,
+a v gymu ukazoval sloupec procento, jako by srážku obrany neměl. Teď jsou to
+dvě konstanty (`SHADOW_RAID`, `SHADOW_GYM`) a obě strany appky čtou totéž.
+
+**`gymPct` u shadow kusu tedy nově klesne o 17 %** — když máš někde uložené
+ukázkové hodnoty, přepočítej je.

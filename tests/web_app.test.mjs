@@ -14789,9 +14789,13 @@ try {
     await new Promise((r) => setTimeout(r, 900));
     const c = P.getComputed();
     const rows = P.getRows();
+    const base = P.base();
     const kus = (i) => {
       const x = c[rows[i].id];
-      return { raidPct: x.raidPct, typy: x.types, movesBest: x.movesBest || "" };
+      const bb = base.filter((z) => z.row.id === rows[i].id)[0] || {};
+      const raidSlot = (bb.sloty || []).filter((sl) => sl.druh === "raid" && !sl.poEvoluci)[0];
+      return { raidPct: x.raidPct, gymPct: x.gymPct, typy: x.types,
+        movesBest: x.movesBest || "", slotPct: raidSlot ? raidSlot.pct : null };
     };
     return { shadow: kus(0), bezny: kus(1), darmanitan: kus(2),
       dexDarm: P.dexByKey("darmanitan") };
@@ -14803,6 +14807,16 @@ try {
     formyRaid.shadow.raidPct > 1, String(formyRaid.shadow.raidPct));
   check("…bezna kopie zustava na 100 %",
     Math.abs(formyRaid.bezny.raidPct - 1) < 0.01, String(formyRaid.bezny.raidPct));
+  // Rozdavani slotu pocitalo shadow jako ciste x1,2, kdezto procento u kusu
+  // jako x1,2 utok a x1/1,2 obrana. U tehoz kusu tak stalo ve slotu
+  // "83 % spicky" a ve sloupci 80 %.
+  check("slot a sloupec pocitaji shadow stejne",
+    formyRaid.shadow.slotPct !== null
+      && Math.abs(formyRaid.shadow.slotPct - formyRaid.shadow.raidPct) < 0.005,
+    formyRaid.shadow.slotPct + " vs " + formyRaid.shadow.raidPct);
+  check("…a bonus je 1,2^0,75, ne cistych 20 %",
+    Math.abs(formyRaid.shadow.raidPct / formyRaid.bezny.raidPct - Math.pow(1.2, 0.75)) < 0.01,
+    String(formyRaid.shadow.raidPct / formyRaid.bezny.raidPct));
   check("Darmanitan pod holym jmenem je ohnivy, ne ledovy",
     formyRaid.darmanitan.typy === "Fire", formyRaid.darmanitan.typy);
   check("…a v pokedexu taky", (formyRaid.dexDarm || {}).types

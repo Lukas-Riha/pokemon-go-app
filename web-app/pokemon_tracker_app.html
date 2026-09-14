@@ -2839,8 +2839,10 @@
           (raid) a z výdrže (gym), ne z IV napřímo — rozdíl mezi útokem 13 a 15
           je v praxi asi <b>1 %</b>, takže na tom verdikt viset nemá.
           <b>Shadow kus může u raidu přerůst 100 %</b>: měřítkem je nejlepší
-          <b>běžný</b> kus druhu a shadow má o 20 % vyšší útok (a o 17 % nižší
-          obranu). V gymu je to naopak a sráží ho to dolů.</span>
+          <b>běžný</b> kus druhu. Počítá se <b>obojí</b> — útok ×1,2 i to, že
+          shadow schytá o pětinu víc (obrana ×1/1,2). Výsledek proto není
+          +20 %, ale <b>+14,7 %</b> (1,2<sup>0,75</sup>). V gymu, kde se jen
+          brání, zbude ze shadow jen ta srážka: <b>−17 %</b>.</span>
       </div>
       <div class="setting">
         <label for="rankLimit">Do kolikátého místa v lize brát druh vážně</label>
@@ -3502,7 +3504,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-14 15:11";
+  var BUILD = "2026-09-14 19:24";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -7199,9 +7201,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       base.forEach(function (b) {
         var role = raidRoliVTypu(b, typ);
         if (!role) return;
-        // Shadow má o pětinu vyšší útok. Žebříček je po DRUZÍCH, takže tenhle
-        // rozdíl v něm není a musí se přidat tady.
-        var sila = role.pct * (b.row.forma === "Shadow" ? 1.2 : 1);
+        // Shadow má o pětinu vyšší útok a schytá o pětinu víc. Žebříček je
+        // po DRUZÍCH, takže v něm ten rozdíl není a přidává se tady — stejným
+        // číslem, jakým se počítá procento u kusu.
+        var sila = role.pct * (jeShadowForma(b.row.forma) ? SHADOW_RAID : 1);
         var mezera = sila < ROLE_SOLIDNI;
         // Náplast má smysl jen tam, kde pokrytí opravdu potřebuju. U typů
         // mimo desítku by to znamenalo držet každého Pidgeyho, protože
@@ -7360,9 +7363,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     // Shadow drží gymový slot až za běžnou kopií téhož druhu: obrana
     // −17 % znamená, že v gymu vydrží míň, i když je to jinak týž pokémon.
-    var gymSila = function (b) {
-      return (b.gymPct || 0) * (jeShadowForma(b.row.forma) ? 1 / 1.2 : 1);
-    };
+    // Srážka obrany je od téhle chvíle už v gymPct, takže pořadí i sloupec
+    // čtou totéž číslo. Dřív ji měl jen tenhle výpočet pořadí a ve sloupci
+    // GYM svítilo u shadow kusu procento, jako by tu srážku neměl.
+    var gymSila = function (b) { return b.gymPct || 0; };
     gymKand.sort(function (x, y) {
       var d = gymSila(y) - gymSila(x);
       return d || priShode(x, y);
@@ -7940,7 +7944,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var shadow = jeShadowForma(b.row.forma);
         var utok = (b.dex.a + b.atk) * (shadow ? 1.2 : 1) / (b.dex.a + 15);
         var vydrz = (b.def !== null && b.sta !== null && b.dex.d && b.dex.s)
-          ? vydrzFaktor((b.dex.d + b.def) * (shadow ? 1 / 1.2 : 1), b.dex.s + b.sta)
+          ? vydrzFaktor((b.dex.d + b.def) * (shadow ? SHADOW_GYM : 1), b.dex.s + b.sta)
             / vydrzFaktor(b.dex.d + 15, b.dex.s + 15)
           : 1;
         b.raidPct = b.raidSpeciesPct * utok * vydrz;
@@ -7949,8 +7953,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (b.gymRole && b.gymRole.poEvoluci && b.dex && b.dex.finalKey) {
         gd = dexByKey(b.dex.finalKey) || b.dex;
       }
+      // Shadow v gymu vydrží MÍŇ — obrana ×1/1,2. Patří to sem, ne až do
+      // řazení: jinak sloupec GYM u shadow kusu ukazoval procento bez srážky.
       b.gymPct = (b.gymSpeciesPct !== null && b.def !== null && b.sta !== null && gd && gd.d && gd.s)
-        ? b.gymSpeciesPct * ((gd.d + b.def) * (gd.s + b.sta)) / ((gd.d + 15) * (gd.s + 15))
+        ? b.gymSpeciesPct * ((gd.d + b.def) * (gd.s + b.sta))
+          / ((gd.d + 15) * (gd.s + 15))
+          * (jeShadowForma(b.row.forma) ? SHADOW_GYM : 1)
         : null;
     });
 
@@ -13523,6 +13531,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   //
   // Odmocnina čtvrtého stupně tam je schválně — výdrž MÁ hrát roli, ale
   // mnohem menší než poškození. Bez toho vycházeli nahoře samí Alakazamové.
+  /* Shadow: útok ×1,2, ale zároveň SCHYTÁ o 20 % víc, což je totéž jako
+     obrana ×1/1,2. Do raidového skóre jde obojí — útok naplno, výdrž pod
+     čtvrtou odmocninou, přesně jako u všeho ostatního:
+         1,2 × (1/1,2)^0,25 = 1,2^0,75 ≈ 1,1465
+     Čistá +20 % je tedy moc. Musí to být JEDNO číslo pro celou appku:
+     rozdělování slotů počítalo ×1,2, kdežto procento u kusu ×1,1465, takže
+     u téhož shadow kusu stálo ve slotu „83 % špičky" a ve sloupci 80 %. */
+  var SHADOW_RAID = Math.pow(1.2, 0.75);
+  var SHADOW_GYM = 1 / 1.2;
+
   function vydrzFaktor(d, sta) {
     if (!d || !sta) return 1;
     return Math.pow(d * sta, 0.25);
