@@ -4824,6 +4824,11 @@ try {
       ? Array.from(xlTab.querySelectorAll("tr")).slice(1).map((tr) => tr.children[0].textContent.trim())
       : [];
     // teď přepnout na „bez XL“
+    // Krokování se tu schválně vypíná: mezikroky pod L40 XL nepotřebují,
+    // takže by filtr vypadal, že nefunguje. Dřív to vycházelo jen proto,
+    // že zaškrtávátko zůstalo vypnuté po jiném testu.
+    const kroky = document.getElementById("krokyPlan");
+    kroky.checked = false; kroky.dispatchEvent(new Event("change"));
     document.getElementById("cilLevel").value = "50";
     const el = document.getElementById("bezXL");
     el.checked = true;
@@ -4874,6 +4879,9 @@ try {
         fastMove: "Dragon Breath", charged1: "Aqua Tail" },
     ]);
     const box = document.getElementById("dustBody");
+    // Bez krokování — viz test výš.
+    const kroky = document.getElementById("krokyPlan");
+    kroky.checked = false; kroky.dispatchEvent(new Event("change"));
     document.getElementById("cilLevel").value = "50";
     const el = document.getElementById("bezXL");
     const cti = () => {
@@ -11235,9 +11243,16 @@ try {
     sOkny.forEach((e) => (e[7] || []).forEach((o) => {
       oken += 1;
       // [od, do, {sekce: [[jméno, shiny], …]}]
-      if (!/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(o[0])
-        || !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(o[1])) spatnyCas += 1;
-      if (new Date(o[1]) < new Date(o[0])) spatnyCas += 1;
+      // Prázdný čas na OBOU koncích je doložený stav: okno bez vlastního času
+      // dědí rozsah akce, a když ani ta ještě datum nemá (LeekDuck ho u nově
+      // ohlášené akce občas nezveřejní), zbude prázdno. Appka takovou akci
+      // na osu nekreslí. Chyba je až čas, který je rozbitý nebo pozpátku.
+      const bezCasu = !String(o[0] || "").trim() && !String(o[1] || "").trim();
+      const tvarOK = (v) => /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(v);
+      if (!bezCasu) {
+        if (!tvarOK(o[0]) || !tvarOK(o[1])) spatnyCas += 1;
+        else if (new Date(o[1]) < new Date(o[0])) spatnyCas += 1;
+      }
       Object.keys(o[2] || {}).forEach((k) => { sekce[k] = (sekce[k] || 0) + 1; });
     }));
     return { akci: ev.length, sOkny: sOkny.length, oken, spatnyCas,
@@ -14682,6 +14697,69 @@ try {
     megaUzko.telo <= megaUzko.okno + 1, JSON.stringify(megaUzko));
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
+
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+
+  /* ------------------------------------------------------------------
+     234) NASTAVIT DOPORUCENE VRATI VSECHNO
+     resetSettings() delal `el.value = vychozi` pro kazdou volbu — jenze
+     u zaskrtavatka `el.value` nedela nic. Ctyri prepinace (Shadow a Lucky
+     drzet vzdy, plánovat po krocích, nechat legendarni pri nahrazeni,
+     jen bez XL) proto zustavaly tak, jak byly, a stejnou dirou si je
+     profily pretahovaly mezi sebou.
+     ------------------------------------------------------------------ */
+  console.log("\n234) Nastavit doporucene vrati vsechno");
+  const resetVolby = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays",
+      "boxCountRoster", "gymCountRoster", "keepForms", "rankLimit", "roleThresh",
+      "dmaxKeep", "dmaxSlotu", "krokyPlan", "keepRare", "bezXL", "prahSleva",
+      "prachZaBod", "cilLevel", "ligaVaha"];
+    const vychozi = (e) => {
+      if (e.type === "checkbox") return String(e.defaultChecked);
+      if (e.tagName === "SELECT") {
+        const o = e.querySelector("option[selected]");
+        return o ? o.value : (e.options[0] ? e.options[0].value : "");
+      }
+      return e.getAttribute("value") || "";
+    };
+    const ted = (e) => e.type === "checkbox" ? String(e.checked) : e.value;
+    const prvky = IDS.map((id) => document.getElementById(id)).filter(Boolean);
+    const puvodni = prvky.map(vychozi);
+    // rozhodit uplne vsechno
+    prvky.forEach((e) => {
+      if (e.type === "checkbox") e.checked = !e.checked;
+      else if (e.tagName === "SELECT") {
+        const jine = [...e.options].find((o) => o.value !== e.value);
+        if (jine) e.value = jine.value;
+      } else e.value = String((Number(e.value) || 10) + 7);
+      e.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await new Promise((r) => setTimeout(r, 350));
+    const nerozhozene = prvky.filter((e, i) => ted(e) === puvodni[i]).map((e) => e.id);
+    const rozhozenych = prvky.length - nerozhozene.length;
+    document.getElementById("resetSettingsBtn").click();
+    await new Promise((r) => setTimeout(r, 600));
+    const nesedi = prvky.map((e, i) => ted(e) === puvodni[i] ? null : e.id)
+      .filter(Boolean);
+    const zaskrtavatka = prvky.filter((e) => e.type === "checkbox").length;
+    return { kontrolovano: prvky.length, zaskrtavatka, rozhozenych, nesedi, nerozhozene };
+  });
+  check("kontroluje se cela sada nastaveni", resetVolby.kontrolovano >= 18,
+    String(resetVolby.kontrolovano));
+  check("…a jsou mezi nimi i zaskrtavatka", resetVolby.zaskrtavatka >= 4,
+    String(resetVolby.zaskrtavatka));
+  // Sebekontrola testu: kdyby se nic nerozhodilo, ctvrta kontrola by prosla
+  // plane. Tolerance dvou volob je zamerna — hromadne prepnuti vseho naraz
+  // spusti i prekresleni karty importu, ktere si svoje zaskrtavatko vezme
+  // znovu ze stavu. Uzivatel to jednim klikem nezpusobi.
+  check("test opravdu vsechno rozhodil",
+    resetVolby.rozhozenych >= resetVolby.kontrolovano - 2,
+    resetVolby.rozhozenych + " z " + resetVolby.kontrolovano
+      + " (nezmenilo se: " + resetVolby.nerozhozene.join(", ") + ")");
+  check("po Nastavit doporucene sedi kazda volba na vychozi",
+    resetVolby.nesedi.length === 0, resetVolby.nesedi.join(", "));
 
   await page.goto(URL);
   await page.waitForTimeout(700);

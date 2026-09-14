@@ -398,6 +398,28 @@ print("větvené evoluce (víc možných forem): %d — %s"
 if bez_learnsetu[:8]:
     print("   napr.: " + ", ".join(bez_learnsetu[:8]))
 
+# ---------------------------------------------------------------- akce a okna
+# Akce bez datumu se na osu nenakresli - je to legitimni stav (LeekDuck datum
+# u cerstve ohlasene akce obcas nezverejni), ale musi byt videt. Drive to bylo
+# tiche: Gible Community Day Classic prisel s prazdnym rozsahem a poznalo se
+# to az v testech appky.
+try:
+    _ev = json.load(io.open(ROOT / "data" / "events.json", encoding="utf-8"))
+except Exception:
+    _ev = None
+if _ev:
+    for _a in _ev.get("events", []):
+        _nazev = str(_a[0]) if _a else "?"
+        if not str(_a[3] or "").strip() and not str(_a[4] or "").strip():
+            varuj("eventy", "%s nema datum - na osu se nenakresli" % _nazev)
+        for _o in (_a[7] if len(_a) > 7 else []) or []:
+            _od, _do = str(_o[0] or "").strip(), str(_o[1] or "").strip()
+            if (_od and not _do) or (_do and not _od):
+                chyba("eventy", "%s: okno ma jen jeden konec (%r - %r)" % (_nazev, _od, _do))
+            elif _od and _do and _do < _od:
+                chyba("eventy", "%s: okno konci driv, nez zacina (%s - %s)" % (_nazev, _od, _do))
+
+
 if varovani:
     print("\nVAROVANI (%d):" % len(varovani))
     for v in varovani[:40]:

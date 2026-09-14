@@ -214,7 +214,14 @@ ho přepisuje do vlastní bubliny a přepsal by její obsah) a natvrdo psané
 
 ---
 
-## Změna z 14. 9.: mega slot má jednoho vlastníka
+# Co se změnilo 14. 9. — tohle je celý dnešek
+
+Všechno starší už jsi četla, tak jen nové věci. Je jich hodně o megách,
+protože se ukázalo, že si o nich appka na třech místech počítala tři různé
+odpovědi. **Od dneška je to i v produkci** (Pages i sdílená složka), takže
+to nekoukáš jen do testovací verze.
+
+## 1. Mega slot má jednoho vlastníka
 
 Sloupec **Mega** si „lepší kopii" počítal sám — z pořadí kopií a z toho, kdo
 je nejlepší raidový kus druhu. Rozpočet si přitom držitele megy vybíral
@@ -243,7 +250,7 @@ pravidlo, ne jako spočítaný údaj.
 
 ---
 
-## Změna z 14. 9. (druhá): priorita megy se počítá a pořadí v rosteru nic neurčuje
+## 2. Priorita megy se počítá a pořadí v rosteru nic neurčuje
 
 **1. Nová funkce `window.__pgo.megaRanking()`.** Vrací objekt `typ -> pole`
 mega forem seřazené od nejlepší. Každá položka má `jmeno`, `druh`, `key`,

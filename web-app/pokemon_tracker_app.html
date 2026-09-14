@@ -2849,9 +2849,12 @@
       <div class="setting">
         <label for="ligaVaha">Liga, která se zrovna nehraje — <b>váha</b> (%)</label>
         <input type="number" id="ligaVaha" min="0" max="100" value="60" step="5" />
-        <span class="hint">Rozpočet ví z Událostí, které ligy zrovna běží. Kus do ligy,
-          která se nehraje, jde v pořadí níž — o tolik procent. <b>100 % = rotaci
-          neřeš</b>, 0 % = takové kusy úplně dolů.<br>
+        <span class="hint">Appka ví z Událostí, které ligy zrovna běží. Platí to
+          <b>jen pro kartu „Prach jako rozpočet"</b>: kus do ligy, která se nehraje,
+          jde v pořadí, co dotáhnout dřív, níž — o tolik procent. Na verdikt
+          nechat/pustit to nesahá. <b>100 % = rotaci neřeš</b>, 0 % = takové
+          kusy úplně dolů. Když zrovna běží jen omezený formát (Mega Edition,
+          pojmenovaný cup), bere se to jako půl cesty mezi během a klidem.<br>
           Proč je to nastavení a ne pevné číslo: rozdíly v efektivitě jsou obrovské.
           Foongus z L1 na strop Little Cupu vyjde <b>desetkrát líp</b> než ligový
           kus na L6 — a i 40% srážka ho v pořadí neposune. Kde je hranice mezi
@@ -2868,11 +2871,12 @@
     </div>
     <div class="settings-foot">
       <button id="resetSettingsBtn">Nastavit doporučené</button>
-      <span class="hint">Vrátí všechny prahy na výchozí kalibraci: 2 kopie, IV 90 %,
-        váha nehrající ligy 60 %,
+      <span class="hint">Vrátí <b>všechny</b> volby na výchozí kalibraci —
+        i zaškrtávátka: 2 kopie, IV 90 %, váha nehrající ligy 60 %,
         PvP potenciál 96 % se slevou 5 bodů, elitní rank 100,
         <b>pořadí druhu v lize do #50</b>, práh užitečnosti role 50 %,
-        paměť smazaných 30 dní. O ponechání ale rozhoduje <b>rozpočet rolí</b> —
+        50 tis. prachu za bod IV, 2 Dynamax kusy druhu a 3 na roli,
+        dotahovat na L40, paměť smazaných 30 dní. O ponechání ale rozhoduje <b>rozpočet rolí</b> —
         prahy jen určují, kdo se o roli uchází a kdo ji drží jen jako náplast.</span>
     </div>
   </details>
@@ -6676,6 +6680,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return el.getAttribute("value");
   }
 
+  /**
+   * Vrátí jednu volbu na výchozí hodnotu.
+   *
+   * Musí to být jedno místo, protože zaškrtávátko se nastavuje JINAK než
+   * číslo: `el.value = ...` u checkboxu nedělá vůbec nic. Tlačítko "Nastavit
+   * doporučené" proto čtyři přepínače (Shadow a Lucky držet vždy, plánovat
+   * po krocích, nechat legendární při nahrazení, jen bez XL) nechávalo tak,
+   * jak byly — a stejnou dírou si je profily přetahovaly mezi sebou.
+   */
+  function nastavVychozi(el) {
+    if (!el) return;
+    if (el.type === "checkbox") { el.checked = el.defaultChecked; return; }
+    el.value = defaultSettingValue(el);
+  }
+
   /** Prahy jdou nastavit tak, že engine přestane cokoli propouštět. Radši to
    *  rovnou napiš, než aby uživatel hledal, proč mu zbylo dvacet pokémonů. */
   function renderSettingWarnings() {
@@ -6701,8 +6720,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   function resetSettings() {
     SETTING_IDS.forEach(function (id) {
-      var el = document.getElementById(id);
-      el.value = defaultSettingValue(el);
+      nastavVychozi(document.getElementById(id));
     });
   }
 
@@ -6720,7 +6738,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         if (el.type === "checkbox") el.checked = snap.settings[id] === "1" || snap.settings[id] === true;
         else el.value = snap.settings[id];
       }
-      else el.value = defaultSettingValue(el);
+      else nastavVychozi(el);
     });
     discarded = normalizeDiscarded(snap && snap.discarded);
     rucniUtoky = (snap && snap.rucniUtoky && typeof snap.rucniUtoky === "object")
@@ -6941,8 +6959,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var s = getSettings();
     if (!s.prachZaBod) {
       box.innerHTML = '<div class="prah-popis">Kurz je vypnutý — o pořadí kopií'
-        + " rozhoduje <b>jen IV</b>. Kus na L8 tak může předběhnout hotový kus"
-        + " na L35, i když ho dotáhnout stojí statisíce.</div>";
+        + " rozhoduje <b>jen IV</b>, cena dotažení se nepočítá vůbec."
+        + " Zapnutý kurz to nezakáže: jen říká, <b>o kolik bodů IV</b> musí"
+        + " být kus na nízkém levelu lepší, aby hotový kus ještě předběhl."
+        + " Čím menší číslo, tím víc cena váží.</div>";
       return;
     }
     // Ukázat to na skutečných levelech. „4 body = 400 tis." nikomu nepomůže;
