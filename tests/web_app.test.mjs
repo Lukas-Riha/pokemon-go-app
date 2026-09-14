@@ -14633,6 +14633,33 @@ try {
   check("slaba mega ma nizkou prioritu", megaTab.prioAudino === "Nízká",
     megaTab.prioAudino);
 
+  // Mega Mewtwo X a Y existuji v hlavni serii, v Pokemon GO vydane nejsou.
+  // Rucni seznam raidovych utocniku pritom tvrdil, ze nejlepsi Psychic
+  // utocnik je "Mewtwo (Mega Y)" — a detail u tehoz kusu psal, ze ten druh
+  // megu nema. Herni data maji 47 mega druhu a Mewtwo mezi nimi neni.
+  const mewtwo = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([{ pokemon: "Mewtwo", cp: 2367, level: 20, ivAtk: 13, ivDef: 15, ivSta: 14,
+      fastMove: "Confusion", charged1: "Psystrike" }]);
+    await new Promise((r) => setTimeout(r, 600));
+    const c = P.getComputed();
+    const v = c[P.getRows()[0].id];
+    const zeb = P.megaRanking();
+    const vsechny = [].concat(...Object.keys(zeb).map((t) => zeb[t]));
+    return {
+      mega: v.mega, megaTitle: v.megaTitle || "", drzi: !!v.megaDrzi,
+      vZebricku: vsechny.filter((x) => x.druh === "Mewtwo").length,
+      psychic1: (zeb.Psychic && zeb.Psychic[0] || {}).jmeno
+    };
+  });
+  check("Mewtwo nema mega formu", mewtwo.mega === "Ne" && !mewtwo.drzi,
+    JSON.stringify(mewtwo));
+  check("…a detail to rika primo", /mega evoluci nemá/.test(mewtwo.megaTitle),
+    mewtwo.megaTitle);
+  check("…a v zebricku mega forem neni", mewtwo.vZebricku === 0, String(mewtwo.vZebricku));
+  check("Psychic megam vede Mega Alakazam", mewtwo.psychic1 === "Mega Alakazam",
+    String(mewtwo.psychic1));
+
   const megaLigy = await page.evaluate(() => {
     window.__pgo.renderDocs();
     const t = (document.getElementById("docsBody") || document.body).textContent;

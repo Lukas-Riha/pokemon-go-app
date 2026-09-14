@@ -10,6 +10,7 @@ Návratový kód 1 = něco neplatí.
 """
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -87,12 +88,11 @@ if gm:
         varuj("staty", "porovnalo se jen %d druhů — mapování forem se nejspíš"
                        " rozešlo se zdrojem" % porovnano)
 
-# ------------------------------------------------ mega: ohodnocení nesmí chybět
-# Priorita megy řídí od zavedení rozpočtu i to, jestli si appka nechá
-# nevyvinutý kus kvůli mega formě. Dřív tu byla dopočítaná záchrana
-# („útok >= 280 -> Vysoká"), jenže ta se proti ohodnocenému seznamu rozchází
-# u 26 ze 47 meg — udělala by Vysokou z Mega Absola i Sharpeda. Hádat se to
-# tedy přestalo; zato musí sedět seznam.
+# ------------------------------------------------ mega: seznam musí sedět s hrou
+# Prioritu megy si appka počítá sama ze statů mega formy, takže tenhle seznam
+# už nic neřídí — musí ale odpovídat hře, protože z něj jde "má tenhle druh
+# vůbec megu". Ručně psaný byl a drifty nikdo nehlídal, proto se generuje
+# z pokédexu (tools/augment_reference.py) a tady se to ověří.
 ohodnocene = set()
 for e in ref.get("megaEvolutions", []):
     ohodnocene.add(str(e.get("pokemon", "")).lower().replace(" ", "").replace("'", ""))
@@ -366,10 +366,21 @@ if len(lc_final) > len(meta["leagues"].get("little", {})) * 0.2:
     varuj("meta", "Little Cup má %d nevyvíjejících se druhů — zkontroluj pravidla" % len(lc_final))
 
 # ---------------------------------------------------------------- ruční seznam
+MEGA_VE_FORME = re.compile(r"\b(Mega|Primal)\b", re.I)
 for zaznam in ref.get("raidAttackers", []):
     if zaznam.get("type") not in typy:
         chyba("reference", "raid útočník %s má neznámý typ %r"
               % (zaznam.get("pokemon"), zaznam.get("type")))
+    # Textové "form" u raidového útočníka si nesmí vymýšlet mega formu, kterou
+    # hra nemá. Stálo tam "Mewtwo (Mega Y)" a "Machamp (Mega/Shadow)" — appka
+    # tím tvrdila, že nejlepší Psychic útočník je mega, kterou si uživatel
+    # nikdy nenasadí, a o kus dál u téhož kusu psala "tenhle druh megu nemá".
+    forma = str(zaznam.get("form") or "")
+    if MEGA_VE_FORME.search(forma):
+        k = str(zaznam.get("pokemon", "")).lower().replace(" ", "").replace("'", "")
+        if k not in mega and k.split("-")[0] not in mega:
+            chyba("reference", "raid útočník %s má formu %r, ale ve hře žádnou"
+                  " mega ani primal formu nemá" % (zaznam.get("pokemon"), forma))
 
 # ---------------------------------------------------------------- pokrytí typů
 # na každý typ musí existovat aspoň jeden útok, jinak by se nedal counterovat

@@ -271,3 +271,11 @@ tiebreak** — jinak se rozhraní a engine rozejdou.
 **4. Dokumentace opravena u lig:** megy v běžné lize nejsou, ale existují
 omezené formáty **Great / Ultra / Master League: Mega Edition**. Ligové
 žebříčky appky s nimi nepočítají a je to tam napsané.
+
+**5. Seznam mega druhů se generuje z herních dat.** `reference.json` →
+`megaEvolutions` byl ručně psaný a měl `raidPriority` natvrdo; teď ho
+`tools/augment_reference.py` skládá z pokédexu (sekce `mega`, 47 druhů) a
+prioritu nechává na `Neznámá`, protože si ji appka počítá. Zároveň se z
+`raidAttackers[].form` odstraní nárok na mega formu, kterou hra nemá —
+stálo tam „Mewtwo (Mega Y)" a „Machamp (Mega/Shadow)", ačkoli Mega Mewtwo
+ani Mega Machamp v Pokémon GO nejsou. Audit dat to nově hlídá.

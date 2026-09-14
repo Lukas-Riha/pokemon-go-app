@@ -7,29 +7,18 @@ from pathlib import Path
 OUT = Path(__file__).resolve().parent.parent / "data" / "reference.json"
 data = json.loads(OUT.read_text(encoding="utf-8"))
 
-# Dlouhodobě stabilní jádro Mega Evolucí dostupných v Pokémon GO.
-# Nové mega formy Niantic přidává průběžně — při aktualizaci ověřit proti wiki.
-MEGA = [
-    "Venusaur", "Charizard", "Blastoise", "Beedrill", "Pidgeot", "Alakazam", "Slowbro",
-    "Gengar", "Kangaskhan", "Pinsir", "Gyarados", "Aerodactyl", "Ampharos", "Steelix",
-    "Scizor", "Heracross", "Houndoom", "Tyranitar", "Sceptile", "Blaziken", "Swampert",
-    "Gardevoir", "Sableye", "Mawile", "Aggron", "Medicham", "Manectric", "Sharpedo",
-    "Camerupt", "Altaria", "Banette", "Absol", "Glalie", "Salamence", "Metagross",
-    "Latias", "Latios", "Rayquaza", "Lopunny", "Garchomp", "Lucario", "Abomasnow",
-    "Gallade", "Audino", "Diancie",
-]
-PRIMAL = ["Kyogre", "Groudon"]
-
-# Mega formy s vysokou hodnotou pro raidy (mega boost pomůže celé skupině).
-MEGA_PRIORITY = {
-    "Rayquaza": "Vysoká", "Metagross": "Vysoká", "Gengar": "Vysoká", "Lucario": "Vysoká",
-    "Charizard": "Vysoká", "Blaziken": "Vysoká", "Garchomp": "Vysoká", "Gyarados": "Vysoká",
-    "Salamence": "Vysoká", "Gardevoir": "Vysoká", "Sceptile": "Vysoká", "Alakazam": "Vysoká",
-    "Venusaur": "Vysoká", "Tyranitar": "Střední", "Houndoom": "Střední", "Manectric": "Střední",
-    "Pidgeot": "Střední", "Beedrill": "Střední", "Aerodactyl": "Střední", "Scizor": "Střední",
-    "Diancie": "Střední", "Steelix": "Střední", "Ampharos": "Střední", "Swampert": "Střední",
-    "Blastoise": "Nízká", "Abomasnow": "Nízká", "Glalie": "Nízká", "Pinsir": "Nízká",
-}
+# Které druhy mají ve hře mega formu, se BERE Z HERNÍCH DAT (pokédex, sekce
+# "mega", postavená z game masteru). Dřív to tu byl ručně psaný seznam a
+# stárl: Niantic mega formy přidává průběžně a nikdo to nehlídal. Appka si
+# navíc prioritu megy počítá sama ze statů mega formy, takže ruční seznam
+# priorit zmizel úplně — tady zbývá jen jméno a druh evoluce.
+_dex = json.loads((Path(__file__).resolve().parent.parent / "data" / "pokedex.json")
+                  .read_text(encoding="utf-8"))
+_MEGA_Z_HRY = {}
+for _klic, _formy in _dex.get("mega", {}).items():
+    _jmeno = (_dex["species"].get(_klic) or [None, _klic])[1]
+    # schema_mega: [jméno, atk, def, sta, [typy], mega_energie, Mega|Primal]
+    _MEGA_Z_HRY[_jmeno] = _formy[0][6] if _formy and len(_formy[0]) > 6 else "Mega"
 
 # Druhy, které se po vytradování vyvinou zadarmo (0 bonbónů).
 # Klíč je normalizované jméno, stejné jako v pokédexu.
@@ -53,11 +42,28 @@ data["tradeEvolutions"] = [
     {"pokemon": "Pumpkaboo", "evolvesTo": "Gourgeist"},
 ]
 
+# raidPriority appka nepoužívá — počítá si ji z žebříčku mega forem. Zůstává
+# jen jako záchrana pro formu, které žebříček nepřiřadí ani jeden použitelný
+# útok, a tam je jediná poctivá odpověď "Neznámá".
 data["megaEvolutions"] = [
-    {"pokemon": p, "kind": "Mega", "raidPriority": MEGA_PRIORITY.get(p, "Nízká")} for p in MEGA
-] + [
-    {"pokemon": p, "kind": "Primal", "raidPriority": "Vysoká"} for p in PRIMAL
+    {"pokemon": p, "kind": k, "raidPriority": "Neznámá"}
+    for p, k in sorted(_MEGA_Z_HRY.items())
 ]
+
+# Ruční seznam raidových útočníků má u každého záznamu textovou "form".
+# Stálo v ní "Mewtwo (Mega Y)" a "Machamp (Mega/Shadow)" — jenže ani jeden
+# z těch dvou druhů ve hře mega formu nemá (Mega Mewtwo je jen v hlavní sérii).
+# Appka tím uživateli tvrdila, že nejlepší Psychic útočník je mega, kterou
+# si nikdy nenasadí. Nároky na formu se proto srovnají proti herním datům.
+_MEGA_SLOVA = re.compile(r"\b(Mega(\s+[XY])?|Primal)\b\s*/?\s*", re.I)
+for row in data.get("raidAttackers", []):
+    forma = str(row.get("form") or "")
+    if not _MEGA_SLOVA.search(forma):
+        continue
+    if row.get("pokemon") in _MEGA_Z_HRY:
+        continue
+    zbytek = _MEGA_SLOVA.sub("", forma).strip(" /")
+    row["form"] = zbytek or "Běžná"
 
 
 def match_names(label):
