@@ -323,3 +323,15 @@ Našlo se porovnáním s cizím žebříčkem (pokemongohub).
    Gigaton Hammer, Wildbolt Storm a další), takže druh, jehož nejlepší sestava
    na nich stojí, vychází hůř, než ve hře je. Kdybys někde psala, že žebříček
    je úplný, tohle je výjimka.
+
+## 5. Sloupec Evolvovat u kusu, který drží slot až po evoluci
+
+`evolve` koukal jen na to, co kus umí **teď**. Kus, který drží raidový nebo
+mega slot až jako vyvinutá forma, tak měl „Ne" s odůvodněním „ani vyvinutý by
+tenhle kus žádnou roli nedržel" — a o dvě buňky vedle ve verdiktu „Drží místo
+v rozpočtu: Fighting 5. z 6 — ale až jako Blaziken".
+
+Nově u nich `evolve: "Ano"`, **tón `warning` místo `good`** (zatím to nehraje,
+tak to nemá být zelené), podřádek zůstává cena v bonbónech a bublina jmenuje
+rozpočet. Když si tón mapuješ na barvu, tohle je nová kombinace: `Ano` +
+`warning`. Hlídá to nové pravidlo v auditu rozporů.

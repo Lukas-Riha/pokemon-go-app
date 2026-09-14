@@ -14816,6 +14816,57 @@ try {
   await page.goto(URL);
   await page.waitForTimeout(700);
 
+  /* ------------------------------------------------------------------
+     236) KUS, KTERY DRZI SLOT AZ PO EVOLUCI, SE MA VYVINOUT
+     U Combuskena stalo ve verdiktu "Drzi misto v rozpoctu: Fighting 5. z 6
+     — ale az jako Blaziken" a o dve bunky vedle "Nema to pro co, ani
+     vyvinuty by tenhle kus zadnou roli nedrzel". Sloupec Evolvovat totiz
+     koukal jen na to, co kus umi TED.
+     ------------------------------------------------------------------ */
+  console.log("\n236) slot az po evoluci znamena evolvovat");
+  const slotPoEvo = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Combusken", cp: 1367, level: 34, ivAtk: 5, ivDef: 6, ivSta: 13 },
+      { pokemon: "Machop", forma: "Shadow", cp: 431, level: 14, ivAtk: 8, ivDef: 8, ivSta: 9 },
+      // finalni kus bez role — u nej "Ne" zustat MA
+      { pokemon: "Rattata", cp: 300, level: 15, ivAtk: 4, ivDef: 4, ivSta: 4 }
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const c = P.getComputed();
+    const base = P.base();
+    const kus = (jm) => {
+      const row = P.getRows().filter((x) => x.pokemon === jm)[0];
+      const x = c[row.id];
+      const bb = base.filter((z) => z.row.id === row.id)[0] || {};
+      return { evolve: x.evolve, evolveSub: x.evolveSub || "", evolveTone: x.evolveTone || "",
+        evolveTitle: x.evolveTitle || "", keepSub: x.keepSub || "",
+        poEvoSlotu: (bb.sloty || []).filter((sl) => sl.poEvoluci).length };
+    };
+    return { combusken: kus("Combusken"), machop: kus("Machop"), rattata: kus("Rattata") };
+  });
+  check("Combusken drzi slot az po evoluci", slotPoEvo.combusken.poEvoSlotu > 0,
+    String(slotPoEvo.combusken.poEvoSlotu));
+  check("…takze evolvovat rika Ano", slotPoEvo.combusken.evolve === "Ano",
+    slotPoEvo.combusken.evolve + " / " + slotPoEvo.combusken.evolveTitle);
+  check("…a duvod jmenuje rozpocet",
+    /drží místo v rozpočtu až jako/.test(slotPoEvo.combusken.evolveTitle),
+    slotPoEvo.combusken.evolveTitle);
+  check("…a uz netvrdi, ze by roli nedrzel",
+    slotPoEvo.combusken.evolveTitle.indexOf("žádnou roli nedržel") === -1,
+    slotPoEvo.combusken.evolveTitle);
+  check("…podtitulek nese cenu v bonbonech",
+    slotPoEvo.combusken.evolveSub.indexOf("bonbónů") > -1, slotPoEvo.combusken.evolveSub);
+  check("…a ton je oranzovy, protoze zatim nehraje",
+    slotPoEvo.combusken.evolveTone === "warning", slotPoEvo.combusken.evolveTone);
+  check("totez plati pro shadow Machopa", slotPoEvo.machop.evolve === "Ano",
+    slotPoEvo.machop.evolve);
+  check("kus bez role ma u evoluce porad Ne",
+    String(slotPoEvo.rattata.evolve).indexOf("Ne") === 0, slotPoEvo.rattata.evolve);
+
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
 } finally {

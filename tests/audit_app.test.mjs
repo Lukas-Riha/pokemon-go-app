@@ -700,6 +700,12 @@ try {
         (v) => v.megaDrzi && /kopie/i.test(v.mega || "")],
       ["verdikt ho drží kvůli meze, ale mega slot má někdo jiný",
         (v) => /^mega/.test(v.keepSub || "") && !v.megaDrzi],
+      // Kus, který drží slot AŽ PO EVOLUCI, měl ve sloupci Evolvovat "Ne"
+      // s odůvodněním "ani vyvinutý by tenhle kus žádnou roli nedržel" —
+      // a o dvě buňky vedle "drží místo v rozpočtu, ale až jako Blaziken".
+      ["drží slot až po evoluci, a přesto evolvovat Ne",
+        (v, x) => (x.sloty || []).some((sl) => sl.poEvoluci)
+          && String(v.evolve || "").indexOf("Ne") === 0],
     ];
     const nalezy = [];
     base.forEach((x) => {

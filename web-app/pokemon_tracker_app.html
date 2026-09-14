@@ -8490,6 +8490,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       else if (powerupNote) powerupSub = powerupNote;
 
       var evolve, evolveTone, evolveTitle = "", evolveSub = "";
+      /* Kus, který drží slot v rozpočtu AŽ PO EVOLUCI. U něj je evoluce celý
+         důvod, proč si ho necháváš — a přesně to sloupec Evolvovat popíral:
+         u Combuskena stálo „Drží místo v rozpočtu: Fighting 5. z 6 — ale až
+         jako Blaziken" a o dvě buňky vedle „Nemá to pro co, ani vyvinutý by
+         tenhle kus žádnou roli nedržel". */
+      var slotyPoEvo = (b.sloty || []).filter(function (sl) { return sl.poEvoluci; });
+      var maSlotPoEvo = slotyPoEvo.length > 0;
       // Eevee, Ralts a spol. mají víc konců řetězce, takže jednoznačný cíl není
       var hrajeTed = (b.ligyVse || []).some(function (L) { return L.ted && L.ted.rank; });
       var hrajePo = (b.ligyVse || []).some(function (L) { return L.po && L.po.rank; });
@@ -8532,13 +8539,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + " je dobrý, přišel — a zpátky to nejde."
           + (evoCil ? " " + evoCil : "");
       } else if ((b.specialForm && b.formaStojiZa) || goodPvp || eliteRaidGym || b.highIV
-          || (b.evoMeta && b.pvpKeeper)) {
+          || maSlotPoEvo || (b.evoMeta && b.pvpKeeper)) {
         evolve = "Ano"; evolveTone = "good";
         // kus, který bez evoluce nemá smysl, si zaslouží jiný tón — jinak to
         // vypadá stejně jako „vyplatí se" u kusu, co roli drží už teď
         if (b.evoMeta && b.pvpKeeper) { evolveTone = "warning"; evolveSub = "jinak k ničemu"; }
         else if (b.dex && b.dex.evoCandy) evolveSub = b.dex.evoCandy + " bonbónů";
+        else if (maSlotPoEvo) evolveSub = "bez toho roli nezastane";
+        // Drží slot jen výhledově. Dokud ho nevyvineš, je to místo v boxu
+        // za něco, co zatím nehraje — to si zaslouží oranžovou, ne zelenou.
+        // Cena v bonbónech je ale důležitější údaj, takže zůstává v podřádku
+        // a „až po evoluci" nese tón a bublina.
+        if (maSlotPoEvo && !eliteRaidGym && !goodPvp) evolveTone = "warning";
         var proc = [];
+        if (maSlotPoEvo) {
+          proc.push("drží místo v rozpočtu až jako "
+            + (slotyPoEvo[0].jako || evoTargetName || "vyvinutá forma"));
+        }
         if (b.evoMeta && b.pvpKeeper) proc.push(b.evoMeta.name + " hraje "
           + (leagueByLabel(b.evoMeta.league) || {}).nazev + " (#" + b.evoMeta.rank + ")");
         if (goodPvp) proc.push("v lize hraje už tenhle druh");
