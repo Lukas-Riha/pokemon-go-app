@@ -5757,9 +5757,13 @@ try {
     check("„" + x.sloupec + "“ — prázdné hodnoty jdou dolů v obou směrech", x.prazdneDole);
   });
   // "L9" jako text skončí za "L40" — tohle je přesně to, co obecná větev řeší.
+  // Čísla se po prvním kliknutí řadí OD NEJVYŠŠÍHO — nikoho nezajímá, kdo má
+  // nejmíň CP. Test proto hlídá jen to, že je to monotónní posloupnost čísel,
+  // ne text: "L9" jako text by skončilo za "L40".
   check("level se řadí jako číslo, ne jako text",
     sortSweep.levely.length > 1
-      && sortSweep.levely.every((v, i) => i === 0 || sortSweep.levely[i - 1] <= v),
+      && (sortSweep.levely.every((v, i) => i === 0 || sortSweep.levely[i - 1] <= v)
+        || sortSweep.levely.every((v, i) => i === 0 || sortSweep.levely[i - 1] >= v)),
     sortSweep.levely.join(", "));
 
   console.log("\n115) rozpočet nesype do dražší kopie téhož druhu");
@@ -10741,9 +10745,9 @@ try {
         fastMove: "Waterfall", charged1: "Hydro Pump" }
     ]);
     // Vzestupně podle CP, ať jde nejslabší (a tedy zahazovaný) první —
-    // teprve pak dává smysl ptát se na jeho vrácení.
-    Array.from(document.querySelectorAll("#headerRow th"))
-      .filter((x) => x.textContent.indexOf("CP") === 0)[0].click();
+    // teprve pak dává smysl ptát se na jeho vrácení. Klikání do hlavičky by
+    // dalo SESTUPNĚ (u čísel je to první směr), takže se směr říká rovnou.
+    window.__pgo.atlasSort("cp", 1);
     await new Promise((r) => setTimeout(r, 200));
     window.__pgo.boxOtevrit();
     await new Promise((r) => setTimeout(r, 350));
@@ -11145,6 +11149,10 @@ try {
     mobilLista.vyskaBtn + " px");
 
   const mobilKarta = await page.evaluate(async () => {
+    // Bez zrušeného řazení záleží na tom, co zbylo z předchozího bloku —
+    // a s jiným prvním kusem chybí v rozboru věta o typech útoků.
+    window.__pgo.atlasSort("");
+    await new Promise((r) => setTimeout(r, 300));
     const karty = Array.from(document.querySelectorAll("#tbody tr:not(.detail-row)"));
     const vys = karty.map((t) => Math.round(t.getBoundingClientRect().height));
     const prvni = karty[0];

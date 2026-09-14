@@ -712,6 +712,125 @@ try {
   check("žádné dva údaje u téhož kusu si neodporují",
     rozpory.nalezy.length === 0, rozpory.nalezy.join(" | "));
 
+  /* ====================================================================
+     ŘAZENÍ SLOUPCŮ: OBRÁCENÝ SEMAFOR
+     První kliknutí na hlavičku musí dát nahoru to nejlepší. U stavů zelená,
+     oranžová, červená; u čísel od nejvyššího. Dřív se stavy řadily abecedně
+     a u Megy tím pádem vyskočilo nahoru "Lepší kopie" a "Vysoká" spadla dolů.
+     ==================================================================== */
+  console.log("\nřazení sloupců");
+  const razeni = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Garchomp", cp: 3000, level: 30, ivAtk: 15, ivDef: 15, ivSta: 15 },
+      { pokemon: "Gible", cp: 300, level: 10, ivAtk: 2, ivDef: 3, ivSta: 4 },
+      { pokemon: "Machamp", cp: 2200, level: 28, ivAtk: 14, ivDef: 13, ivSta: 12 },
+      { pokemon: "Pidgey", cp: 100, level: 5, ivAtk: 1, ivDef: 1, ivSta: 1 },
+      { pokemon: "Blissey", cp: 2500, level: 30, ivAtk: 10, ivDef: 14, ivSta: 15 },
+      { pokemon: "Magikarp", cp: 200, level: 12, ivAtk: 5, ivDef: 5, ivSta: 5 },
+      { pokemon: "Charizard", cp: 2600, level: 30, ivAtk: 13, ivDef: 13, ivSta: 13 },
+      { pokemon: "Rattata", cp: 150, level: 8, ivAtk: 3, ivDef: 3, ivSta: 3 },
+    ]);
+    await new Promise((r) => setTimeout(r, 1500));
+    const TONY = { good: 0, evo: 1, warning: 2, muted: 3, critical: 4 };
+    const TON_POLE = { keep: "keepTone", powerup: "powerupTone",
+      evolve: "evolveTone", mega: "megaTone", moves: "movesTone" };
+    const out = { stavy: {}, cisla: {} };
+    // stavové sloupce: tóny musí jít vzestupně (zelená nahoře)
+    for (const klic of Object.keys(TON_POLE)) {
+      P.atlasSort("");
+      await new Promise((r) => setTimeout(r, 60));
+      P.atlasSort(klic, 1);
+      await new Promise((r) => setTimeout(r, 250));
+      const c = P.getComputed();
+      const rady = Array.from(document.querySelectorAll("#tbody tr[data-row-id]"));
+      const tony = rady.map((tr) => {
+        const v = c[tr.dataset.rowId];
+        const t = v ? v[TON_POLE[klic]] : null;
+        return TONY[t] === undefined ? 3 : TONY[t];
+      });
+      out.stavy[klic] = { tony: tony,
+        vzestupne: tony.every((x, i) => i === 0 || tony[i - 1] <= x) };
+    }
+    // číselné sloupce: první kliknutí = od nejvyššího
+    for (const [klic, th] of [["cp", "CP"], ["ivPct", "IV %"]]) {
+      P.atlasSort("");
+      await new Promise((r) => setTimeout(r, 60));
+      const hl = Array.from(document.querySelectorAll("#headerRow th"))
+        .filter((x) => x.textContent.replace(/[▲▼]\d?/g, "").trim() === th)[0];
+      if (!hl) { out.cisla[klic] = { chybi: true }; continue; }
+      hl.click();
+      await new Promise((r) => setTimeout(r, 250));
+      const c = P.getComputed();
+      const hodnoty = Array.from(document.querySelectorAll("#tbody tr[data-row-id]"))
+        .map((tr) => {
+          const v = c[tr.dataset.rowId];
+          return klic === "cp" ? Number(P.getRows().filter((r) => r.id === tr.dataset.rowId)[0].cp)
+            : (v ? v.ivPct : null);
+        }).filter((x) => x !== null && !isNaN(x));
+      out.cisla[klic] = { hodnoty,
+        sestupne: hodnoty.every((x, i) => i === 0 || hodnoty[i - 1] >= x),
+        smer: P.snapshot().sortDir };
+    }
+    P.atlasSort("");
+    return out;
+  });
+  Object.keys(razeni.stavy).forEach((klic) => {
+    check("sloupec „" + klic + "“ řadí od zelené k červené",
+      razeni.stavy[klic].vzestupne, razeni.stavy[klic].tony.join(","));
+  });
+  Object.keys(razeni.cisla).forEach((klic) => {
+    check("číselný sloupec „" + klic + "“ začíná od nejvyššího",
+      razeni.cisla[klic].sestupne === true && razeni.cisla[klic].smer === -1,
+      JSON.stringify(razeni.cisla[klic]));
+  });
+
+  /* ====================================================================
+     HODNOTA VÝVINU U NIŽŠÍ EVOLUCE
+     Nižší forma musí nést, co z ní bude: raid, gym, ligu i megu. Bez toho
+     by šel pryč Gible, protože sám neumí nic, a Garchomp by se nikdy nechytil.
+     ==================================================================== */
+  console.log("\nhodnota vývinu u nižší evoluce");
+  const vyvin = await page.evaluate(async () => {
+    const P = window.__pgo;
+    // nižší formy, jejichž vývin je špička v dané roli
+    const VZORKY = [
+      { niz: "Gible", role: "raidRec" },
+      { niz: "Chansey", role: "gymRec" },
+      { niz: "Machoke", role: "raidRec" },
+      // Dratini tu schválně NENÍ: Dragonite appka mezi raidové útočníky
+      // nepočítá (jsou před ním Rayquaza, Salamence a spol.), takže mlčení
+      // je u něj správná odpověď, ne chyba.
+      { niz: "Deino", role: "raidRec" },
+      { niz: "Beldum", role: "raidRec" },
+      { niz: "Larvitar", role: "raidRec" },
+      { niz: "Magikarp", role: "mega" },
+      { niz: "Ralts", role: "raidRec" },
+    ];
+    P.setRows(VZORKY.map((x) => ({ pokemon: x.niz, cp: 400, level: 15,
+      ivAtk: 14, ivDef: 14, ivSta: 14 })));
+    await new Promise((r) => setTimeout(r, 2000));
+    const c = P.getComputed();
+    const rows = P.getRows();
+    return VZORKY.map((x) => {
+      const row = rows.filter((r) => r.pokemon === x.niz)[0];
+      const v = row ? c[row.id] : null;
+      if (!v) return { niz: x.niz, chybi: true };
+      const vse = [v.raidRec, v.gymRec, v.pvpRec, v.mega, v.megaSub, v.keepSub,
+        v.raidTitle, v.gymTitle, v.pvpTitle, v.megaTitle].join(" ");
+      // Buď o vývinu mluví, nebo tu roli zastane sám — Chansey je gymový
+      // obránce už teď, takže odkazovat na Blissey nemá proč.
+      const maRoliSam = String(v[x.role] || "").indexOf("Ne") !== 0
+        && String(v[x.role] || "") !== "";
+      return { niz: x.niz, role: x.role, hodnota: v[x.role], maRoliSam,
+        mluviOVyvinu: /po evo|Po evoluci|po evoluci|Po vývinu|evolvovat/i.test(vse) };
+    });
+  });
+  vyvin.forEach((x) => {
+    check("„" + x.niz + "“ nese hodnotu svého vývinu, nebo roli zastane sám",
+      !x.chybi && (x.mluviOVyvinu || x.maRoliSam), JSON.stringify(x));
+  });
+
 } finally {
   await browser.close();
   server.close();

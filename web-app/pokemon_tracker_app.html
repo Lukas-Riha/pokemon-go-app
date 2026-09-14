@@ -4983,14 +4983,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     { key: "cute", label: "CUTE", type: "select", options: ["Ano", "Ne"], w: 88 },
     { key: "shiny", label: "SHINY", type: "select", options: ["Ano", "Ne"], w: 92 },
     { key: "finalEvo", label: "Fin. evoluce? (auto)", type: "select", options: ["Ano", "Ne"], w: 120 },
-    { key: "cp", label: "CP", type: "number", num: true, wv: 74, w: 78 },
-    { key: "level", label: "Level", type: "number", num: true, step: "0.5", w: 78 },
-    { key: "ivAtk", label: "IV Atk", type: "number", num: true, min: 0, max: 15, w: 68 },
-    { key: "ivDef", label: "IV Def", type: "number", num: true, min: 0, max: 15, w: 68 },
-    { key: "ivSta", label: "IV Sta", type: "number", num: true, min: 0, max: 15, w: 68 },
-    { key: "ivPct", label: "IV %", readonly: true, wv: 40, w: 60 },
+    { key: "cp", desc: true, label: "CP", type: "number", num: true, wv: 74, w: 78 },
+    { key: "level", desc: true, label: "Level", type: "number", num: true, step: "0.5", w: 78 },
+    { key: "ivAtk", desc: true, label: "IV Atk", type: "number", num: true, min: 0, max: 15, w: 68 },
+    { key: "ivDef", desc: true, label: "IV Def", type: "number", num: true, min: 0, max: 15, w: 68 },
+    { key: "ivSta", desc: true, label: "IV Sta", type: "number", num: true, min: 0, max: 15, w: 68 },
+    { key: "ivPct", desc: true, label: "IV %", readonly: true, wv: 40, w: 60 },
     { key: "types", label: "Typy", readonly: true, wv: 78, w: 110 },
-    { key: "cpMax", label: "CP na stropu dat", readonly: true, lv: "CP max", wv: 56, w: 90,
+    { key: "cpMax", desc: true, label: "CP na stropu dat", readonly: true, lv: "CP max", wv: 56, w: 90,
       popis: "Přepočítané CP na nejvyšší level, pro který má appka data." },
     { key: "strong", label: "Silný proti typům", readonly: true, lv: "Silný proti", wv: 106, w: 190 },
     { key: "fastMove", label: "Rychlý útok", type: "text", cls: "col-move", w: 120 },
@@ -9822,7 +9822,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             // obyčejný klik = jen jedno kritérium; druhotné řazení se ruší
             sortDir *= -1; sortKey2 = null;
           } else {
-            sortKey = c.key; sortDir = 1; sortKey2 = null;
+            // U čísel se po prvním kliknutí čeká nejvyšší hodnota nahoře:
+            // nikoho nezajímá, kdo má nejmíň CP nebo nejhorší IV. Stavové
+            // sloupce si pořadí řeší samy ve `sortValue` (zelená, oranžová,
+            // červená), takže těm stačí vzestupně.
+            sortKey = c.key; sortDir = c.desc ? -1 : 1; sortKey2 = null;
           }
           renderHeader();   // jinak se šipka řazení nikdy nepřekreslí
           renderBody(); persist(true);
@@ -12664,8 +12668,44 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     lastBase.forEach(function (b) { baseById[b.row.id] = b; });
     var list = rows.map(function (r) { return { row: r, c: computed[r.id], b: baseById[r.id] }; });
 
+    /* Stavové sloupce se řadí podle BARVY, ne podle abecedy.
+       „Mega evoluce" dávala po kliknutí nahoru „Lepší kopie" a „Vysoká" až
+       úplně dolů, protože L je v abecedě před V. Barvu už přitom appka zná —
+       každý takový sloupec má vedle hodnoty i tón. Pořadí je obrácený
+       semafor: nejdřív to, co se vyplatí, nakonec křížky. */
+    var TON_PORADI = { good: 0, evo: 1, warning: 2, muted: 3, critical: 4 };
+    // Tradovat a Purifikovat tu schválně NEJSOU: mají níž vlastní pořadí
+    // stavů, které je lepší než barva. U výměny jde „Po evoluci" před „Ano"
+    // (je zdarma a ještě se po ní evolvuje), a to by abeceda uvnitř zelené
+    // prohodila.
+    var SLOUPCE_S_TONEM = {
+      keep: "keepTone", powerup: "powerupTone", evolve: "evolveTone",
+      mega: "megaTone", moves: "movesTone"
+    };
+    /** Číslo pořadí + text, aby se uvnitř jedné barvy řadilo abecedně. */
+    function tonovaHodnota(item, key) {
+      var ton = item.c[SLOUPCE_S_TONEM[key]];
+      var poradi = TON_PORADI[ton];
+      if (poradi === undefined) poradi = 3;
+      var text = String(item.c[key] === undefined || item.c[key] === null
+        ? "" : item.c[key]).toLowerCase();
+      return poradi + "|" + text;
+    }
+    /* Role bez vlastního tónu: „Ne" nesmí skončit uprostřed abecedy mezi
+       Ice a Poison, jak to dělalo u sloupce Do raidu. */
+    function roleHodnota(hodnota) {
+      var t = String(hodnota === undefined || hodnota === null ? "" : hodnota).trim();
+      if (!t || t === "Ne" || t === "–") return "3|";
+      if (/^(Po vývinu|Po evoluci|Záloha|Slabý)/i.test(t)) return "2|" + t.toLowerCase();
+      return "0|" + t.toLowerCase();
+    }
+
     function sortValue(item, key) {
       if (key === "star") return item.row.star ? 0 : 1;
+      if (SLOUPCE_S_TONEM[key]) return tonovaHodnota(item, key);
+      if (key === "raidRec" || key === "gymRec" || key === "raid" || key === "gym") {
+        return roleHodnota(item.c[key]);
+      }
       if (key === "pokemon") return (item.row.pokemon || "").toLowerCase();
       if (key === "ivPct") return item.c.ivPct;
       if (key === "cpMax") return item.c.cpMax ? (item.c.cpMax.evolved || item.c.cpMax.cp) : null;
