@@ -240,3 +240,33 @@ kopie**. Teď je zdroj jeden: kdo dostal mega slot z rozpočtu.
 **Co appka pořád nesleduje:** mega energii ani úroveň megy. V žádném poli to
 není, takže to neukazuj — doporučení „kdy megovat" je v dokumentaci jako
 pravidlo, ne jako spočítaný údaj.
+
+---
+
+## Změna z 14. 9. (druhá): priorita megy se počítá a pořadí v rosteru nic neurčuje
+
+**1. Nová funkce `window.__pgo.megaRanking()`.** Vrací objekt `typ -> pole`
+mega forem seřazené od nejlepší. Každá položka má `jmeno`, `druh`, `key`,
+`typy`, `kind`, `set` (sestava útoků), `atk` / `atkZaklad`, `def` / `defZaklad`,
+`energie`, `skore`, `podil` (1 = špička běžných druhů toho typu) a `aura`
+(mega ten typ sama má, takže na něj dává boost). Referenční tabulka
+`#refMegaTable` je z toho postavená — má teď sloupce Typ / # / Mega / Sestava
+/ % špičky a používá stejný gridový layout jako `#refRaidTable`. Kdybys ji
+stylovala, počítej s pěti sloupci místo tří.
+
+**2. `megaPriority()` už neopisuje ručně psaný seznam**, počítá se z toho
+žebříčku. Prakticky to znamená, že se u části druhů změnila hodnota ve
+sloupci **Mega**: Mega Heracross a Mega Tyranitar šly nahoru, Mega Salamence,
+Mega Houndoom a Mega Steelix dolů. Nic v rozhraní se nemění, ale když máš
+někde ukázkové screenshoty nebo fixtury s konkrétními hodnotami, přepočítej je.
+
+**3. Nová funkce `priShode(x, y)` v enginu** (interní, nevystavená): poslední
+slovo při remíze v každém žebříčku rozpočtu — vyšší level, pak IV, pak CP.
+Dřív při shodě rozhodovalo pořadí kusů v rosteru, takže dva stejní Snorlaxi
+si prohazovali gymový slot 5. a 6. podle toho, který se naskenoval dřív.
+**Když si někde děláš vlastní řazení kusů, musí mít taky deterministický
+tiebreak** — jinak se rozhraní a engine rozejdou.
+
+**4. Dokumentace opravena u lig:** megy v běžné lize nejsou, ale existují
+omezené formáty **Great / Ultra / Master League: Mega Edition**. Ligové
+žebříčky appky s nimi nepočítají a je to tam napsané.

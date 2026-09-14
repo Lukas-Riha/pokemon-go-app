@@ -789,23 +789,30 @@
     /* Raidový žebříček: sestava útoků je nejdůležitější a nejdelší údaj,
        ale v pěti sloupcích na ni zbylo 119 px a lámala se na tři řádky.
        Dostane vlastní řádek pod jménem — tam má celou šířku karty. */
-    #refRaidTable, #refRaidTable tbody { display: block; }
-    #refRaidTable tr { display: grid; align-items: baseline;
+    #refRaidTable, #refRaidTable tbody,
+    #refMegaTable, #refMegaTable tbody { display: block; }
+    #refRaidTable tr, #refMegaTable tr { display: grid; align-items: baseline;
       grid-template-columns: 44px 20px minmax(0, 1fr) 46px;
       grid-template-areas: "typ cislo jmeno pct"
                            "typ sestava sestava sestava";
       column-gap: 6px; padding: 3px 0;
       border-bottom: 1px solid var(--grid); }
-    #refRaidTable td, #refRaidTable th { border: 0; padding: 0; }
-    #refRaidTable td:nth-child(1), #refRaidTable th:nth-child(1) { grid-area: typ;
+    #refRaidTable td, #refRaidTable th,
+    #refMegaTable td, #refMegaTable th { border: 0; padding: 0; }
+    #refRaidTable td:nth-child(1), #refRaidTable th:nth-child(1),
+    #refMegaTable td:nth-child(1), #refMegaTable th:nth-child(1) { grid-area: typ;
       font-weight: 700; }
-    #refRaidTable td:nth-child(2), #refRaidTable th:nth-child(2) { grid-area: cislo;
+    #refRaidTable td:nth-child(2), #refRaidTable th:nth-child(2),
+    #refMegaTable td:nth-child(2), #refMegaTable th:nth-child(2) { grid-area: cislo;
       color: var(--text-muted); }
-    #refRaidTable td:nth-child(3), #refRaidTable th:nth-child(3) { grid-area: jmeno;
+    #refRaidTable td:nth-child(3), #refRaidTable th:nth-child(3),
+    #refMegaTable td:nth-child(3), #refMegaTable th:nth-child(3) { grid-area: jmeno;
       min-width: 0; }
-    #refRaidTable td:nth-child(4), #refRaidTable th:nth-child(4) { grid-area: sestava;
+    #refRaidTable td:nth-child(4), #refRaidTable th:nth-child(4),
+    #refMegaTable td:nth-child(4), #refMegaTable th:nth-child(4) { grid-area: sestava;
       color: var(--text-secondary); min-width: 0; }
-    #refRaidTable td:nth-child(5), #refRaidTable th:nth-child(5) { grid-area: pct;
+    #refRaidTable td:nth-child(5), #refRaidTable th:nth-child(5),
+    #refMegaTable td:nth-child(5), #refMegaTable th:nth-child(5) { grid-area: pct;
       text-align: right; }
     /* Tabulka zdrojů: počet řádků a datum stažení jsou účetnictví. Na 314 px
        z nich byly dva pruhy po 40 px, ve kterých se datum lámalo na tři řádky
@@ -3411,7 +3418,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         <table id="refGymTable"></table>
       </div>
       <div>
-        <h2 style="margin-top:12px;">Mega / Primal evoluce</h2>
+        <h2 style="margin-top:12px;">Mega / Primal evoluce podle typů</h2>
+        <p class="muted" style="margin:2px 0 6px;">100&nbsp;% = nejlepší
+        <b>běžný</b> (ne&#8209;mega) útočník toho typu. Přes 100&nbsp;% znamená,
+        že ta mega typ vede — a to je jediný důvod, proč ji mít.</p>
         <table id="refMegaTable"></table>
       </div>
     </div>
@@ -4399,7 +4409,52 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    * nedostane. Nová mega se tak projeví jako úkol doplnit data, ne jako
    * tiché špatné doporučení.
    */
+  /**
+   * Jak moc se ta mega vyplatí — POČÍTANÉ, ne opsané.
+   *
+   * Dřív to byla ručně psaná hodnota v referenčním seznamu. Stárla s každým
+   * balance patchem a nešlo z ní poznat proč: Mega Heracross v ní měla
+   * „nízkou" prioritu, přestože je to nejsilnější Bug útočník ve hře, kdežto
+   * Mega Steelix „střední", i když je v Steelu až šestá. Teď se to bere
+   * z žebříčku mega forem, který appka umí spočítat ze statů mega formy
+   * a útoků druhu — a ten seznam zůstává jen jako záchrana pro formy,
+   * kterým žebříček nedokáže přiřadit ani jeden použitelný útok.
+   *
+   * Měřítko: pořadí mezi megami TÉHOŽ typu a podíl na špičce toho typu mezi
+   * běžnými druhy. Počítá se jen typ, na který mega dává auru (má ho sama) —
+   * mega, která typ mlátí cizími útoky, partě nepomůže.
+   *   vysoká  = nejlepší mega svého typu a zároveň silnější než nejlepší
+   *             běžný útočník toho typu; megovat ji ten typ opravdu povýší
+   *   střední = první nebo druhá volba typu a aspoň 85 % špičky
+   *   nízká   = zbytek; kvůli takové meze se kus držet nemá
+   */
+  var megaPrioCache = null;
+
+  function megaPrioMapa() {
+    if (megaPrioCache) return megaPrioCache;
+    megaPrioCache = {};
+    var zeb = megaRanking();
+    var nej = {};
+    Object.keys(zeb).forEach(function (typ) {
+      zeb[typ].forEach(function (e, i) {
+        if (!e.aura) return;
+        var z = { rank: i + 1, podil: e.podil };
+        var m = nej[e.key];
+        if (!m || z.rank < m.rank || (z.rank === m.rank && z.podil > m.podil)) nej[e.key] = z;
+      });
+    });
+    Object.keys(nej).forEach(function (k) {
+      var z = nej[k];
+      megaPrioCache[k] = (z.rank === 1 && z.podil >= 1) ? "Vysoká"
+        : (z.rank <= 2 && z.podil >= 0.85) ? "Střední" : "Nízká";
+    });
+    return megaPrioCache;
+  }
+
   function megaPriority(name, forms) {
+    var klic = dexKey(name).split("-")[0];
+    var spocteno = megaPrioMapa()[klic];
+    if (spocteno) return spocteno;
     var ref = MEGA_BY[speciesKey(name)];
     if (ref && ref[0] && ref[0].raidPriority) return ref[0].raidPriority;
     return "Neznámá";
@@ -7074,6 +7129,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   /**
+   * Poslední slovo při shodě. Kdekoli se kusy řadí podle síly, může vyjít
+   * remíza — dva Snorlaxi 15/15/15 mají naprosto stejnou výdrž, dva Garchompi
+   * stejný ligový rank. Bez tohohle rozhodlo POŘADÍ V ROSTERU, tedy náhoda:
+   * gymový slot 5. a 6. si ty dva kusy prohodily jen podle toho, který se
+   * naskenoval dřív, a u ligy jeden slot dostal a druhý ne.
+   *
+   * Pořadí je tedy: vyšší level (dotáhnout ho na strop stojí míň prachu),
+   * pak vyšší IV, pak vyšší CP. Co je stejné i v tomhle, je opravdu
+   * zaměnitelné — a rozhodne id, aby byl výsledek aspoň pokaždé stejný.
+   */
+  function priShode(x, y) {
+    var xl = x.levelNum || 0, yl = y.levelNum || 0;
+    if (xl !== yl) return yl - xl;
+    var xi = x.ivPct === null || x.ivPct === undefined ? -1 : x.ivPct;
+    var yi = y.ivPct === null || y.ivPct === undefined ? -1 : y.ivPct;
+    if (xi !== yi) return yi - xi;
+    var xc = x.cp || 0, yc = y.cp || 0;
+    if (xc !== yc) return yc - xc;
+    return String((x.row && x.row.id) || "").localeCompare(String((y.row && y.row.id) || ""));
+  }
+
+  /**
    * Rozdá sloty rozpočtu. Volá se až po seskupení kopií, protože potřebuje
    * vidět celý roster najednou — o tom, jestli je kus zbytečný, nerozhoduje
    * on sám, ale to, kolik lepších kusů na tutéž práci už mám.
@@ -7114,7 +7191,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           // který je silnější teď a levnější dotáhnout.
           skore: sila * 1000 + (b.ivPct || 0) + (b.levelNum || 0) / 100000 });
       });
-      kand.sort(function (x, y) { return y.skore - x.skore; });
+      kand.sort(function (x, y) { return (y.skore - x.skore) || priShode(x.b, y.b); });
       // Dva nezávislé stropy. CELKEM smí druh držet tolik slotů, kolik je
       // strop kopií (parta o šesti se dá poskládat ze tří druhů po dvou
       // kusech, ale ne ze tří kopií jednoho). NÁPLAST k tomu smí být jen
@@ -7214,9 +7291,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var uzHraje = (b.sloty || []).some(function (sl) { return sl.druh === "pvp"; });
         var zaznam = { b: b, rank: rank, pct: pct, prahOK: prahOK, uzHraje: uzHraje,
           poEvoluci: nejC.poEvoluci };
-        if (!g || (uzHraje !== g.uzHraje ? !uzHraje : pct > g.pct)) {
-          podleDruhu[b.groupKey] = zaznam;
+        if (!g) { podleDruhu[b.groupKey] = zaznam; return; }
+        if (uzHraje !== g.uzHraje) {
+          if (!uzHraje) podleDruhu[b.groupKey] = zaznam;
+          return;
         }
+        if (pct !== g.pct) {
+          if (pct > g.pct) podleDruhu[b.groupKey] = zaznam;
+          return;
+        }
+        if (priShode(b, g.b) < 0) podleDruhu[b.groupKey] = zaznam;
       });
       var kand = Object.keys(podleDruhu).map(function (k) { return podleDruhu[k]; });
       // Napřed druhy, které v lize opravdu něco znamenají (nižší rank),
@@ -7224,7 +7308,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       kand.sort(function (x, y) {
         if (x.prahOK !== y.prahOK) return x.prahOK ? -1 : 1;
         if (x.rank !== y.rank) return x.rank - y.rank;
-        return y.pct - x.pct;
+        return (y.pct - x.pct) || priShode(x.b, y.b);
       });
       kand.slice(0, SLOTU_NA_LIGU).forEach(function (k, i) {
         k.b.sloty.push({
@@ -7250,7 +7334,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var gymSila = function (b) {
       return (b.gymPct || 0) * (jeShadowForma(b.row.forma) ? 1 / 1.2 : 1);
     };
-    gymKand.sort(function (x, y) { return gymSila(y) - gymSila(x); });
+    gymKand.sort(function (x, y) {
+      var d = gymSila(y) - gymSila(x);
+      return d || priShode(x, y);
+    });
     // Stejný strop na kopie jako u raidů: osm gymových slotů se nemá zaplnit
     // osmi Blissey. Bez tohohle si druhá kopie téhož druhu brala slot, i když
     // uživatel má v nastavení strop kopií — a pak se držela jako „díra",
@@ -7297,7 +7384,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       });
       Object.keys(dmaxTypy).forEach(function (typ) {
         var kand = dmaxTypy[typ].slice().sort(function (x, y) {
-          return (y.raidPct || 0) - (x.raidPct || 0);
+          return ((y.raidPct || 0) - (x.raidPct || 0)) || priShode(x, y);
         });
         // od druhu jen jeden kus na typ: tři sloty se nemají zaplnit
         // třemi kusy téhož druhu, když Max Battle chce partu
@@ -7319,7 +7406,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       });
       // tank do Max Battle: rozhoduje výdrž, stejně jako u obránce gymu
       var tanci = dmaxKusy.filter(function (b) { return b.gymPct; })
-        .sort(function (x, y) { return (y.gymPct || 0) - (x.gymPct || 0); });
+        .sort(function (x, y) {
+          return ((y.gymPct || 0) - (x.gymPct || 0)) || priShode(x, y);
+        });
       var videlT = {};
       tanci = tanci.filter(function (b) {
         if (videlT[b.groupKey]) return false;
@@ -7921,7 +8010,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       function pick(filterFn, scoreFn) {
         var cands = g.filter(filterFn);
         if (!cands.length) return null;
-        return cands.slice().sort(function (a, b) { return scoreFn(b) - scoreFn(a); })[0];
+        return cands.slice().sort(function (a, b) {
+          return (scoreFn(b) - scoreFn(a)) || priShode(a, b);
+        })[0];
       }
       // při shodě vyhrává vyšší level — je levnější dotáhnout ho na L40
       var bestRaid = pick(function (b) { return b.raidTypes.length > 0; },
@@ -13444,6 +13535,68 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return !top || dmg / top >= RAID_MIN_PCT;
   }
 
+  /**
+   * Žebříček mega forem — spočítaný, ne opsaný.
+   *
+   * V tabulce mega evolucí dlouho stálo jen jméno, druh evoluce a ručně
+   * psaná „priorita pro raidy". Nešlo z ní poznat, proč je jedna mega nad
+   * druhou, ani jakého je typu: pořadí bylo prostě to, v jakém formy přišly
+   * z herních dat. Přitom se všechno potřebné dá spočítat — mega forma má
+   * v pokédexu vlastní staty a typy a útoky si bere ze základního druhu
+   * (mega evolucí se moveset nemění).
+   *
+   * Měřítkem je „kolik procent špičky svého typu ta mega udělá". Špička je
+   * nejlepší BĚŽNÝ druh toho typu, takže číslo nad 100 % znamená, že mega
+   * ten typ vede — a přesně to je důvod, proč ji vůbec mít.
+   */
+  var megaRankCache = null;
+
+  function megaRanking() {
+    if (megaRankCache) return megaRankCache;
+    var podleTypu = {};
+    Object.keys(POKEDEX.mega || {}).forEach(function (key) {
+      var zaklad = POKEDEX.species[key];
+      var l = learnset(key);
+      if (!zaklad || !l || !l.fast.length || !l.charged.length) return;
+      (megaFormsForKey(key) || []).forEach(function (m) {
+        var dex = { types: m.types, a: m.a, d: m.d, s: m.s };
+        ALL_TYPES.forEach(function (typ) {
+          var best = 0, bestSet = null;
+          l.fast.forEach(function (fi) {
+            var f = fastMove(fi);
+            if (!f || f.type !== typ) return;
+            l.charged.forEach(function (ci) {
+              var c = chargedMove(ci);
+              if (!c || c.type !== typ) return;
+              var sc = raidScore(cycleDps(dex.types, f, c), dex);
+              if (sc > best) { best = sc; bestSet = f.name + " + " + c.name; }
+            });
+          });
+          if (!best) return;
+          var strop = typeCeiling(typ).score;
+          if (!podleTypu[typ]) podleTypu[typ] = [];
+          podleTypu[typ].push({
+            key: key, jmeno: m.name, druh: zaklad[1], kind: m.kind,
+            typy: m.types, energie: m.energy, set: bestSet,
+            atk: m.a, atkZaklad: zaklad[3], def: m.d, defZaklad: zaklad[4],
+            sta: m.s, skore: best, podil: strop ? best / strop : 0,
+            spicka: typeCeiling(typ).name,
+            // Aura pomáhá jen útokům TYPU MEGY. Mega, která daný typ mlátí
+            // cizími útoky, je proto jiná nabídka než mega se STAB.
+            aura: (m.types || []).indexOf(typ) !== -1
+          });
+        });
+      });
+    });
+    Object.keys(podleTypu).forEach(function (typ) {
+      podleTypu[typ].sort(function (a, b) {
+        return (b.skore - a.skore) || String(a.jmeno).localeCompare(String(b.jmeno), "cs");
+      });
+    });
+    megaRankCache = podleTypu;
+    return podleTypu;
+  }
+
   function typeCeiling(type) {
     if (ceilingCache[type] !== undefined) return ceilingCache[type];
     var list = typeRanking(type);
@@ -13454,6 +13607,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // Kdo se počítá za raidového útočníka: musí být aspoň v top 30 svého typu
   // a dělat aspoň polovinu toho, co špička. Pod tím už je to plýtvání prachem.
   var RAID_TOP_N = 30, RAID_MIN_PCT = 0.5;
+  // Kolik mega forem se v žebříčku ukazuje na typ. Čtvrtá už je jen vata:
+  // mega se drží jedna aktivní, takže rozhoduje první, nejvýš druhá volba.
+  var MEGA_TOP_N = 3;
   var raidIndexCache = null;
 
   function raidRankIndex() {
@@ -18388,10 +18544,30 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     gymT.innerHTML = h2;
 
+    /* Mega tabulka byla dlouho jen výpis: jméno, „Mega/Primal" a ručně psaná
+       priorita, v pořadí, v jakém formy přišly z herních dat. Nešlo z ní
+       poznat ani typ, ani proč je jedna nad druhou. Teď je to žebříček jako
+       u raidů — po typech, spočítaný ze statů mega formy a útoků druhu.
+       100 % = nejlepší BĚŽNÝ (ne-mega) útočník toho typu, takže víc než
+       100 % znamená, že ta mega typ vede. */
     var megaT = document.getElementById("refMegaTable");
-    var h3 = "<tr><th>Pokémon</th><th>Typ evoluce</th><th>Priorita pro raidy</th></tr>";
-    REFERENCE.megaEvolutions.forEach(function (r) {
-      h3 += "<tr><td>" + r.pokemon + "</td><td>" + r.kind + "</td><td>" + r.raidPriority + "</td></tr>";
+    var h3 = "<tr><th>Typ</th><th>#</th><th>Mega</th><th>Sestava</th><th>% špičky</th></tr>";
+    var megaZeb = megaRanking();
+    ALL_TYPES.forEach(function (t) {
+      var list = megaZeb[t];
+      if (!list || !list.length) return;
+      list.slice(0, MEGA_TOP_N).forEach(function (e, i) {
+        var prio = megaPriority(e.druh, null);
+        var popis = [e.set, "útok " + e.atkZaklad + " → " + e.atk,
+          e.energie + " energie na další megu"];
+        // Aura zvedá útoky TYPU MEGY. Když mega mlátí typ, který sama nemá,
+        // je to holý útočník bez bonusu pro partu — a to je jiná nabídka.
+        if (!e.aura) popis.push("bez aury na tenhle typ");
+        if (prio) popis.push(String(prio).toLowerCase() + " priorita");
+        h3 += "<tr><td>" + (i === 0 ? t : "") + "</td><td>" + (i + 1) + "</td><td>"
+          + e.jmeno + "</td><td>" + popis.join(" · ") + "</td><td>"
+          + Math.round(e.podil * 100) + " %</td></tr>";
+      });
     });
     megaT.innerHTML = h3;
   }
@@ -21639,12 +21815,26 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "sveze a nezabíráš místo druhým kusem. Teprve mezi kusy <b>bez role</b> "
       + "rozhoduje pořadí kopií, tedy IV mínus cena dotažení na strop; při "
       + "shodném IV proto vyhraje ten <b>výš levelem</b>. Slot navíc nedostane "
-      + "mega s <b>nízkou</b> ani <b>neznámou</b> raidovou prioritou (držet kus "
+      + "mega s <b>nízkou</b> ani <b>neznámou</b> prioritou (držet kus "
       + "kvůli meze, kterou nikdy nepoužiješ, je jen zabrané místo) a kus, který "
       + "se na tu megu teprve musí <b>vyvinout</b>, jen když je priorita "
       + "<b>vysoká</b> — cesta stojí bonbóny a teprve pak mega energii. Ostatní "
       + "kopie mají ve sloupci <b>Lepší kopie</b> — a to <b>vždycky ten druhý</b> "
       + "kus, ne ten, kterému slot patří.</td></tr>"
+      + "<tr><td><b>Mega — odkud se bere priorita</b></td><td><b>počítá se</b>, "
+      + "neopisuje. Mega forma má v pokédexu vlastní staty a typy a útoky si "
+      + "bere ze základního druhu (mega evolucí se moveset nemění), takže se "
+      + "dá spočítat úplně stejně jako raidový žebříček. Měřítkem je pořadí "
+      + "mezi megami <b>téhož typu</b> a podíl na špičce toho typu mezi "
+      + "<b>běžnými</b> druhy: <b>vysoká</b> = nejlepší mega svého typu a "
+      + "zároveň silnější než nejlepší běžný útočník (megovat ji ten typ "
+      + "opravdu povýší), <b>střední</b> = první nebo druhá volba typu a aspoň "
+      + "85 % špičky, <b>nízká</b> = zbytek. Počítá se jen typ, na který mega "
+      + "dává <b>auru</b> — tedy který sama má; mega, co typ mlátí cizími "
+      + "útoky, partě nepomůže. Celý žebříček je dole v <b>referenčních "
+      + "seznamech</b>. Dřív to byla ručně psaná hodnota, která stárla s "
+      + "každým balance patchem: Mega Heracross v ní měla nízkou prioritu, "
+      + "přestože je to nejsilnější Bug útočník ve hře.</td></tr>"
       + "<tr><td><b>Mega — k čemu vlastně je</b></td><td>mega evoluce je "
       + "<b>dočasná</b> (osm hodin) a <b>aktivní může být jen jedna</b>. Dává "
       + "tři věci. Zaprvé <b>silnější staty</b> toho kusu — mega forma má vlastní "
@@ -21660,8 +21850,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "Mega se vyplatí zapnout <b>před raidem</b> nebo <b>před sérií raidů</b> "
       + "a vybrat ji podle <b>typu, kterým na bosse útočíš</b>, ne podle toho, "
       + "která mega je nejsilnější — +30 % pro šestičlennou skupinu je víc než "
-      + "rozdíl mezi tvým a cizím útočníkem. Mimo raidy je zbytečná: v lize "
-      + "megy nejsou a v gymu se boost neuplatní. Mega <b>úroveň</b> roste "
+      + "rozdíl mezi tvým a cizím útočníkem. V gymu se boost neuplatní vůbec. "
+      + "V <b>lize</b> megy běžně nasadit nejdou, ale Niantic pravidelně pouští "
+      + "omezené formáty <b>Great / Ultra / Master League: Mega Edition</b>, "
+      + "kde se do party smí jedna mega evoluce — appka je ukazuje v přehledu "
+      + "akcí ve sloupci <b>Ligy</b>. Ligové žebříčky v appce s megami "
+      + "<b>nepočítají</b> (PvPoke je pro ten formát nevydává), takže na Mega "
+      + "Edition si sestavu musíš poskládat sám. Mega <b>úroveň</b> roste "
       + "megováním (a nejvýš jednou za den u druhu), s ní klesá cena energie — "
       + "takže má smysl točit <b>pár stálých</b> mega druhů, ne pokaždé jinou."
       + "</td></tr>"
@@ -23298,6 +23493,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return null;
     },
     typeRanking: typeRanking,
+    megaRanking: megaRanking,
     renderEvents: renderEvents,
     renderFriend: renderFriend,
     friendRows: friendRows,

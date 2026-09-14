@@ -858,18 +858,22 @@ try {
         keepSub: c[r.id].keepSub || "", megaSub: c[r.id].megaSub || ""
       }));
     };
-    // a) shodné IV (15/10/12 i 13/12/12 = 37/45 = 82,2 %), různý level
+    // a) shodné IV (15/10/12 i 13/12/12 = 37/45 = 82,2 %), různý level.
+    //    Původně to byli dva Houndoomi; ten má ale od přepočtu priority
+    //    Dark až třetí, takže mega slot nedostává vůbec. Pravidlo se proto
+    //    zkouší na Tyranitarovi — nejlepší Dark mega, slot dostane.
     const shoda = sber([
-      { pokemon: "Houndoom", cp: 1026, level: 20, ivAtk: 15, ivDef: 10, ivSta: 12,
-        fastMove: "Snarl", charged1: "Foul Play" },
-      { pokemon: "Houndoom", cp: 1249, level: 25, ivAtk: 13, ivDef: 12, ivSta: 12,
-        fastMove: "Snarl", charged1: "Foul Play" }
+      { pokemon: "Tyranitar", cp: 1026, level: 20, ivAtk: 15, ivDef: 10, ivSta: 12,
+        fastMove: "Bite", charged1: "Crunch" },
+      { pokemon: "Tyranitar", cp: 1249, level: 25, ivAtk: 13, ivDef: 12, ivSta: 12,
+        fastMove: "Bite", charged1: "Crunch" }
     ]);
     // b) plný roster: mega nikdy nekotví na kusu, který si nenecháváš, a
     //    drží ji vždycky nejvýš postavená kopie druhu, co slot má
     const rows = [];
     ["Gyarados", "Charizard", "Houndoom", "Venusaur", "Alakazam", "Gengar",
-     "Manectric", "Steelix", "Ampharos", "Beedrill"].forEach((d, i) => {
+     "Manectric", "Steelix", "Ampharos", "Beedrill", "Tyranitar", "Gardevoir",
+     "Lucario", "Heracross"].forEach((d, i) => {
       [[15, 15, 15], [13, 12, 12], [15, 10, 12], [6, 7, 8]].forEach((iv, k) => {
         rows.push({ pokemon: d, cp: 900 + i * 30 + k * 250, level: 15 + k * 6,
           ivAtk: iv[0], ivDef: iv[1], ivSta: iv[2] });
@@ -888,7 +892,9 @@ try {
         druh: d, drzitelu: drzitel.length,
         pustis: drzitel.some((v) => String(v.keep || "").indexOf("Zahodit") === 0),
         kopieUDrzitele: drzitel.map((v) => v.mega),
-        jinyMaLepsiKopii: g.filter((v) => !v.megaDrzi)
+        // Druh, kterému rozpočet mega slot nedává (nízká priorita), držitele
+        // nemá — tam se nemá co porovnávat.
+        jinyMaLepsiKopii: !drzitel.length || g.filter((v) => !v.megaDrzi)
           .every((v) => v.mega === "Lepší kopie" || v.mega === "Ne")
       };
     });
@@ -911,9 +917,96 @@ try {
   check("mega nikdy nekotví na kusu, který podle verdiktu pouštíš",
     megaVyber.plny.every((x) => !x.pustis),
     JSON.stringify(megaVyber.plny.filter((x) => x.pustis)));
+  check("aspoň některé druhy mega slot opravdu dostanou",
+    megaVyber.plny.filter((x) => x.drzitelu === 1).length >= 4,
+    JSON.stringify(megaVyber.plny.map((x) => x.druh + ":" + x.drzitelu)));
   check("u druhu s mega slotem hlásí Lepší kopie jen ti ostatní",
     megaVyber.plny.every((x) => x.jinyMaLepsiKopii && !x.kopieUDrzitele.some((m) => /kopie/i.test(m))),
     JSON.stringify(megaVyber.plny.filter((x) => !x.jinyMaLepsiKopii)));
+
+  /* ====================================================================
+     NA POŘADÍ V ROSTERU NESMÍ ZÁLEŽET
+     Kdekoli se kusy řadí podle síly, může vyjít remíza — dva Snorlaxi
+     15/15/15 mají stejnou výdrž, dva Garchompi stejný ligový rank. Když se
+     remíza nerozsoudí, rozhodne pořadí v poli, tedy to, co se naskenovalo
+     dřív. Takhle si dva Snorlaxi prohazovali gymový slot 5. a 6. a u Garchompa
+     jeden ligový slot dostal a druhý ne. Test spočítá roster, pak ho
+     pozpátku a třikrát zamíchaný, a všechna pole musí vyjít stejně.
+     ==================================================================== */
+  console.log("\nvýsledek nezávisí na pořadí v rosteru");
+  const poradi = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const DRUHY = ["Houndoom", "Gyarados", "Machamp", "Tyranitar", "Metagross",
+      "Garchomp", "Venusaur", "Charizard", "Alakazam", "Gengar", "Manectric",
+      "Steelix", "Ampharos", "Beedrill", "Blissey", "Azumarill", "Altaria",
+      "Medicham", "Scizor", "Lucario", "Dragonite", "Snorlax", "Registeel",
+      "Bastiodon", "Swampert", "Sceptile", "Blaziken"];
+    // Stejné součty IV s různým rozložením: shodné IV %, jiný level a CP.
+    const SADY = [
+      [[15, 10, 12], [13, 12, 12], [12, 13, 12], [10, 15, 12]],
+      [[15, 15, 15], [15, 15, 15]],
+      [[14, 14, 14], [15, 13, 14], [13, 15, 14], [14, 15, 13]],
+      [[10, 10, 10], [12, 9, 9], [9, 12, 9], [9, 9, 12]]
+    ];
+    const rows = [];
+    DRUHY.forEach((d, i) => {
+      SADY[i % SADY.length].forEach((iv, k) => {
+        rows.push({ pokemon: d, cp: 900 + k * 120, level: 16 + k * 5,
+          ivAtk: iv[0], ivDef: iv[1], ivSta: iv[2],
+          forma: (i % 5 === 0 && k % 2 === 1) ? "Shadow" : "",
+          dynamax: (i % 4 === 0) ? "Ano" : "" });
+      });
+    });
+    const klic = (r) => [r.pokemon, r.cp, r.level, r.ivAtk, r.ivDef, r.ivSta, r.forma].join("/");
+    const snap = () => {
+      const c = P.getComputed();
+      const m = {};
+      P.getRows().forEach((r) => { m[klic(r)] = c[r.id]; });
+      return m;
+    };
+    let seed = 20260914;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const zamichej = (pole) => {
+      const x = pole.slice();
+      for (let i = x.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        const t = x[i]; x[i] = x[j]; x[j] = t;
+      }
+      return x;
+    };
+    P.setRows(rows.slice());
+    await new Promise((r) => setTimeout(r, 1500));
+    const zaklad = snap();
+    const prvni = zaklad[Object.keys(zaklad)[0]];
+    const POLE = Object.keys(prvni).filter((k) => {
+      const v = prvni[k];
+      return typeof v === "string" || typeof v === "number" || typeof v === "boolean";
+    });
+    const nalezy = [];
+    const varianty = [rows.slice().reverse(), zamichej(rows), zamichej(rows), zamichej(rows)];
+    for (const v of varianty) {
+      P.setRows(v);
+      await new Promise((r) => setTimeout(r, 600));
+      const m = snap();
+      Object.keys(zaklad).forEach((k) => {
+        if (!m[k]) { nalezy.push("chybí kus " + k); return; }
+        POLE.forEach((f) => {
+          if (JSON.stringify(zaklad[k][f]) === JSON.stringify(m[k][f])) return;
+          if (nalezy.length < 6) {
+            nalezy.push(f + " u " + k + ": " + JSON.stringify(zaklad[k][f])
+              + " vs " + JSON.stringify(m[k][f]));
+          }
+        });
+      });
+    }
+    return { kusu: Object.keys(zaklad).length, poli: POLE.length,
+      variant: varianty.length, nalezy };
+  });
+  check("roster na pořadí se poskládal", poradi.kusu > 80, String(poradi.kusu));
+  check("porovnává se celý výpočet, ne jen verdikt", poradi.poli > 60, String(poradi.poli));
+  check("zkouší se víc různých pořadí", poradi.variant >= 4, String(poradi.variant));
+  check("žádné pole se nezmění, když se roster přeskládá",
+    poradi.nalezy.length === 0, poradi.nalezy.join(" | "));
 
 } finally {
   await browser.close();

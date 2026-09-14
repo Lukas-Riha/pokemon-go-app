@@ -2207,8 +2207,9 @@ try {
   // ODDĚLENÉ SHADOW ŽEBŘÍČKY: shadow varianta má vlastní pořadí
   // i sestavu (39 kB dat), protože se pod jedním klíčem s běžnou
   // formou slévat nedá — 86 druhů ukazovalo cizí číslo.
-  // 1,65 MB: posudek každého útoku, kontrola vstupu a nejlepší sestava druhu.
-  check("appka se drží pod 1,65 MB", velikostSouboru < 1650000, String(velikostSouboru));
+  // 1,70 MB: posudek každého útoku, kontrola vstupu, nejlepší sestava druhu
+  // a spočítaný žebříček mega forem (ten nahradil ručně psané priority).
+  check("appka se drží pod 1,70 MB", velikostSouboru < 1700000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {
@@ -6864,7 +6865,9 @@ try {
     P.setDiscarded([]);
     P.setRows([
       { pokemon: "Charizard", cp: 1485, level: 18.5, ivAtk: 11, ivDef: 11, ivSta: 15 },
-      { pokemon: "Absol", cp: 1416, level: 20, ivAtk: 14, ivDef: 14, ivSta: 11 },
+      // Mega Banette má útok 312 — dopočet z útoku by z ní udělal Vysokou,
+      // žebříček ji má jako Ghost #2 na 77 % špičky, tedy nízkou.
+      { pokemon: "Shuppet", cp: 700, level: 20, ivAtk: 14, ivDef: 14, ivSta: 11 },
     ]);
     const c = P.getComputed();
     const out = {};
@@ -6876,9 +6879,8 @@ try {
   });
   check("ohodnocená mega si prioritu drží", megaP.Charizard.mega === "Vysoká",
     megaP.Charizard.mega);
-  // Mega Absol má útok 314 — dopočet by z něj udělal Vysokou, seznam říká Nízká.
-  check("silný útok sám o sobě Vysokou nedělá", megaP.Absol.mega === "Nízká",
-    megaP.Absol.mega + " (dopočet podle útoku by dal Vysoká)");
+  check("silný útok sám o sobě Vysokou nedělá", megaP.Shuppet.mega === "Nízká",
+    megaP.Shuppet.mega + " (dopočet podle útoku by dal Vysoká)");
   check("neohodnocená mega se nehádá, přizná se nevědomost",
     megaP.priorityVSeznamu === "Neznámá", String(megaP.priorityVSeznamu));
 
@@ -10584,7 +10586,12 @@ try {
       { id: "t2", pokemon: "Machoke", cp: 1200, level: 20, ivAtk: 5, ivDef: 5, ivSta: 5 },
       // Roli má až jako Gengar; výměna je nejlevnější cesta, jak se tam dostat.
       { id: "t3", pokemon: "Haunter", cp: 1200, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 },
-      { id: "t4", pokemon: "Abra", cp: 400, level: 15, ivAtk: 10, ivDef: 10, ivSta: 10 }
+      { id: "t4", pokemon: "Abra", cp: 400, level: 15, ivAtk: 10, ivDef: 10, ivSta: 10 },
+      // Mega slot pred evoluci dostane jen mega s VYSOKOU prioritou. Drive tu
+      // stal Haunter, jenze Mega Gengar vyjde ze spocitaneho zebricku jako
+      // Ghost #1, ale pod stropem beznych duchu - tedy stredni. Mega Tyranitar
+      // je Dark #1 a nad stropem, takze Larvitar si slot drzi.
+      { id: "t5", pokemon: "Larvitar", cp: 500, level: 15, ivAtk: 12, ivDef: 12, ivSta: 12 }
     ]);
     const c = window.__pgo.getComputed();
     const out = {};
@@ -10612,8 +10619,8 @@ try {
   // Mega slot patří vyvinuté formě — bez toho vypadal Haunter jako kus,
   // co roli plní už teď, a výměna se u něj zablokovala.
   check("mega slot u nevyvinutého kusu je označený jako „až po evoluci“",
-    rolePredTradem.Haunter.sloty.indexOf("mega:poEvo") > -1,
-    rolePredTradem.Haunter.sloty.join(","));
+    rolePredTradem.Larvitar.sloty.indexOf("mega:poEvo") > -1,
+    rolePredTradem.Larvitar.sloty.join(","));
   eq("Haunter se na výměnu pořád nabízí", rolePredTradem.Haunter.trade, "Ano");
   eq("…a Abra taky, o stupeň dál", rolePredTradem.Abra.trade, "Po evoluci");
 
@@ -14528,10 +14535,10 @@ try {
     const P = window.__pgo;
     // Obe IV davaji 37/45 = 82,2 %, takze o megu rozhoduje az level.
     P.setRows([
-      { pokemon: "Houndoom", cp: 1026, level: 20, ivAtk: 15, ivDef: 10, ivSta: 12,
-        fastMove: "Snarl", charged1: "Foul Play" },
-      { pokemon: "Houndoom", cp: 1249, level: 25, ivAtk: 13, ivDef: 12, ivSta: 12,
-        fastMove: "Snarl", charged1: "Foul Play" }
+      { pokemon: "Tyranitar", cp: 1026, level: 20, ivAtk: 15, ivDef: 10, ivSta: 12,
+        fastMove: "Bite", charged1: "Crunch" },
+      { pokemon: "Tyranitar", cp: 1249, level: 25, ivAtk: 13, ivDef: 12, ivSta: 12,
+        fastMove: "Bite", charged1: "Crunch" }
     ]);
     await new Promise((r) => setTimeout(r, 900));
     const c = P.getComputed();
@@ -14570,6 +14577,84 @@ try {
   check("…vcetne toho, ze boost na IV nezalezi", megaDoc.aura);
   check("…a ze aktivni muze byt jen jedna", megaDoc.jednaNajednou);
   check("dokumentace rika, kdy megu pouzit", megaDoc.kdyPouzit);
+
+  /* ------------------------------------------------------------------
+     233) ZEBRICEK MEGA FOREM
+     Tabulka mega evoluci byla jen vypis v poradi, v jakem formy prisly
+     z hernich dat: bez typu, bez poradi, s rucne psanou prioritou.
+     ------------------------------------------------------------------ */
+  console.log("\n233) zebricek mega forem");
+  const megaTab = await page.evaluate(() => {
+    const P = window.__pgo;
+    const rows = [...document.querySelectorAll("#refMegaTable tr")];
+    const hlavicka = [...rows[0].cells].map((c) => c.textContent.trim());
+    const data = rows.slice(1).map((tr) => ({
+      typ: tr.cells[0].textContent.trim(),
+      poradi: Number(tr.cells[1].textContent.trim()),
+      jmeno: tr.cells[2].textContent.trim(),
+      popis: tr.cells[3].textContent.trim(),
+      pct: Number(String(tr.cells[4].textContent).replace(/[^0-9]/g, ""))
+    }));
+    // klesa procento uvnitr kazdeho typu?
+    let klesa = true, typ = "";
+    let predchozi = Infinity;
+    data.forEach((r) => {
+      if (r.typ) { typ = r.typ; predchozi = Infinity; }
+      if (r.pct > predchozi) klesa = false;
+      predchozi = r.pct;
+    });
+    const zeb = P.megaRanking();
+    return {
+      hlavicka, radku: data.length, klesa,
+      typu: Object.keys(zeb).length,
+      bug1: data.find((r) => r.typ === "Bug" && r.poradi === 1),
+      maSestavu: data.every((r) => r.popis.indexOf("+") > -1),
+      maUtok: data.every((r) => r.popis.indexOf("útok ") > -1),
+      maEnergii: data.every((r) => /[0-9]+ energie/.test(r.popis)),
+      maPrioritu: data.every((r) => /(vysoká|střední|nízká|neznámá) priorita/.test(r.popis)),
+      prioHeracross: P.megaPriority("Heracross", null),
+      prioAudino: P.megaPriority("Audino", null)
+    };
+  });
+  check("tabulka ma sloupec Typ a poradi",
+    megaTab.hlavicka[0] === "Typ" && megaTab.hlavicka[1] === "#",
+    megaTab.hlavicka.join("|"));
+  check("zebricek pokryva vic nez deset typu", megaTab.typu > 10, String(megaTab.typu));
+  check("uvnitr typu procenta klesaji", megaTab.klesa);
+  check("u kazde megy je sestava utoku", megaTab.maSestavu);
+  check("…i narust utoku", megaTab.maUtok);
+  check("…i cena energie", megaTab.maEnergii);
+  check("…i priorita", megaTab.maPrioritu);
+  check("Bug vede Mega Heracross, ne poradi z dat",
+    !!megaTab.bug1 && megaTab.bug1.jmeno === "Mega Heracross",
+    JSON.stringify(megaTab.bug1));
+  check("…a ma proto vysokou prioritu", megaTab.prioHeracross === "Vysoká",
+    megaTab.prioHeracross);
+  check("slaba mega ma nizkou prioritu", megaTab.prioAudino === "Nízká",
+    megaTab.prioAudino);
+
+  const megaLigy = await page.evaluate(() => {
+    window.__pgo.renderDocs();
+    const t = (document.getElementById("docsBody") || document.body).textContent;
+    return { edice: /Mega Edition/.test(t), zebricky: /nepočítají/.test(t) };
+  });
+  check("dokumentace zna ligove Mega Edition formaty", megaLigy.edice);
+  check("…a priznava, ze pro ne zebricky nema", megaLigy.zebricky);
+
+  // 500 px: tabulka nesmi pretekat do strany
+  await page.setViewportSize({ width: 500, height: 900 });
+  await page.waitForTimeout(250);
+  const megaUzko = await page.evaluate(() => {
+    const t = document.getElementById("refMegaTable");
+    const d = t.closest("details");
+    if (d) d.open = true;
+    return { sirka: t.scrollWidth, okno: document.documentElement.clientWidth,
+      telo: document.body.scrollWidth };
+  });
+  check("zebricek mega se vejde na 500 px",
+    megaUzko.telo <= megaUzko.okno + 1, JSON.stringify(megaUzko));
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.waitForTimeout(200);
 
   await page.goto(URL);
   await page.waitForTimeout(700);
