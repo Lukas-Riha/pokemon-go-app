@@ -398,6 +398,30 @@ print("větvené evoluce (víc možných forem): %d — %s"
 if bez_learnsetu[:8]:
     print("   napr.: " + ", ".join(bez_learnsetu[:8]))
 
+# ------------------------------------------------- holy klic = ZAKLADNI forma
+# Pod jmenem bez formy musi sedet ta forma, kterou chytis ty. Darmanitan nema
+# v hernich datech formu "Normal", ale "Standard", takze holy klic dostala ta,
+# co byla v datech prvni - GALARSKA. Appka pak u chyceneho ohniveho Darmanitana
+# hlasila typ Ice, raid "Ne" a radila Ice Fang + Avalanche.
+_regiony = ("galarian", "alolan", "hisuian", "paldean", "galar", "alola", "hisui", "paldea")
+for _k, _v in species.items():
+    if "-" in _k:
+        continue
+    _varianty = [x for x in species if x.split("-")[0] == _k and x != _k]
+    _regionalni = [x for x in _varianty
+                   if any(r in x.split("-", 1)[1] for r in _regiony)]
+    _bezne = [x for x in _varianty
+              if not any(r in x.split("-", 1)[1] for r in _regiony)]
+    # holy klic se shoduje s regionalni formou, a pritom existuje i bezna
+    for _r in _regionalni:
+        if species[_r][2] == _v[2] and species[_r][3:6] == _v[3:6] and _bezne:
+            _jine = [x for x in _bezne if species[x][2] != _v[2]]
+            if _jine:
+                chyba("pokedex", "%s pod holym jmenem nese regionalni formu %s (%s), "
+                                 "ale druh ma i %s (%s)"
+                      % (_k, _r, "/".join(species[_r][2]), _jine[0], "/".join(species[_jine[0]][2])))
+
+
 # ---------------------------------------------------------------- akce a okna
 # Akce bez datumu se na osu nenakresli - je to legitimni stav (LeekDuck datum
 # u cerstve ohlasene akce obcas nezverejni), ale musi byt videt. Drive to bylo

@@ -303,3 +303,23 @@ s elementem v DOM, rozeseté po kartách Nastavení, Import, Smazané a Prach).
 Texty u tří voleb jsem přepsal, protože slibovaly něco jiného, než engine
 dělá — kurz prachu za bod IV, váha nehrající ligy a výčet u tlačítka
 „Nastavit doporučené". Když je máš někde okopírované, vezmi si nové znění.
+
+## 4. Shadow v raidové roli a Darmanitan (14. 9. večer)
+
+Našlo se porovnáním s cizím žebříčkem (pokemongohub).
+
+1. **`raidPct` může nově přerůst 1.0.** Shadow má ve hře útok +20 % a obranu
+   −17 %; gymový rozpočet tu srážku počítal odjakživa, raidový bonus k útoku
+   ne. Shadow Tyranitar a běžný Tyranitar vycházeli oba na 100 %. Teď vychází
+   shadow na 114 %. **Když někde procento formátuješ nebo kreslíš pruh, počítej
+   s hodnotou nad 100 %** — pruh se nesmí přetéct ani zaseknout na stropu.
+2. **Pod holým klíčem `darmanitan` byla galarská (ledová) forma.** Herní data
+   u něj nemají formu „Normal", ale „Standard", takže klíč dostala ta, co byla
+   v datech první. Chycený unovský Darmanitan měl typ Ice, raid „Ne" a sestavu
+   Ice Fang + Avalanche. Opraveno v `tools/build_pokedex.py` (Standard se bere
+   jako základní forma) a hlídá to audit dat.
+3. **Dokumentace má nový bod v „Co appka NEVÍ":** patnáct nabitých útoků nemá
+   v herních datech raidová čísla (Mind Blown, Pyro Ball, Glaive Rush,
+   Gigaton Hammer, Wildbolt Storm a další), takže druh, jehož nejlepší sestava
+   na nich stojí, vychází hůř, než ve hře je. Kdybys někde psala, že žebříček
+   je úplný, tohle je výjimka.

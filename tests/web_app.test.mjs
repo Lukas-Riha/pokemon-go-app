@@ -14764,6 +14764,58 @@ try {
   await page.goto(URL);
   await page.waitForTimeout(700);
 
+  /* ------------------------------------------------------------------
+     235) SHADOW A ZAKLADNI FORMY V RAIDOVE ROLI
+     Naslo se porovnanim s cizim zebrickem (pokemongohub):
+     a) raidPct neznal shadow bonus. Shadow Tyranitar a bezny Tyranitar
+        vychazeli na stejnych 100 % a o slot rozhodl az tiebreak, prestoze
+        shadow ma +20 % utoku — jediny duvod, proc se shadow kus drzi.
+     b) Pod holym jmenem "Darmanitan" sedela GALARSKA forma, protoze pogoapi
+        u nej nema formu "Normal", ale "Standard", a klic dostala ta, co byla
+        v datech prvni. Chyceny unovsky (ohnivy) Darmanitan tak mel typ Ice,
+        raid "Ne" a doporucenou sestavu Ice Fang + Avalanche.
+     ------------------------------------------------------------------ */
+  console.log("\n235) shadow bonus a zakladni formy");
+  const formyRaid = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Tyranitar", forma: "Shadow", cp: 3000, level: 30,
+        ivAtk: 15, ivDef: 15, ivSta: 15, fastMove: "Smack Down", charged1: "Stone Edge" },
+      { pokemon: "Tyranitar", cp: 3000, level: 30,
+        ivAtk: 15, ivDef: 15, ivSta: 15, fastMove: "Smack Down", charged1: "Stone Edge" },
+      { pokemon: "Darmanitan", cp: 2400, level: 30,
+        ivAtk: 15, ivDef: 15, ivSta: 15, fastMove: "Fire Fang", charged1: "Overheat" }
+    ]);
+    await new Promise((r) => setTimeout(r, 900));
+    const c = P.getComputed();
+    const rows = P.getRows();
+    const kus = (i) => {
+      const x = c[rows[i].id];
+      return { raidPct: x.raidPct, typy: x.types, movesBest: x.movesBest || "" };
+    };
+    return { shadow: kus(0), bezny: kus(1), darmanitan: kus(2),
+      dexDarm: P.dexByKey("darmanitan") };
+  });
+  check("shadow ma v raidu vyssi procento nez bezna kopie",
+    formyRaid.shadow.raidPct > formyRaid.bezny.raidPct * 1.1,
+    formyRaid.shadow.raidPct + " vs " + formyRaid.bezny.raidPct);
+  check("…a vyleze nad 100 %, protoze meritkem je nejlepsi BEZNY kus",
+    formyRaid.shadow.raidPct > 1, String(formyRaid.shadow.raidPct));
+  check("…bezna kopie zustava na 100 %",
+    Math.abs(formyRaid.bezny.raidPct - 1) < 0.01, String(formyRaid.bezny.raidPct));
+  check("Darmanitan pod holym jmenem je ohnivy, ne ledovy",
+    formyRaid.darmanitan.typy === "Fire", formyRaid.darmanitan.typy);
+  check("…a v pokedexu taky", (formyRaid.dexDarm || {}).types
+    && formyRaid.dexDarm.types.join("/") === "Fire",
+    JSON.stringify((formyRaid.dexDarm || {}).types));
+  check("…takze se mu neradi ledova sestava",
+    formyRaid.darmanitan.movesBest.indexOf("Ice") === -1
+      && formyRaid.darmanitan.movesBest.indexOf("Avalanche") === -1,
+    formyRaid.darmanitan.movesBest);
+
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
 } finally {

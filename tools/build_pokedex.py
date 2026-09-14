@@ -192,10 +192,18 @@ def norm(name):
     return re.sub(r"[^a-z0-9]", "", s)
 
 
+# Forma, která je pro daný druh ta ZÁKLADNÍ. Skoro všude se jmenuje "Normal",
+# Darmanitan ji má jako "Standard" — a protože se "Normal" nenašel, dostal
+# bezformový klíč `darmanitan` ten, co byl v datech první: GALARIAN_standard.
+# Appka pak u chyceného (unovského, ohnivého) Darmanitana psala typ Ice,
+# raid "Ne" a radila Ice Fang + Avalanche.
+ZAKLADNI_FORMY = ("normal", "standard")
+
+
 def dex_key(pokemon_name, form, ponechat=None):
     base = norm(pokemon_name)
     f = str(form).lower()
-    if f == "normal":
+    if f in ZAKLADNI_FORMY:
         return base
     if f in FORM_SUFFIX:
         return f"{base}-{FORM_SUFFIX[f]}"
@@ -228,10 +236,10 @@ def zajimave_formy(types_raw, stats_raw):
     vyřeší sama — nikdo nemusí doplňovat seznam."""
     zaklad_typy, zaklad_staty = {}, {}
     for t in types_raw:
-        if str(t.get("form", "")).lower() == "normal":
+        if str(t.get("form", "")).lower() in ZAKLADNI_FORMY:
             zaklad_typy[norm(t["pokemon_name"])] = tuple(t["type"])
     for st in stats_raw:
-        if str(st.get("form", "")).lower() == "normal":
+        if str(st.get("form", "")).lower() in ZAKLADNI_FORMY:
             zaklad_staty[norm(st["pokemon_name"])] = (
                 st["base_attack"], st["base_defense"], st["base_stamina"])
 
@@ -253,7 +261,7 @@ def zajimave_formy(types_raw, stats_raw):
     for st in stats_raw:
         jmeno = norm(st["pokemon_name"])
         f = str(st.get("form", "")).lower()
-        if f == "normal":
+        if f in ZAKLADNI_FORMY:
             continue
         staty = (st["base_attack"], st["base_defense"], st["base_stamina"])
         jine_staty = jmeno in zaklad_staty and staty != zaklad_staty[jmeno]
@@ -289,7 +297,7 @@ def main():
 
     def wanted(name, form):
         f = str(form).lower()
-        return f == "normal" or f in FORM_SUFFIX or (norm(name), f) in ponechat
+        return f in ZAKLADNI_FORMY or f in FORM_SUFFIX or (norm(name), f) in ponechat
 
     types_by_key = {}
     for t in raw["pokemon_types"]:

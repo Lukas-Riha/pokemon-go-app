@@ -567,9 +567,14 @@ try {
       if (b && b.cpMax && +r.cp && b.cpMax + 1 < +r.cp) {
         chyby.stropPodCp.push(r.pokemon + " strop " + b.cpMax + " < CP " + r.cp);
       }
+      // Shadow kus smí u raidu přerůst 100 %: měřítkem je nejlepší BĚŽNÝ
+      // kus druhu a shadow má o 20 % vyšší útok. Strop je tam proto, aby
+      // se chytila nesmyslná čísla, ne aby ten bonus schoval.
+      const shadow = /shadow/i.test(String(r.forma || ""));
       ["raidPct", "gymPct"].forEach((k) => {
         const v = x[k];
-        if (v !== null && v !== undefined && !(v >= 0 && v <= 1.0001)) {
+        const strop = (k === "raidPct" && shadow) ? 1.25 : 1.0001;
+        if (v !== null && v !== undefined && !(v >= 0 && v <= strop)) {
           chyby.pctMimo.push(r.pokemon + "." + k + "=" + v);
         }
       });
@@ -584,7 +589,7 @@ try {
     cisla.chyby.ivMimo.length === 0, cisla.chyby.ivMimo.slice(0, 3).join(" | "));
   check("strop CP není nižší než současné CP",
     cisla.chyby.stropPodCp.length === 0, cisla.chyby.stropPodCp.slice(0, 3).join(" | "));
-  check("procenta rolí zůstávají v rozsahu 0-100 %",
+  check("procenta rolí zůstávají v rozsahu (shadow smí do 125 % u raidu)",
     cisla.chyby.pctMimo.length === 0, cisla.chyby.pctMimo.slice(0, 3).join(" | "));
 
   console.log("\n22) Rozdělení žebříčků na metu a zbytek nikoho neztratilo");
