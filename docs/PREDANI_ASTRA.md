@@ -256,8 +256,9 @@ stylovala, počítej s pěti sloupci místo tří.
 
 **2. `megaPriority()` už neopisuje ručně psaný seznam**, počítá se z toho
 žebříčku. Prakticky to znamená, že se u části druhů změnila hodnota ve
-sloupci **Mega**: Mega Heracross a Mega Tyranitar šly nahoru, Mega Salamence,
-Mega Houndoom a Mega Steelix dolů. Nic v rozhraní se nemění, ale když máš
+sloupci **Mega**: nahoru šlo 7 druhů (Heracross, Tyranitar, Absol, Pinsir,
+Gallade, Lopunny, Abomasnow), dolů 11 (Salamence, Gyarados, Metagross,
+Garchomp, Venusaur, Gengar, Blaziken, Houndoom, Scizor, Aerodactyl, Steelix). Nic v rozhraní se nemění, ale když máš
 někde ukázkové screenshoty nebo fixtury s konkrétními hodnotami, přepočítej je.
 
 **3. Nová funkce `priShode(x, y)` v enginu** (interní, nevystavená): poslední

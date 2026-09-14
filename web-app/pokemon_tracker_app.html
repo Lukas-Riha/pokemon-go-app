@@ -4425,7 +4425,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    * mega, která typ mlátí cizími útoky, partě nepomůže.
    *   vysoká  = nejlepší mega svého typu a zároveň silnější než nejlepší
    *             běžný útočník toho typu; megovat ji ten typ opravdu povýší
-   *   střední = první nebo druhá volba typu a aspoň 85 % špičky
+   *   střední = nejlepší mega svého typu (aura se jinak nedá dostat)
+   *             nebo druhá volba typu s aspoň 85 % špičky
    *   nízká   = zbytek; kvůli takové meze se kus držet nemá
    */
   var megaPrioCache = null;
@@ -4445,8 +4446,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     Object.keys(nej).forEach(function (k) {
       var z = nej[k];
+      // Nejlepší mega svého typu nikdy nespadne na „nízkou". Aura pomáhá
+      // útokům typu megy a jiná mega toho typu neexistuje — kdyby se pustila,
+      // nemáš tomu typu čím dát +30 %. Mega Metagross je ve Steelu až na
+      // 82 % špičky běžných druhů, ale je to JEDINÁ ocelová mega, co za
+      // něco stojí.
       megaPrioCache[k] = (z.rank === 1 && z.podil >= 1) ? "Vysoká"
-        : (z.rank <= 2 && z.podil >= 0.85) ? "Střední" : "Nízká";
+        : (z.rank === 1 || (z.rank <= 2 && z.podil >= 0.85)) ? "Střední" : "Nízká";
     });
     return megaPrioCache;
   }
@@ -21828,7 +21834,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "mezi megami <b>téhož typu</b> a podíl na špičce toho typu mezi "
       + "<b>běžnými</b> druhy: <b>vysoká</b> = nejlepší mega svého typu a "
       + "zároveň silnější než nejlepší běžný útočník (megovat ji ten typ "
-      + "opravdu povýší), <b>střední</b> = první nebo druhá volba typu a aspoň "
+      + "opravdu povýší), <b>střední</b> = nejlepší mega svého typu i bez toho "
+      + "(aura se jinak k tomu typu nedostane) nebo druhá volba s aspoň "
       + "85 % špičky, <b>nízká</b> = zbytek. Počítá se jen typ, na který mega "
       + "dává <b>auru</b> — tedy který sama má; mega, co typ mlátí cizími "
       + "útoky, partě nepomůže. Celý žebříček je dole v <b>referenčních "
