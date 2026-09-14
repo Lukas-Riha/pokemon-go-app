@@ -286,3 +286,20 @@ prioritu nechává na `Neznámá`, protože si ji appka počítá. Zároveň se 
 `raidAttackers[].form` odstraní nárok na mega formu, kterou hra nemá —
 stálo tam „Mewtwo (Mega Y)" a „Machamp (Mega/Shadow)", ačkoli Mega Mewtwo
 ani Mega Machamp v Pokémon GO nejsou. Audit dat to nově hlídá.
+
+## 3. Nastavení: reset nevracel zaškrtávátka
+
+`resetSettings()` dělal `el.value = výchozí` pro každou volbu — u checkboxu
+to nedělá nic. „Nastavit doporučené" proto nechávalo `keepForms`,
+`krokyPlan`, `keepRare` a `bezXL` tak, jak byly, a `applySnapshot()` měl
+stejnou díru, takže si je profily přetahovaly mezi sebou.
+
+**Co z toho plyne pro tebe:** obojí teď volá nové `nastavVychozi(el)`.
+Když si někde stavíš vlastní panel nastavení nebo vlastní přepínání
+profilů, **zaškrtávátko se musí nastavovat přes `.checked`, ne `.value`** —
+jinak si tu chybu přineseš zpátky. Sada voleb je `SETTING_IDS` (19 prvků
+s elementem v DOM, rozeseté po kartách Nastavení, Import, Smazané a Prach).
+
+Texty u tří voleb jsem přepsal, protože slibovaly něco jiného, než engine
+dělá — kurz prachu za bod IV, váha nehrající ligy a výčet u tlačítka
+„Nastavit doporučené". Když je máš někde okopírované, vezmi si nové znění.
