@@ -1069,15 +1069,18 @@ try {
 
 
   console.log("\n25) cena vylepšení a přednost vyššího levelu");
-  const cost = await page.evaluate(() => {
+  const cost = await page.evaluate(async () => {
     window.__pgo.setRows([
       { pokemon: "Machamp", level: 20, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
       { pokemon: "Machamp", level: 35, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
       { pokemon: "Azumarill", level: 24, ivAtk: 0, ivDef: 15, ivSta: 15, fastMove: "Bubble", charged1: "Play Rough" },
     ]);
+    // Bez čekání se čtou verdikty z rozdělaného přepočtu — pak u kusu, který
+    // jde pryč, ještě svítí „Zvážit" z předchozího kola.
+    await new Promise((r) => setTimeout(r, 900));
     const c = window.__pgo.getComputed();
     return window.__pgo.getRows().map((r) => ({
-      pokemon: r.pokemon, level: r.level, powerup: c[r.id].powerup, powerupSub: c[r.id].powerupSub, costText: c[r.id].costText,
+      pokemon: r.pokemon, level: r.level, powerup: c[r.id].powerup, powerupSub: c[r.id].powerupSub, costText: c[r.id].costText, copies: c[r.id].copies,
       dust: c[r.id].cost ? c[r.id].cost.dust : null,
     }));
   });
@@ -1087,9 +1090,15 @@ try {
   check("cena se počítá z aktuálního levelu — z L35 je to levnější než z L20",
     cost[1].dust < cost[0].dust, cost[0].dust + " vs " + cost[1].dust);
   check("v tooltipu jsou i bonbóny", cost[0].costText.indexOf("bonbónů") > -1, cost[0].costText);
+  // Dva stejní Machampové 15/14/13 mají stejnou sílu i IV, takže o slotu
+  // rozhoduje level. Dřív vyhrával ten, kdo byl v rosteru dřív, a appka
+  // pouštěla ten vyšší — silnější teď a levnější dotáhnout.
   check("při stejných IV dostane přednost vyšší level",
     cost[1].powerup === "Ano" && /→ L\d+/.test(cost[1].powerupSub),
     cost[1].powerup + " / " + cost[1].powerupSub);
+  check("…a vyšší level je i první kopií v pořadí",
+    /#1/.test(cost[1].copies || "") && /#2/.test(cost[0].copies || ""),
+    cost[0].copies + " (L20) vs " + cost[1].copies + " (L35)");
 
 
   console.log("\n26) čitelnost tabulky");

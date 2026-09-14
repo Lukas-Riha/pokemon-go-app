@@ -7107,8 +7107,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           jako: role.jako || "",
           mezera: mezera,
           // O pořadí rozhoduje podíl na špičce typu; IV je jen tiebreak mezi
-          // kusy, které na tom jinak jsou stejně.
-          skore: sila * 1000 + (b.ivPct || 0) });
+          // kusy, které na tom jinak jsou stejně, a level rozsoudí i shodu
+          // IV. Bez levelu vyhrával ten, kdo byl v rosteru dřív: dva stejné
+          // Machampy 15/14/13 na L20 a L35 mají stejnou sílu i IV, takže si
+          // slot vzal ten první zapsaný — a appka pak pouštěla ten vyšší,
+          // který je silnější teď a levnější dotáhnout.
+          skore: sila * 1000 + (b.ivPct || 0) + (b.levelNum || 0) / 100000 });
       });
       kand.sort(function (x, y) { return y.skore - x.skore; });
       // Dva nezávislé stropy. CELKEM smí druh držet tolik slotů, kolik je
@@ -9047,6 +9051,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         tradeTone = "muted";
       }
 
+      // --- vylepšit ani evoluce nesmí odporovat verdiktu ---
+      // „Zahodit" a vedle toho „vylepšit: Ano" je totéž svinstvo jako
+      // u evoluce: prach by šel do kusu, který druhý den pustíš. Řeší se to
+      // až tady, protože verdikt se po výpočtu rolí ještě dolaďuje.
+      if (keepLabel.indexOf("Zahodit") === 0 && powerup !== "Ne") {
+        powerup = "Ne";
+        powerupTone = "muted";
+        // Cena dotažení se tu nesmí nechat: u kusu, který pouštíš, je to
+        // číslo, které svádí k útratě.
+        powerupSub = "pouštíš ho";
+      }
+
       // --- evoluce nesmí odporovat verdiktu ---
       // „Zahodit" a vedle toho „evolvovat: Ano" je protimluv: bonbóny by šly
       // do kusu, který se druhý den pustí. Rozhodovalo o tom mimo jiné vysoké
@@ -9265,6 +9281,31 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       } else if (r.forma === "Purified") {
         purify = "Hotovo";
         purifyTone = "muted";
+      }
+
+      // Verdikt nesmí stát na purifikaci, kterou appka zároveň nedoporučuje.
+      // U shadow kusu se práh vysokých IV měří hodnotou PO očištění, takže
+      // se do podtitulku dostalo „po purifikaci 100 % IV" — a vedle toho ve
+      // sloupci Purifikace stálo „Nechat". Dvě věty, které si odporují,
+      // i když každá zvlášť platí. Důvodem ponechání je role, ne očištění.
+      // Podtitulek verdiktu musí odpovídat verdiktu. U puštěného kusu se do
+      // něj dostávaly důvody, proč si ho NECHAT: „Zahodit – kopie / po
+      // purifikaci 100 % IV" nebo „Zahodit – kopie / Dynamax #3 z 5". Každá
+      // věta zvlášť platí, dohromady si odporují — a čte se to jako chyba
+      // rozhodnutí. Proč jde kus pryč, řekne bublina u verdiktu.
+      if (keepLabel.indexOf("Zahodit") === 0
+          && /po purifikaci|vysoké IV|Dynamax/.test(String(keepSub || ""))) {
+        keepSub = keepLabel.indexOf("kopie") > -1 ? "horší kopie" : "";
+      }
+
+      if (purify === "Nechat" && String(keepSub || "").indexOf("po purifikaci") === 0) {
+        // U puštěného kusu nesmí v podtitulku stát důvod, proč si ho necháváš
+        // — „Zahodit / vysoké IV" je protimluv stejně jako ten původní.
+        // Proč se pouští, řekne bublina u verdiktu.
+        keepSub = keepLabel.indexOf("Zahodit") === 0 ? "" : (slotZkratka(b) || "vysoké IV");
+        keepTitle += " Práh vysokých IV se u shadow kusu měří hodnotou po"
+          + " očištění (+2 ke každému IV), ale očistit ho nemá cenu: jako"
+          + " shadow má o 20 % vyšší útok a ten je cennější než ta IV.";
       }
 
       var dupText = b.copies > 1 ? ("#" + b.dupIndex + " z " + b.copies) : "jediný kus";

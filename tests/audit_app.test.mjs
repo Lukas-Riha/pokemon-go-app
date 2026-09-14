@@ -629,6 +629,89 @@ try {
     zebricky.metaCelkem + zebricky.vseCelkem > zebricky.metaCelkem * 2,
     zebricky.metaCelkem + " meta + " + zebricky.vseCelkem + " zbytek");
 
+  /* ====================================================================
+     ROZPORY MEZI ÚDAJI U TÉHOŽ KUSU
+
+     „Ponechat po purifikaci 96 %" vedle „Purifikace: Nechat". Každá věta
+     zvlášť platí, dohromady si odporují — a čte se to jako chyba rozhodnutí.
+     Tenhle blok projde roster poskládaný tak, aby se do něj vešly shadow,
+     purified, lucky, dynamax, duplicity i dokonalé kusy, a hlídá dvojice
+     údajů, které si odporovat nesmí.
+     ==================================================================== */
+  console.log("\nrozpory mezi údaji");
+  const rozpory = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const DRUHY = ["Machamp", "Machop", "Tyranitar", "Larvitar", "Metagross", "Beldum",
+      "Garchomp", "Gible", "Mewtwo", "Rayquaza", "Magikarp", "Gyarados", "Blissey",
+      "Ralts", "Gardevoir", "Eevee", "Vaporeon", "Shellos East Sea", "Thundurus",
+      "Zapdos", "Magnezone", "Lucario", "Riolu", "Togetic", "Togekiss", "Swablu",
+      "Altaria", "Medicham", "Meditite", "Bastiodon", "Registeel", "Melmetal",
+      "Pidgey", "Rattata", "Weedle", "Caterpie", "Sableye", "Azumarill", "Marill",
+      "Dragonite", "Dratini", "Snorlax", "Lapras", "Scizor", "Scyther", "Charizard"];
+    const FORMY = ["", "Shadow", "Purified", "Lucky"];
+    const rows = [];
+    DRUHY.forEach((d, i) => {
+      FORMY.forEach((f, j) => {
+        [[3, 4, 5], [13, 13, 13], [14, 15, 14], [15, 15, 15]].forEach((iv, k) => {
+          if ((i + j + k) % 3 !== 0) return;
+          rows.push({ pokemon: d, cp: 500 + i * 40 + k * 300, level: 15 + k * 5,
+            ivAtk: iv[0], ivDef: iv[1], ivSta: iv[2], forma: f,
+            dynamax: (i % 7 === 0) ? "Ano" : "", cute: (i % 11 === 0) ? "Ano" : "" });
+        });
+      });
+    });
+    P.setRows(rows);
+    await new Promise((x) => setTimeout(x, 4000));
+    const base = P.base();
+    const c = P.getComputed();
+    const pustis = (v) => String(v.keep || "").indexOf("Zahodit") === 0;
+    const PRAVIDLA = [
+      ["pouštíš ho, a přesto evolvovat", (v) => pustis(v) && v.evolve === "Ano"],
+      ["pouštíš ho, a přesto vylepšit", (v) => pustis(v) && v.powerup === "Ano"],
+      ["necháváš si ho, ale trade říká pouštíš ho",
+        (v) => !pustis(v) && /pouštíš ho/.test(v.tradeSub || "")],
+      ["důvod mluví o purifikaci, ale purifikace se nedoporučuje",
+        (v) => /po purifikaci/.test(v.keepSub || "") && v.purify === "Nechat"],
+      ["doskenovat, i když jsou IV přesné",
+        (v, x) => v.rescan !== "Ne" && !v.ivUncertain && !x.row.zGymu],
+      ["purifikace u kusu, který není shadow",
+        (v, x) => (v.purify === "Ano" || v.purify === "Nechat") && x.row.forma !== "Shadow"],
+      ["hlásí lepší kopii, ale je jediný kus",
+        (v) => /kopie/i.test(v.mega || "") && /jediný/.test(v.copies || "")],
+      ["finální evoluce, a přesto se nabízí vývin",
+        (v, x) => v.evolve === "Finální" && P.evoKroky(x.row).length > 0],
+      ["podtitulek mluví o Dynamaxu, ale kus pouštíš",
+        (v) => pustis(v) && /Dynamax/.test(v.keepSub || "")],
+      ["sestava po evoluci u finální formy",
+        (v) => v.evolve === "Finální" && !!v.movesBestFinal],
+      ["pouštíš ho, ale podtitulek zní jako důvod k ponechání",
+        (v) => pustis(v) && /vysoké IV|po purifikaci|drží ho/.test(v.keepSub || "")],
+      ["necháváš si ho, ale podtitulek zní jako důvod k puštění",
+        (v) => !pustis(v) && /pouštíš ho|lepší máš|horší kopie/.test(v.keepSub || "")],
+      ["vylepšit a zároveň lepší kopie", (v) => v.powerup === "Ano" && !!v.worseCopy],
+    ];
+    const nalezy = [];
+    base.forEach((x) => {
+      const v = c[x.row.id];
+      if (!v) return;
+      PRAVIDLA.forEach((pr) => {
+        let ano = false;
+        try { ano = pr[1](v, x); } catch (e) { ano = false; }
+        if (!ano) return;
+        if (nalezy.length < 6) {
+          nalezy.push(pr[0] + ": " + x.row.pokemon + " " + (x.row.forma || "-")
+            + " [" + v.keep + " / " + (v.keepSub || "") + "]");
+        }
+      });
+    });
+    return { kusu: base.length, pravidel: PRAVIDLA.length, nalezy };
+  });
+  check("roster na rozpory se opravdu poskládal", rozpory.kusu > 150, String(rozpory.kusu));
+  check("hlídá se víc než deset druhů rozporu", rozpory.pravidel >= 13,
+    String(rozpory.pravidel));
+  check("žádné dva údaje u téhož kusu si neodporují",
+    rozpory.nalezy.length === 0, rozpory.nalezy.join(" | "));
+
 } finally {
   await browser.close();
   server.close();
