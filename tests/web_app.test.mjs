@@ -11270,8 +11270,29 @@ try {
     osaData.sekce.join(", "));
 
   const osaUI = await page.evaluate(async () => {
+    // Druh se musí vzít Z DAT, ne vymyslet: jestli zrovna běží akce
+    // s Pidgeyem, je věc dnešního data, ne appky. Značka „máš" se ukáže
+    // jen u druhu, který na ose opravdu je — tak se jeden vytáhne a dá
+    // se do rosteru.
+    const P0 = window.__pgo;
+    const ted = Date.now();
+    let druhZOsy = null;
+    ((P0.eventsData() || {}).events || []).forEach((e) => {
+      if (druhZOsy) return;
+      const zac = Date.parse(e[3] || ""), kon = Date.parse(e[4] || "");
+      if (!isFinite(zac) || !isFinite(kon) || kon < ted || zac > ted) return;
+      (e[7] || []).forEach((okno) => {
+        if (druhZOsy) return;
+        Object.keys(okno[2] || {}).forEach((sekce) => {
+          (okno[2][sekce] || []).forEach((pol) => {
+            if (druhZOsy || pol[1] === -1) return;
+            if (P0.dexEntry && P0.dexEntry(pol[0])) druhZOsy = pol[0];
+          });
+        });
+      });
+    });
     window.__pgo.setRows([
-      { pokemon: "Pidgey", cp: 300, level: 18, ivAtk: 12, ivDef: 12, ivSta: 12 },
+      { pokemon: druhZOsy || "Pidgey", cp: 300, level: 18, ivAtk: 12, ivDef: 12, ivSta: 12 },
       { pokemon: "Machamp", cp: 2800, level: 30, ivAtk: 15, ivDef: 14, ivSta: 14,
         fastMove: "Counter", charged1: "Dynamic Punch" }
     ]);
@@ -11291,6 +11312,7 @@ try {
       maZnackuMas: znacky.some((t) => t.indexOf("máš") === 0),
       // „nemáš" svítilo u každého druhu, takže nesvítilo u ničeho — je pryč.
       maZnackuNemas: znacky.some((t) => t.indexOf("nemáš") > -1),
+      druhZOsy: druhZOsy,
       hlavyTed: hlavy.filter((t) => t === "TEĎ").length,
       // Sezóna běží tři měsíce; mezi „co se děje" nepatří, patří pod čáru.
       sbaleno: document.querySelectorAll(".osa-dalsi").length,
@@ -11300,6 +11322,7 @@ try {
   check("osa se vykreslila", osaUI.oken > 0, String(osaUI.oken));
   check("…a co běží teď, je označené", osaUI.ted > 0 && osaUI.hlavyTed === osaUI.ted,
     osaUI.ted + " běží / " + osaUI.hlavyTed + " popisků");
+  check("na ose se našel druh, co zrovna běží", !!osaUI.druhZOsy, String(osaUI.druhZOsy));
   check("u druhu, který máš, se ukáže tvoje IV", osaUI.maZnackuMas,
     osaUI.znacky.slice(0, 5).join(" | "));
   check("…a značka „nemáš“ se neukazuje vůbec", osaUI.maZnackuNemas === false,
@@ -14877,6 +14900,69 @@ try {
     slotPoEvo.machop.evolve);
   check("kus bez role ma u evoluce porad Ne",
     String(slotPoEvo.rattata.evolve).indexOf("Ne") === 0, slotPoEvo.rattata.evolve);
+
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+
+  /* ------------------------------------------------------------------
+     237) V CISTENI BOXU MUSI BYT VIDET, KOMU SE TIM VERDIKT PREKLOPIL
+     Realny pruchod: trinact Rhyhornu bez znacky DMAX, uzivatel ji pridaval
+     v cisteni jednomu po druhem od nejslabsiho. U kazdeho se objevilo
+     "Ponechat" — jenze tim z Max rozpoctu vypadl nekdo drivejsi, ktereho uz
+     mel "projiteho a ponechaneho". Nikdo mu to nerekl, takze si nechal
+     vsech trinact. Hlaska o tom existuje, ale kresli se do pruhu nad
+     tabulkou, ktery je pod panelem cisteni videt nemuze.
+     ------------------------------------------------------------------ */
+  console.log("\n237) cisteni boxu hlasi, kdo vypadl ze slotu");
+  const vypadli = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const rows = [];
+    [[5, 5, 5], [8, 8, 8], [10, 10, 10], [12, 12, 12], [14, 14, 14], [15, 15, 15]]
+      .forEach((iv, i) => {
+        rows.push({ pokemon: "Rhyhorn", cp: 800 + i * 40, level: 18 + i,
+          ivAtk: iv[0], ivDef: iv[1], ivSta: iv[2] });
+      });
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 900));
+    P.boxOtevrit();
+    await new Promise((r) => setTimeout(r, 400));
+    const rr = P.getRows();
+    const kroky = [];
+    for (let i = 0; i < 4; i++) {
+      // totéž, co udělá přepínač DMAX v detailu: změní řádek a přepočítá panel
+      rr[P.boxStav().index].dynamax = "Ano";
+      P.boxPrepocitat();
+      await new Promise((r) => setTimeout(r, 300));
+      const pruh = document.getElementById("bmVypadli");
+      kroky.push({ krok: i + 1, videt: !pruh.hidden, vypadli: P.boxVypadli() });
+      document.getElementById("bmKeep").click();
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    const pruh = document.getElementById("bmVypadli");
+    const text = (pruh.textContent || "").replace(/\s+/g, " ");
+    const maTlacitka = !!pruh.querySelector("[data-pustit]")
+      && !!pruh.querySelector("[data-nechat]");
+    // kliknout na "Pustit ho" u prvního
+    const prvni = P.boxVypadli()[0];
+    if (prvni) pruh.querySelector('[data-pustit="' + prvni.id + '"]').click();
+    await new Promise((r) => setTimeout(r, 400));
+    const poPusteni = P.boxStav().volby[prvni ? prvni.id : ""];
+    return { kroky, text, maTlacitka, poPusteni, zbyva: P.boxVypadli().length };
+  });
+  check("dokud se nic nevytlaci, pruh se neukazuje",
+    vypadli.kroky[0].videt === false && vypadli.kroky[1].videt === false,
+    JSON.stringify(vypadli.kroky.slice(0, 2)));
+  check("jakmile treti kus vezme slot, pruh se objevi",
+    vypadli.kroky[2].videt === true && vypadli.kroky[2].vypadli.length === 1,
+    JSON.stringify(vypadli.kroky[2]));
+  check("…a rekne, ze mel zustat a ted uz ne",
+    /měl zůstat, teď/.test(vypadli.text) && /Zahodit/.test(vypadli.text), vypadli.text.slice(0, 120));
+  check("…s vyberem pustit nebo nechat si ho", vypadli.maTlacitka);
+  check("dalsi vytlaceny kus se pripoji",
+    vypadli.kroky[3].vypadli.length === 2, JSON.stringify(vypadli.kroky[3].vypadli));
+  check("Pustit ho opravdu prepne rozhodnuti na pustit",
+    vypadli.poPusteni === "drop", String(vypadli.poPusteni));
+  check("…a ze seznamu zmizi", vypadli.zbyva < 2, String(vypadli.zbyva));
 
   await page.goto(URL);
   await page.waitForTimeout(700);

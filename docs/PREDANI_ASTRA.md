@@ -354,3 +354,25 @@ dvě konstanty (`SHADOW_RAID`, `SHADOW_GYM`) a obě strany appky čtou totéž.
 
 **`gymPct` u shadow kusu tedy nově klesne o 17 %** — když máš někde uložené
 ukázkové hodnoty, přepočítej je.
+
+## 7. Čištění boxu: druhý pruh — kdo ze slotu vypadl
+
+Panel čištění měl jen jeden pruh: **kusy, které jsi pustil a teď by se zase
+vešly** (`#bmVraceni`, oranžový). Chyběl opačný směr — kus, kterého sis
+nechal, ale pak jsi něco změnil a on o slot přišel. Reálný případ: třináct
+Rhyhornů bez značky DMAX, uživatel ji přidával v čištění jednomu po druhém
+od nejslabšího, u každého viděl „Ponechat" a nikdo mu neřekl, že tím
+z Max rozpočtu vypadl některý dřívější. Nechal si všech třináct.
+
+**Nový prvek `#bmVypadli`** (a `#bmVypadliSouhrn` na konci), třída
+`bm-vraceni bm-vypadli` — **stejný tvar a stejné třídy jako pruh s vracením,
+jen červený**. Tlačítka `[data-pustit]` a `[data-nechat]`. Když si pruhy
+stylizuješ, tenhle je potřeba odlišit barvou, ne rozložením.
+
+Nové testovací háky v `window.__pgo`: `boxPrepocitat()`, `boxVraceni()`,
+`boxVypadli()`, `boxPuvodni()`.
+
+**Mimochodem:** záložka *Co chytat* padala na akci bez termínu
+(`evRozsah(null, null)` → `null.toDateString()`). Dnes takovou akci LeekDuck
+poslal („Houndour and Houndoom Spotlight Hour" se spawny, ale bez data).
+Opraveno a akce bez termínu se do sekce „co zrovna pouštějí" nedostane.

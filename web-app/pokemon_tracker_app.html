@@ -2012,6 +2012,15 @@
     font-family: inherit; font-size: 12px; border: 1px solid var(--grid);
     background: none; color: var(--text-muted); }
   .bm-vraceni-ne:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  /* Opačný případ: kus, kterého sis nechal, ale mezitím o slot přišel.
+     Stejný proužek, jen červený — ať se to nesplete s nabídkou na vrácení. */
+  .bm-vraceni.bm-vypadli { border-color: var(--status-critical);
+    box-shadow: 0 -6px 24px rgba(0,0,0,.45), 0 0 0 4px color-mix(in srgb, var(--status-critical) 22%, transparent); }
+  .bm-vypadli .bm-vraceni-h { color: var(--status-critical); }
+  .bm-vypadli .bm-vraceni-btn { border-color: var(--status-critical);
+    background: color-mix(in srgb, var(--status-critical) 18%, transparent);
+    color: var(--status-critical); }
+  .bm-vypadli .bm-vraceni-btn:hover { background: color-mix(in srgb, var(--status-critical) 32%, transparent); }
   .bm-pos { font-size: 12.5px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
   .bm-progress { flex: 1; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
   .bm-progress span { display: block; height: 100%; background: var(--status-good); width: 0; }
@@ -3459,6 +3468,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         </details>
       </div>
       <div class="bm-actions" id="bmActions">
+        <div class="bm-vraceni bm-vypadli" id="bmVypadli" hidden></div>
         <div class="bm-vraceni" id="bmVraceni" hidden></div>
         <button class="bm-btn bm-drop" id="bmDrop">Pustit<kbd>&#8595; nebo P</kbd></button>
         <button class="bm-btn bm-keep" id="bmKeep">Nechat<kbd>&#8594;</kbd></button>
@@ -3504,7 +3514,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-14 19:28";
+  var BUILD = "2026-09-14 20:12";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -14900,13 +14910,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + String(d.getMinutes()).padStart(2, "0");
   }
 
-  /** Rozsah okna do textu. Okno bez hodiny se jako hodina nepíše. */
+  /** Rozsah okna do textu. Okno bez hodiny se jako hodina nepíše.
+   *
+   *  Datum smí chybět: LeekDuck ho u čerstvě ohlášené akce občas nezveřejní
+   *  („Houndour and Houndoom Spotlight Hour" přišel se seznamem spawnů, ale
+   *  bez termínu). Dřív to tady spadlo na `null.toDateString()` a s ním celá
+   *  záložka Co chytat. */
   function evRozsah(od, doKdy, jenDen) {
+    if (!od && !doKdy) return "termín zatím neznámý";
     function den(d) { return d.getDate() + ". " + (d.getMonth() + 1) + "."; }
     function hod(d) {
       return String(d.getHours()).padStart(2, "0") + ":"
         + String(d.getMinutes()).padStart(2, "0");
     }
+    if (!od) return "do " + den(doKdy) + (jenDen ? "" : " " + hod(doKdy));
+    if (!doKdy) return "od " + den(od) + (jenDen ? "" : " " + hod(od));
     var stejny = od.toDateString() === doKdy.toDateString();
     if (jenDen) return den(od) + (stejny ? "" : " – " + den(doKdy));
     if (stejny) return den(od) + " " + hod(od) + "–" + hod(doKdy);
@@ -17237,6 +17255,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (!spawny.length) return;
       var konec = e[4] ? new Date(e[4]) : null;
       if (konec && konec < dnes) return;
+      // Nadpis té sekce zní „akce, které je ZROVNA pouštějí". U akce bez
+      // termínu se to tvrdit nedá — a s prázdným datem se tu dřív sahalo
+      // na null a spadla celá záložka.
+      if (!String(e[3] || "").trim() && !String(e[4] || "").trim()) return;
       out.akce.push({
         nazev: e[0], od: e[3], konec: e[4], odkaz: e[5],
         druhy: spawny.map(function (x) {
@@ -22269,7 +22291,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "uvolněný slot připadne dalšímu v pořadí a tomu se verdikt překlopí "
       + "na „nechat“. Appka to hlásí stejným pruhem nad tabulkou a umí ty "
       + "kusy rovnou vyfiltrovat. Hlásí se jen <b>překlopení nechat/pustit</b>, "
-      + "ne přeformulování téhož rozhodnutí.</li>"
+      + "ne přeformulování téhož rozhodnutí. V <b>čištění boxu</b> se ten pruh "
+      + "nad tabulkou schová pod panelem, takže se tam totéž ukáže přímo "
+      + "v panelu: <b>červeně</b> kusy, které sis nechal a teď se už nevejdou "
+      + "(<i>Pustit ho</i> / <i>Nechávám si ho</i>), a <b>oranžově</b> ty, "
+      + "které jsi pustil a teď by se zase vešly. Ani jeden pruh nezmizí sám — "
+      + "u každého kusu se musí rozhodnout.</li>"
       + "<li><b>Proč roli drží kus s nižším IV.</b> O slot se soupeří <b>silou "
       + "v roli</b>, ne procentem IV: rozhodují útoky, pořadí druhu v lize a "
       + "u shadow kusu i to, že má <b>o pětinu vyšší útok</b>, což v raidu "
@@ -22495,6 +22522,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   var bmVratitSe = {};
   // „Pouštím ho stejně" — vědomé rozhodnutí, aby pruh nesvítil navěky.
   var bmVraceniOdmitnute = {};
+  // Opačný směr téhož: kus, kterého sis v čištění nechal, ale pak jsi něco
+  // změnil (typicky značka DMAX u lepšího kusu) a on o slot přišel.
+  var bmVypadli = {}, bmVypadliOdmitnute = {};
   // Sekce (hromadně / po jednom) se během jednoho čištění NEMĚNÍ. Když se
   // kus označí jako shiny uprostřed průchodu, měl by zůstat tam, kde je —
   // jinak zmizí z ruky a objeví se o padesát kusů dál. Přeskládá se až při
@@ -22646,6 +22676,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     bmPuvodni = {};
     bmVratitSe = {};
     bmVraceniOdmitnute = {};
+    bmVypadli = {};
+    bmVypadliOdmitnute = {};
     bmList = bmSestavit();
     bmSekceZmrazene = {};
     bmList.forEach(function (x) { bmSekceZmrazene[x.row.id] = x.sekce; });
@@ -22782,7 +22814,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var akce = document.getElementById("bmActions");
     var hint = document.getElementById("bmHint");
 
-    if (bmIndex >= bmList.length) { bmVykreslitVraceni(); bmSouhrn(); return; }
+    if (bmIndex >= bmList.length) { bmVykreslitVraceni(); bmVykreslitVypadle(); bmSouhrn(); return; }
 
     akce.style.display = "";
     hint.style.display = "";
@@ -22893,6 +22925,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
     vystredSprite(body.querySelector(".bm-head img"));
     bmVykreslitVraceni();
+    bmVykreslitVypadle();
 
     document.getElementById("bmDrop").classList.toggle("doporuceno", doporuceno === "drop");
     document.getElementById("bmKeep").classList.toggle("doporuceno", doporuceno === "keep");
@@ -22958,6 +22991,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    */
   function bmPrepocitat() {
     var idPredtim = bmIndex < bmList.length ? bmList[bmIndex].row.id : null;
+    // Verdikty PŘED změnou — bez nich by se nedalo poznat, komu se to
+    // překlopilo. bmPuvodni si drží jen to, co změnil přepočet po puštění.
+    var predtim = {};
+    bmList.forEach(function (x) { predtim[x.row.id] = x.c ? x.c.keep : undefined; });
     bmList = bmSestavit();
     if (idPredtim !== null) {
       for (var i = 0; i < bmList.length; i++) {
@@ -22970,6 +23007,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         delete bmPuvodni[idPredtim];
       }
     }
+    /* Ruční značka mění rozpočet celého rosteru, ne jen toho kusu: označení
+       lepšího Dynamax kusu vyhodí ze slotu některý dřívější. Ten už má ale
+       uživatel „projitý a ponechaný" a v čištění se k němu nevrátí, takže
+       se to musí říct TEĎ. V tabulce se o tom hlásí pruhem `#verdiktZmena`,
+       jenže ten je pod panelem čištění a nikdo ho tam neuvidí. */
+    var ted = {};
+    bmList.forEach(function (x) {
+      if (x.c) ted[x.row.id] = x.c;
+      if (predtim[x.row.id] !== undefined && bmPuvodni[x.row.id] === undefined
+          && x.row.id !== idPredtim) {
+        bmPuvodni[x.row.id] = predtim[x.row.id];
+      }
+    });
+    bmNajdiVypadle(ted);
     bmVykreslit();
   }
 
@@ -23003,6 +23054,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       x.b = byId[x.row.id] || x.b;
     }
     bmNajdiNaVraceni(zbyle);
+    bmNajdiVypadle(comp);
   }
 
   /** Nejlepší role kusu v procentech — hrubé síto, kdo stojí za přepočet. */
@@ -23045,6 +23097,87 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var nb = null;
       pomocnyBase.forEach(function (b3) { if (b3.row.id === id) nb = b3; });
       bmVratitSe[id] = { row: k.x.row, c: nc, b: nb || k.x.b, drive: k.x.c.keep };
+    });
+  }
+
+  /**
+   * Kdo z už PONECHANÝCH teď vypadl?
+   *
+   * Zrcadlo k `bmNajdiNaVraceni`. Vzniklo z reálného průchodu: uživatel měl
+   * třináct Rhyhornů bez značky DMAX a přidával ji v čištění jednomu po
+   * druhém od nejslabšího. U každého se objevilo „Ponechat", protože značka
+   * ten kus pustila do Max rozpočtu — jenže tím zároveň z rozpočtu vypadl
+   * některý dřívější, kterého už měl „projitého a ponechaného". Nikdo mu to
+   * neřekl, takže si nechal všech třináct.
+   *
+   * Hlásí se jen PŘEKLOPENÍ ponechat → zahodit, ne jiné znění téhož verdiktu.
+   */
+  function bmNajdiVypadle(comp) {
+    bmVypadli = {};
+    if (!comp) return;
+    for (var j = 0; j < bmIndex && j < bmList.length; j++) {
+      var y = bmList[j];
+      var id = y.row.id;
+      if (bmVolby[id] !== "keep" || bmVypadliOdmitnute[id]) continue;
+      var nc = comp[id];
+      if (!nc || !bmJeZahodit(nc.keep)) continue;
+      // Rozhodoval-li o něm uživatel ve chvíli, kdy už „Zahodit" svítilo,
+      // není to změna — nechal si ho vědomě.
+      var drive = bmPuvodni[id] !== undefined ? bmPuvodni[id] : y.c.keep;
+      if (bmJeZahodit(drive)) continue;
+      bmVypadli[id] = { row: y.row, c: nc, drive: drive };
+    }
+  }
+
+  /**
+   * Vykreslí pruh s kusy, které sis nechal, ale teď už se nevejdou.
+   *
+   * Stejný tvar jako pruh s vracením a stejné pravidlo: nezmizí sám.
+   * U každého se musí rozhodnout, jestli ho pustíš, nebo si ho necháš
+   * stejně. Tiché přepnutí by bylo horší než nic.
+   */
+  function bmVykreslitVypadle(cil) {
+    var box = cil || document.getElementById("bmVypadli");
+    if (!box) return;
+    var ids = Object.keys(bmVypadli);
+    if (!ids.length) { box.hidden = true; box.innerHTML = ""; return; }
+    var h = '<div class="bm-vraceni-h"><i>&#9888;</i>'
+      + (ids.length === 1 ? "Tohohle sis nechal, ale teď už se nevejde"
+         : "Tyhle sis nechal, ale teď už se nevejdou") + "</div>";
+    ids.forEach(function (id) {
+      var v = bmVypadli[id];
+      var d = v.row.pokemon ? dexEntry(v.row.pokemon) : null;
+      h += '<div class="bm-vraceni-radek" data-id="' + id + '">'
+        + (d ? obrazekHtml(v.row.pokemon, d, "") : "")
+        + '<div class="bm-vraceni-txt"><b>' + escHtml(v.row.pokemon || "?") + "</b> "
+        + (v.row.cp ? v.row.cp + " CP" : "")
+        + "<span>měl zůstat, teď <b>" + escHtml(v.c.keep || "")
+        + "</b>" + (v.c.keepSub ? " · " + escHtml(v.c.keepSub) : "") + "</span></div>"
+        + '<button type="button" class="bm-vraceni-btn" data-pustit="' + id
+        + '">Pustit ho</button>'
+        + '<button type="button" class="bm-vraceni-ne" data-nechat="' + id
+        + '" title="Nechávám si ho i tak">Nechávám si ho</button>'
+        + "</div>";
+    });
+    box.innerHTML = h;
+    box.hidden = false;
+    Array.prototype.forEach.call(box.querySelectorAll("[data-pustit]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-pustit");
+        bmVolby[id] = "drop";
+        delete bmVypadli[id];
+        // Puštěním se místo uvolní — může se vejít někdo další.
+        bmPrepocitatZbytek();
+        bmVykreslit();
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll("[data-nechat]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-nechat");
+        bmVypadliOdmitnute[id] = true;
+        delete bmVypadli[id];
+        bmVykreslitVypadle();
+      });
     });
   }
 
@@ -23183,6 +23316,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // Blok s tlačítky se schovává i s pruhem o vrácení — nerozhodnuté kusy
     // se proto zopakují přímo v souhrnu.
     var vraceniVSouhrnu = Object.keys(bmVratitSe).length;
+    var vypadliVSouhrnu = Object.keys(bmVypadli).length;
     document.getElementById("bmHint").style.display = "none";
     // Rozbor patřil poslednímu kusu — na souhrnu nemá co dělat. Sedí ve
     // vlastním bloku vedle těla karty, takže ho přepsání těla nesmete.
@@ -23201,6 +23335,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + rozpory.vety.join("</li><li>") + "</li></ul></div>"
       : "";
     document.getElementById("bmBody").innerHTML = '<div class="bm-souhrn">'
+      + (vypadliVSouhrnu ? '<div class="bm-vraceni bm-vypadli" id="bmVypadliSouhrn"></div>' : "")
       + (vraceniVSouhrnu ? '<div class="bm-vraceni" id="bmVraceniSouhrn"></div>' : "")
       + radyText
       + "<p><b>" + nechat.length + "</b> necháváš, <b>" + pustit.length + "</b> pouštíš"
@@ -23245,6 +23380,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var zrus = document.getElementById("bmZrusit");
     if (zrus) zrus.addEventListener("click", bmZavritNatvrdo);
     if (vraceniVSouhrnu) bmVykreslitVraceni(document.getElementById("bmVraceniSouhrn"));
+    if (vypadliVSouhrnu) bmVykreslitVypadle(document.getElementById("bmVypadliSouhrn"));
   }
 
   document.getElementById("dustBudget").addEventListener("input", function () {
@@ -23746,7 +23882,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     boxPotvrzeniViditelne: function () {
       return !!document.getElementById("bmZeptat").innerHTML;
     },
-    boxRozhodnout: bmRozhodnout, boxZpet: bmZpet,
+    boxRozhodnout: bmRozhodnout, boxZpet: bmZpet, boxPrepocitat: bmPrepocitat,
+    // Pro testy: koho appka nabízí vrátit a kdo naopak vypadl ze slotu.
+    boxVraceni: function () { return Object.keys(bmVratitSe); },
+    boxVypadli: function () {
+      return Object.keys(bmVypadli).map(function (id) {
+        return { id: id, drive: bmVypadli[id].drive, ted: bmVypadli[id].c.keep };
+      });
+    },
+    boxPuvodni: function () { return JSON.parse(JSON.stringify(bmPuvodni)); },
     boxStav: function () {
       return { index: bmIndex, delka: bmList.length, volby: bmVolby,
         aktualni: bmIndex < bmList.length ? bmList[bmIndex].row.pokemon : null,
