@@ -270,6 +270,32 @@
   .roster-sprite { width: 26px; height: 26px; object-fit: contain;
     vertical-align: middle; }
   #zrusitFiltry:disabled { opacity: .4; cursor: default; }
+  /* Hromadné doplňování útoků. Jeden kus přes celou obrazovku — cílem je
+     projet jich padesát za sebou, ne hledat řádky v tabulce. */
+  .rucni-box > .du-okno { width: min(760px, 100%); }
+  .du-hlava { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+  .du-hlava .hint { display: block; margin-top: 2px; }
+  .du-pocet { margin-left: auto; font-size: 12.5px; color: var(--text-muted);
+    white-space: nowrap; }
+  .du-pruh-obal { height: 4px; border-radius: 999px; background: var(--grid);
+    overflow: hidden; margin-bottom: 14px; }
+  .du-pruh-obal i { display: block; height: 100%; background: var(--status-good);
+    transition: width .2s; }
+  .du-kus { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+  .du-kus h3 { margin: 0 0 2px; font-size: 19px; }
+  .du-obr { width: 84px; height: 84px; flex: none; }
+  .du-radek { font-size: 12.5px; color: var(--text-secondary); }
+  .du-verdikt { margin-top: 4px; font-weight: 600; font-size: 13px; }
+  .du-verdikt span { font-weight: 400; color: var(--text-muted); }
+  .du-tip { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .du-vybery { display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .du-popis { font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-muted); margin-bottom: 3px; }
+
+  /* Nově přidaný kus na chvíli probliká, ať je vidět, kam tabulka sjela. */
+  tr.novy-kus > td { background: rgba(53,176,106,.16) !important; }
+  tr.novy-kus > td:first-child { box-shadow: inset 3px 0 0 var(--status-good); }
   #zrusitFiltry.aktivni { border-color: var(--status-warning);
     color: var(--status-warning); }
   .filtr-pocet { color: var(--text-muted); font-size: 10.5px; }
@@ -763,23 +789,30 @@
     /* Raidový žebříček: sestava útoků je nejdůležitější a nejdelší údaj,
        ale v pěti sloupcích na ni zbylo 119 px a lámala se na tři řádky.
        Dostane vlastní řádek pod jménem — tam má celou šířku karty. */
-    #refRaidTable, #refRaidTable tbody { display: block; }
-    #refRaidTable tr { display: grid; align-items: baseline;
+    #refRaidTable, #refRaidTable tbody,
+    #refMegaTable, #refMegaTable tbody { display: block; }
+    #refRaidTable tr, #refMegaTable tr { display: grid; align-items: baseline;
       grid-template-columns: 44px 20px minmax(0, 1fr) 46px;
       grid-template-areas: "typ cislo jmeno pct"
                            "typ sestava sestava sestava";
       column-gap: 6px; padding: 3px 0;
       border-bottom: 1px solid var(--grid); }
-    #refRaidTable td, #refRaidTable th { border: 0; padding: 0; }
-    #refRaidTable td:nth-child(1), #refRaidTable th:nth-child(1) { grid-area: typ;
+    #refRaidTable td, #refRaidTable th,
+    #refMegaTable td, #refMegaTable th { border: 0; padding: 0; }
+    #refRaidTable td:nth-child(1), #refRaidTable th:nth-child(1),
+    #refMegaTable td:nth-child(1), #refMegaTable th:nth-child(1) { grid-area: typ;
       font-weight: 700; }
-    #refRaidTable td:nth-child(2), #refRaidTable th:nth-child(2) { grid-area: cislo;
+    #refRaidTable td:nth-child(2), #refRaidTable th:nth-child(2),
+    #refMegaTable td:nth-child(2), #refMegaTable th:nth-child(2) { grid-area: cislo;
       color: var(--text-muted); }
-    #refRaidTable td:nth-child(3), #refRaidTable th:nth-child(3) { grid-area: jmeno;
+    #refRaidTable td:nth-child(3), #refRaidTable th:nth-child(3),
+    #refMegaTable td:nth-child(3), #refMegaTable th:nth-child(3) { grid-area: jmeno;
       min-width: 0; }
-    #refRaidTable td:nth-child(4), #refRaidTable th:nth-child(4) { grid-area: sestava;
+    #refRaidTable td:nth-child(4), #refRaidTable th:nth-child(4),
+    #refMegaTable td:nth-child(4), #refMegaTable th:nth-child(4) { grid-area: sestava;
       color: var(--text-secondary); min-width: 0; }
-    #refRaidTable td:nth-child(5), #refRaidTable th:nth-child(5) { grid-area: pct;
+    #refRaidTable td:nth-child(5), #refRaidTable th:nth-child(5),
+    #refMegaTable td:nth-child(5), #refMegaTable th:nth-child(5) { grid-area: pct;
       text-align: right; }
     /* Tabulka zdrojů: počet řádků a datum stažení jsou účetnictví. Na 314 px
        z nich byly dva pruhy po 40 px, ve kterých se datum lámalo na tři řádky
@@ -1387,6 +1420,16 @@
      jinak byly LEG a MYT viditelně menší než DMAX, CUTE, SHINY a 100 %. */
   .rarity-chip.sto-znacka, .detail-title .rarity-chip { font: inherit; font-weight: 700;
     border: 1px solid transparent; }
+  /* Proužek „ve hře jsem s ním něco udělal". Je pod jménem kusu schválně:
+     když se člověk dívá na neaktuální údaje, má opravu mít po ruce hned. */
+  .hra-pruh { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin-left: auto; font-size: 12px; }
+  .hra-btn { font: inherit; cursor: pointer; padding: 3px 9px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--input-bg);
+    color: var(--text-secondary); }
+  .hra-btn:hover { border-color: var(--status-good); color: var(--text-primary); }
+  .d-evo-kus.evo-klikaci { cursor: pointer; }
+  .d-evo-kus.evo-klikaci:hover { outline: 2px solid var(--status-good); }
   .dmax-prepinac, .cute-prepinac, .shiny-prepinac, .shadow-prepinac { cursor: pointer; font: inherit;
     border: 1px solid transparent; }
   .dmax-prepinac.vypnuto, .cute-prepinac.vypnuto, .shiny-prepinac.vypnuto,
@@ -2281,6 +2324,12 @@
   .d-move-dobry { border-left-color: var(--series-1); }
   .d-move-preucit { border-left-color: var(--status-warning); }
   .d-move-nezna { border-left-color: var(--status-critical); }
+  /* „Až po evoluci" není ani dobrý, ani k přeučení — je to počkej. */
+  .d-move-poEvoluci { border-left-color: var(--series-3, #8e6bd6); }
+  .d-sestavy { display: grid; gap: 10px 16px; margin: 6px 0 10px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .d-sestavy > div { border-left: 3px solid var(--grid); padding-left: 10px; }
+  .d-sestavy > div:last-child { border-left-color: var(--series-3, #8e6bd6); }
   .d-moves .d-why { flex-basis: 100%; }
   .d-conflict { margin-top: 12px; border-radius: 8px; padding: 11px 14px; font-size: 13px;
     line-height: 1.55; border-left: 5px solid var(--status-warning);
@@ -2538,7 +2587,8 @@
     filter: none; }
   .rucni-box .rb-hlava-radek { display: flex; align-items: center; gap: 10px;
     margin-bottom: 12px; }
-  .rucni-box .rb-nahled { width: 44px; height: 44px; flex: none; }
+  /* Náhled byl tak malý, že se druh nedal poznat. */
+  .rucni-box .rb-nahled { width: 80px; height: 80px; flex: none; }
   .rucni-box .rb-grid + .rb-grid { margin-top: 8px; }
   .rucni-box .rb-out { margin: 9px 0 4px; font-size: 13px; line-height: 1.5; }
   .rucni-box .rb-out.ok { color: var(--status-good); }
@@ -3082,6 +3132,8 @@
     </div>
     <div class="toolbar">
       <button class="primary" id="addRowBtn">+ Přidat pokémona</button>
+      <button id="doplnitBtn" title="Projde kusy, které si necháváš, a doplní
+u nich útoky jeden po druhém">Doplnit útoky</button>
       <button id="toggleImportBtn">Importovat data</button>
       <button id="exportBtn">Exportovat CSV</button>
       <input type="search" id="searchInput" placeholder="Hledat pokémona…" autocomplete="off" />
@@ -3149,9 +3201,7 @@
       <div class="rb-hlava-radek">
         <img class="rb-nahled" id="rbNahled" alt="" hidden />
         <div class="rb-head"><b>Přidat pokémona</b>
-        <span class="hint">Jméno a CP stačí — <b>level appka dopočítá z CP a IV</b>.
-          Hodí se na kus, který sken nezachytí celý: nasazený v <b>gymu</b>
-          nebo v <b>Dynamax power spotu</b>.</span></div>
+        <span class="hint">Jméno a CP stačí, level se dopočítá.</span></div>
       </div>
       <div class="rb-grid">
         <label>Pokémon<input id="rbName" list="rbNames" autocomplete="off"
@@ -3199,6 +3249,40 @@
         <button class="primary" id="rbAdd">Přidat do rosteru</button>
         <button id="rbCancel">Zrušit</button>
       </div>
+      </div>
+    </div>
+    <!-- Okno: co se s kusem stalo ve hře. Vyvinutý nebo vylepšený kus dřív
+         znamenal naskenovat ho znovu a naimportovat. Tohle je druhá cesta:
+         říct appce, co se stalo, a nechat ji dopočítat zbytek. -->
+    <div class="rucni-box" id="hraBox" hidden>
+      <div class="rb-okno">
+        <div class="rb-head"><b id="hraNadpis">Co se s ním stalo ve hře?</b>
+          <span class="hint" id="hraPopis"></span></div>
+        <div id="hraTelo"></div>
+        <div class="rb-out" id="hraOut"></div>
+        <div class="actions">
+          <button class="primary" id="hraUlozit">Uložit</button>
+          <button id="hraZrusit">Zrušit</button>
+        </div>
+      </div>
+    </div>
+    <!-- Okno: doplnit útoky hromadně. Jeden kus přes celou obrazovku,
+         tři výběry, další. -->
+    <div class="rucni-box" id="doplnitBox" hidden>
+      <div class="rb-okno du-okno" tabindex="-1">
+        <div class="du-hlava">
+          <div><b>Doplnit útoky</b>
+            <span class="hint">Jen kusy, které si necháváš, v pořadí podle
+              tabulky. Šipky nebo <b>A</b> a <b>D</b> posouvají, Esc zavře.</span></div>
+          <span class="du-pocet" id="duPocet"></span>
+          <button class="db-x" id="duZavrit" title="Zavřít (Esc)">&#10005;</button>
+        </div>
+        <div class="du-pruh-obal"><i id="duPruh"></i></div>
+        <div id="duTelo"></div>
+        <div class="actions">
+          <button id="duZpet">&larr; Předchozí</button>
+          <button class="primary" id="duDal">Další &rarr;</button>
+        </div>
       </div>
     </div>
     <div class="discard-box" id="discardBox">
@@ -3334,7 +3418,10 @@
         <table id="refGymTable"></table>
       </div>
       <div>
-        <h2 style="margin-top:12px;">Mega / Primal evoluce</h2>
+        <h2 style="margin-top:12px;">Mega / Primal evoluce podle typů</h2>
+        <p class="muted" style="margin:2px 0 6px;">100&nbsp;% = nejlepší
+        <b>běžný</b> (ne&#8209;mega) útočník toho typu. Přes 100&nbsp;% znamená,
+        že ta mega typ vede — a to je jediný důvod, proč ji mít.</p>
         <table id="refMegaTable"></table>
       </div>
     </div>
@@ -3381,7 +3468,7 @@
   "use strict";
 
   // === REFERENCE DATA START (generováno z data/reference.json — needitovat ručně, viz tools/sync_reference.py) ===
-  var REFERENCE = {"raidAttackers":[{"type":"Fire","rank":1,"pokemon":"Charizard","form":"Mega Y","fastMove":"Fire Spin","chargedMove":"Blast Burn","priority":"Vysoká","matchNames":["charizard"],"matchName":"Charizard"},{"type":"Fire","rank":2,"pokemon":"Blaziken","form":"Mega","fastMove":"Fire Spin","chargedMove":"Blast Burn","priority":"Vysoká","matchNames":["blaziken"],"matchName":"Blaziken"},{"type":"Fire","rank":3,"pokemon":"Blacephalon","form":"Legendary/Mythical","fastMove":"Incinerate","chargedMove":"Mind Blown","priority":"Střední","matchNames":["blacephalon"],"matchName":"Blacephalon"},{"type":"Fire","rank":4,"pokemon":"Reshiram","form":"Legendary","fastMove":"Fire Fang","chargedMove":"Overheat","priority":"Střední","matchNames":["reshiram"],"matchName":"Reshiram"},{"type":"Water","rank":1,"pokemon":"Kyogre","form":"Primal","fastMove":"Waterfall","chargedMove":"Origin Pulse","priority":"Vysoká (jen pokud často raiduješ)","matchNames":["kyogre"],"matchName":"Kyogre"},{"type":"Water","rank":2,"pokemon":"Kyogre","form":"Běžná","fastMove":"Waterfall","chargedMove":"Hydro Pump","priority":"Vysoká","matchNames":["kyogre"],"matchName":"Kyogre"},{"type":"Water","rank":3,"pokemon":"Gyarados","form":"Mega","fastMove":"Waterfall","chargedMove":"Hydro Pump","priority":"Vysoká","matchNames":["gyarados"],"matchName":"Gyarados"},{"type":"Water","rank":4,"pokemon":"Feraligatr","form":"Community Day moveset","fastMove":"Water Gun","chargedMove":"Hydro Cannon","priority":"Střední","matchNames":["feraligatr"],"matchName":"Feraligatr"},{"type":"Grass","rank":1,"pokemon":"Sceptile","form":"Mega","fastMove":"Bullet Seed","chargedMove":"Frenzy Plant","priority":"Vysoká","matchNames":["sceptile"],"matchName":"Sceptile"},{"type":"Grass","rank":2,"pokemon":"Kartana","form":"Legendary/Mythical (Ultra Beast)","fastMove":"Razor Leaf","chargedMove":"Leaf Blade","priority":"Střední","matchNames":["kartana"],"matchName":"Kartana"},{"type":"Grass","rank":3,"pokemon":"Venusaur","form":"Mega","fastMove":"Vine Whip","chargedMove":"Frenzy Plant","priority":"Vysoká","matchNames":["venusaur"],"matchName":"Venusaur"},{"type":"Grass","rank":4,"pokemon":"Roserade","form":"Běžná","fastMove":"Bullet Seed","chargedMove":"Grass Knot","priority":"Nízká","matchNames":["roserade"],"matchName":"Roserade"},{"type":"Electric","rank":1,"pokemon":"Thundurus","form":"Therian, Shadow","fastMove":"Volt Switch","chargedMove":"Thunder","priority":"Vysoká","matchNames":["thundurus"],"matchName":"Thundurus"},{"type":"Electric","rank":2,"pokemon":"Regieleki","form":"Legendary","fastMove":"Volt Switch","chargedMove":"Thunder","priority":"Střední","matchNames":["regieleki"],"matchName":"Regieleki"},{"type":"Electric","rank":3,"pokemon":"Manectric","form":"Mega","fastMove":"Volt Switch","chargedMove":"Wild Charge","priority":"Střední","matchNames":["manectric"],"matchName":"Manectric"},{"type":"Electric","rank":4,"pokemon":"Zekrom","form":"Legendary","fastMove":"Charge Beam","chargedMove":"Wild Charge","priority":"Střední","matchNames":["zekrom"],"matchName":"Zekrom"},{"type":"Ice","rank":1,"pokemon":"Kyurem","form":"Black","fastMove":"Dragon Breath","chargedMove":"Freeze-Dry","priority":"Vysoká","matchNames":["kyurem"],"matchName":"Kyurem"},{"type":"Ice","rank":2,"pokemon":"Kyurem","form":"White","fastMove":"Dragon Breath","chargedMove":"Freeze-Dry","priority":"Vysoká","matchNames":["kyurem"],"matchName":"Kyurem"},{"type":"Ice","rank":3,"pokemon":"Glalie","form":"Mega","fastMove":"Frost Breath","chargedMove":"Avalanche","priority":"Nízká","matchNames":["glalie"],"matchName":"Glalie"},{"type":"Ice","rank":4,"pokemon":"Abomasnow","form":"Mega","fastMove":"Powder Snow","chargedMove":"Weather Ball (Ice)","priority":"Nízká","matchNames":["abomasnow"],"matchName":"Abomasnow"},{"type":"Fighting","rank":1,"pokemon":"Lucario","form":"Mega","fastMove":"Counter","chargedMove":"Aura Sphere","priority":"Vysoká","matchNames":["lucario"],"matchName":"Lucario"},{"type":"Fighting","rank":2,"pokemon":"Blaziken","form":"Mega","fastMove":"Counter","chargedMove":"Focus Blast","priority":"Vysoká","matchNames":["blaziken"],"matchName":"Blaziken"},{"type":"Fighting","rank":3,"pokemon":"Terrakion","form":"Legendary","fastMove":"Double Kick","chargedMove":"Sacred Sword","priority":"Střední","matchNames":["terrakion"],"matchName":"Terrakion"},{"type":"Fighting","rank":4,"pokemon":"Machamp","form":"Mega/Shadow","fastMove":"Counter","chargedMove":"Dynamic Punch","priority":"Střední","matchNames":["machamp"],"matchName":"Machamp"},{"type":"Poison","rank":1,"pokemon":"Beedrill","form":"Mega","fastMove":"Poison Jab","chargedMove":"Sludge Bomb","priority":"Nízká","matchNames":["beedrill"],"matchName":"Beedrill"},{"type":"Poison","rank":2,"pokemon":"Gengar","form":"Mega","fastMove":"Lick","chargedMove":"Sludge Bomb","priority":"Vysoká","matchNames":["gengar"],"matchName":"Gengar"},{"type":"Poison","rank":3,"pokemon":"Roserade","form":"Běžná","fastMove":"Poison Jab","chargedMove":"Sludge Bomb","priority":"Nízká","matchNames":["roserade"],"matchName":"Roserade"},{"type":"Poison","rank":4,"pokemon":"Nidoking","form":"Shadow","fastMove":"Poison Jab","chargedMove":"Sludge Wave","priority":"Nízká","matchNames":["nidoking"],"matchName":"Nidoking"},{"type":"Ground","rank":1,"pokemon":"Groudon","form":"Primal","fastMove":"Mud Shot","chargedMove":"Precipice Blades","priority":"Vysoká (jen časté raidy)","matchNames":["groudon"],"matchName":"Groudon"},{"type":"Ground","rank":2,"pokemon":"Garchomp","form":"Mega","fastMove":"Mud Shot","chargedMove":"Earthquake","priority":"Vysoká","matchNames":["garchomp"],"matchName":"Garchomp"},{"type":"Ground","rank":3,"pokemon":"Landorus","form":"Therian","fastMove":"Mud Shot","chargedMove":"Earthquake","priority":"Střední","matchNames":["landorus"],"matchName":"Landorus"},{"type":"Ground","rank":4,"pokemon":"Excadrill","form":"Shadow","fastMove":"Mud Slap","chargedMove":"Drill Run","priority":"Nízká","matchNames":["excadrill"],"matchName":"Excadrill"},{"type":"Flying","rank":1,"pokemon":"Pidgeot","form":"Mega","fastMove":"Wing Attack","chargedMove":"Brave Bird","priority":"Střední","matchNames":["pidgeot"],"matchName":"Pidgeot"},{"type":"Flying","rank":2,"pokemon":"Staraptor","form":"Shadow","fastMove":"Gust","chargedMove":"Brave Bird","priority":"Nízká","matchNames":["staraptor"],"matchName":"Staraptor"},{"type":"Flying","rank":3,"pokemon":"Moltres","form":"Shadow","fastMove":"Wing Attack","chargedMove":"Sky Attack","priority":"Střední","matchNames":["moltres"],"matchName":"Moltres"},{"type":"Flying","rank":4,"pokemon":"Honchkrow","form":"Shadow","fastMove":"Snarl","chargedMove":"Brave Bird","priority":"Nízká","matchNames":["honchkrow"],"matchName":"Honchkrow"},{"type":"Psychic","rank":1,"pokemon":"Mewtwo","form":"Mega Y","fastMove":"Psycho Cut","chargedMove":"Psystrike","priority":"Vysoká","matchNames":["mewtwo"],"matchName":"Mewtwo"},{"type":"Psychic","rank":2,"pokemon":"Alakazam","form":"Mega/Shadow","fastMove":"Confusion","chargedMove":"Future Sight","priority":"Vysoká","matchNames":["alakazam"],"matchName":"Alakazam"},{"type":"Psychic","rank":3,"pokemon":"Deoxys","form":"Attack Forme","fastMove":"Zen Headbutt","chargedMove":"Psycho Boost","priority":"Střední","matchNames":["deoxys"],"matchName":"Deoxys"},{"type":"Psychic","rank":4,"pokemon":"Espeon","form":"Běžná","fastMove":"Confusion","chargedMove":"Future Sight","priority":"Nízká","matchNames":["espeon"],"matchName":"Espeon"},{"type":"Bug","rank":1,"pokemon":"Beedrill","form":"Mega","fastMove":"Bug Bite","chargedMove":"X-Scissor","priority":"Nízká","matchNames":["beedrill"],"matchName":"Beedrill"},{"type":"Bug","rank":2,"pokemon":"Pinsir","form":"Mega","fastMove":"Fury Cutter","chargedMove":"X-Scissor","priority":"Nízká","matchNames":["pinsir"],"matchName":"Pinsir"},{"type":"Bug","rank":3,"pokemon":"Genesect","form":"Mythical","fastMove":"Fury Cutter","chargedMove":"X-Scissor","priority":"Střední","matchNames":["genesect"],"matchName":"Genesect"},{"type":"Bug","rank":4,"pokemon":"Scizor","form":"Mega","fastMove":"Fury Cutter","chargedMove":"X-Scissor","priority":"Nízká","matchNames":["scizor"],"matchName":"Scizor"},{"type":"Rock","rank":1,"pokemon":"Diancie","form":"Mega","fastMove":"Rock Throw","chargedMove":"Rock Slide","priority":"Střední","matchNames":["diancie"],"matchName":"Diancie"},{"type":"Rock","rank":2,"pokemon":"Aerodactyl","form":"Mega/Shadow","fastMove":"Rock Throw","chargedMove":"Rock Slide","priority":"Nízká","matchNames":["aerodactyl"],"matchName":"Aerodactyl"},{"type":"Rock","rank":3,"pokemon":"Rampardos","form":"Shadow","fastMove":"Smack Down","chargedMove":"Rock Slide","priority":"Nízká","matchNames":["rampardos"],"matchName":"Rampardos"},{"type":"Rock","rank":4,"pokemon":"Terrakion","form":"Legendary","fastMove":"Smack Down","chargedMove":"Rock Slide","priority":"Střední","matchNames":["terrakion"],"matchName":"Terrakion"},{"type":"Ghost","rank":1,"pokemon":"Gengar","form":"Mega","fastMove":"Lick","chargedMove":"Shadow Ball","priority":"Vysoká","matchNames":["gengar"],"matchName":"Gengar"},{"type":"Ghost","rank":2,"pokemon":"Giratina","form":"Origin Forme","fastMove":"Shadow Claw","chargedMove":"Shadow Ball","priority":"Střední","matchNames":["giratina"],"matchName":"Giratina"},{"type":"Ghost","rank":3,"pokemon":"Mewtwo","form":"Shadow","fastMove":"Confusion","chargedMove":"Shadow Ball","priority":"Střední","matchNames":["mewtwo"],"matchName":"Mewtwo"},{"type":"Ghost","rank":4,"pokemon":"Chandelure","form":"Běžná","fastMove":"Hex","chargedMove":"Shadow Ball","priority":"Nízká","matchNames":["chandelure"],"matchName":"Chandelure"},{"type":"Dragon","rank":1,"pokemon":"Rayquaza","form":"Mega","fastMove":"Dragon Tail","chargedMove":"Outrage","priority":"Vysoká","matchNames":["rayquaza"],"matchName":"Rayquaza"},{"type":"Dragon","rank":2,"pokemon":"Salamence","form":"Mega/Shadow","fastMove":"Dragon Tail","chargedMove":"Outrage","priority":"Vysoká","matchNames":["salamence"],"matchName":"Salamence"},{"type":"Dragon","rank":3,"pokemon":"Dialga","form":"Origin/Běžná","fastMove":"Dragon Breath","chargedMove":"Draco Meteor","priority":"Vysoká","matchNames":["dialga"],"matchName":"Dialga"},{"type":"Dragon","rank":4,"pokemon":"Palkia","form":"Origin/Běžná","fastMove":"Dragon Tail","chargedMove":"Draco Meteor","priority":"Střední","matchNames":["palkia"],"matchName":"Palkia"},{"type":"Dark","rank":1,"pokemon":"Houndoom","form":"Mega","fastMove":"Snarl","chargedMove":"Foul Play","priority":"Nízká","matchNames":["houndoom"],"matchName":"Houndoom"},{"type":"Dark","rank":2,"pokemon":"Hydreigon","form":"Shadow","fastMove":"Bite","chargedMove":"Brutal Swing","priority":"Střední","matchNames":["hydreigon"],"matchName":"Hydreigon"},{"type":"Dark","rank":3,"pokemon":"Yveltal","form":"Legendary","fastMove":"Snarl","chargedMove":"Dark Pulse","priority":"Střední","matchNames":["yveltal"],"matchName":"Yveltal"},{"type":"Dark","rank":4,"pokemon":"Weavile","form":"Shadow","fastMove":"Snarl","chargedMove":"Foul Play","priority":"Nízká","matchNames":["weavile"],"matchName":"Weavile"},{"type":"Steel","rank":1,"pokemon":"Metagross","form":"Mega/Shadow","fastMove":"Bullet Punch","chargedMove":"Meteor Mash","priority":"Vysoká","matchNames":["metagross"],"matchName":"Metagross"},{"type":"Steel","rank":2,"pokemon":"Dialga","form":"Origin/Běžná","fastMove":"Metal Claw","chargedMove":"Iron Head","priority":"Vysoká","matchNames":["dialga"],"matchName":"Dialga"},{"type":"Steel","rank":3,"pokemon":"Melmetal","form":"Běžná","fastMove":"Thunder Shock","chargedMove":"Double Iron Bash","priority":"Střední","matchNames":["melmetal"],"matchName":"Melmetal"},{"type":"Steel","rank":4,"pokemon":"Lucario","form":"Mega/Shadow","fastMove":"Bullet Punch","chargedMove":"Flash Cannon","priority":"Střední","matchNames":["lucario"],"matchName":"Lucario"},{"type":"Fairy","rank":1,"pokemon":"Zacian","form":"Crowned Sword","fastMove":"Snarl","chargedMove":"Play Rough","priority":"Vysoká","matchNames":["zacian"],"matchName":"Zacian"},{"type":"Fairy","rank":2,"pokemon":"Gardevoir","form":"Mega","fastMove":"Charm","chargedMove":"Dazzling Gleam","priority":"Vysoká","matchNames":["gardevoir"],"matchName":"Gardevoir"},{"type":"Fairy","rank":3,"pokemon":"Xerneas","form":"Legendary","fastMove":"Zen Headbutt","chargedMove":"Moonblast","priority":"Střední","matchNames":["xerneas"],"matchName":"Xerneas"},{"type":"Fairy","rank":4,"pokemon":"Diancie","form":"Mega","fastMove":"Charm","chargedMove":"Moonblast","priority":"Nízká","matchNames":["diancie"],"matchName":"Diancie"},{"type":"Normal","rank":1,"pokemon":"Regigigas","form":"Legendary","fastMove":"Zen Headbutt","chargedMove":"Giga Impact","priority":"Nízká","matchNames":["regigigas"],"matchName":"Regigigas"},{"type":"Normal","rank":2,"pokemon":"Snorlax","form":"Shadow","fastMove":"Lick","chargedMove":"Body Slam","priority":"Nízká","matchNames":["snorlax"],"matchName":"Snorlax"}],"megaEvolutions":[{"pokemon":"Venusaur","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Charizard","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Blastoise","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Beedrill","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Pidgeot","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Alakazam","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Slowbro","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Gengar","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Kangaskhan","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Pinsir","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Gyarados","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Aerodactyl","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Ampharos","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Steelix","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Scizor","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Heracross","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Houndoom","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Tyranitar","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Sceptile","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Blaziken","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Swampert","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Gardevoir","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Sableye","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Mawile","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Aggron","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Medicham","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Manectric","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Sharpedo","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Camerupt","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Altaria","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Banette","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Absol","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Glalie","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Salamence","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Metagross","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Latias","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Latios","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Rayquaza","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Lopunny","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Garchomp","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Lucario","kind":"Mega","raidPriority":"Vysoká"},{"pokemon":"Abomasnow","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Gallade","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Audino","kind":"Mega","raidPriority":"Nízká"},{"pokemon":"Diancie","kind":"Mega","raidPriority":"Střední"},{"pokemon":"Kyogre","kind":"Primal","raidPriority":"Vysoká"},{"pokemon":"Groudon","kind":"Primal","raidPriority":"Vysoká"}],"tradeEvolutions":[{"pokemon":"Kadabra","evolvesTo":"Alakazam"},{"pokemon":"Machoke","evolvesTo":"Machamp"},{"pokemon":"Graveler","evolvesTo":"Golem"},{"pokemon":"Haunter","evolvesTo":"Gengar"},{"pokemon":"Boldore","evolvesTo":"Gigalith"},{"pokemon":"Gurdurr","evolvesTo":"Conkeldurr"},{"pokemon":"Karrablast","evolvesTo":"Escavalier"},{"pokemon":"Shelmet","evolvesTo":"Accelgor"},{"pokemon":"Phantump","evolvesTo":"Trevenant"},{"pokemon":"Pumpkaboo","evolvesTo":"Gourgeist"}],"typeChart":{"Bug":{"Bug":1.0,"Dark":1.6,"Dragon":1.0,"Electric":1.0,"Fairy":0.625,"Fighting":0.625,"Fire":0.625,"Flying":0.625,"Ghost":0.625,"Grass":1.6,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.6,"Rock":1.0,"Steel":0.625,"Water":1.0},"Dark":{"Bug":1.0,"Dark":0.625,"Dragon":1.0,"Electric":1.0,"Fairy":0.625,"Fighting":0.625,"Fire":1.0,"Flying":1.0,"Ghost":1.6,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.6,"Rock":1.0,"Steel":1.0,"Water":1.0},"Dragon":{"Bug":1.0,"Dark":1.0,"Dragon":1.6,"Electric":1.0,"Fairy":0.3906,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":1.0},"Electric":{"Bug":1.0,"Dark":1.0,"Dragon":0.625,"Electric":0.625,"Fairy":1.0,"Fighting":1.0,"Fire":1.0,"Flying":1.6,"Ghost":1.0,"Grass":0.625,"Ground":0.3906,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":1.0,"Water":1.6},"Fairy":{"Bug":1.0,"Dark":1.6,"Dragon":1.6,"Electric":1.0,"Fairy":1.0,"Fighting":1.6,"Fire":0.625,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":1.0},"Fighting":{"Bug":0.625,"Dark":1.6,"Dragon":1.0,"Electric":1.0,"Fairy":0.625,"Fighting":1.0,"Fire":1.0,"Flying":0.625,"Ghost":0.3906,"Grass":1.0,"Ground":1.0,"Ice":1.6,"Normal":1.6,"Poison":0.625,"Psychic":0.625,"Rock":1.6,"Steel":1.6,"Water":1.0},"Fire":{"Bug":1.6,"Dark":1.0,"Dragon":0.625,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":0.625,"Flying":1.0,"Ghost":1.0,"Grass":1.6,"Ground":1.0,"Ice":1.6,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":0.625,"Steel":1.6,"Water":0.625},"Flying":{"Bug":1.6,"Dark":1.0,"Dragon":1.0,"Electric":0.625,"Fairy":1.0,"Fighting":1.6,"Fire":1.0,"Flying":1.0,"Ghost":1.0,"Grass":1.6,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":0.625,"Steel":0.625,"Water":1.0},"Ghost":{"Bug":1.0,"Dark":0.625,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":1.6,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":0.3906,"Poison":1.0,"Psychic":1.6,"Rock":1.0,"Steel":1.0,"Water":1.0},"Grass":{"Bug":0.625,"Dark":1.0,"Dragon":0.625,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":0.625,"Flying":0.625,"Ghost":1.0,"Grass":0.625,"Ground":1.6,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.0,"Rock":1.6,"Steel":0.625,"Water":1.6},"Ground":{"Bug":0.625,"Dark":1.0,"Dragon":1.0,"Electric":1.6,"Fairy":1.0,"Fighting":1.0,"Fire":1.6,"Flying":0.3906,"Ghost":1.0,"Grass":0.625,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.6,"Psychic":1.0,"Rock":1.6,"Steel":1.6,"Water":1.0},"Ice":{"Bug":1.0,"Dark":1.0,"Dragon":1.6,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":0.625,"Flying":1.6,"Ghost":1.0,"Grass":1.6,"Ground":1.6,"Ice":0.625,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":0.625},"Normal":{"Bug":1.0,"Dark":1.0,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":0.3906,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":0.625,"Steel":0.625,"Water":1.0},"Poison":{"Bug":1.0,"Dark":1.0,"Dragon":1.0,"Electric":1.0,"Fairy":1.6,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":0.625,"Grass":1.6,"Ground":0.625,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.0,"Rock":0.625,"Steel":0.3906,"Water":1.0},"Psychic":{"Bug":1.0,"Dark":0.3906,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":1.6,"Fire":1.0,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.6,"Psychic":0.625,"Rock":1.0,"Steel":0.625,"Water":1.0},"Rock":{"Bug":1.6,"Dark":1.0,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":0.625,"Fire":1.6,"Flying":1.6,"Ghost":1.0,"Grass":1.0,"Ground":0.625,"Ice":1.6,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":1.0},"Steel":{"Bug":1.0,"Dark":1.0,"Dragon":1.0,"Electric":0.625,"Fairy":1.6,"Fighting":1.0,"Fire":0.625,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.6,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.6,"Steel":0.625,"Water":0.625},"Water":{"Bug":1.0,"Dark":1.0,"Dragon":0.625,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":1.6,"Flying":1.0,"Ghost":1.0,"Grass":0.625,"Ground":1.6,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.6,"Steel":1.0,"Water":0.625}},"weather":[{"en":"Clear","cz":"Slunečno","types":["Grass","Ground","Fire"]},{"en":"Fog","cz":"Mlha","types":["Dark","Ghost"]},{"en":"Overcast","cz":"Zataženo","types":["Fairy","Fighting","Poison"]},{"en":"Partly Cloudy","cz":"Polojasno","types":["Normal","Rock"]},{"en":"Rainy","cz":"Déšť","types":["Water","Electric","Bug"]},{"en":"Snow","cz":"Sníh","types":["Ice","Steel"]},{"en":"Windy","cz":"Vítr","types":["Dragon","Flying","Psychic"]}]};
+  var REFERENCE = {"raidAttackers":[{"type":"Fire","rank":1,"pokemon":"Charizard","form":"Mega Y","fastMove":"Fire Spin","chargedMove":"Blast Burn","priority":"Vysoká","matchNames":["charizard"],"matchName":"Charizard"},{"type":"Fire","rank":2,"pokemon":"Blaziken","form":"Mega","fastMove":"Fire Spin","chargedMove":"Blast Burn","priority":"Vysoká","matchNames":["blaziken"],"matchName":"Blaziken"},{"type":"Fire","rank":3,"pokemon":"Blacephalon","form":"Legendary/Mythical","fastMove":"Incinerate","chargedMove":"Mind Blown","priority":"Střední","matchNames":["blacephalon"],"matchName":"Blacephalon"},{"type":"Fire","rank":4,"pokemon":"Reshiram","form":"Legendary","fastMove":"Fire Fang","chargedMove":"Overheat","priority":"Střední","matchNames":["reshiram"],"matchName":"Reshiram"},{"type":"Water","rank":1,"pokemon":"Kyogre","form":"Primal","fastMove":"Waterfall","chargedMove":"Origin Pulse","priority":"Vysoká (jen pokud často raiduješ)","matchNames":["kyogre"],"matchName":"Kyogre"},{"type":"Water","rank":2,"pokemon":"Kyogre","form":"Běžná","fastMove":"Waterfall","chargedMove":"Hydro Pump","priority":"Vysoká","matchNames":["kyogre"],"matchName":"Kyogre"},{"type":"Water","rank":3,"pokemon":"Gyarados","form":"Mega","fastMove":"Waterfall","chargedMove":"Hydro Pump","priority":"Vysoká","matchNames":["gyarados"],"matchName":"Gyarados"},{"type":"Water","rank":4,"pokemon":"Feraligatr","form":"Community Day moveset","fastMove":"Water Gun","chargedMove":"Hydro Cannon","priority":"Střední","matchNames":["feraligatr"],"matchName":"Feraligatr"},{"type":"Grass","rank":1,"pokemon":"Sceptile","form":"Mega","fastMove":"Bullet Seed","chargedMove":"Frenzy Plant","priority":"Vysoká","matchNames":["sceptile"],"matchName":"Sceptile"},{"type":"Grass","rank":2,"pokemon":"Kartana","form":"Legendary/Mythical (Ultra Beast)","fastMove":"Razor Leaf","chargedMove":"Leaf Blade","priority":"Střední","matchNames":["kartana"],"matchName":"Kartana"},{"type":"Grass","rank":3,"pokemon":"Venusaur","form":"Mega","fastMove":"Vine Whip","chargedMove":"Frenzy Plant","priority":"Vysoká","matchNames":["venusaur"],"matchName":"Venusaur"},{"type":"Grass","rank":4,"pokemon":"Roserade","form":"Běžná","fastMove":"Bullet Seed","chargedMove":"Grass Knot","priority":"Nízká","matchNames":["roserade"],"matchName":"Roserade"},{"type":"Electric","rank":1,"pokemon":"Thundurus","form":"Therian, Shadow","fastMove":"Volt Switch","chargedMove":"Thunder","priority":"Vysoká","matchNames":["thundurus"],"matchName":"Thundurus"},{"type":"Electric","rank":2,"pokemon":"Regieleki","form":"Legendary","fastMove":"Volt Switch","chargedMove":"Thunder","priority":"Střední","matchNames":["regieleki"],"matchName":"Regieleki"},{"type":"Electric","rank":3,"pokemon":"Manectric","form":"Mega","fastMove":"Volt Switch","chargedMove":"Wild Charge","priority":"Střední","matchNames":["manectric"],"matchName":"Manectric"},{"type":"Electric","rank":4,"pokemon":"Zekrom","form":"Legendary","fastMove":"Charge Beam","chargedMove":"Wild Charge","priority":"Střední","matchNames":["zekrom"],"matchName":"Zekrom"},{"type":"Ice","rank":1,"pokemon":"Kyurem","form":"Black","fastMove":"Dragon Breath","chargedMove":"Freeze-Dry","priority":"Vysoká","matchNames":["kyurem"],"matchName":"Kyurem"},{"type":"Ice","rank":2,"pokemon":"Kyurem","form":"White","fastMove":"Dragon Breath","chargedMove":"Freeze-Dry","priority":"Vysoká","matchNames":["kyurem"],"matchName":"Kyurem"},{"type":"Ice","rank":3,"pokemon":"Glalie","form":"Mega","fastMove":"Frost Breath","chargedMove":"Avalanche","priority":"Nízká","matchNames":["glalie"],"matchName":"Glalie"},{"type":"Ice","rank":4,"pokemon":"Abomasnow","form":"Mega","fastMove":"Powder Snow","chargedMove":"Weather Ball (Ice)","priority":"Nízká","matchNames":["abomasnow"],"matchName":"Abomasnow"},{"type":"Fighting","rank":1,"pokemon":"Lucario","form":"Mega","fastMove":"Counter","chargedMove":"Aura Sphere","priority":"Vysoká","matchNames":["lucario"],"matchName":"Lucario"},{"type":"Fighting","rank":2,"pokemon":"Blaziken","form":"Mega","fastMove":"Counter","chargedMove":"Focus Blast","priority":"Vysoká","matchNames":["blaziken"],"matchName":"Blaziken"},{"type":"Fighting","rank":3,"pokemon":"Terrakion","form":"Legendary","fastMove":"Double Kick","chargedMove":"Sacred Sword","priority":"Střední","matchNames":["terrakion"],"matchName":"Terrakion"},{"type":"Fighting","rank":4,"pokemon":"Machamp","form":"Shadow","fastMove":"Counter","chargedMove":"Dynamic Punch","priority":"Střední","matchNames":["machamp"],"matchName":"Machamp"},{"type":"Poison","rank":1,"pokemon":"Beedrill","form":"Mega","fastMove":"Poison Jab","chargedMove":"Sludge Bomb","priority":"Nízká","matchNames":["beedrill"],"matchName":"Beedrill"},{"type":"Poison","rank":2,"pokemon":"Gengar","form":"Mega","fastMove":"Lick","chargedMove":"Sludge Bomb","priority":"Vysoká","matchNames":["gengar"],"matchName":"Gengar"},{"type":"Poison","rank":3,"pokemon":"Roserade","form":"Běžná","fastMove":"Poison Jab","chargedMove":"Sludge Bomb","priority":"Nízká","matchNames":["roserade"],"matchName":"Roserade"},{"type":"Poison","rank":4,"pokemon":"Nidoking","form":"Shadow","fastMove":"Poison Jab","chargedMove":"Sludge Wave","priority":"Nízká","matchNames":["nidoking"],"matchName":"Nidoking"},{"type":"Ground","rank":1,"pokemon":"Groudon","form":"Primal","fastMove":"Mud Shot","chargedMove":"Precipice Blades","priority":"Vysoká (jen časté raidy)","matchNames":["groudon"],"matchName":"Groudon"},{"type":"Ground","rank":2,"pokemon":"Garchomp","form":"Mega","fastMove":"Mud Shot","chargedMove":"Earthquake","priority":"Vysoká","matchNames":["garchomp"],"matchName":"Garchomp"},{"type":"Ground","rank":3,"pokemon":"Landorus","form":"Therian","fastMove":"Mud Shot","chargedMove":"Earthquake","priority":"Střední","matchNames":["landorus"],"matchName":"Landorus"},{"type":"Ground","rank":4,"pokemon":"Excadrill","form":"Shadow","fastMove":"Mud Slap","chargedMove":"Drill Run","priority":"Nízká","matchNames":["excadrill"],"matchName":"Excadrill"},{"type":"Flying","rank":1,"pokemon":"Pidgeot","form":"Mega","fastMove":"Wing Attack","chargedMove":"Brave Bird","priority":"Střední","matchNames":["pidgeot"],"matchName":"Pidgeot"},{"type":"Flying","rank":2,"pokemon":"Staraptor","form":"Shadow","fastMove":"Gust","chargedMove":"Brave Bird","priority":"Nízká","matchNames":["staraptor"],"matchName":"Staraptor"},{"type":"Flying","rank":3,"pokemon":"Moltres","form":"Shadow","fastMove":"Wing Attack","chargedMove":"Sky Attack","priority":"Střední","matchNames":["moltres"],"matchName":"Moltres"},{"type":"Flying","rank":4,"pokemon":"Honchkrow","form":"Shadow","fastMove":"Snarl","chargedMove":"Brave Bird","priority":"Nízká","matchNames":["honchkrow"],"matchName":"Honchkrow"},{"type":"Psychic","rank":1,"pokemon":"Mewtwo","form":"Běžná","fastMove":"Psycho Cut","chargedMove":"Psystrike","priority":"Vysoká","matchNames":["mewtwo"],"matchName":"Mewtwo"},{"type":"Psychic","rank":2,"pokemon":"Alakazam","form":"Mega/Shadow","fastMove":"Confusion","chargedMove":"Future Sight","priority":"Vysoká","matchNames":["alakazam"],"matchName":"Alakazam"},{"type":"Psychic","rank":3,"pokemon":"Deoxys","form":"Attack Forme","fastMove":"Zen Headbutt","chargedMove":"Psycho Boost","priority":"Střední","matchNames":["deoxys"],"matchName":"Deoxys"},{"type":"Psychic","rank":4,"pokemon":"Espeon","form":"Běžná","fastMove":"Confusion","chargedMove":"Future Sight","priority":"Nízká","matchNames":["espeon"],"matchName":"Espeon"},{"type":"Bug","rank":1,"pokemon":"Beedrill","form":"Mega","fastMove":"Bug Bite","chargedMove":"X-Scissor","priority":"Nízká","matchNames":["beedrill"],"matchName":"Beedrill"},{"type":"Bug","rank":2,"pokemon":"Pinsir","form":"Mega","fastMove":"Fury Cutter","chargedMove":"X-Scissor","priority":"Nízká","matchNames":["pinsir"],"matchName":"Pinsir"},{"type":"Bug","rank":3,"pokemon":"Genesect","form":"Mythical","fastMove":"Fury Cutter","chargedMove":"X-Scissor","priority":"Střední","matchNames":["genesect"],"matchName":"Genesect"},{"type":"Bug","rank":4,"pokemon":"Scizor","form":"Mega","fastMove":"Fury Cutter","chargedMove":"X-Scissor","priority":"Nízká","matchNames":["scizor"],"matchName":"Scizor"},{"type":"Rock","rank":1,"pokemon":"Diancie","form":"Mega","fastMove":"Rock Throw","chargedMove":"Rock Slide","priority":"Střední","matchNames":["diancie"],"matchName":"Diancie"},{"type":"Rock","rank":2,"pokemon":"Aerodactyl","form":"Mega/Shadow","fastMove":"Rock Throw","chargedMove":"Rock Slide","priority":"Nízká","matchNames":["aerodactyl"],"matchName":"Aerodactyl"},{"type":"Rock","rank":3,"pokemon":"Rampardos","form":"Shadow","fastMove":"Smack Down","chargedMove":"Rock Slide","priority":"Nízká","matchNames":["rampardos"],"matchName":"Rampardos"},{"type":"Rock","rank":4,"pokemon":"Terrakion","form":"Legendary","fastMove":"Smack Down","chargedMove":"Rock Slide","priority":"Střední","matchNames":["terrakion"],"matchName":"Terrakion"},{"type":"Ghost","rank":1,"pokemon":"Gengar","form":"Mega","fastMove":"Lick","chargedMove":"Shadow Ball","priority":"Vysoká","matchNames":["gengar"],"matchName":"Gengar"},{"type":"Ghost","rank":2,"pokemon":"Giratina","form":"Origin Forme","fastMove":"Shadow Claw","chargedMove":"Shadow Ball","priority":"Střední","matchNames":["giratina"],"matchName":"Giratina"},{"type":"Ghost","rank":3,"pokemon":"Mewtwo","form":"Shadow","fastMove":"Confusion","chargedMove":"Shadow Ball","priority":"Střední","matchNames":["mewtwo"],"matchName":"Mewtwo"},{"type":"Ghost","rank":4,"pokemon":"Chandelure","form":"Běžná","fastMove":"Hex","chargedMove":"Shadow Ball","priority":"Nízká","matchNames":["chandelure"],"matchName":"Chandelure"},{"type":"Dragon","rank":1,"pokemon":"Rayquaza","form":"Mega","fastMove":"Dragon Tail","chargedMove":"Outrage","priority":"Vysoká","matchNames":["rayquaza"],"matchName":"Rayquaza"},{"type":"Dragon","rank":2,"pokemon":"Salamence","form":"Mega/Shadow","fastMove":"Dragon Tail","chargedMove":"Outrage","priority":"Vysoká","matchNames":["salamence"],"matchName":"Salamence"},{"type":"Dragon","rank":3,"pokemon":"Dialga","form":"Origin/Běžná","fastMove":"Dragon Breath","chargedMove":"Draco Meteor","priority":"Vysoká","matchNames":["dialga"],"matchName":"Dialga"},{"type":"Dragon","rank":4,"pokemon":"Palkia","form":"Origin/Běžná","fastMove":"Dragon Tail","chargedMove":"Draco Meteor","priority":"Střední","matchNames":["palkia"],"matchName":"Palkia"},{"type":"Dark","rank":1,"pokemon":"Houndoom","form":"Mega","fastMove":"Snarl","chargedMove":"Foul Play","priority":"Nízká","matchNames":["houndoom"],"matchName":"Houndoom"},{"type":"Dark","rank":2,"pokemon":"Hydreigon","form":"Shadow","fastMove":"Bite","chargedMove":"Brutal Swing","priority":"Střední","matchNames":["hydreigon"],"matchName":"Hydreigon"},{"type":"Dark","rank":3,"pokemon":"Yveltal","form":"Legendary","fastMove":"Snarl","chargedMove":"Dark Pulse","priority":"Střední","matchNames":["yveltal"],"matchName":"Yveltal"},{"type":"Dark","rank":4,"pokemon":"Weavile","form":"Shadow","fastMove":"Snarl","chargedMove":"Foul Play","priority":"Nízká","matchNames":["weavile"],"matchName":"Weavile"},{"type":"Steel","rank":1,"pokemon":"Metagross","form":"Mega/Shadow","fastMove":"Bullet Punch","chargedMove":"Meteor Mash","priority":"Vysoká","matchNames":["metagross"],"matchName":"Metagross"},{"type":"Steel","rank":2,"pokemon":"Dialga","form":"Origin/Běžná","fastMove":"Metal Claw","chargedMove":"Iron Head","priority":"Vysoká","matchNames":["dialga"],"matchName":"Dialga"},{"type":"Steel","rank":3,"pokemon":"Melmetal","form":"Běžná","fastMove":"Thunder Shock","chargedMove":"Double Iron Bash","priority":"Střední","matchNames":["melmetal"],"matchName":"Melmetal"},{"type":"Steel","rank":4,"pokemon":"Lucario","form":"Mega/Shadow","fastMove":"Bullet Punch","chargedMove":"Flash Cannon","priority":"Střední","matchNames":["lucario"],"matchName":"Lucario"},{"type":"Fairy","rank":1,"pokemon":"Zacian","form":"Crowned Sword","fastMove":"Snarl","chargedMove":"Play Rough","priority":"Vysoká","matchNames":["zacian"],"matchName":"Zacian"},{"type":"Fairy","rank":2,"pokemon":"Gardevoir","form":"Mega","fastMove":"Charm","chargedMove":"Dazzling Gleam","priority":"Vysoká","matchNames":["gardevoir"],"matchName":"Gardevoir"},{"type":"Fairy","rank":3,"pokemon":"Xerneas","form":"Legendary","fastMove":"Zen Headbutt","chargedMove":"Moonblast","priority":"Střední","matchNames":["xerneas"],"matchName":"Xerneas"},{"type":"Fairy","rank":4,"pokemon":"Diancie","form":"Mega","fastMove":"Charm","chargedMove":"Moonblast","priority":"Nízká","matchNames":["diancie"],"matchName":"Diancie"},{"type":"Normal","rank":1,"pokemon":"Regigigas","form":"Legendary","fastMove":"Zen Headbutt","chargedMove":"Giga Impact","priority":"Nízká","matchNames":["regigigas"],"matchName":"Regigigas"},{"type":"Normal","rank":2,"pokemon":"Snorlax","form":"Shadow","fastMove":"Lick","chargedMove":"Body Slam","priority":"Nízká","matchNames":["snorlax"],"matchName":"Snorlax"}],"megaEvolutions":[{"pokemon":"Abomasnow","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Absol","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Aerodactyl","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Aggron","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Alakazam","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Altaria","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Ampharos","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Audino","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Banette","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Beedrill","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Blastoise","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Blaziken","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Camerupt","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Charizard","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Diancie","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Gallade","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Garchomp","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Gardevoir","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Gengar","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Glalie","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Groudon","kind":"Primal","raidPriority":"Neznámá"},{"pokemon":"Gyarados","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Heracross","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Houndoom","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Kangaskhan","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Kyogre","kind":"Primal","raidPriority":"Neznámá"},{"pokemon":"Latias","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Latios","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Lopunny","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Lucario","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Manectric","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Mawile","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Medicham","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Metagross","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Pidgeot","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Pinsir","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Rayquaza","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Sableye","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Salamence","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Sceptile","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Scizor","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Sharpedo","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Slowbro","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Steelix","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Swampert","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Tyranitar","kind":"Mega","raidPriority":"Neznámá"},{"pokemon":"Venusaur","kind":"Mega","raidPriority":"Neznámá"}],"tradeEvolutions":[{"pokemon":"Kadabra","evolvesTo":"Alakazam"},{"pokemon":"Machoke","evolvesTo":"Machamp"},{"pokemon":"Graveler","evolvesTo":"Golem"},{"pokemon":"Haunter","evolvesTo":"Gengar"},{"pokemon":"Boldore","evolvesTo":"Gigalith"},{"pokemon":"Gurdurr","evolvesTo":"Conkeldurr"},{"pokemon":"Karrablast","evolvesTo":"Escavalier"},{"pokemon":"Shelmet","evolvesTo":"Accelgor"},{"pokemon":"Phantump","evolvesTo":"Trevenant"},{"pokemon":"Pumpkaboo","evolvesTo":"Gourgeist"}],"typeChart":{"Bug":{"Bug":1.0,"Dark":1.6,"Dragon":1.0,"Electric":1.0,"Fairy":0.625,"Fighting":0.625,"Fire":0.625,"Flying":0.625,"Ghost":0.625,"Grass":1.6,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.6,"Rock":1.0,"Steel":0.625,"Water":1.0},"Dark":{"Bug":1.0,"Dark":0.625,"Dragon":1.0,"Electric":1.0,"Fairy":0.625,"Fighting":0.625,"Fire":1.0,"Flying":1.0,"Ghost":1.6,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.6,"Rock":1.0,"Steel":1.0,"Water":1.0},"Dragon":{"Bug":1.0,"Dark":1.0,"Dragon":1.6,"Electric":1.0,"Fairy":0.3906,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":1.0},"Electric":{"Bug":1.0,"Dark":1.0,"Dragon":0.625,"Electric":0.625,"Fairy":1.0,"Fighting":1.0,"Fire":1.0,"Flying":1.6,"Ghost":1.0,"Grass":0.625,"Ground":0.3906,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":1.0,"Water":1.6},"Fairy":{"Bug":1.0,"Dark":1.6,"Dragon":1.6,"Electric":1.0,"Fairy":1.0,"Fighting":1.6,"Fire":0.625,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":1.0},"Fighting":{"Bug":0.625,"Dark":1.6,"Dragon":1.0,"Electric":1.0,"Fairy":0.625,"Fighting":1.0,"Fire":1.0,"Flying":0.625,"Ghost":0.3906,"Grass":1.0,"Ground":1.0,"Ice":1.6,"Normal":1.6,"Poison":0.625,"Psychic":0.625,"Rock":1.6,"Steel":1.6,"Water":1.0},"Fire":{"Bug":1.6,"Dark":1.0,"Dragon":0.625,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":0.625,"Flying":1.0,"Ghost":1.0,"Grass":1.6,"Ground":1.0,"Ice":1.6,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":0.625,"Steel":1.6,"Water":0.625},"Flying":{"Bug":1.6,"Dark":1.0,"Dragon":1.0,"Electric":0.625,"Fairy":1.0,"Fighting":1.6,"Fire":1.0,"Flying":1.0,"Ghost":1.0,"Grass":1.6,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":0.625,"Steel":0.625,"Water":1.0},"Ghost":{"Bug":1.0,"Dark":0.625,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":1.6,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":0.3906,"Poison":1.0,"Psychic":1.6,"Rock":1.0,"Steel":1.0,"Water":1.0},"Grass":{"Bug":0.625,"Dark":1.0,"Dragon":0.625,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":0.625,"Flying":0.625,"Ghost":1.0,"Grass":0.625,"Ground":1.6,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.0,"Rock":1.6,"Steel":0.625,"Water":1.6},"Ground":{"Bug":0.625,"Dark":1.0,"Dragon":1.0,"Electric":1.6,"Fairy":1.0,"Fighting":1.0,"Fire":1.6,"Flying":0.3906,"Ghost":1.0,"Grass":0.625,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.6,"Psychic":1.0,"Rock":1.6,"Steel":1.6,"Water":1.0},"Ice":{"Bug":1.0,"Dark":1.0,"Dragon":1.6,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":0.625,"Flying":1.6,"Ghost":1.0,"Grass":1.6,"Ground":1.6,"Ice":0.625,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":0.625},"Normal":{"Bug":1.0,"Dark":1.0,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":0.3906,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":0.625,"Steel":0.625,"Water":1.0},"Poison":{"Bug":1.0,"Dark":1.0,"Dragon":1.0,"Electric":1.0,"Fairy":1.6,"Fighting":1.0,"Fire":1.0,"Flying":1.0,"Ghost":0.625,"Grass":1.6,"Ground":0.625,"Ice":1.0,"Normal":1.0,"Poison":0.625,"Psychic":1.0,"Rock":0.625,"Steel":0.3906,"Water":1.0},"Psychic":{"Bug":1.0,"Dark":0.3906,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":1.6,"Fire":1.0,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.0,"Normal":1.0,"Poison":1.6,"Psychic":0.625,"Rock":1.0,"Steel":0.625,"Water":1.0},"Rock":{"Bug":1.6,"Dark":1.0,"Dragon":1.0,"Electric":1.0,"Fairy":1.0,"Fighting":0.625,"Fire":1.6,"Flying":1.6,"Ghost":1.0,"Grass":1.0,"Ground":0.625,"Ice":1.6,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.0,"Steel":0.625,"Water":1.0},"Steel":{"Bug":1.0,"Dark":1.0,"Dragon":1.0,"Electric":0.625,"Fairy":1.6,"Fighting":1.0,"Fire":0.625,"Flying":1.0,"Ghost":1.0,"Grass":1.0,"Ground":1.0,"Ice":1.6,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.6,"Steel":0.625,"Water":0.625},"Water":{"Bug":1.0,"Dark":1.0,"Dragon":0.625,"Electric":1.0,"Fairy":1.0,"Fighting":1.0,"Fire":1.6,"Flying":1.0,"Ghost":1.0,"Grass":0.625,"Ground":1.6,"Ice":1.0,"Normal":1.0,"Poison":1.0,"Psychic":1.0,"Rock":1.6,"Steel":1.0,"Water":0.625}},"weather":[{"en":"Clear","cz":"Slunečno","types":["Grass","Ground","Fire"]},{"en":"Fog","cz":"Mlha","types":["Dark","Ghost"]},{"en":"Overcast","cz":"Zataženo","types":["Fairy","Fighting","Poison"]},{"en":"Partly Cloudy","cz":"Polojasno","types":["Normal","Rock"]},{"en":"Rainy","cz":"Déšť","types":["Water","Electric","Bug"]},{"en":"Snow","cz":"Sníh","types":["Ice","Steel"]},{"en":"Windy","cz":"Vítr","types":["Dragon","Flying","Psychic"]}]};
   // === REFERENCE DATA END ===
 
   // === POKEDEX START (generováno z data/pokedex.json — needitovat ručně) ===
@@ -3397,7 +3484,7 @@
   // === MOVES END ===
 
   // === EVENTS START
-  var EVENTS = {"events":[["LEGO Stores and Pokémon GO","event","Event","2026-08-03T10:00","2026-09-30T23:59","https://leekduck.com/events/lego-pokemon-go-2026/",[],[["2026-08-03T10:00","2026-09-30T23:59",{"novinky":[["How stamp rallies work",-1],["Pikachu",1],["Berries and Poké Balls",-1],["Razz Berry ×5",0],["Poké Ball ×10",0],["Pinap Berry ×5",0],["Nanab Berry ×5",0]],"raid":[["Appearing in 1-Star Raids",-1],["Pikachu",1]]}]]],["Mega Beedrill in Mega Raids","raid-battles","Raid Battles","2026-09-08T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-beedrill-in-mega-raids-september-2026/",[],[["2026-09-08T06:00","2026-09-15T22:00",{"raid":[["Mega Beedrill",1]],"shiny":[["Beedrill",0],["Mega Beedrill",0]]}]]],["Mega Squads","event","Event","2026-09-08T10:00","2026-09-14T20:00","https://leekduck.com/events/mega-squads/",[],[["2026-09-08","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Beedrill",1]]}],["2026-09-08T10:00","2026-09-11T10:00",{"spawn":[["Pidgey",1],["Emolga",1],["Fletchling",1],["Noibat",1],["Rookidee",1]],"vejce":[["In 5 km Eggs",-1],["Emolga",1],["Fletchling",1],["Rookidee",1],["Flamigo",1]],"vyzkum":[["Fletchling",1],["Stardust ×10000",0],["Stardust ×500",0],["Flamigo",1]]}],["2026-09-08T10:00","2026-09-14T20:00",{"bonus":[["Tier 1 Bonus – Starting at Rank 1",-1],["Chance to obtain Mega Energy when catching Weedle, Pidgey, Houndour, Carvanha, or their Evolutions",0],["Tier 2 Bonus – Starting at Rank 15",-1],["2× Hatch Stardust",0],["GO Pass Deluxe: 1/2 Egg Hatch Distance when Eggs are placed in an Incubator during the event period",0]],"novinky":[["Pokémon Debuts",-1],["Maschiff",0],["Mabosstiff",0],["New Mega Level: Super Max!",-1],["Mega Beedrill",1],["Mega Houndoom",1]],"spawn":[["Throughout the Event",-1],["Weedle",1],["Flamigo",1]],"utoky":[["Mega Beedrill – Fell Stinger+",-1],["Mega Beedrill",1],["Mega Houndoom – Dark Pulse+",-1],["Mega Houndoom",1]],"shiny":[["Shiny Debut",-1],["Flamigo",0],["Increased Shiny Chance",-1],["Pidgey",0],["Carvanha",0]]}],["2026-09-10T00:00","2026-09-14T20:00",{"novinky":[["Featured Pokémon",-1],["Weedle",1],["Kakuna",1],["Beedrill",1]]}],["2026-09-11","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Houndoom",1]]}],["2026-09-11T10:00","2026-09-14T20:00",{"spawn":[["Houndour",1],["Carvanha",1]],"vejce":[["In 5 km Eggs",-1],["Sandile",1],["Pancham",1],["Maschiff",0],["Flamigo",1]],"vyzkum":[["Houndour",1],["Carvanha",1],["Nickit",1],["Maschiff",0],["Flamigo",1]]}],["2026-09-13T00:00","2026-09-14T20:00",{"novinky":[["Featured Pokémon",-1],["Houndour",1],["Houndoom",1]]}]]],["Twilight Trails","season","Season","2026-09-08T10:00","2026-12-01T10:00","https://leekduck.com/events/season-24-twilight-trails/",[],[["2026-09-08T10:00","2026-12-01T10:00",{"bonus":[["Rank 1",-1],["One guaranteed Candy XL when trading Pokémon for Trainers level 31 and above",0],["One additional Candy for trading Pokémon",0],["Rank 25",-1],["Increased limits on opening Gifts, receiving Gifts from PokéStop and Gym Photo Discs, and storing Gifts",0],["Rank 50",-1],["2× Daily Adventure Incense duration",0],["Rank 75",-1],["Increased XP and Stardust from hatching Eggs",0]],"novinky":[["Pokémon Debuts",-1],["Maschiff",0],["Mabosstiff",0],["Max Pokémon Debuts",-1],["Rhyhorn",1],["Sneasel",1],["Uxie",1],["Mesprit",1],["Azelf",1],["Sizzlipede",1]],"vejce":[["In 2 km Eggs",-1],["Elekid",1],["Magby",1],["Azurill",1],["In 5 km Eggs",-1],["Munchlax",1],["Sizzlipede",1],["Fidough",1],["In 5 km Eggs from Adventure Sync Rewards",-1],["Tyrogue",1],["Sableye",1],["Budew",1],["In 7 km Eggs",-1],["Galarian Meowth",1],["Galarian Zigzagoon",1],["Galarian Stunfisk",0],["In 7 km Eggs From Route Rewards",-1],["Galarian Slowpoke",1],["Hisuian Sneasel",1],["Galarian Corsola",1],["In 10 km Eggs",-1],["Dratini",1],["Honedge",1],["Impidimp",1],["In 10 km Eggs from Adventure Sync Rewards",-1],["Bagon",1],["Druddigon",1],["Drampa",1]]}]]],["Zacian (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-09T06:00","2026-09-15T22:00","https://leekduck.com/events/zacian-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-09T06:00","2026-09-15T22:00",{"raid":[["Zacian (Hero of Many Battles)",1]],"shiny":[["Zacian (Hero of Many Battles)",0]]}]]],["Shadow Thundurus (Incarnate Forme) in Shadow Raids","raid-battles","Raid Battles","2026-09-09T06:00","2026-10-06T22:00","https://leekduck.com/events/shadow-thundurus-incarnate-forme-in-shadow-raids-september-2026/",[],[["2026-09-09T06:00","2026-10-06T22:00",{"raid":[["Appearing in 5-Star Shadow Raids",-1],["Thundurus (Incarnate)",1]],"shiny":[["Thundurus (Incarnate)",0]]}]]],["Weedle, Kakuna, and Beedrill Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-10T18:00","2026-09-10T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-10/",[["Weedle",1],["Kakuna",1],["Beedrill",1]],[["2026-09-10T18:00","2026-09-10T19:00",{"spawn":[["Weedle",1],["Kakuna",1],["Beedrill",1]]}]]],["Mega Houndoom in Mega Raids","raid-battles","Raid Battles","2026-09-11T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-houndoom-in-mega-raids-september-2026/",[],[["2026-09-11T06:00","2026-09-15T22:00",{"raid":[["Mega Houndoom",1]],"shiny":[["Houndoom",0],["Mega Houndoom",0]]}]]],["Gible Community Day Classic","community-day","Community Day","2026-09-12T14:00","2026-09-12T17:00","https://leekduck.com/events/september-communitydayclassic2026/",[],[["2026-09-12T14:00","2026-09-12T17:00",{"bonus":[["Increased Spawns",0],["3x Catch XP",0],["3-hour Incense*",0],["1-hour Lures**",0]],"spawn":[["Gible",1]],"vyzkum":[["Field Research Tasks",-1],["Stardust ×500",1],["Gible",1]],"shiny":[["Gible",0],["Gabite",0],["Garchomp",0]]}]]],["Houndour and Houndoom Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-13T18:00","2026-09-13T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-13/",[["Houndour",1],["Houndoom",1]],[["2026-09-13T18:00","2026-09-13T19:00",{"spawn":[["Houndour",1],["Houndoom",1]]}]]],["Dynamax Rhyhorn during Max Monday","max-mondays","Max Mondays","2026-09-14T06:00","2026-09-14T21:00","https://leekduck.com/events/max-mondays-2026-09-14/",[],[["2026-09-14T06:00","2026-09-14T21:00",{"raid":[["Rhyhorn",1]]}]]],["Mega Venusaur in Mega Raids","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/mega-venusaur-in-mega-raids-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Mega Venusaur",1]],"shiny":[["Venusaur",0],["Mega Venusaur",0]]}]]],["Zamazenta (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/zamazenta-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Zamazenta (Hero of Many Battles)",1]],"shiny":[["Zamazenta (Hero of Many Battles)",0]]}]]],["Pokémon Horizons: The Series Celebration Event","event","Event","2026-09-16T10:00","2026-09-22T20:00","https://leekduck.com/events/pokemon-horizons-the-series-celebration-event-2026/",[],[["2026-09-16T10:00","2026-09-22T20:00",{"bonus":[["Increased chance to encounter Kecleon at PokéStops",0],["Tier 1 Bonus – Starting at Rank 1",-1],["2× Candy for catching Pokémon",0],["GO Pass Deluxe: 3× Candy for catching Pokémon",0],["Tier 2 Bonus – Starting at Rank 10",-1],["Regular Lure Modules will last for one hour and may attract the featured Pokémon",0],["Tier 3 Bonus – Starting at Rank 20",-1],["Additional Stardust for catching Hatenna and Wattrel",0]],"novinky":[["Pokémon Debut",-1],["Charmander wearing Friede's goggles",1],["Charmeleon wearing Friede's goggles",1],["Charizard wearing Friede's goggles",1]],"spawn":[["Wild Encounters",-1],["Charmander wearing Friede's goggles",1],["Captain's Cap Pikachu",1],["From 5:00 a.m. to 5:00 p.m.",-1],["Fidough",1],["Wattrel",0],["Chansey",1],["From 5:00 p.m. to 5:00 a.m.",-1],["Eevee",1],["Hatenna",1],["Rockruff",1]],"raid":[["One-Star Raids",-1],["Captain's Cap Pikachu",1],["Three-Star Raids",-1],["Charizard wearing Friede's goggles",1],["Meowscarada",1],["Skeledirge",1],["Quaquaval",1]],"shiny":[["Charmander wearing Friede's goggles",0],["Charmeleon wearing Friede's goggles",0],["Charizard wearing Friede's goggles",0]]}]]],["Zamazenta (Hero of Many Battles) Raid Hour","raid-hour","Raid Hour","2026-09-16T18:00","2026-09-16T19:00","https://leekduck.com/events/raidhour20260916/",[],[]],["Mystery Pokémon Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-17T18:00","2026-09-17T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-17/",[],[]],["Staraptor Super Mega Raid Day","raid-day","Raid Day","2026-09-19T14:00","2026-09-19T17:00","https://leekduck.com/events/staraptor-super-mega-raid-day-2026/",[],[["2026-09-19T14:00","2026-09-19T17:00",{"bonus":[["Remote Raid limit increased to 20 from Friday, September 18, at 5:00 p.m. to Saturday, September 19, 2026, at 8:00 p.m. PDT",0],["Receive up to six free Raid Passes from spinning Gym Photo Discs",0],["Staraptor caught from Super Mega Raids will have Mega Level 1 unlocked",0],["Increased chance of encountering Shiny Staraptor from Super Mega Raids",0],["Event Ticket",-1],["Receive up to 14 Raid Passes from spinning Gym Photo Discs",0],["Increased chance to get Rare Candy XL from Raid Battles",0],["An additional 5,000 XP from Super Mega Raid Battles",0],["An additional 5,000 Stardust from Super Mega Raid Battles",0]],"shiny":[["Staraptor",0]]}]]],["Dynamax Articuno, Zapdos, and Moltres during Max Monday","max-mondays","Max Mondays","2026-09-21T06:00","2026-09-21T21:00","https://leekduck.com/events/max-mondays-2026-09-21/",[],[["2026-09-21T06:00","2026-09-21T21:00",{"raid":[["Articuno",1],["Zapdos",1],["Moltres",1]]}]]],["Mega Malamar in Mega Raids","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/mega-malamar-in-mega-raids-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Mega Malamar",1]],"shiny":[["Malamar",0],["Mega Malamar",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/xurkitree-pheromosa-buzzwole-in-5-star-raid-battles-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Buzzwole",1],["Pheromosa",1],["Xurkitree",1]],"shiny":[["Buzzwole",0],["Pheromosa",0],["Xurkitree",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole Raid Hour","raid-hour","Raid Hour","2026-09-23T18:00","2026-09-23T19:00","https://leekduck.com/events/raidhour20260923/",[],[]],["Rattata Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-24T18:00","2026-09-24T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-24/",[["Rattata",1]],[["2026-09-24T18:00","2026-09-24T19:00",{"spawn":[["Rattata",1]]}]]],["Phantump Catch Mastery","event","Event","2026-09-26T10:00","2026-09-26T20:00","https://leekduck.com/events/catch-mastery-phantump-2026/",[],[["2026-09-26T10:00","2026-09-26T20:00",{"bonus":[["2× XP for successfully catching Pokémon with Nice Throws or better",0],["Increased Candy for successfully catching Pokémon with Nice Throws or better",0]],"novinky":[["Featured Pokémon",-1],["Phantump",1]],"spawn":[["Wild Encounters",-1],["Cherubi",1],["Drifloon",1]],"vyzkum":[["Field Research Task Encounters",-1],["Cherubi",1],["Drifloon",1],["Phantump",1]],"shiny":[["Increased Shiny Chance",-1],["Cherubi",0],["Drifloon",0],["Phantump",0]]}]]],["Dynamax Sobble during Max Monday","max-mondays","Max Mondays","2026-09-28T06:00","2026-09-28T21:00","https://leekduck.com/events/max-mondays-2026-09-28/",[],[["2026-09-28T06:00","2026-09-28T21:00",{"raid":[["Sobble",1]]}]]],["Harvest Festival 2026: Applin Picking","event","Event","2026-09-29T10:00","2026-10-05T20:00","https://leekduck.com/events/harvest-festival-2026/",[],[["2026-09-29T10:00","2026-10-05T20:00",{"bonus":[["Increased chance to encounter Shiny Smoliv",0],["Tier 1 Bonus – Starting at Rank 1",-1],["Applin will have an increased chance of holding Tart Apples, Sweet Apples, or Syrupy Apples when caught",0],["Tier 2 Bonus – Starting at Rank 10",-1],["Mossy Lure Modules activated during the event will last for one hour",0],["Tier 3 Bonus – Starting at Rank 20",-1],["More Stardust from defeating Team GO Rocket Grunts and Leaders",0]],"novinky":[["Apples",-1],["Flower Crown Cottonee",1],["Applin",1]],"spawn":[["Skwovet",1],["Lechonk",1],["Smoliv",1],["Applin",1]],"shiny":[["Shiny Debut",-1],["Applin",0],["Flapple",0],["Appletun",0],["Dipplin",0],["Hydrapple",0],["Increased Shiny Chance",-1],["Smoliv",0],["Dolliv",0],["Arboliva",0]]}]]],["Mega Victreebel in Mega Raids","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/mega-victreebel-in-mega-raids-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Mega Victreebel",1]],"shiny":[["Victreebel",0],["Mega Victreebel",0]]}]]],["Xerneas in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/xerneas-in-5-star-raid-battles-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Xerneas",1]],"shiny":[["Xerneas",0]]}]]],["Xerneas Raid Hour","raid-hour","Raid Hour","2026-09-30T18:00","2026-09-30T19:00","https://leekduck.com/events/raidhour20260930/",[],[]],["Harvest Festival: Taken Over","event","Event","2026-10-02T00:00","2026-10-05T20:00","https://leekduck.com/events/harvest-festival-taken-over-2026/",[],[["2026-10-02T00:00","2026-10-05T20:00",{"bonus":[["Increased chance to encounter Shiny Slugma",0],["More Team GO Rocket appearances at PokéStops and in balloons",0],["Use a Charged TM to remove Frustration from Shadow Pokémon",0],["Wider Attack, Defense, and HP variance for Pokémon caught in one-star and three-star Shadow Raids during the event",0]],"novinky":[["Save Shadow Zekrom!",-1],["Zekrom",1]],"spawn":[["Koffing",1],["Slugma",1],["Numel",1],["Magmar",1]],"vyzkum":[["Field Research Tasks",-1],["Mysterious Component ×?",0]],"shiny":[["Shiny Shroodle Debut",-1],["Shroodle",0],["Grafaiai",0],["Increased Shiny Chance",-1],["Slugma",0]]}]]],["Gigantamax Cinderace Max Battle Day","max-battles","Max Battles","2026-10-03T14:00","2026-10-03T17:00","https://leekduck.com/events/gigantamax-cinderace-max-battle-day-2026/",[],[["2026-10-03T14:00","2026-10-03T17:00",{"bonus":[["Max Particle collection limit increased to 1,600",0],["All Power Spots will host Gigantamax Battles",0],["Power Spots will refresh more frequently",0],["Additional Power Spots will be active",0],["8× Max Particles from Power Spots",0],["Up to three Special Trades for the day",0],["From October 2 at 5:00 p.m. to October 3 at 8:00 p.m. PDT (GMT −7), the daily Remote Raid limit will increase from 10 to 20",0],["2× Max Particles from exploring*",0],["1/4 Adventuring distance to receive Max Particles**",0],["Event Ticket",-1],["2× XP from Max Battles",0]],"novinky":[["Featured Pokémon",-1],["Gigantamax Cinderace",1]],"shiny":[["Gigantamax Cinderace",0]]}]]],["October Community Day","community-day","Community Day","2026-10-10T14:00","2026-10-10T17:00","https://leekduck.com/events/october-communityday2026/",[],[]],["Hatch Day","event","Event","2026-10-17T11:00","2026-10-17T17:00","https://leekduck.com/events/hatch-day-october-2026/",[],[]],["Max Battle Day","max-battles","Max Battles","2026-10-24T14:00","2026-10-24T17:00","https://leekduck.com/events/max-battle-day-october-24-2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-10-31T14:00","2026-10-31T17:00","https://leekduck.com/events/super-mega-raid-day-october-2026/",[],[]],["Pokémon GO Wild Area 2026: Sendai • Tohoku","wild-area","Wild Area","2026-11-06T01:00","2026-11-08T09:00","https://leekduck.com/events/pokemon-go-wild-area-2026-sendai-japan/",[],[["2026-11-06T01:00","2026-11-08T09:00",{"bonus":[["Ticket Holder Bonuses",-1],["Increased chance to encounter Shiny Pokémon",0],["1/2 Hatch Distance for Eggs placed in Incubators during the event",0],["Up to 10 free Raid Passes per day from Gyms",0],["3/4 Max Particle cost for unlocking and powering up Max Moves",0],["Daily Max Particle collection limit increased to 8,000",0],["Increased Max Particles from Power Spots and exploration",0],["Increased chance of 10 km Eggs from PokéStops and Gyms",0],["Lure Modules last for 2 hours",0],["Incense, excluding Daily Adventure Incense, lasts for 2 hours",0],["2× Candy for catching Pokémon",0],["Party Play lasts for 8 hours",0],["Chance to encounter mighty Pokémon on Routes",0],["3 GO Snapshot surprise encounters per day",0],["Chance to get GO Safari Balls from PokéStops and Gyms",0],["Trading Bonuses",-1],["Up to 6 Special Trades per day",0],["1/2 Stardust cost for trades",0]],"novinky":[["Hisuian Sliggoo and Hisuian Goodra Debut",-1],["Hisuian Sliggoo",1],["Hisuian Goodra",1]],"spawn":[["Solid as Steel Hour",-1],["Alolan Sandshrew",1],["Alolan Diglett",1],["Magnemite",1],["Shellder",1],["Onix",1],["Porygon",1],["Shuckle",1],["Skarmory",1],["Nosepass",1],["Aron",1],["Beldum",1],["Piplup",1],["Shieldon",1],["Bronzor",1],["Lucario",1],["Drilbur",1],["Ferroseed",1],["Klink",1],["Galarian Stunfisk",0],["Durant",1],["Hisuian Sliggoo",1],["Rookidee",1],["Tinkatink",1],["Orthworm",1],["Daring as Dragons Hour",-1],["Charmander",1],["Magikarp",1],["Dratini",1],["Gligar",1],["Trapinch",1],["Swablu",1],["Barboach",1],["Bagon",1],["Gible",1],["Tynamo",1],["Axew",1],["Heatmor",1],["Deino",1],["Skrelp",1],["Tyrunt",1],["Amaura",1],["Goomy",1],["Noibat",1],["Turtonator",1],["Jangmo-o",1],["Applin",0],["Sizzlipede",1],["Frigibax",1],["Mighty Pokémon",-1],["Modern Jacket Machamp",1],["Alolan Exeggutor",1],["Lapras",1],["Azumarill",1],["Scizor",1],["Kingdra",1],["Aggron",1],["Flygon",1],["Walrein",1],["Metagross",1],["Empoleon",1],["Bastiodon",1],["Magnezone",1],["Conkeldurr",1],["Ferrothorn",1],["Haxorus",1],["Hydreigon",1],["Goodra",1],["Noivern",1],["Kommo-o",1],["Tinkaton",1],["Clodsire",1],["Incense Encounters",-1],["Ticket Holder Incense Encounters",-1],["Unown A",1],["Unown D",1],["Unown E",1],["Unown I",1],["Unown N",1],["Unown S",1],["Latias",1],["Latios",1]],"vejce":[["10 km Eggs",-1],["Honedge",1],["Klefki",0],["Drampa",1],["Duraludon",1]],"raid":[["Three-Star Raids",-1],["Modern Jacket Machamp",1],["Max Battles",-1],["Dialga",1],["Palkia",1]],"shiny":[["Hisuian Sliggoo",0],["Hisuian Goodra",0]]}]]],["Pokémon GO Wild Area 2026: Mexico City","wild-area","Wild Area","2026-11-06T16:00","2026-11-09T00:00","https://leekduck.com/events/pokemon-go-wild-area-2026-mexico-city/",[],[["2026-11-06T16:00","2026-11-09T00:00",{"bonus":[["Ticket Holder Bonuses",-1],["Increased chance to encounter Shiny Pokémon",0],["1/2 Hatch Distance for Eggs placed in Incubators during the event",0],["Up to 10 free Raid Passes per day from Gyms",0],["3/4 Max Particle cost for unlocking and powering up Max Moves",0],["Daily Max Particle collection limit increased to 8,000",0],["Increased Max Particles from Power Spots and exploration",0],["Increased chance of 10 km Eggs from PokéStops and Gyms",0],["Lure Modules last for 2 hours",0],["Incense, excluding Daily Adventure Incense, lasts for 2 hours",0],["2× Candy for catching Pokémon",0],["Party Play lasts for 8 hours",0],["Chance to encounter mighty Pokémon on Routes",0],["3 GO Snapshot surprise encounters per day",0],["Chance to get GO Safari Balls from PokéStops and Gyms",0],["Trading Bonuses",-1],["Up to 6 Special Trades per day",0],["1/2 Stardust cost for trades",0]],"novinky":[["Hisuian Sliggoo and Hisuian Goodra Debut",-1],["Hisuian Sliggoo",1],["Hisuian Goodra",1]],"spawn":[["Solid as Steel Hour",-1],["Alolan Sandshrew",1],["Alolan Diglett",1],["Magnemite",1],["Shellder",1],["Onix",1],["Porygon",1],["Shuckle",1],["Skarmory",1],["Nosepass",1],["Aron",1],["Beldum",1],["Piplup",1],["Shieldon",1],["Bronzor",1],["Lucario",1],["Drilbur",1],["Ferroseed",1],["Klink",1],["Galarian Stunfisk",0],["Durant",1],["Hisuian Sliggoo",1],["Rookidee",1],["Tinkatink",1],["Orthworm",1],["Daring as Dragons Hour",-1],["Charmander",1],["Magikarp",1],["Dratini",1],["Gligar",1],["Trapinch",1],["Swablu",1],["Barboach",1],["Bagon",1],["Gible",1],["Tynamo",1],["Axew",1],["Heatmor",1],["Deino",1],["Skrelp",1],["Tyrunt",1],["Amaura",1],["Goomy",1],["Noibat",1],["Turtonator",1],["Jangmo-o",1],["Applin",0],["Sizzlipede",1],["Frigibax",1],["Mighty Pokémon",-1],["Modern Jacket Machamp",1],["Alolan Exeggutor",1],["Azumarill",1],["Scizor",1],["Kingdra",1],["Aggron",1],["Flygon",1],["Walrein",1],["Metagross",1],["Empoleon",1],["Bastiodon",1],["Magnezone",1],["Conkeldurr",1],["Ferrothorn",1],["Haxorus",1],["Hydreigon",1],["Hawlucha",1],["Goodra",1],["Noivern",1],["Kommo-o",1],["Tinkaton",1],["Clodsire",1],["Incense Encounters",-1],["Ticket Holder Incense Encounters",-1],["Unown C",1],["Unown E",1],["Unown I",1],["Unown M",1],["Unown O",1],["Unown X",1],["Latias",1],["Latios",1]],"vejce":[["10 km Eggs",-1],["Honedge",1],["Klefki",0],["Drampa",1],["Duraludon",1]],"raid":[["Three-Star Raids",-1],["Modern Jacket Machamp",1],["Max Battles",-1],["Dialga",1],["Palkia",1]],"shiny":[["Hisuian Sliggoo",0],["Hisuian Goodra",0]]}]]],["Pokémon GO Wild Area 2026: Global","wild-area","Wild Area","2026-11-14T10:00","2026-11-15T18:00","https://leekduck.com/events/pokemon-go-wild-area-2026-global/",[],[["2026-11-14T10:00","2026-11-15T18:00",{"bonus":[["Bonuses for All Trainers",-1],["Chance to get GO Safari Balls from PokéStops and Gyms",0],["Up to 3 free Raid Passes per day from Gyms",0],["Daily Max Particle collection limit increased to 1,600",0],["3 GO Snapshot surprise encounters per day",0],["Party Play lasts for 8 hours",0],["Chance to encounter mighty Pokémon on Routes",0],["Additional Ticket Holder Bonuses",-1],["Increased chance to encounter Shiny Pokémon",0],["Daily Max Particle collection limit increased to 3,200",0],["Increased Max Particles from Power Spots and exploration",0],["Up to 6 free Raid Passes per day from Gyms",0],["2× Candy for catching Pokémon",0],["2× Incense duration",0],["Increased chance of 10 km Eggs from PokéStops and Gyms",0],["6 GO Snapshot surprise encounters per day",0],["Lure Modules last for 2 hours",0],["Trading Bonuses",-1],["Up to 6 Special Trades per day",0],["1/2 Stardust cost for trades",0]],"spawn":[["Solid as Steel Hour",-1],["Alolan Sandshrew",1],["Alolan Diglett",1],["Magnemite",1],["Shellder",1],["Onix",1],["Porygon",1],["Shuckle",1],["Skarmory",1],["Nosepass",1],["Aron",1],["Beldum",1],["Piplup",1],["Shieldon",1],["Bronzor",1],["Lucario",1],["Drilbur",1],["Ferroseed",1],["Klink",1],["Galarian Stunfisk",0],["Durant",1],["Rookidee",1],["Tinkatink",1],["Daring as Dragons Hour",-1],["Charmander",1],["Magikarp",1],["Dratini",1],["Gligar",1],["Trapinch",1],["Swablu",1],["Barboach",1],["Bagon",1],["Gible",1],["Tynamo",1],["Axew",1],["Heatmor",1],["Deino",1],["Skrelp",1],["Tyrunt",1],["Amaura",1],["Goomy",1],["Noibat",1],["Turtonator",1],["Jangmo-o",1],["Sizzlipede",1],["Frigibax",1]],"vejce":[["10 km Eggs",-1],["Honedge",1],["Klefki",0],["Drampa",1],["Duraludon",1]],"raid":[["Three-Star Raids",-1],["Modern Jacket Machamp",1]],"utoky":[["Machamp wearing a modern jacket",-1],["Modern Jacket Machamp",0],["Flygon",-1],["Flygon",0],["Metagross",-1],["Metagross",0],["Magnezone",-1],["Magnezone",0],["Haxorus",-1],["Haxorus",0],["Hydreigon",-1],["Hydreigon",0],["Tinkaton",-1],["Tinkaton",0]]}],["2026-11-14T10:00","2026-11-15T18:00",{"spawn":[["Alolan Exeggutor",1],["Scizor",1],["Flygon",1],["Walrein",1],["Metagross",1],["Empoleon",1],["Magnezone",1],["Conkeldurr",1],["Haxorus",1]],"raid":[["Dialga",1]]}],["2026-11-15T00:00","2026-11-15T18:00",{"spawn":[["Azumarill",1],["Kingdra",1],["Aggron",1],["Ferrothorn",1],["Hydreigon",1],["Goodra",1],["Noivern",1],["Tinkaton",1],["Clodsire",1],["Incense Encounters",-1],["Alolan Exeggutor",1],["Scizor",1],["Flygon",1],["Empoleon",1],["Magnezone",1],["Conkeldurr",1],["Ticket Holder Incense Encounters",-1],["Unown D",1],["Unown I",1],["Unown L",1],["Unown W",1],["Latias",1],["Latios",1]],"raid":[["Palkia",1]]}]]],["November Community Day","community-day","Community Day","2026-11-21T14:00","2026-11-21T17:00","https://leekduck.com/events/november-communityday2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-11-28T14:00","2026-11-28T17:00","https://leekduck.com/events/super-mega-raid-day-november-2026/",[],[]]],"raids":[["Alolan Rattata","1-Star Raids",["Dark","Normal"],[381,419],[477,524],1],["Dunsparce","1-Star Raids",["Normal"],[906,965],[1132,1206],1],["Scraggy","1-Star Raids",["Dark","Fighting"],[732,784],[915,980],1],["Fidough","1-Star Raids",["Fairy"],[519,563],[648,703],1],["Alolan Dugtrio","3-Star Raids",["Ground","Steel"],[1021,1084],[1276,1355],1],["Lapras","3-Star Raids",["Water","Ice"],[1435,1509],[1794,1886],1],["Falinks","3-Star Raids",["Fighting"],[1278,1347],[1598,1683],1],["Zacian (Hero)","5-Star Raids",["Fairy"],[2100,2188],[2625,2735],1],["Mega Beedrill","Mega Raids",["Bug","Poison"],[994,1054],[1242,1318],1],["Shadow Machop","1-Star Raids",["Fighting"],[638,730],[798,913],1],["Shadow Bellsprout","1-Star Raids",["Grass","Poison"],[506,590],[633,738],1],["Shadow Torchic","1-Star Raids",["Fire"],[541,624],[677,781],1],["Shadow Bagon","1-Star Raids",["Dragon"],[575,660],[719,826],1],["Shadow Alolan Sandslash","3-Star Raids",["Ice","Steel"],[1266,1390],[1582,1737],1],["Shadow Quagsire","3-Star Raids",["Water","Ground"],[1025,1138],[1282,1423],1],["Shadow Lampent","3-Star Raids",["Ghost","Fire"],[871,976],[1089,1220],1],["Shadow Thundurus (Incarnate)","5-Star Raids",["Electric","Flying"],[1762,1911],[2203,2389],1]],"ligy":[["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-09-08T20:00","2026-09-15T20:00",[],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-1/",[["Great League: Mega Edition","GL"],["Ultra League: Mega Edition","UL"],["Master League: Mega Edition","ML"]]],["Great League, Ultra League: Mega Edition, and Willpower Cup: Great League Edition | Twili…","2026-09-15T20:00","2026-09-22T20:00",["GL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_willpower-cup-great-league-edition/",[["Ultra League: Mega Edition","UL"],["Willpower Cup: Great League Edition","GL"]]],["Ultra League, Master League: Mega Edition, and Retro Cup: Great League Edition | Twilight…","2026-09-22T20:00","2026-09-29T20:00",["UL"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_retro-cup-great-league-edition/",[["Master League: Mega Edition","ML"],["Retro Cup: Great League Edition","GL"]]],["Master League and Mega Color Cup: Great League Edition | Twilight Trails","2026-09-29T20:00","2026-10-06T20:00",["ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-color-cup-great-league-edition/",[["Mega Color Cup: Great League Edition","GL"]]],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-10-06T20:00","2026-10-13T20:00",[],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-2/",[["Great League: Mega Edition","GL"],["Ultra League: Mega Edition","UL"],["Master League: Mega Edition","ML"]]],["Great League, Ultra League: Mega Edition, and Little Cup | Twilight Trails","2026-10-13T20:00","2026-10-20T20:00",["LC","GL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_little-cup/",[["Ultra League: Mega Edition","UL"]]],["Ultra League, Master League: Mega Edition, and Fantasy Cup: Great League Edition | Twilig…","2026-10-20T20:00","2026-10-27T20:00",["UL"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_fantasy-cup-great-league-edition/",[["Master League: Mega Edition","ML"],["Fantasy Cup: Great League Edition","GL"]]],["Master League and Mega Halloween Cup: Great League Edition | Twilight Trails","2026-10-27T21:00","2026-11-03T21:00",["ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-halloween-cup-great-league-edition/",[["Mega Halloween Cup: Great League Edition","GL"]]],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-11-03T21:00","2026-11-10T21:00",[],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-3/",[["Great League: Mega Edition","GL"],["Ultra League: Mega Edition","UL"],["Master League: Mega Edition","ML"]]],["Great League, Ultra League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-10T21:00","2026-11-17T21:00",["GL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_2026-go-laic-cup/",[["Ultra League: Mega Edition","UL"],["2026 GO LAIC Cup",""]]],["Ultra League, Master League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-18T21:00","2026-11-25T21:00",["UL"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_2026-go-laic-cup/",[["Master League: Mega Edition","ML"],["2026 GO LAIC Cup",""]]],["Master League and Mega Catch Cup: Great League Edition | Twilight Trails","2026-11-24T21:00","2026-12-01T21:00",["ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-catch-cup-great-league-edition/",[["Mega Catch Cup: Great League Edition","GL"]]]]};
+  var EVENTS = {"events":[["Gible Community Day Classic","community-day","Community Day","","","https://leekduck.com/events/september-communitydayclassic2026/",[],[["","",{"bonus":[["Increased Spawns",0],["3x Catch XP",0],["3-hour Incense*",0],["1-hour Lures**",0]],"spawn":[["Gible",1]],"vyzkum":[["Field Research Tasks",-1],["Stardust ×500",1],["Gible",1]],"shiny":[["Gible",0],["Gabite",0],["Garchomp",0]]}]]],["LEGO Stores and Pokémon GO","event","Event","2026-08-03T10:00","2026-09-30T23:59","https://leekduck.com/events/lego-pokemon-go-2026/",[],[["2026-08-03T10:00","2026-09-30T23:59",{"novinky":[["How stamp rallies work",-1],["Pikachu",1],["Berries and Poké Balls",-1],["Razz Berry ×5",0],["Poké Ball ×10",0],["Pinap Berry ×5",0],["Nanab Berry ×5",0]],"raid":[["Appearing in 1-Star Raids",-1],["Pikachu",1]]}]]],["Mega Beedrill in Mega Raids","raid-battles","Raid Battles","2026-09-08T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-beedrill-in-mega-raids-september-2026/",[],[["2026-09-08T06:00","2026-09-15T22:00",{"raid":[["Mega Beedrill",1]],"shiny":[["Beedrill",0],["Mega Beedrill",0]]}]]],["Mega Squads","event","Event","2026-09-08T10:00","2026-09-14T20:00","https://leekduck.com/events/mega-squads/",[],[["2026-09-08","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Beedrill",1]]}],["2026-09-08T10:00","2026-09-11T10:00",{"spawn":[["Pidgey",1],["Emolga",1],["Fletchling",1],["Noibat",1],["Rookidee",1]],"vejce":[["In 5 km Eggs",-1],["Emolga",1],["Fletchling",1],["Rookidee",1],["Flamigo",1]],"vyzkum":[["Fletchling",1],["Stardust ×10000",0],["Stardust ×500",0],["Flamigo",1]]}],["2026-09-08T10:00","2026-09-14T20:00",{"bonus":[["Tier 1 Bonus – Starting at Rank 1",-1],["Chance to obtain Mega Energy when catching Weedle, Pidgey, Houndour, Carvanha, or their Evolutions",0],["Tier 2 Bonus – Starting at Rank 15",-1],["2× Hatch Stardust",0],["GO Pass Deluxe: 1/2 Egg Hatch Distance when Eggs are placed in an Incubator during the event period",0]],"novinky":[["Pokémon Debuts",-1],["Maschiff",0],["Mabosstiff",0],["New Mega Level: Super Max!",-1],["Mega Beedrill",1],["Mega Houndoom",1]],"spawn":[["Throughout the Event",-1],["Weedle",1],["Flamigo",1]],"utoky":[["Mega Beedrill – Fell Stinger+",-1],["Mega Beedrill",1],["Mega Houndoom – Dark Pulse+",-1],["Mega Houndoom",1]],"shiny":[["Shiny Debut",-1],["Flamigo",0],["Increased Shiny Chance",-1],["Pidgey",0],["Carvanha",0]]}],["2026-09-10T00:00","2026-09-14T20:00",{"novinky":[["Featured Pokémon",-1],["Weedle",1],["Kakuna",1],["Beedrill",1]]}],["2026-09-11","2026-09-15",{"raid":[["Mega Raids",-1],["Mega Houndoom",1]]}],["2026-09-11T10:00","2026-09-14T20:00",{"spawn":[["Houndour",1],["Carvanha",1],["Purrloin",1],["Nickit",1]],"vejce":[["In 5 km Eggs",-1],["Sandile",1],["Pancham",1],["Maschiff",0],["Flamigo",1]],"vyzkum":[["Nickit",1],["Stardust ×10000",0],["Stardust ×500",0],["Maschiff",1]]}],["2026-09-13T00:00","2026-09-14T20:00",{"novinky":[["Featured Pokémon",-1],["Houndour",1],["Houndoom",1]]}]]],["Twilight Trails","season","Season","2026-09-08T10:00","2026-12-01T10:00","https://leekduck.com/events/season-24-twilight-trails/",[],[["2026-09-08T10:00","2026-12-01T10:00",{"bonus":[["Rank 1",-1],["One guaranteed Candy XL when trading Pokémon for Trainers level 31 and above",0],["One additional Candy for trading Pokémon",0],["Rank 25",-1],["Increased limits on opening Gifts, receiving Gifts from PokéStop and Gym Photo Discs, and storing Gifts",0],["Rank 50",-1],["2× Daily Adventure Incense duration",0],["Rank 75",-1],["Increased XP and Stardust from hatching Eggs",0]],"novinky":[["Pokémon Debuts",-1],["Maschiff",0],["Mabosstiff",0],["Max Pokémon Debuts",-1],["Rhyhorn",1],["Sneasel",1],["Uxie",1],["Mesprit",1],["Azelf",1],["Sizzlipede",1]],"vejce":[["In 2 km Eggs",-1],["Elekid",1],["Magby",1],["Azurill",1],["In 5 km Eggs",-1],["Munchlax",1],["Sizzlipede",1],["Fidough",1],["In 5 km Eggs from Adventure Sync Rewards",-1],["Tyrogue",1],["Sableye",1],["Budew",1],["In 7 km Eggs",-1],["Galarian Meowth",1],["Galarian Zigzagoon",1],["Galarian Stunfisk",0],["In 7 km Eggs From Route Rewards",-1],["Galarian Slowpoke",1],["Hisuian Sneasel",1],["Galarian Corsola",1],["In 10 km Eggs",-1],["Dratini",1],["Honedge",1],["Impidimp",1],["In 10 km Eggs from Adventure Sync Rewards",-1],["Bagon",1],["Druddigon",1],["Drampa",1]]}]]],["Zacian (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-09T06:00","2026-09-15T22:00","https://leekduck.com/events/zacian-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-09T06:00","2026-09-15T22:00",{"raid":[["Zacian (Hero of Many Battles)",1]],"shiny":[["Zacian (Hero of Many Battles)",0]]}]]],["Shadow Thundurus (Incarnate Forme) in Shadow Raids","raid-battles","Raid Battles","2026-09-09T06:00","2026-10-06T22:00","https://leekduck.com/events/shadow-thundurus-incarnate-forme-in-shadow-raids-september-2026/",[],[["2026-09-09T06:00","2026-10-06T22:00",{"raid":[["Appearing in 5-Star Shadow Raids",-1],["Thundurus (Incarnate)",1]],"shiny":[["Thundurus (Incarnate)",0]]}]]],["Mega Houndoom in Mega Raids","raid-battles","Raid Battles","2026-09-11T06:00","2026-09-15T22:00","https://leekduck.com/events/mega-houndoom-in-mega-raids-september-2026/",[],[["2026-09-11T06:00","2026-09-15T22:00",{"raid":[["Mega Houndoom",1]],"shiny":[["Houndoom",0],["Mega Houndoom",0]]}]]],["Houndour and Houndoom Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-13T18:00","2026-09-13T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-13/",[["Houndour",1],["Houndoom",1]],[["2026-09-13T18:00","2026-09-13T19:00",{"spawn":[["Houndour",1],["Houndoom",1]]}]]],["Dynamax Rhyhorn during Max Monday","max-mondays","Max Mondays","2026-09-14T06:00","2026-09-14T21:00","https://leekduck.com/events/max-mondays-2026-09-14/",[],[["2026-09-14T06:00","2026-09-14T21:00",{"raid":[["Rhyhorn",1]]}]]],["Mega Venusaur in Mega Raids","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/mega-venusaur-in-mega-raids-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Mega Venusaur",1]],"shiny":[["Venusaur",0],["Mega Venusaur",0]]}]]],["Zamazenta (Hero of Many Battles) in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-16T06:00","2026-09-22T22:00","https://leekduck.com/events/zamazenta-hero-of-many-battles-in-5-star-raid-battles-september-2026/",[],[["2026-09-16T06:00","2026-09-22T22:00",{"raid":[["Zamazenta (Hero of Many Battles)",1]],"shiny":[["Zamazenta (Hero of Many Battles)",0]]}]]],["Pokémon Horizons: The Series Celebration Event","event","Event","2026-09-16T10:00","2026-09-22T20:00","https://leekduck.com/events/pokemon-horizons-the-series-celebration-event-2026/",[],[["2026-09-16T10:00","2026-09-22T20:00",{"bonus":[["Increased chance to encounter Kecleon at PokéStops",0],["Tier 1 Bonus – Starting at Rank 1",-1],["2× Candy for catching Pokémon",0],["GO Pass Deluxe: 3× Candy for catching Pokémon",0],["Tier 2 Bonus – Starting at Rank 10",-1],["Regular Lure Modules will last for one hour and may attract the featured Pokémon",0],["Tier 3 Bonus – Starting at Rank 20",-1],["Additional Stardust for catching Hatenna and Wattrel",0]],"novinky":[["Pokémon Debut",-1],["Charmander wearing Friede's goggles",1],["Charmeleon wearing Friede's goggles",1],["Charizard wearing Friede's goggles",1]],"spawn":[["Wild Encounters",-1],["Charmander wearing Friede's goggles",1],["Captain's Cap Pikachu",1],["From 5:00 a.m. to 5:00 p.m.",-1],["Fidough",1],["Wattrel",0],["Chansey",1],["From 5:00 p.m. to 5:00 a.m.",-1],["Eevee",1],["Hatenna",1],["Rockruff",1]],"raid":[["One-Star Raids",-1],["Captain's Cap Pikachu",1],["Three-Star Raids",-1],["Charizard wearing Friede's goggles",1],["Meowscarada",1],["Skeledirge",1],["Quaquaval",1]],"shiny":[["Charmander wearing Friede's goggles",0],["Charmeleon wearing Friede's goggles",0],["Charizard wearing Friede's goggles",0]]}]]],["Zamazenta (Hero of Many Battles) Raid Hour","raid-hour","Raid Hour","2026-09-16T18:00","2026-09-16T19:00","https://leekduck.com/events/raidhour20260916/",[],[]],["Charmander wearing Friede's goggles Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-17T18:00","2026-09-17T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-17/",[["Charmander wearing Friede's goggles",1]],[["2026-09-17T18:00","2026-09-17T19:00",{"spawn":[["Charmander wearing Friede's goggles",1]]}]]],["Staraptor Super Mega Raid Day","raid-day","Raid Day","2026-09-19T14:00","2026-09-19T17:00","https://leekduck.com/events/staraptor-super-mega-raid-day-2026/",[],[["2026-09-19T14:00","2026-09-19T17:00",{"bonus":[["Remote Raid limit increased to 20 from Friday, September 18, at 5:00 p.m. to Saturday, September 19, 2026, at 8:00 p.m. PDT",0],["Receive up to six free Raid Passes from spinning Gym Photo Discs",0],["Staraptor caught from Super Mega Raids will have Mega Level 1 unlocked",0],["Increased chance of encountering Shiny Staraptor from Super Mega Raids",0],["Event Ticket",-1],["Receive up to 14 Raid Passes from spinning Gym Photo Discs",0],["Increased chance to get Rare Candy XL from Raid Battles",0],["An additional 5,000 XP from Super Mega Raid Battles",0],["An additional 5,000 Stardust from Super Mega Raid Battles",0]],"shiny":[["Staraptor",0]]}]]],["Dynamax Articuno, Zapdos, and Moltres during Max Monday","max-mondays","Max Mondays","2026-09-21T06:00","2026-09-21T21:00","https://leekduck.com/events/max-mondays-2026-09-21/",[],[["2026-09-21T06:00","2026-09-21T21:00",{"raid":[["Articuno",1],["Zapdos",1],["Moltres",1]]}]]],["Mega Malamar in Mega Raids","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/mega-malamar-in-mega-raids-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Mega Malamar",1]],"shiny":[["Malamar",0],["Mega Malamar",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-23T06:00","2026-09-29T22:00","https://leekduck.com/events/xurkitree-pheromosa-buzzwole-in-5-star-raid-battles-september-2026/",[],[["2026-09-23T06:00","2026-09-29T22:00",{"raid":[["Buzzwole",1],["Pheromosa",1],["Xurkitree",1]],"shiny":[["Buzzwole",0],["Pheromosa",0],["Xurkitree",0]]}]]],["Xurkitree, Pheromosa, and Buzzwole Raid Hour","raid-hour","Raid Hour","2026-09-23T18:00","2026-09-23T19:00","https://leekduck.com/events/raidhour20260923/",[],[]],["Rattata Spotlight Hour","pokemon-spotlight-hour","Pokémon Spotlight Hour","2026-09-24T18:00","2026-09-24T19:00","https://leekduck.com/events/pokemonspotlighthour2026-09-24/",[["Rattata",1]],[["2026-09-24T18:00","2026-09-24T19:00",{"spawn":[["Rattata",1]]}]]],["Phantump Catch Mastery","event","Event","2026-09-26T10:00","2026-09-26T20:00","https://leekduck.com/events/catch-mastery-phantump-2026/",[],[["2026-09-26T10:00","2026-09-26T20:00",{"bonus":[["2× XP for successfully catching Pokémon with Nice Throws or better",0],["Increased Candy for successfully catching Pokémon with Nice Throws or better",0]],"novinky":[["Featured Pokémon",-1],["Phantump",1]],"spawn":[["Wild Encounters",-1],["Cherubi",1],["Drifloon",1]],"vyzkum":[["Field Research Task Encounters",-1],["Cherubi",1],["Drifloon",1],["Phantump",1]],"shiny":[["Increased Shiny Chance",-1],["Cherubi",0],["Drifloon",0],["Phantump",0]]}]]],["Dynamax Sobble during Max Monday","max-mondays","Max Mondays","2026-09-28T06:00","2026-09-28T21:00","https://leekduck.com/events/max-mondays-2026-09-28/",[],[["2026-09-28T06:00","2026-09-28T21:00",{"raid":[["Sobble",1]]}]]],["Harvest Festival 2026: Applin Picking","event","Event","2026-09-29T10:00","2026-10-05T20:00","https://leekduck.com/events/harvest-festival-2026/",[],[["2026-09-29T10:00","2026-10-05T20:00",{"bonus":[["Increased chance to encounter Shiny Smoliv",0],["Tier 1 Bonus – Starting at Rank 1",-1],["Applin will have an increased chance of holding Tart Apples, Sweet Apples, or Syrupy Apples when caught",0],["Tier 2 Bonus – Starting at Rank 10",-1],["Mossy Lure Modules activated during the event will last for one hour",0],["Tier 3 Bonus – Starting at Rank 20",-1],["More Stardust from defeating Team GO Rocket Grunts and Leaders",0]],"novinky":[["Apples",-1],["Flower Crown Cottonee",1],["Applin",1]],"spawn":[["Skwovet",1],["Lechonk",1],["Smoliv",1],["Applin",1]],"shiny":[["Shiny Debut",-1],["Applin",0],["Flapple",0],["Appletun",0],["Dipplin",0],["Hydrapple",0],["Increased Shiny Chance",-1],["Smoliv",0],["Dolliv",0],["Arboliva",0]]}]]],["Mega Victreebel in Mega Raids","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/mega-victreebel-in-mega-raids-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Mega Victreebel",1]],"shiny":[["Victreebel",0],["Mega Victreebel",0]]}]]],["Xerneas in 5-star Raid Battles","raid-battles","Raid Battles","2026-09-30T06:00","2026-10-06T22:00","https://leekduck.com/events/xerneas-in-5-star-raid-battles-september-2026/",[],[["2026-09-30T06:00","2026-10-06T22:00",{"raid":[["Xerneas",1]],"shiny":[["Xerneas",0]]}]]],["Xerneas Raid Hour","raid-hour","Raid Hour","2026-09-30T18:00","2026-09-30T19:00","https://leekduck.com/events/raidhour20260930/",[],[]],["Harvest Festival: Taken Over","event","Event","2026-10-02T00:00","2026-10-05T20:00","https://leekduck.com/events/harvest-festival-taken-over-2026/",[],[["2026-10-02T00:00","2026-10-05T20:00",{"bonus":[["Increased chance to encounter Shiny Slugma",0],["More Team GO Rocket appearances at PokéStops and in balloons",0],["Use a Charged TM to remove Frustration from Shadow Pokémon",0],["Wider Attack, Defense, and HP variance for Pokémon caught in one-star and three-star Shadow Raids during the event",0]],"novinky":[["Save Shadow Zekrom!",-1],["Zekrom",1]],"spawn":[["Koffing",1],["Slugma",1],["Numel",1],["Magmar",1]],"vyzkum":[["Field Research Tasks",-1],["Mysterious Component ×?",0]],"shiny":[["Shiny Shroodle Debut",-1],["Shroodle",0],["Grafaiai",0],["Increased Shiny Chance",-1],["Slugma",0]]}]]],["Patterns of the Wild","event","Event","2026-10-02T10:00","2026-10-02T20:00","https://leekduck.com/events/patterns-of-the-wild-2026/",[],[["2026-10-02T10:00","2026-10-02T20:00",{"bonus":[["Incense will last for two hours",0],["Increased chance to encounter Pikachu wearing a batik shirt and other event-themed Pokémon while using Incense",0],["Increased chance to encounter Shiny featured wild Pokémon",0]],"novinky":[["Pikachu with a Special Background",-1],["Batik Shirt Pikachu",1]],"spawn":[["Caterpie",1],["Batik Shirt Pikachu",1],["Oddish",1],["Gloom",1],["Bellsprout",1],["Ledyba",1],["Ledian",1],["Hoppip",1],["Skiploom",1],["Sunkern",1],["Wurmple",1]],"vyzkum":[["Timed Research Encounters",-1],["Batik Shirt Pikachu",1],["Oddish",1],["Ledyba",1],["Hoppip",1]],"shiny":[["Caterpie",0],["Batik Shirt Pikachu",0],["Oddish",0],["Gloom",0],["Bellsprout",0],["Ledyba",0],["Ledian",0],["Hoppip",0],["Skiploom",0],["Sunkern",0],["Wurmple",0]]}]]],["Gigantamax Cinderace Max Battle Day","max-battles","Max Battles","2026-10-03T14:00","2026-10-03T17:00","https://leekduck.com/events/gigantamax-cinderace-max-battle-day-2026/",[],[["2026-10-03T14:00","2026-10-03T17:00",{"bonus":[["Max Particle collection limit increased to 1,600",0],["All Power Spots will host Gigantamax Battles",0],["Power Spots will refresh more frequently",0],["Additional Power Spots will be active",0],["8× Max Particles from Power Spots",0],["Up to three Special Trades for the day",0],["From October 2 at 5:00 p.m. to October 3 at 8:00 p.m. PDT (GMT −7), the daily Remote Raid limit will increase from 10 to 20",0],["2× Max Particles from exploring*",0],["1/4 Adventuring distance to receive Max Particles**",0],["Event Ticket",-1],["2× XP from Max Battles",0]],"novinky":[["Featured Pokémon",-1],["Gigantamax Cinderace",1]],"shiny":[["Gigantamax Cinderace",0]]}]]],["October Community Day","community-day","Community Day","2026-10-10T14:00","2026-10-10T17:00","https://leekduck.com/events/october-communityday2026/",[],[]],["Hatch Day","event","Event","2026-10-17T11:00","2026-10-17T17:00","https://leekduck.com/events/hatch-day-october-2026/",[],[]],["Max Battle Day","max-battles","Max Battles","2026-10-24T14:00","2026-10-24T17:00","https://leekduck.com/events/max-battle-day-october-24-2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-10-31T14:00","2026-10-31T17:00","https://leekduck.com/events/super-mega-raid-day-october-2026/",[],[]],["Pokémon GO Wild Area 2026: Sendai • Tohoku","wild-area","Wild Area","2026-11-06T01:00","2026-11-08T09:00","https://leekduck.com/events/pokemon-go-wild-area-2026-sendai-japan/",[],[["2026-11-06T01:00","2026-11-08T09:00",{"bonus":[["Ticket Holder Bonuses",-1],["Increased chance to encounter Shiny Pokémon",0],["1/2 Hatch Distance for Eggs placed in Incubators during the event",0],["Up to 10 free Raid Passes per day from Gyms",0],["3/4 Max Particle cost for unlocking and powering up Max Moves",0],["Daily Max Particle collection limit increased to 8,000",0],["Increased Max Particles from Power Spots and exploration",0],["Increased chance of 10 km Eggs from PokéStops and Gyms",0],["Lure Modules last for 2 hours",0],["Incense, excluding Daily Adventure Incense, lasts for 2 hours",0],["2× Candy for catching Pokémon",0],["Party Play lasts for 8 hours",0],["Chance to encounter mighty Pokémon on Routes",0],["3 GO Snapshot surprise encounters per day",0],["Chance to get GO Safari Balls from PokéStops and Gyms",0],["Trading Bonuses",-1],["Up to 6 Special Trades per day",0],["1/2 Stardust cost for trades",0]],"novinky":[["Hisuian Sliggoo and Hisuian Goodra Debut",-1],["Hisuian Sliggoo",1],["Hisuian Goodra",1]],"spawn":[["Solid as Steel Hour",-1],["Alolan Sandshrew",1],["Alolan Diglett",1],["Magnemite",1],["Shellder",1],["Onix",1],["Porygon",1],["Shuckle",1],["Skarmory",1],["Nosepass",1],["Aron",1],["Beldum",1],["Piplup",1],["Shieldon",1],["Bronzor",1],["Lucario",1],["Drilbur",1],["Ferroseed",1],["Klink",1],["Galarian Stunfisk",0],["Durant",1],["Hisuian Sliggoo",1],["Rookidee",1],["Tinkatink",1],["Orthworm",1],["Daring as Dragons Hour",-1],["Charmander",1],["Magikarp",1],["Dratini",1],["Gligar",1],["Trapinch",1],["Swablu",1],["Barboach",1],["Bagon",1],["Gible",1],["Tynamo",1],["Axew",1],["Heatmor",1],["Deino",1],["Skrelp",1],["Tyrunt",1],["Amaura",1],["Goomy",1],["Noibat",1],["Turtonator",1],["Jangmo-o",1],["Applin",0],["Sizzlipede",1],["Frigibax",1],["Mighty Pokémon",-1],["Modern Jacket Machamp",1],["Alolan Exeggutor",1],["Lapras",1],["Azumarill",1],["Scizor",1],["Kingdra",1],["Aggron",1],["Flygon",1],["Walrein",1],["Metagross",1],["Empoleon",1],["Bastiodon",1],["Magnezone",1],["Conkeldurr",1],["Ferrothorn",1],["Haxorus",1],["Hydreigon",1],["Goodra",1],["Noivern",1],["Kommo-o",1],["Tinkaton",1],["Clodsire",1],["Incense Encounters",-1],["Ticket Holder Incense Encounters",-1],["Unown A",1],["Unown D",1],["Unown E",1],["Unown I",1],["Unown N",1],["Unown S",1],["Latias",1],["Latios",1]],"vejce":[["10 km Eggs",-1],["Honedge",1],["Klefki",1],["Drampa",1],["Duraludon",1]],"raid":[["Three-Star Raids",-1],["Modern Jacket Machamp",1],["Max Battles",-1],["Dialga",1],["Palkia",1]],"shiny":[["Hisuian Sliggoo",0],["Hisuian Goodra",0]]}]]],["Pokémon GO Wild Area 2026: Mexico City","wild-area","Wild Area","2026-11-06T16:00","2026-11-09T00:00","https://leekduck.com/events/pokemon-go-wild-area-2026-mexico-city/",[],[["2026-11-06T16:00","2026-11-09T00:00",{"bonus":[["Ticket Holder Bonuses",-1],["Increased chance to encounter Shiny Pokémon",0],["1/2 Hatch Distance for Eggs placed in Incubators during the event",0],["Up to 10 free Raid Passes per day from Gyms",0],["3/4 Max Particle cost for unlocking and powering up Max Moves",0],["Daily Max Particle collection limit increased to 8,000",0],["Increased Max Particles from Power Spots and exploration",0],["Increased chance of 10 km Eggs from PokéStops and Gyms",0],["Lure Modules last for 2 hours",0],["Incense, excluding Daily Adventure Incense, lasts for 2 hours",0],["2× Candy for catching Pokémon",0],["Party Play lasts for 8 hours",0],["Chance to encounter mighty Pokémon on Routes",0],["3 GO Snapshot surprise encounters per day",0],["Chance to get GO Safari Balls from PokéStops and Gyms",0],["Trading Bonuses",-1],["Up to 6 Special Trades per day",0],["1/2 Stardust cost for trades",0]],"novinky":[["Hisuian Sliggoo and Hisuian Goodra Debut",-1],["Hisuian Sliggoo",1],["Hisuian Goodra",1]],"spawn":[["Solid as Steel Hour",-1],["Alolan Sandshrew",1],["Alolan Diglett",1],["Magnemite",1],["Shellder",1],["Onix",1],["Porygon",1],["Shuckle",1],["Skarmory",1],["Nosepass",1],["Aron",1],["Beldum",1],["Piplup",1],["Shieldon",1],["Bronzor",1],["Lucario",1],["Drilbur",1],["Ferroseed",1],["Klink",1],["Galarian Stunfisk",0],["Durant",1],["Hisuian Sliggoo",1],["Rookidee",1],["Tinkatink",1],["Orthworm",1],["Daring as Dragons Hour",-1],["Charmander",1],["Magikarp",1],["Dratini",1],["Gligar",1],["Trapinch",1],["Swablu",1],["Barboach",1],["Bagon",1],["Gible",1],["Tynamo",1],["Axew",1],["Heatmor",1],["Deino",1],["Skrelp",1],["Tyrunt",1],["Amaura",1],["Goomy",1],["Noibat",1],["Turtonator",1],["Jangmo-o",1],["Applin",0],["Sizzlipede",1],["Frigibax",1],["Mighty Pokémon",-1],["Modern Jacket Machamp",1],["Alolan Exeggutor",1],["Azumarill",1],["Scizor",1],["Kingdra",1],["Aggron",1],["Flygon",1],["Walrein",1],["Metagross",1],["Empoleon",1],["Bastiodon",1],["Magnezone",1],["Conkeldurr",1],["Ferrothorn",1],["Haxorus",1],["Hydreigon",1],["Hawlucha",1],["Goodra",1],["Noivern",1],["Kommo-o",1],["Tinkaton",1],["Clodsire",1],["Incense Encounters",-1],["Ticket Holder Incense Encounters",-1],["Unown C",1],["Unown E",1],["Unown I",1],["Unown M",1],["Unown O",1],["Unown X",1],["Latias",1],["Latios",1]],"vejce":[["10 km Eggs",-1],["Honedge",1],["Klefki",1],["Drampa",1],["Duraludon",1]],"raid":[["Three-Star Raids",-1],["Modern Jacket Machamp",1],["Max Battles",-1],["Dialga",1],["Palkia",1]],"shiny":[["Hisuian Sliggoo",0],["Hisuian Goodra",0]]}]]],["Pokémon GO Wild Area 2026: Global","wild-area","Wild Area","2026-11-14T10:00","2026-11-15T18:00","https://leekduck.com/events/pokemon-go-wild-area-2026-global/",[],[["2026-11-14T10:00","2026-11-15T18:00",{"bonus":[["Bonuses for All Trainers",-1],["Chance to get GO Safari Balls from PokéStops and Gyms",0],["Up to 3 free Raid Passes per day from Gyms",0],["Daily Max Particle collection limit increased to 1,600",0],["3 GO Snapshot surprise encounters per day",0],["Party Play lasts for 8 hours",0],["Chance to encounter mighty Pokémon on Routes",0],["Additional Ticket Holder Bonuses",-1],["Increased chance to encounter Shiny Pokémon",0],["Daily Max Particle collection limit increased to 3,200",0],["Increased Max Particles from Power Spots and exploration",0],["Up to 6 free Raid Passes per day from Gyms",0],["2× Candy for catching Pokémon",0],["2× Incense duration",0],["Increased chance of 10 km Eggs from PokéStops and Gyms",0],["6 GO Snapshot surprise encounters per day",0],["Lure Modules last for 2 hours",0],["Trading Bonuses",-1],["Up to 6 Special Trades per day",0],["1/2 Stardust cost for trades",0]],"spawn":[["Solid as Steel Hour",-1],["Alolan Sandshrew",1],["Alolan Diglett",1],["Magnemite",1],["Shellder",1],["Onix",1],["Porygon",1],["Shuckle",1],["Skarmory",1],["Nosepass",1],["Aron",1],["Beldum",1],["Piplup",1],["Shieldon",1],["Bronzor",1],["Lucario",1],["Drilbur",1],["Ferroseed",1],["Klink",1],["Galarian Stunfisk",0],["Durant",1],["Rookidee",1],["Tinkatink",1],["Daring as Dragons Hour",-1],["Charmander",1],["Magikarp",1],["Dratini",1],["Gligar",1],["Trapinch",1],["Swablu",1],["Barboach",1],["Bagon",1],["Gible",1],["Tynamo",1],["Axew",1],["Heatmor",1],["Deino",1],["Skrelp",1],["Tyrunt",1],["Amaura",1],["Goomy",1],["Noibat",1],["Turtonator",1],["Jangmo-o",1],["Sizzlipede",1],["Frigibax",1]],"vejce":[["10 km Eggs",-1],["Honedge",1],["Klefki",1],["Drampa",1],["Duraludon",1]],"raid":[["Three-Star Raids",-1],["Modern Jacket Machamp",1]],"utoky":[["Machamp wearing a modern jacket",-1],["Modern Jacket Machamp",0],["Flygon",-1],["Flygon",0],["Metagross",-1],["Metagross",0],["Magnezone",-1],["Magnezone",0],["Haxorus",-1],["Haxorus",0],["Hydreigon",-1],["Hydreigon",0],["Tinkaton",-1],["Tinkaton",0]]}],["2026-11-14T10:00","2026-11-15T18:00",{"spawn":[["Alolan Exeggutor",1],["Scizor",1],["Flygon",1],["Walrein",1],["Metagross",1],["Empoleon",1],["Magnezone",1],["Conkeldurr",1],["Haxorus",1]],"raid":[["Dialga",1]]}],["2026-11-15T00:00","2026-11-15T18:00",{"spawn":[["Azumarill",1],["Kingdra",1],["Aggron",1],["Ferrothorn",1],["Hydreigon",1],["Goodra",1],["Noivern",1],["Tinkaton",1],["Clodsire",1],["Incense Encounters",-1],["Alolan Exeggutor",1],["Scizor",1],["Flygon",1],["Empoleon",1],["Magnezone",1],["Conkeldurr",1],["Ticket Holder Incense Encounters",-1],["Unown D",1],["Unown I",1],["Unown L",1],["Unown W",1],["Latias",1],["Latios",1]],"raid":[["Palkia",1]]}]]],["November Community Day","community-day","Community Day","2026-11-21T14:00","2026-11-21T17:00","https://leekduck.com/events/november-communityday2026/",[],[]],["Super Mega Raid Day","raid-day","Raid Day","2026-11-28T14:00","2026-11-28T17:00","https://leekduck.com/events/super-mega-raid-day-november-2026/",[],[]]],"raids":[["Alolan Rattata","1-Star Raids",["Dark","Normal"],[381,419],[477,524],1],["Dunsparce","1-Star Raids",["Normal"],[906,965],[1132,1206],1],["Scraggy","1-Star Raids",["Dark","Fighting"],[732,784],[915,980],1],["Fidough","1-Star Raids",["Fairy"],[519,563],[648,703],1],["Alolan Dugtrio","3-Star Raids",["Ground","Steel"],[1021,1084],[1276,1355],1],["Lapras","3-Star Raids",["Water","Ice"],[1435,1509],[1794,1886],1],["Falinks","3-Star Raids",["Fighting"],[1278,1347],[1598,1683],1],["Zacian (Hero)","5-Star Raids",["Fairy"],[2100,2188],[2625,2735],1],["Mega Beedrill","Mega Raids",["Bug","Poison"],[994,1054],[1242,1318],1],["Mega Houndoom","Mega Raids",["Dark","Fire"],[1432,1505],[1790,1882],1],["Shadow Machop","1-Star Raids",["Fighting"],[638,730],[798,913],1],["Shadow Bellsprout","1-Star Raids",["Grass","Poison"],[506,590],[633,738],1],["Shadow Torchic","1-Star Raids",["Fire"],[541,624],[677,781],1],["Shadow Bagon","1-Star Raids",["Dragon"],[575,660],[719,826],1],["Shadow Alolan Sandslash","3-Star Raids",["Ice","Steel"],[1266,1390],[1582,1737],1],["Shadow Quagsire","3-Star Raids",["Water","Ground"],[1025,1138],[1282,1423],1],["Shadow Lampent","3-Star Raids",["Ghost","Fire"],[871,976],[1089,1220],1],["Shadow Thundurus (Incarnate)","5-Star Raids",["Electric","Flying"],[1762,1911],[2203,2389],1]],"ligy":[["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-09-08T20:00","2026-09-15T20:00",[],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-1/",[["Great League: Mega Edition","GL"],["Ultra League: Mega Edition","UL"],["Master League: Mega Edition","ML"]]],["Great League, Ultra League: Mega Edition, and Willpower Cup: Great League Edition | Twili…","2026-09-15T20:00","2026-09-22T20:00",["GL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_willpower-cup-great-league-edition/",[["Ultra League: Mega Edition","UL"],["Willpower Cup: Great League Edition","GL"]]],["Ultra League, Master League: Mega Edition, and Retro Cup: Great League Edition | Twilight…","2026-09-22T20:00","2026-09-29T20:00",["UL"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_retro-cup-great-league-edition/",[["Master League: Mega Edition","ML"],["Retro Cup: Great League Edition","GL"]]],["Master League and Mega Color Cup: Great League Edition | Twilight Trails","2026-09-29T20:00","2026-10-06T20:00",["ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-color-cup-great-league-edition/",[["Mega Color Cup: Great League Edition","GL"]]],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-10-06T20:00","2026-10-13T20:00",[],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-2/",[["Great League: Mega Edition","GL"],["Ultra League: Mega Edition","UL"],["Master League: Mega Edition","ML"]]],["Great League, Ultra League: Mega Edition, and Little Cup | Twilight Trails","2026-10-13T20:00","2026-10-20T20:00",["LC","GL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_little-cup/",[["Ultra League: Mega Edition","UL"]]],["Ultra League, Master League: Mega Edition, and Fantasy Cup: Great League Edition | Twilig…","2026-10-20T20:00","2026-10-27T20:00",["UL"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_fantasy-cup-great-league-edition/",[["Master League: Mega Edition","ML"],["Fantasy Cup: Great League Edition","GL"]]],["Master League and Mega Halloween Cup: Great League Edition | Twilight Trails","2026-10-27T21:00","2026-11-03T21:00",["ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-halloween-cup-great-league-edition/",[["Mega Halloween Cup: Great League Edition","GL"]]],["Great League: Mega Edition, Ultra League: Mega Edition, and Master League: Mega Edition |…","2026-11-03T21:00","2026-11-10T21:00",[],"https://leekduck.com/events/gbl-twilight-trails_great-league-mega-edition_ultra-league-mega-edition_master-league-mega-edition-split-3/",[["Great League: Mega Edition","GL"],["Ultra League: Mega Edition","UL"],["Master League: Mega Edition","ML"]]],["Great League, Ultra League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-10T21:00","2026-11-17T21:00",["GL"],"https://leekduck.com/events/gbl-twilight-trails_great-league_ultra-league-mega-edition_2026-go-laic-cup/",[["Ultra League: Mega Edition","UL"],["2026 GO LAIC Cup",""]]],["Ultra League, Master League: Mega Edition, and 2026 GO LAIC Cup | Twilight Trails","2026-11-18T21:00","2026-11-25T21:00",["UL"],"https://leekduck.com/events/gbl-twilight-trails_ultra-league_master-league-mega-edition_2026-go-laic-cup/",[["Master League: Mega Edition","ML"],["2026 GO LAIC Cup",""]]],["Master League and Mega Catch Cup: Great League Edition | Twilight Trails","2026-11-24T21:00","2026-12-01T21:00",["ML"],"https://leekduck.com/events/gbl-twilight-trails_master-league_mega-catch-cup-great-league-edition/",[["Mega Catch Cup: Great League Edition","GL"]]]]};
   // === EVENTS END ===
 
   // Razítko sestavení. Bez něj se u sdíleného souboru nedá poznat, jestli má
@@ -3408,11 +3495,11 @@
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-10 12:45";
+  var BUILD = "2026-09-14 14:03";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
-  var DATA_INFO = {"pokedex":"2026-09-05","meta":"2026-09-09","metaTop":200,"reference":"2026-08","moves":"2026-08-25","events":"2026-09-10"};
+  var DATA_INFO = {"pokedex":"2026-09-05","meta":"2026-09-12","metaTop":200,"reference":"2026-08","moves":"2026-08-25","events":"2026-09-14"};
   // === DATA INFO END ===
 
   // ---------- pomocné ----------
@@ -4322,7 +4409,58 @@
    * nedostane. Nová mega se tak projeví jako úkol doplnit data, ne jako
    * tiché špatné doporučení.
    */
+  /**
+   * Jak moc se ta mega vyplatí — POČÍTANÉ, ne opsané.
+   *
+   * Dřív to byla ručně psaná hodnota v referenčním seznamu. Stárla s každým
+   * balance patchem a nešlo z ní poznat proč: Mega Heracross v ní měla
+   * „nízkou" prioritu, přestože je to nejsilnější Bug útočník ve hře, kdežto
+   * Mega Steelix „střední", i když je v Steelu až šestá. Teď se to bere
+   * z žebříčku mega forem, který appka umí spočítat ze statů mega formy
+   * a útoků druhu — a ten seznam zůstává jen jako záchrana pro formy,
+   * kterým žebříček nedokáže přiřadit ani jeden použitelný útok.
+   *
+   * Měřítko: pořadí mezi megami TÉHOŽ typu a podíl na špičce toho typu mezi
+   * běžnými druhy. Počítá se jen typ, na který mega dává auru (má ho sama) —
+   * mega, která typ mlátí cizími útoky, partě nepomůže.
+   *   vysoká  = nejlepší mega svého typu a zároveň silnější než nejlepší
+   *             běžný útočník toho typu; megovat ji ten typ opravdu povýší
+   *   střední = nejlepší mega svého typu (aura se jinak nedá dostat)
+   *             nebo druhá volba typu s aspoň 85 % špičky
+   *   nízká   = zbytek; kvůli takové meze se kus držet nemá
+   */
+  var megaPrioCache = null;
+
+  function megaPrioMapa() {
+    if (megaPrioCache) return megaPrioCache;
+    megaPrioCache = {};
+    var zeb = megaRanking();
+    var nej = {};
+    Object.keys(zeb).forEach(function (typ) {
+      zeb[typ].forEach(function (e, i) {
+        if (!e.aura) return;
+        var z = { rank: i + 1, podil: e.podil };
+        var m = nej[e.key];
+        if (!m || z.rank < m.rank || (z.rank === m.rank && z.podil > m.podil)) nej[e.key] = z;
+      });
+    });
+    Object.keys(nej).forEach(function (k) {
+      var z = nej[k];
+      // Nejlepší mega svého typu nikdy nespadne na „nízkou". Aura pomáhá
+      // útokům typu megy a jiná mega toho typu neexistuje — kdyby se pustila,
+      // nemáš tomu typu čím dát +30 %. Mega Metagross je ve Steelu až na
+      // 82 % špičky běžných druhů, ale je to JEDINÁ ocelová mega, co za
+      // něco stojí.
+      megaPrioCache[k] = (z.rank === 1 && z.podil >= 1) ? "Vysoká"
+        : (z.rank === 1 || (z.rank <= 2 && z.podil >= 0.85)) ? "Střední" : "Nízká";
+    });
+    return megaPrioCache;
+  }
+
   function megaPriority(name, forms) {
+    var klic = dexKey(name).split("-")[0];
+    var spocteno = megaPrioMapa()[klic];
+    if (spocteno) return spocteno;
     var ref = MEGA_BY[speciesKey(name)];
     if (ref && ref[0] && ref[0].raidPriority) return ref[0].raidPriority;
     return "Neznámá";
@@ -4906,14 +5044,14 @@
     { key: "cute", label: "CUTE", type: "select", options: ["Ano", "Ne"], w: 88 },
     { key: "shiny", label: "SHINY", type: "select", options: ["Ano", "Ne"], w: 92 },
     { key: "finalEvo", label: "Fin. evoluce? (auto)", type: "select", options: ["Ano", "Ne"], w: 120 },
-    { key: "cp", label: "CP", type: "number", num: true, wv: 74, w: 78 },
-    { key: "level", label: "Level", type: "number", num: true, step: "0.5", w: 78 },
-    { key: "ivAtk", label: "IV Atk", type: "number", num: true, min: 0, max: 15, w: 68 },
-    { key: "ivDef", label: "IV Def", type: "number", num: true, min: 0, max: 15, w: 68 },
-    { key: "ivSta", label: "IV Sta", type: "number", num: true, min: 0, max: 15, w: 68 },
-    { key: "ivPct", label: "IV %", readonly: true, wv: 40, w: 60 },
+    { key: "cp", desc: true, label: "CP", type: "number", num: true, wv: 74, w: 78 },
+    { key: "level", desc: true, label: "Level", type: "number", num: true, step: "0.5", w: 78 },
+    { key: "ivAtk", desc: true, label: "IV Atk", type: "number", num: true, min: 0, max: 15, w: 68 },
+    { key: "ivDef", desc: true, label: "IV Def", type: "number", num: true, min: 0, max: 15, w: 68 },
+    { key: "ivSta", desc: true, label: "IV Sta", type: "number", num: true, min: 0, max: 15, w: 68 },
+    { key: "ivPct", desc: true, label: "IV %", readonly: true, wv: 40, w: 60 },
     { key: "types", label: "Typy", readonly: true, wv: 78, w: 110 },
-    { key: "cpMax", label: "CP na stropu dat", readonly: true, lv: "CP max", wv: 56, w: 90,
+    { key: "cpMax", desc: true, label: "CP na stropu dat", readonly: true, lv: "CP max", wv: 56, w: 90,
       popis: "Přepočítané CP na nejvyšší level, pro který má appka data." },
     { key: "strong", label: "Silný proti typům", readonly: true, lv: "Silný proti", wv: 106, w: 190 },
     { key: "fastMove", label: "Rychlý útok", type: "text", cls: "col-move", w: 120 },
@@ -6997,6 +7135,28 @@
   }
 
   /**
+   * Poslední slovo při shodě. Kdekoli se kusy řadí podle síly, může vyjít
+   * remíza — dva Snorlaxi 15/15/15 mají naprosto stejnou výdrž, dva Garchompi
+   * stejný ligový rank. Bez tohohle rozhodlo POŘADÍ V ROSTERU, tedy náhoda:
+   * gymový slot 5. a 6. si ty dva kusy prohodily jen podle toho, který se
+   * naskenoval dřív, a u ligy jeden slot dostal a druhý ne.
+   *
+   * Pořadí je tedy: vyšší level (dotáhnout ho na strop stojí míň prachu),
+   * pak vyšší IV, pak vyšší CP. Co je stejné i v tomhle, je opravdu
+   * zaměnitelné — a rozhodne id, aby byl výsledek aspoň pokaždé stejný.
+   */
+  function priShode(x, y) {
+    var xl = x.levelNum || 0, yl = y.levelNum || 0;
+    if (xl !== yl) return yl - xl;
+    var xi = x.ivPct === null || x.ivPct === undefined ? -1 : x.ivPct;
+    var yi = y.ivPct === null || y.ivPct === undefined ? -1 : y.ivPct;
+    if (xi !== yi) return yi - xi;
+    var xc = x.cp || 0, yc = y.cp || 0;
+    if (xc !== yc) return yc - xc;
+    return String((x.row && x.row.id) || "").localeCompare(String((y.row && y.row.id) || ""));
+  }
+
+  /**
    * Rozdá sloty rozpočtu. Volá se až po seskupení kopií, protože potřebuje
    * vidět celý roster najednou — o tom, jestli je kus zbytečný, nerozhoduje
    * on sám, ale to, kolik lepších kusů na tutéž práci už mám.
@@ -7030,10 +7190,14 @@
           jako: role.jako || "",
           mezera: mezera,
           // O pořadí rozhoduje podíl na špičce typu; IV je jen tiebreak mezi
-          // kusy, které na tom jinak jsou stejně.
-          skore: sila * 1000 + (b.ivPct || 0) });
+          // kusy, které na tom jinak jsou stejně, a level rozsoudí i shodu
+          // IV. Bez levelu vyhrával ten, kdo byl v rosteru dřív: dva stejné
+          // Machampy 15/14/13 na L20 a L35 mají stejnou sílu i IV, takže si
+          // slot vzal ten první zapsaný — a appka pak pouštěla ten vyšší,
+          // který je silnější teď a levnější dotáhnout.
+          skore: sila * 1000 + (b.ivPct || 0) + (b.levelNum || 0) / 100000 });
       });
-      kand.sort(function (x, y) { return y.skore - x.skore; });
+      kand.sort(function (x, y) { return (y.skore - x.skore) || priShode(x.b, y.b); });
       // Dva nezávislé stropy. CELKEM smí druh držet tolik slotů, kolik je
       // strop kopií (parta o šesti se dá poskládat ze tří druhů po dvou
       // kusech, ale ne ze tří kopií jednoho). NÁPLAST k tomu smí být jen
@@ -7133,9 +7297,16 @@
         var uzHraje = (b.sloty || []).some(function (sl) { return sl.druh === "pvp"; });
         var zaznam = { b: b, rank: rank, pct: pct, prahOK: prahOK, uzHraje: uzHraje,
           poEvoluci: nejC.poEvoluci };
-        if (!g || (uzHraje !== g.uzHraje ? !uzHraje : pct > g.pct)) {
-          podleDruhu[b.groupKey] = zaznam;
+        if (!g) { podleDruhu[b.groupKey] = zaznam; return; }
+        if (uzHraje !== g.uzHraje) {
+          if (!uzHraje) podleDruhu[b.groupKey] = zaznam;
+          return;
         }
+        if (pct !== g.pct) {
+          if (pct > g.pct) podleDruhu[b.groupKey] = zaznam;
+          return;
+        }
+        if (priShode(b, g.b) < 0) podleDruhu[b.groupKey] = zaznam;
       });
       var kand = Object.keys(podleDruhu).map(function (k) { return podleDruhu[k]; });
       // Napřed druhy, které v lize opravdu něco znamenají (nižší rank),
@@ -7143,7 +7314,7 @@
       kand.sort(function (x, y) {
         if (x.prahOK !== y.prahOK) return x.prahOK ? -1 : 1;
         if (x.rank !== y.rank) return x.rank - y.rank;
-        return y.pct - x.pct;
+        return (y.pct - x.pct) || priShode(x.b, y.b);
       });
       kand.slice(0, SLOTU_NA_LIGU).forEach(function (k, i) {
         k.b.sloty.push({
@@ -7169,7 +7340,10 @@
     var gymSila = function (b) {
       return (b.gymPct || 0) * (jeShadowForma(b.row.forma) ? 1 / 1.2 : 1);
     };
-    gymKand.sort(function (x, y) { return gymSila(y) - gymSila(x); });
+    gymKand.sort(function (x, y) {
+      var d = gymSila(y) - gymSila(x);
+      return d || priShode(x, y);
+    });
     // Stejný strop na kopie jako u raidů: osm gymových slotů se nemá zaplnit
     // osmi Blissey. Bez tohohle si druhá kopie téhož druhu brala slot, i když
     // uživatel má v nastavení strop kopií — a pak se držela jako „díra",
@@ -7216,7 +7390,7 @@
       });
       Object.keys(dmaxTypy).forEach(function (typ) {
         var kand = dmaxTypy[typ].slice().sort(function (x, y) {
-          return (y.raidPct || 0) - (x.raidPct || 0);
+          return ((y.raidPct || 0) - (x.raidPct || 0)) || priShode(x, y);
         });
         // od druhu jen jeden kus na typ: tři sloty se nemají zaplnit
         // třemi kusy téhož druhu, když Max Battle chce partu
@@ -7238,7 +7412,9 @@
       });
       // tank do Max Battle: rozhoduje výdrž, stejně jako u obránce gymu
       var tanci = dmaxKusy.filter(function (b) { return b.gymPct; })
-        .sort(function (x, y) { return (y.gymPct || 0) - (x.gymPct || 0); });
+        .sort(function (x, y) {
+          return ((y.gymPct || 0) - (x.gymPct || 0)) || priShode(x, y);
+        });
       var videlT = {};
       tanci = tanci.filter(function (b) {
         if (videlT[b.groupKey]) return false;
@@ -7286,7 +7462,22 @@
         if (maSlot) megaNej[b.groupKey] = b;
         return;
       }
-      if ((b.ivPct || 0) > (g.ivPct || 0)) megaNej[b.groupKey] = b;
+      /* Mezi kusy, které jsou na tom jinak stejně, rozhoduje POŘADÍ KOPIÍ,
+         ne samotné IV %. Dva Houndoomi po 82 % měli IV % na desetinu shodné,
+         takže porovnání `>` neudělalo nic a megu dostal ten, co byl dřív
+         v poli — kus za 1026 CP, kdežto ten za 1249 CP se pouštěl. Pořadí
+         kopií přitom umí přesně to, co tu chybělo: IV i cenu dotažení
+         na strop, takže při shodném IV vyhraje ten, co je výš levelem. */
+      if ((b.dupIndex || 999) < (g.dupIndex || 999)) megaNej[b.groupKey] = b;
+    });
+    /* Držitel megy je JEDEN výpočet pro celou appku. Dřív si sloupec Mega
+       určoval „lepší kopii“ sám (podle pořadí kopií a nejlepšího raidového
+       kusu), takže uměl napsat „Lepší kopie“ u kusu, který megu podle
+       rozpočtu drží — a ve verdiktu u něj zároveň stálo „mega“. */
+    base.forEach(function (b) {
+      var drzitel = b.groupKey ? megaNej[b.groupKey] : null;
+      b.megaDrzi = !!drzitel && drzitel === b;
+      b.megaLepsiKopie = !!drzitel && drzitel !== b;
     });
     Object.keys(megaNej).forEach(function (k) {
       var b = megaNej[k];
@@ -7318,8 +7509,22 @@
   }
 
   /** Krátký popisek slotu pod verdikt v tabulce. */
+  /**
+   * Zkratka hlavní role do odznáčku u verdiktu.
+   *
+   * Kus může držet víc slotů zároveň — Garchomp bývá raidový útočník,
+   * mistrovská liga, obránce gymu a ještě mega. Odznáček se vejde jen jeden,
+   * takže se k němu připisuje, kolik rolí je ještě vedle. Bez toho vypadal
+   * kus drženy kvůli čtyřem věcem, jako by ho držela jen ta jedna, co se
+   * zrovna vešla — a „MEGA" pak čtete jako „jinak k ničemu".
+   */
   function slotZkratka(b) {
     if (!b.slotHlavni) return "";
+    var dalsi = Math.max(0, (b.sloty || []).length - 1);
+    var pricti = dalsi ? " +" + dalsi : "";
+    return slotZkratkaHlavni(b) + pricti;
+  }
+  function slotZkratkaHlavni(b) {
     var sl = b.slotHlavni;
     if (sl.druh === "raid") return sl.typ + " " + sl.poradi + "/" + sl.celkem
       + (sl.poEvoluci ? " po evo" : "");
@@ -7811,7 +8016,9 @@
       function pick(filterFn, scoreFn) {
         var cands = g.filter(filterFn);
         if (!cands.length) return null;
-        return cands.slice().sort(function (a, b) { return scoreFn(b) - scoreFn(a); })[0];
+        return cands.slice().sort(function (a, b) {
+          return (scoreFn(b) - scoreFn(a)) || priShode(a, b);
+        })[0];
       }
       // při shodě vyhrává vyšší level — je levnější dotáhnout ho na L40
       var bestRaid = pick(function (b) { return b.raidTypes.length > 0; },
@@ -8325,7 +8532,12 @@
 
       var mega, megaTone, megaSub = "";
       if (!b.megaEntry) { mega = "Ne"; megaTone = "muted"; }
-      else if (b.dupIndex > 1 && !b.isBestRaid) { mega = "Lepší kopie"; megaTone = "muted"; }
+      // Megu drží někdo jiný z téhož druhu — a je to TEN kus, kterému ji dal
+      // rozpočet, ne nezávisle dopočítaná „nejlepší kopie".
+      else if (b.megaLepsiKopie) { mega = "Lepší kopie"; megaTone = "muted"; }
+      // Druh, kterému rozpočet mega slot vůbec nedává (nízká nebo neznámá
+      // priorita): držitel neexistuje, takže se řadí aspoň podle kopií.
+      else if (!b.megaDrzi && b.dupIndex > 1 && !b.isBestRaid) { mega = "Lepší kopie"; megaTone = "muted"; }
       else {
         // Priorita je to, podle čeho se rozhoduje — musí být vidět i u kusu,
         // který se ještě musí vyvinout. Dřív se u něj psalo jen „Nejdřív
@@ -8334,7 +8546,10 @@
         megaSub = b.megaEntry.poEvoluci
           ? "až po evoluci na " + b.megaEntry.pres
           : (b.isFinalEvo === false ? "nejdřív evolvovat"
-             : (b.megaEntry.kind === "Primal" ? b.megaEntry.raidPriority.toLowerCase() : "priorita"));
+             : (b.megaEntry.kind === "Primal" ? b.megaEntry.raidPriority.toLowerCase()
+                // Mega se veze na kusu, který si necháváš kvůli jiné roli.
+                // Bez téhle věty vypadá slot u horší kopie jako chyba.
+                : (b.megaDrzi && b.dupIndex > 1 ? "veze se na roli" : "priorita")));
         megaTone = b.megaEntry.raidPriority === "Vysoká" ? "good"
           : b.megaEntry.raidPriority === "Střední" ? "warning" : "muted";
         if (b.megaEntry.raidPriority === "Neznámá") megaSub = "seznam ji ještě nezná";
@@ -8450,7 +8665,11 @@
       var copiesTitle = b.copies > 1
         ? (procText ? procText + ". " : "")
           + "Máš " + b.copies + " kusů tohohle druhu; tenhle je v pořadí kvality " + b.dupIndex
-          + ". Řadí se podle PvP ranku, pak IV, pak CP. Kolik si jich nechat, je v Nastavení (teď " + s.keepCopies + ")."
+          // Calcy rank se v pořadí kopií SCHVÁLNĚ nepoužívá (je to druhý výpočet
+          // z týchž IV) — tenhle popisek to roky tvrdil a odporoval kódu.
+          + ". Řadí se podle elitního útoku do ligy, pak podle IV mínus cena"
+          + " dotažení na strop, pak podle IV a nakonec podle CP."
+          + " Kolik si jich nechat, je v Nastavení (teď " + s.keepCopies + ")."
         : "Tenhle druh máš jen jednou.";
 
       var megaTitle = !b.megaEntry
@@ -8463,8 +8682,12 @@
           + " proto zatím nic nedrží. Doplní se obnovením dat."
         : "Mega forma: " + b.megaEntry.names
           + (b.megaEntry.poEvoluci ? " (až po evoluci na " + b.megaEntry.pres + ")" : "")
-          + ". Mega boost pomáhá celé skupině v raidu, "
-          + "takže se vyplatí u nejlepší kopie druhu.";
+          + ". Mega boost pomáhá celé skupině v raidu a je na IV nezávislý, "
+          + "takže stačí JEDEN kus druhu. Slot dostane přednostně ten, co si "
+          + "necháváš kvůli jiné roli — mega se na něm sveze a druhý kus"
+          + " nezabírá místo. Teprve mezi kusy bez role rozhoduje pořadí kopií."
+          + (b.megaDrzi ? " Tenhle kus megu drží." : "")
+          + (b.megaLepsiKopie ? " Megu tohohle druhu drží jiný kus." : "");
 
       function metaTag(league) {
         var m = metaIn(b, league);
@@ -8956,6 +9179,38 @@
         tradeTone = "muted";
       }
 
+      // --- vylepšit ani evoluce nesmí odporovat verdiktu ---
+      // „Zahodit" a vedle toho „vylepšit: Ano" je totéž svinstvo jako
+      // u evoluce: prach by šel do kusu, který druhý den pustíš. Řeší se to
+      // až tady, protože verdikt se po výpočtu rolí ještě dolaďuje.
+      if (keepLabel.indexOf("Zahodit") === 0 && powerup !== "Ne") {
+        powerup = "Ne";
+        powerupTone = "muted";
+        // Cena dotažení se tu nesmí nechat: u kusu, který pouštíš, je to
+        // číslo, které svádí k útratě.
+        powerupSub = "pouštíš ho";
+      }
+
+      // --- evoluce nesmí odporovat verdiktu ---
+      // „Zahodit" a vedle toho „evolvovat: Ano" je protimluv: bonbóny by šly
+      // do kusu, který se druhý den pustí. Rozhodovalo o tom mimo jiné vysoké
+      // IV, jenže vysoké IV samo o sobě není důvod k evoluci — říká jen, že
+      // se evolucí nic nezkazí. Rozhoduje se to až tady, protože verdikt se
+      // ještě po evolučním bloku dolaďuje.
+      if (evolve === "Ano" && keepLabel.indexOf("Zahodit") === 0) {
+        evolveTitle = "Tenhle kus se podle rozpočtu pouští, takže bonbóny by"
+          + " přišly nazmar. Kdyby sis ho nechával, platilo by tohle: "
+          + (evolveTitle || "evoluce by se vyplatila.");
+        evolve = "Ne – pouštíš ho";
+        evolveTone = "muted";
+        evolveSub = "";
+      }
+
+      // Sestava formy, kterou se kus teprve stane. Počítá se JEDNOU: prochází
+      // možné finální formy a u každé skládá nejlepší dvojici útoků, takže
+      // dvakrát na kus se to při čtyřech stech kusech pozná na době přepočtu.
+      var finKus = finalniSestava(b);
+
       // --- vyplatí se doskenovat s Appraisal? ---
       // Přesná IV mají cenu jen tam, kde se podle nich rozhoduje. U odpadu ne.
       var rescan = "Ne", rescanTone = "muted", rescanTitle = "";
@@ -9156,6 +9411,31 @@
         purifyTone = "muted";
       }
 
+      // Verdikt nesmí stát na purifikaci, kterou appka zároveň nedoporučuje.
+      // U shadow kusu se práh vysokých IV měří hodnotou PO očištění, takže
+      // se do podtitulku dostalo „po purifikaci 100 % IV" — a vedle toho ve
+      // sloupci Purifikace stálo „Nechat". Dvě věty, které si odporují,
+      // i když každá zvlášť platí. Důvodem ponechání je role, ne očištění.
+      // Podtitulek verdiktu musí odpovídat verdiktu. U puštěného kusu se do
+      // něj dostávaly důvody, proč si ho NECHAT: „Zahodit – kopie / po
+      // purifikaci 100 % IV" nebo „Zahodit – kopie / Dynamax #3 z 5". Každá
+      // věta zvlášť platí, dohromady si odporují — a čte se to jako chyba
+      // rozhodnutí. Proč jde kus pryč, řekne bublina u verdiktu.
+      if (keepLabel.indexOf("Zahodit") === 0
+          && /po purifikaci|vysoké IV|Dynamax/.test(String(keepSub || ""))) {
+        keepSub = keepLabel.indexOf("kopie") > -1 ? "horší kopie" : "";
+      }
+
+      if (purify === "Nechat" && String(keepSub || "").indexOf("po purifikaci") === 0) {
+        // U puštěného kusu nesmí v podtitulku stát důvod, proč si ho necháváš
+        // — „Zahodit / vysoké IV" je protimluv stejně jako ten původní.
+        // Proč se pouští, řekne bublina u verdiktu.
+        keepSub = keepLabel.indexOf("Zahodit") === 0 ? "" : (slotZkratka(b) || "vysoké IV");
+        keepTitle += " Práh vysokých IV se u shadow kusu měří hodnotou po"
+          + " očištění (+2 ke každému IV), ale očistit ho nemá cenu: jako"
+          + " shadow má o 20 % vyšší útok a ten je cennější než ta IV.";
+      }
+
       var dupText = b.copies > 1 ? ("#" + b.dupIndex + " z " + b.copies) : "jediný kus";
 
       var parts = [
@@ -9218,6 +9498,10 @@
         mega: mega, megaTone: megaTone, megaSub: megaSub, isMega: !!b.megaEntry,
         // Kandidát = druh mega má A tenhle kus je ten, co se má mega evolvovat.
         // "Nejdřív evolvovat" a "Lepší kopie" znamenají, že to není on.
+        // Drží mega slot z rozpočtu. Na rozdíl od `megaKandidat` to není
+        // odvozeno z textu sloupce, ale je to přímo ten kus, kterému rozpočet
+        // megu dal — u druhu bez mega slotu ho nemá nikdo.
+        megaDrzi: !!b.megaDrzi,
         megaKandidat: !!b.megaEntry && mega !== "Ne"
           && mega !== "Nejdřív evolvovat" && mega !== "Lepší kopie",
         megaNames: b.megaEntry ? b.megaEntry.names : "",
@@ -9241,6 +9525,11 @@
         // útoků k něčemu je.
         movesBest: (b.moveRating && b.moveRating.best)
           ? setTxt(b.moveRating.best) : "",
+        // Sestava formy, kterou se kus teprve stane. `movesBest` je o druhu,
+        // kterým je TEĎ — a s Fletchlingem do raidu nikdo nejde. Prázdné
+        // u kusu, který je na konci řady.
+        movesBestFinal: finKus ? finKus.text : "",
+        finalFormaJmeno: finKus ? finKus.jmeno : "",
         // Tvrdé rozpory ve vstupu (CP vs level a IV). Prázdné pole = v pořádku.
         validationIssues: overitVstup(b),
         // Posudek KAŽDÉHO útoku zvlášť. Počítá se tady, aby ho tabulka
@@ -9665,7 +9954,11 @@
             // obyčejný klik = jen jedno kritérium; druhotné řazení se ruší
             sortDir *= -1; sortKey2 = null;
           } else {
-            sortKey = c.key; sortDir = 1; sortKey2 = null;
+            // U čísel se po prvním kliknutí čeká nejvyšší hodnota nahoře:
+            // nikoho nezajímá, kdo má nejmíň CP nebo nejhorší IV. Stavové
+            // sloupce si pořadí řeší samy ve `sortValue` (zelená, oranžová,
+            // červená), takže těm stačí vzestupně.
+            sortKey = c.key; sortDir = c.desc ? -1 : 1; sortKey2 = null;
           }
           renderHeader();   // jinak se šipka řazení nikdy nepřekreslí
           renderBody(); persist(true);
@@ -9977,6 +10270,37 @@
    *  Zdroje jsou dva a oba už v appce jsou: vlastní raidový výpočet (DPS
    *  cyklu) a doporučená sestava od PvPoke pro ligy, které ten druh hraje.
    */
+  /**
+   * Nejlepší sestava formy, kterou se kus teprve stane.
+   *
+   * Proč to potřebuje vlastní funkci: `movesBest` počítá sestavu TOHO druhu,
+   * který kus je právě teď. U Fletchlinga to vyjde „Peck + Fly", jenže nikdo
+   * s Fletchlingem do raidu nejde — do raidu jde Talonflame a ten umí něco
+   * úplně jiného. Bez tohohle by rozbor radil přeučovat útoky, o které kus
+   * při evoluci stejně přijde.
+   *
+   * U větvených řad (Eevee, Charcadet) se vrátí ta forma, která má nejsilnější
+   * cyklus — formu si vybíráš ty, ne hra.
+   */
+  function finalniSestava(b) {
+    if (!b || !b.dex) return null;
+    var finale = moznaFinale(b);
+    if (!finale.length) return null;
+    var nej = null;
+    finale.forEach(function (k) {
+      var d = dexByKey(k);
+      if (!d) return;
+      var set = bestMoveset(d, k);
+      if (!set || !set.fast || !set.charged) return;
+      var dps = cycleDps(d.types, set.fast, set.charged);
+      if (!nej || dps > nej.dps) {
+        nej = { key: k, dex: d, jmeno: d.name, set: set, dps: dps,
+          text: set.fast.name + " + " + set.charged.name };
+      }
+    });
+    return nej;
+  }
+
   function posudekUtoku(b, jmeno, rychly, druhyNabity) {
     var m = rychly ? fastByName(jmeno) : chargedByName(jmeno);
     var out = { typ: "", stav: "nezna", znacka: "", proc: "" };
@@ -10087,6 +10411,19 @@
         ? " Druhý nabitý útok se ale platí zvlášť a v raidu se skoro nevystřílí —"
           + " smysl dává hlavně v lize jako druhá hrozba a jiný typ poškození."
         : " Tenhle je kandidát na přeučení.";
+
+      // Jenže: evolucí se ve hře útoky PŘEHODÍ, celý moveset se losuje znovu.
+      // TM utracený před evolucí je tím pádem vyhozený. U kusu, který se bude
+      // vyvíjet, proto rada nezní „přeuč", ale „počkej" — a rovnou se řekne,
+      // co umí ta forma, do které se to vyvine.
+      var fin = finalniSestava(b);
+      if (fin) {
+        out.stav = "poEvoluci";
+        out.proc = "Teď ho nepřeučuj: evolucí se útoky losují znovu, takže by"
+          + " TM přišel vniveč. " + (out.znacka ? "" : "")
+          + "Po evoluci na " + fin.jmeno + " je nejlepší sestava "
+          + fin.text + " — posuzovat útoky má cenu až tam.";
+      }
     }
     if (out.znacka) {
       out.proc += " Je elitní — přeučením o něj přijdeš a zpátky jde jen za Elite TM.";
@@ -10123,6 +10460,15 @@
           + '<div class="tip-navod">Nejlepší možná sestava tohohle druhu.'
           + " Klepnutím na buňku ji nastavíš.</div>";
       }
+      // Sestava druhu, kterým kus teprve bude. Bez toho vypadá „nejlepší
+      // sestava" jako cíl, jenže evolucí se útoky losují znovu a platit
+      // začne až tahle.
+      if (c.movesBestFinal && c.movesBestFinal !== c.movesBest) {
+        h += '<div class="tip-nej">' + escHtml(c.movesBestFinal) + "</div>"
+          + '<div class="tip-navod">Nejlepší sestava po evoluci na '
+          + escHtml(c.finalFormaJmeno) + ". Evolucí se útoky losují znovu,"
+          + " takže TM před ní je vyhozený.</div>";
+      }
       return h;
     }
     h += '<ul class="tip-utoky">' + u.map(function (x) {
@@ -10131,6 +10477,12 @@
         + (x.znacka ? " " + x.znacka : "")
         + " — " + escHtml(x.proc) + "</li>";
     }).join("") + "</ul>";
+    if (c.movesBestFinal) {
+      h += '<div class="tip-navod">Po evoluci na ' + escHtml(c.finalFormaJmeno)
+        + " bude nejlepší sestava <b>" + escHtml(c.movesBestFinal)
+        + "</b> — a evolucí se útoky losují znovu, takže přeučovat má cenu"
+        + " až potom.</div>";
+    }
     h += '<div class="tip-navod">Klepnutím na buňku útoky změníš.</div>';
     return h;
   }
@@ -10312,10 +10664,29 @@
   var FORMA_PRIPONA = { alola: "ALOLA", galar: "GALARIAN", hisui: "HISUIAN",
     paldea: "PALDEA" };
 
+  /* Formy, které NEJSOU v klíči druhu, jen v zobrazeném jméně. Shellos a
+     Gastrodon mají východní a západní moře a herní ikona bez té přípony
+     vůbec neexistuje — `pm422.icon.png` vrací 404, takže se obrázek musel
+     nejdřív pokazit a teprve pak spadnout na náhradu. To probliknutí
+     rozbitého rámečku je právě tohle. */
+  var MORE_PRIPONA = [
+    [/east\s*sea/i, "EAST_SEA"],
+    [/west\s*sea/i, "WEST_SEA"]
+  ];
+
   function herniObrazek(name, dex) {
     if (!dex || !dex.id) return "";
     var cast = (name ? dexKey(name) : "").split("-")[1] || "";
     var pripona = FORMA_PRIPONA[cast];
+    if (!pripona) {
+      var jm = String(name || "");
+      for (var i = 0; i < MORE_PRIPONA.length; i++) {
+        if (MORE_PRIPONA[i][0].test(jm)) { pripona = MORE_PRIPONA[i][1]; break; }
+      }
+      // Shellos a Gastrodon bez určeného moře: ikona bez přípony neexistuje,
+      // takže se bere západní. Lepší správný obrázek jiné barvy než žádný.
+      if (!pripona && (dex.id === 422 || dex.id === 423)) pripona = "WEST_SEA";
+    }
     return HERNI_URL + "pm" + dex.id + (pripona ? ".f" + pripona : "") + ".icon.png";
   }
 
@@ -10481,8 +10852,13 @@
     var src = herni || (zaloha ? SPRITE_URL + zaloha + ".png" : "");
     if (!src) return "";
     var nahradni = (zaloha && herni) ? SPRITE_URL + zaloha + ".png" : "";
+    // Obrázek je do načtení průhledný. Když první adresa neexistuje, prohlížeč
+    // na okamžik vykreslí rozbitý rámeček a teprve pak se spustí onerror —
+    // a to probliknutí je vidět. Takhle se prostě nic neukáže, dokud není co.
     return '<img class="' + (trida || "") + '" loading="lazy" alt="" src="' + src + '"'
+      + ' style="opacity:0;transition:opacity .12s"'
       + ' data-zaloha="' + nahradni + '"'
+      + ' onload="this.style.opacity=1"'
       + ' onerror="if(this.dataset.zaloha){this.src=this.dataset.zaloha;'
       + 'this.dataset.zaloha=&quot;&quot;;}else{this.style.display=&quot;none&quot;;}" />';
   }
@@ -10516,6 +10892,30 @@
         ohlasitZmenuVerdiktu(pred, radek && radek.id);
       };
     };
+    // „Ve hře jsem s ním něco udělal" — a klik na další stupeň v evoluční
+    // řadě znamená totéž co tlačítko „Vyvinul jsem ho na…".
+    Array.prototype.forEach.call(kontejner.querySelectorAll("[data-hra]"), function (btn) {
+      btn.addEventListener("click", function () {
+        hraOtevri(radek && radek.id, btn.getAttribute("data-hra"), btn.getAttribute("data-cil"));
+      });
+    });
+    Array.prototype.forEach.call(kontejner.querySelectorAll(".d-evo-kus[data-druh]"),
+      function (el) {
+        var cil = el.getAttribute("data-druh");
+        var jdeTam = radek && evoKroky(radek).some(function (e) { return e.jmeno === cil; });
+        if (!jdeTam) return;
+        el.classList.add("evo-klikaci");
+        // Systémový `title` se tu nastavit NESMÍ: appka si ho přepisuje do
+        // vlastní bubliny, takže by obsah bubliny přepsal a zmizela by
+        // informace o tom, co ten stupeň umí. Nápověda jde dovnitř bubliny.
+        var tip = el.getAttribute("data-tip") || "";
+        el.setAttribute("data-tip", tip
+          + '<div class="tip-pozn">Klikni, když jsi ho na tohle ve hře vyvinul.</div>');
+        el.addEventListener("click", function () {
+          hraOtevri(radek.id, "evoluce", cil);
+        });
+      });
+
     var dmaxBtn = kontejner.querySelector(".dmax-prepinac");
     if (dmaxBtn && radek) {
       dmaxBtn.addEventListener("click", sZmenou(function () {
@@ -11116,13 +11516,13 @@
    * se nemusela přepisovat lišta a nerozbily se odkazy na tlačítka v kódu.
    */
   // Pořadí tlačítek v hlavní řadě lišty.
-  var LISTA_HLAVNI = ["addRowBtn", "boxModeBtn", "toggleImportBtn", "exportBtn",
+  var LISTA_HLAVNI = ["addRowBtn", "boxModeBtn", "doplnitBtn", "toggleImportBtn", "exportBtn",
     "starKeepersBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn",
     "clearUnstarredBtn", "clearBtn"];
   // Práce od stolu. Mobilní verze je doplněk na kontrolu — přidávání kusů,
   // ruční zápis, import a hromadné označení se dělají u počítače. V liště
   // pod prstem by je nikdo nehledal a osm tlačítek se do telefonu nevejde.
-  var LISTA_OD_STOLU = ["addRowBtn", "toggleImportBtn", "exportBtn", "starKeepersBtn",
+  var LISTA_OD_STOLU = ["addRowBtn", "doplnitBtn", "toggleImportBtn", "exportBtn", "starKeepersBtn",
     "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearUnstarredBtn", "clearBtn"];
 
   function usporadatListu() {
@@ -11225,14 +11625,21 @@
 
     function zavrit() { panel.hidden = true; vyber = -1; }
 
+    var praveVybrano = false;
     function vybrat(jm) {
       vstup.value = jm;
       zavrit();
+      // `input` níž spustí překreslení a to by nabídku hned zase otevřelo —
+      // se jediným řádkem, tím právě vybraným. Vypadá to, jako by klik
+      // nezabral.
+      praveVybrano = true;
       vstup.dispatchEvent(new Event("input", { bubbles: true }));
       vstup.dispatchEvent(new Event("change", { bubbles: true }));
+      praveVybrano = false;
     }
 
     function prekreslit() {
+      if (praveVybrano) { zavrit(); return; }
       var q = deaccent(String(vstup.value || "")).toLowerCase().trim();
       if (!q) { zavrit(); return; }
       var nalez = [];
@@ -11282,9 +11689,11 @@
           p.classList.toggle("zvyraznena", i === vyber);
         });
         polozky[vyber].scrollIntoView({ block: "nearest" });
-      } else if (e.key === "Enter" && vyber > -1) {
+      } else if (e.key === "Enter") {
+        // Bez šipek se bere první nabídka: kdo napíše „machamp" a zmáčkne
+        // Enter, chce Machampa, ne prázdno.
         e.preventDefault();
-        vybrat(polozky[vyber].dataset.jm);
+        vybrat(polozky[vyber > -1 ? vyber : 0].dataset.jm);
       } else if (e.key === "Escape") {
         zavrit();
       }
@@ -11586,6 +11995,7 @@
         + ' znovu, takže tenhle je nenahraditelný.">LUCKY</span>';
     }
     h += '<div class="detail-title"><span class="d-name">' + r.pokemon + "</span>" + chips
+      + hraPruhHtml(r)
       + '<button class="detail-close" title="Zavřít">✕</button></div>';
 
     // --- verdikt jako pruh přes celou šířku, vedle něj obrázek druhu ---
@@ -11788,8 +12198,14 @@
         + " Je nevratná."));
     }
     if (c.trade !== "Ne") akce.push(roleCardHtml("Tradovat", c.trade, c.tradeTone, c.tradeSub || ""));
-    if (c.rescan !== "Ne") akce.push(roleCardHtml("Doskenovat", "Ano", "warning",
-      "Bez přesných IV je zbytek jen odhad."));
+    // Kartička dřív hlásila natvrdo „Ano — bez přesných IV je zbytek jen
+    // odhad", i u kusu, který přesná IV má. Ručně přidaný kus se doskenovává
+    // z úplně jiného důvodu (nezná útoky, CP mohlo být z gymu podstřelené),
+    // takže se tu ukazuje skutečná hodnota i skutečný důvod.
+    if (c.rescan !== "Ne") {
+      akce.push(roleCardHtml("Doskenovat", c.rescan, c.rescanTone || "warning",
+        c.rescanTitle || "Bez přesných IV je zbytek jen odhad."));
+    }
     if (akce.length) {
       h += '<div class="d-box-h d-sec-h" data-sekce="coted">Co s ním teď</div>'
         + '<div class="d-roles d-roles-akce">' + akce.join("") + "</div>";
@@ -11861,6 +12277,23 @@
           : (c.movesBest ? "Nejlepší možná sestava tohohle druhu. "
               + (c.movesTitle || "") : (c.movesTitle || "")))
       + "</div></div>";
+
+    // Dvě sestavy vedle sebe: co je nejlepší TEĎ a co bude nejlepší PO
+    // EVOLUCI. Bez toho druhého vypadá „nejlepší sestava" jako cíl, na který
+    // se má utrácet TM — jenže evolucí se útoky losují znovu a začne platit
+    // až ta druhá.
+    if (c.movesBestFinal) {
+      h += '<div class="d-box-h d-sec-h" data-sekce="sestavy">Nejlepší sestava</div>'
+        + '<div class="d-sestavy">'
+        + '<div><div class="d-role-h">Teď jako ' + escHtml(r.pokemon) + "</div>"
+        + '<div class="d-role-v">' + escHtml(c.movesBest || "—") + "</div>"
+        + '<div class="d-role-p">Platí, dokud ho nevyvineš.</div></div>'
+        + '<div><div class="d-role-h">Po evoluci na ' + escHtml(c.finalFormaJmeno) + "</div>"
+        + '<div class="d-role-v">' + escHtml(c.movesBestFinal) + "</div>"
+        + '<div class="d-role-p">Evolucí se útoky losují znovu, takže TM'
+        + " utracený předtím je vyhozený. Přeučovat má cenu až tady.</div></div>"
+        + "</div>";
+    }
 
     if (c.konfliktSestav) {
       h += '<div class="d-conflict"><b>Pozor — raid a liga chtějí jinou sestavu.</b>'
@@ -11961,6 +12394,390 @@
     dopocitatDetail(trD);
   }
 
+  /* =====================================================================
+     DOPLNIT ÚTOKY HROMADNĚ
+
+     Calcy útoky ve skenu skoro nikdy nemá, takže je v rosteru bez nich
+     většina kusů. Bez útoků se role počítá z odhadu — appka ví, co ten DRUH
+     umí nejlíp, ale ne co má zrovna tenhle kus.
+
+     Doplňovat je po jednom přes tabulku znamená u každého kusu najít řádek,
+     kliknout do buňky, vybrat, zavřít. Tohle je průchod: jeden kus přes celou
+     obrazovku, tři výběry, další.
+
+     Nabízí se JEN kusy, které si podle rozpočtu necháváš. U kusu, který
+     druhý den pustíš, jsou útoky k ničemu — a je jich v rosteru třikrát tolik.
+     ================================================================== */
+  var duState = { poradi: [], kde: 0 };
+
+  /**
+   * Kusy, kterým chybí útoky a stojí za to je doplnit.
+   *
+   * Pořadí je TAKOVÉ, JAKÉ JE V TABULCE — stejně jako v čištění boxu. Vlastní
+   * řazení podle důležitosti znělo rozumně, jenže pak člověk nevěděl, kde
+   * v rosteru zrovna je: seřadí si tabulku podle CP, spustí doplňování a
+   * dostane kusy v úplně jiném sledu. Filtr platí taky, takže když si
+   * vyfiltruješ jen raidové útočníky, projdeš jen je.
+   *
+   * Nenabízí se kusy, které se podle rozpočtu pouští: útoky u nich k ničemu
+   * nejsou a je jich v rosteru třikrát tolik.
+   */
+  function kusyBezUtoku() {
+    renderBody();                 // ať lastVisibleIds odpovídá tomu, co je vidět
+    var computed = analyze();
+    var rowById = {};
+    rows.forEach(function (r) { rowById[r.id] = r; });
+    var out = [];
+    lastVisibleIds.forEach(function (id) {
+      var r = rowById[id], c = computed[id];
+      if (!r || !c) return;
+      if (!String(r.pokemon || "").trim()) return;
+      if (String(c.keep || "").indexOf("Zahodit") === 0) return;
+      if (r.fastMove && r.charged1) return;
+      if (!dexEntry(r.pokemon)) return;
+      out.push(id);
+    });
+    return out;
+  }
+
+  function duZavri() {
+    document.getElementById("doplnitBox").hidden = true;
+    duState = { poradi: [], kde: 0 };
+    renderBody(); renderTiles(); persist(true);
+  }
+
+  function duOtevri() {
+    duState.poradi = kusyBezUtoku();
+    duState.kde = 0;
+    if (!duState.poradi.length) {
+      window.alert("Všechny kusy, které si necháváš, mají útoky vyplněné.");
+      return false;
+    }
+    var box = document.getElementById("doplnitBox");
+    box.hidden = false;
+    duVykresli();
+    // Bez fokusu by klávesy nefungovaly, dokud do okna někdo neklikne.
+    return true;
+  }
+
+  function duPosun(o) {
+    var novy = duState.kde + o;
+    if (novy < 0) novy = 0;
+    if (novy >= duState.poradi.length) { duZavri(); return; }
+    duState.kde = novy;
+    duVykresli();
+  }
+
+  /**
+   * Vrátí fokus do okna, když je zrovna mimo.
+   *
+   * Volá se po každém překreslení, ne jen při otevření: překreslení tabulky
+   * si fokus přetahuje zpátky k sobě a jednorázové zaostření po otevření
+   * se tím tiše ztratilo — klávesy pak nefungovaly, dokud do okna někdo
+   * neklikl. Když už fokus uvnitř okna je (třeba ve výběru útoku), nesahá
+   * se na něj: přebít výběr uprostřed vybírání by bylo horší.
+   */
+  function duFokus() {
+    var box = document.getElementById("doplnitBox");
+    if (!box || box.hidden) return;
+    var a = document.activeElement;
+    if (a && a !== document.body && box.contains(a)) return;
+    var okno = box.querySelector(".du-okno");
+    if (!okno) return;
+    try { okno.focus({ preventScroll: true }); } catch (e) { okno.focus(); }
+  }
+
+  function duVykresli() {
+    var telo = document.getElementById("duTelo");
+    var id = duState.poradi[duState.kde];
+    var r = radekPodleId(id);
+    if (!r) { duPosun(1); return; }
+    var computed = analyze();
+    var c = computed[id] || {};
+    var b = null;
+    lastBase.forEach(function (x) { if (x.row.id === id) b = x; });
+
+    document.getElementById("duPocet").textContent =
+      (duState.kde + 1) + " z " + duState.poradi.length;
+    var hotovo = duState.poradi.filter(function (x) {
+      var rr = radekPodleId(x);
+      return rr && rr.fastMove && rr.charged1;
+    }).length;
+    var pruh = document.getElementById("duPruh");
+    pruh.style.width = Math.round(hotovo / duState.poradi.length * 100) + "%";
+
+    telo.innerHTML = '<div class="du-kus">'
+      + obrazekHtml(r.pokemon, b && b.dex, "du-obr")
+      + "<div><h3>" + escHtml(r.pokemon) + "</h3>"
+      + '<div class="du-radek">' + escHtml(r.cp ? r.cp + " CP" : "")
+      + (r.level ? " · L" + escHtml(String(r.level)) : "")
+      + (c.ivPct != null ? " · " + Math.round(c.ivPct * 100) + " % IV" : "")
+      + "</div>"
+      + '<div class="du-verdikt ' + (c.keepTone || "") + '">' + escHtml(c.keep || "")
+      + (c.keepSub ? ' <span>' + escHtml(c.keepSub) + "</span>" : "") + "</div>"
+      + (c.movesBest ? '<div class="du-tip">Nejlepší sestava druhu: <b>'
+          + escHtml(c.movesBest) + "</b></div>" : "")
+      + (c.movesBestFinal ? '<div class="du-tip">Po evoluci na '
+          + escHtml(c.finalFormaJmeno) + ": <b>" + escHtml(c.movesBestFinal)
+          + "</b></div>" : "")
+      + "</div></div>"
+      + '<div class="du-vybery"></div>';
+
+    var vybery = telo.querySelector(".du-vybery");
+    [["fastMove", "Rychlý útok"], ["charged1", "Nabitý útok"],
+     ["charged2", "Druhý nabitý"]].forEach(function (par) {
+      var obal = document.createElement("div");
+      obal.className = "du-pole";
+      var popis = document.createElement("div");
+      popis.className = "du-popis";
+      popis.textContent = par[1];
+      obal.appendChild(popis);
+      var misto = document.createElement("div");
+      obal.appendChild(misto);
+      vybery.appendChild(obal);
+      if (window.__pgoUtoky) {
+        window.__pgoUtoky.vyber(misto, r, par[0], function () {
+          zapamatovatUtoky(r);
+          persist(true);
+          duVykresli();
+        });
+      }
+    });
+    duFokus();
+  }
+
+  /* =====================================================================
+     CO SE S KUSEM STALO VE HŘE
+
+     Vyvinutý nebo vylepšený kus znamenal dosud jedinou cestu: naskenovat ho
+     znovu a naimportovat. Tohle je druhá — říct appce, co se ve hře stalo,
+     a nechat ji dopočítat zbytek. Zadává se jen to, co hra opravdu ukazuje.
+
+     Co se přepočítá samo: CP z druhu, levelu a IV. IV se přitom nemění,
+     s jedinou výjimkou — očista přidá +2 ke každému, nejvýš na 15.
+     ================================================================== */
+  var hraKus = null;    // id upravovaného řádku
+  var hraAkce = null;   // evoluce | vylepseni | ocista
+
+  function cpmProLevel(level) {
+    var l = num(level);
+    if (l === null) return null;
+    for (var i = 0; i < CPM_LEVELS.length; i++) {
+      if (Math.abs(CPM_LEVELS[i][0] - l) < 1e-6) return CPM_LEVELS[i][1];
+    }
+    return null;
+  }
+  /** CP kusu podle jeho druhu, levelu a IV. Vrací null, když něco chybí —
+   *  hádat CP z poloviny údajů by bylo horší než ho nechat být. */
+  function cpPodleUdaju(r) {
+    var d = dexEntry(r.pokemon);
+    var cpm = cpmProLevel(r.level);
+    var a = num(r.ivAtk), df = num(r.ivDef), st = num(r.ivSta);
+    if (!d || cpm === null || a === null || df === null || st === null) return null;
+    return cpAt(d, a, df, st, cpm);
+  }
+  /** Na co se tenhle kus může vyvinout. Jen jeden krok dopředu: hra víc
+   *  kroků najednou neudělá a nabízet Machampa u Machopa by svádělo
+   *  k označení evoluce, která se ve hře nestala. */
+  function evoKroky(r) {
+    var k = dexKey(r.pokemon);
+    var dalsi = (POKEDEX.evoluce || {})[k] || [];
+    return dalsi.map(function (ck) {
+      var d = dexByKey(ck);
+      return d ? { klic: ck, jmeno: d.name } : null;
+    }).filter(function (x) { return !!x; });
+  }
+
+  /**
+   * Proužek „ve hře jsem s ním něco udělal".
+   *
+   * Bez něj musel vyvinutý nebo vylepšený kus projít celým kolečkem: sken
+   * v Calcy, export, import. Tohle je zkratka pro jednu změnu u jednoho kusu.
+   */
+  function hraPruhHtml(r) {
+    var tl = [];
+    evoKroky(r).forEach(function (e) {
+      tl.push('<button type="button" class="hra-btn" data-hra="evoluce" data-cil="'
+        + escHtml(e.jmeno) + '">Vyvinul jsem ho na ' + escHtml(e.jmeno) + "</button>");
+    });
+    tl.push('<button type="button" class="hra-btn" data-hra="vylepseni">'
+      + "Vylepšil jsem ho</button>");
+    if (r.forma === "Shadow") {
+      tl.push('<button type="button" class="hra-btn" data-hra="ocista">'
+        + "Očistil jsem ho</button>");
+    }
+    // Bez popisku a natěsno u křížku: je to oprava údajů, ne hlavní obsah.
+    return '<span class="hra-pruh">' + tl.join("") + "</span>";
+  }
+
+  function hraZavri() {
+    document.getElementById("hraBox").hidden = true;
+    hraKus = null; hraAkce = null;
+  }
+  function hraStav(text, spatne) {
+    var el = document.getElementById("hraOut");
+    if (!el) return;
+    el.textContent = text || "";
+    el.className = "rb-out" + (spatne ? " chyba" : "");
+  }
+  function radekPodleId(id) {
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return rows[i];
+    return null;
+  }
+
+  /**
+   * Otevře okno. `akce` říká, co se stalo; `cil` je u evoluce jméno druhu,
+   * na který se kus vyvinul.
+   */
+  function hraOtevri(id, akce, cil) {
+    var r = radekPodleId(id);
+    if (!r) return false;
+    var telo = document.getElementById("hraTelo");
+    var nadpis = document.getElementById("hraNadpis");
+    var popis = document.getElementById("hraPopis");
+    if (!telo) return false;
+    hraKus = id; hraAkce = akce;
+    var jmeno = r.pokemon || "tenhle kus";
+    hraStav("");
+
+    if (akce === "evoluce") {
+      if (!cil || !dexEntry(cil)) { hraKus = null; hraAkce = null; return false; }
+      nadpis.textContent = "Vyvinul jsi ho na " + cil + "?";
+      popis.innerHTML = "IV se evolucí nemění a CP se dopočítá."
+        + " <b>Útoky se ale evolucí přehodí</b>, takže se vymažou —"
+        + " doplň je, až je ve hře uvidíš.";
+      var poEvoluci = { pokemon: cil, level: r.level,
+        ivAtk: r.ivAtk, ivDef: r.ivDef, ivSta: r.ivSta };
+      var cpE = cpPodleUdaju(poEvoluci);
+      telo.innerHTML = '<div class="rb-grid">'
+        + '<label>Z<input type="text" value="' + escHtml(jmeno) + '" disabled></label>'
+        + '<label>Na<input type="text" id="hraCil" value="' + escHtml(cil)
+        + '" disabled></label>'
+        + '<label>Nové CP<input type="number" id="hraCp" min="10" step="1" value="'
+        + (cpE === null ? "" : cpE) + '"></label>'
+        + "</div>"
+        + '<p class="hint">CP je dopočítané z levelu a IV. Když ho hra ukazuje'
+        + " jinak, přepiš ho.</p>";
+    } else if (akce === "vylepseni") {
+      nadpis.textContent = "Vylepšil jsi " + jmeno + "?";
+      popis.innerHTML = "Zadej, co ukazuje hra. Stačí jedno z obojího:"
+        + " <b>nové CP</b>, nebo <b>nový level</b>.";
+      telo.innerHTML = '<div class="rb-grid">'
+        + '<label>Nové CP<input type="number" id="hraCp" min="10" step="1" placeholder="'
+        + escHtml(String(r.cp || "")) + '"></label>'
+        + '<label>Nový level<input type="number" id="hraLevel" min="1" max="55"'
+        + ' step="0.5" placeholder="' + escHtml(String(r.level || "")) + '"></label>'
+        + "</div>"
+        + '<p class="hint">Když vyplníš obojí, platí level a CP se z něj'
+        + " dopočítá.</p>";
+    } else if (akce === "ocista") {
+      nadpis.textContent = "Očistil jsi " + jmeno + "?";
+      popis.innerHTML = "Očista přidá <b>+2 ke každému IV</b> (nejvýš na 15),"
+        + " zvedne kus na <b>level 25</b>, pokud je níž, a sebere shadow bonus"
+        + " +20 % útoku. Je nevratná.";
+      var po = {
+        pokemon: r.pokemon,
+        level: Math.max(25, num(r.level) || 0),
+        ivAtk: Math.min(15, (num(r.ivAtk) || 0) + 2),
+        ivDef: Math.min(15, (num(r.ivDef) || 0) + 2),
+        ivSta: Math.min(15, (num(r.ivSta) || 0) + 2)
+      };
+      var cpO = cpPodleUdaju(po);
+      telo.innerHTML = '<div class="rb-grid">'
+        + '<label>IV po očistě<input type="text" value="'
+        + po.ivAtk + " / " + po.ivDef + " / " + po.ivSta + '" disabled></label>'
+        + '<label>Level<input type="text" value="' + po.level + '" disabled></label>'
+        + '<label>Nové CP<input type="number" id="hraCp" min="10" step="1" value="'
+        + (cpO === null ? "" : cpO) + '"></label>'
+        + "</div>";
+    } else {
+      hraKus = null; hraAkce = null;
+      return false;
+    }
+    document.getElementById("hraBox").hidden = false;
+    var prvni = telo.querySelector("input:not([disabled])");
+    if (prvni) { prvni.focus(); prvni.select(); }
+    return true;
+  }
+
+  /** Zapíše změnu do řádku. Vrací text chyby, nebo null, když se to povedlo. */
+  function hraUloz() {
+    var r = radekPodleId(hraKus);
+    if (!r) return "Ten kus už v rosteru není.";
+    var predtim = verdiktSnimek();
+    var cpPole = document.getElementById("hraCp");
+    var cp = cpPole ? num(cpPole.value) : null;
+
+    if (hraAkce === "evoluce") {
+      var cil = (document.getElementById("hraCil") || {}).value;
+      if (!cil || !dexEntry(cil)) return "Druh se nepodařilo dohledat.";
+      r.pokemon = cil;
+      // Evolucí se útoky přehodí. Nechat staré by znamenalo počítat sestavu,
+      // kterou ten kus po evoluci nemá.
+      r.fastMove = ""; r.charged1 = ""; r.charged2 = "";
+      var cpEvo = cp !== null ? cp : cpPodleUdaju(r);
+      if (cpEvo !== null) r.cp = cpEvo;
+    } else if (hraAkce === "vylepseni") {
+      var lvlPole = document.getElementById("hraLevel");
+      var lvl = lvlPole ? num(lvlPole.value) : null;
+      if (lvl === null && cp === null) return "Vyplň nové CP nebo nový level.";
+      if (lvl !== null) {
+        if (cpmProLevel(lvl) === null) return "Level " + lvl + " ve hře neexistuje.";
+        r.level = lvl;
+        delete r.levelZCP;
+        var dopoc = cpPodleUdaju(r);
+        if (dopoc !== null) r.cp = dopoc;
+      } else {
+        r.cp = cp;
+        var zpet = levelZCP(r.pokemon, cp, num(r.ivAtk), num(r.ivDef), num(r.ivSta));
+        if (zpet && zpet.level) { r.level = zpet.level; r.levelZCP = true; }
+      }
+    } else if (hraAkce === "ocista") {
+      r.ivAtk = Math.min(15, (num(r.ivAtk) || 0) + 2);
+      r.ivDef = Math.min(15, (num(r.ivDef) || 0) + 2);
+      r.ivSta = Math.min(15, (num(r.ivSta) || 0) + 2);
+      r.level = Math.max(25, num(r.level) || 0);
+      r.forma = "Purified";
+      var cpOc = cp !== null ? cp : cpPodleUdaju(r);
+      if (cpOc !== null) r.cp = cpOc;
+    } else {
+      return "Neznámá úprava.";
+    }
+    persist(true);
+    zamerKus(r.id);
+    ohlasitZmenuVerdiktu(predtim, r.id);
+    return null;
+  }
+
+  /**
+   * Sjede na daný kus, otevře mu detail a na chvíli ho zvýrazní.
+   *
+   * Nově přidaný kus nemá cenu hledat očima mezi pěti sty řádky. Když ho
+   * schovává filtr nebo hledání, filtry se zruší — přidat kus, který není
+   * vidět, vypadá, jako by se přidání nepovedlo.
+   */
+  function zamerKus(id) {
+    var najdi = function () {
+      var tb = document.getElementById("tbody");
+      return tb ? tb.querySelector('tr[data-row-id="' + id + '"]') : null;
+    };
+    otevrenyDetail = id;
+    renderBody();
+    if (!najdi()) {
+      zrusitVsechnyFiltry();     // překreslí samo
+      otevrenyDetail = id;
+      renderBody();
+    }
+    var tr = najdi();
+    if (!tr) return false;
+    tr.classList.add("novy-kus");
+    setTimeout(function () { tr.classList.remove("novy-kus"); }, 2600);
+    // Nahoru, ne doprostřed: detail je vysoký a od středu obrazovky se
+    // polovina nevejde.
+    if (tr.scrollIntoView) tr.scrollIntoView({ block: "start", behavior: "smooth" });
+    return true;
+  }
+
   /** Plné překreslení těla tabulky (přidání/smazání/import/řazení/filtr). */
   function renderBody() {
     obnovZrusitFiltry();
@@ -11983,8 +12800,44 @@
     lastBase.forEach(function (b) { baseById[b.row.id] = b; });
     var list = rows.map(function (r) { return { row: r, c: computed[r.id], b: baseById[r.id] }; });
 
+    /* Stavové sloupce se řadí podle BARVY, ne podle abecedy.
+       „Mega evoluce" dávala po kliknutí nahoru „Lepší kopie" a „Vysoká" až
+       úplně dolů, protože L je v abecedě před V. Barvu už přitom appka zná —
+       každý takový sloupec má vedle hodnoty i tón. Pořadí je obrácený
+       semafor: nejdřív to, co se vyplatí, nakonec křížky. */
+    var TON_PORADI = { good: 0, evo: 1, warning: 2, muted: 3, critical: 4 };
+    // Tradovat a Purifikovat tu schválně NEJSOU: mají níž vlastní pořadí
+    // stavů, které je lepší než barva. U výměny jde „Po evoluci" před „Ano"
+    // (je zdarma a ještě se po ní evolvuje), a to by abeceda uvnitř zelené
+    // prohodila.
+    var SLOUPCE_S_TONEM = {
+      keep: "keepTone", powerup: "powerupTone", evolve: "evolveTone",
+      mega: "megaTone", moves: "movesTone"
+    };
+    /** Číslo pořadí + text, aby se uvnitř jedné barvy řadilo abecedně. */
+    function tonovaHodnota(item, key) {
+      var ton = item.c[SLOUPCE_S_TONEM[key]];
+      var poradi = TON_PORADI[ton];
+      if (poradi === undefined) poradi = 3;
+      var text = String(item.c[key] === undefined || item.c[key] === null
+        ? "" : item.c[key]).toLowerCase();
+      return poradi + "|" + text;
+    }
+    /* Role bez vlastního tónu: „Ne" nesmí skončit uprostřed abecedy mezi
+       Ice a Poison, jak to dělalo u sloupce Do raidu. */
+    function roleHodnota(hodnota) {
+      var t = String(hodnota === undefined || hodnota === null ? "" : hodnota).trim();
+      if (!t || t === "Ne" || t === "–") return "3|";
+      if (/^(Po vývinu|Po evoluci|Záloha|Slabý)/i.test(t)) return "2|" + t.toLowerCase();
+      return "0|" + t.toLowerCase();
+    }
+
     function sortValue(item, key) {
       if (key === "star") return item.row.star ? 0 : 1;
+      if (SLOUPCE_S_TONEM[key]) return tonovaHodnota(item, key);
+      if (key === "raidRec" || key === "gymRec" || key === "raid" || key === "gym") {
+        return roleHodnota(item.c[key]);
+      }
       if (key === "pokemon") return (item.row.pokemon || "").toLowerCase();
       if (key === "ivPct") return item.c.ivPct;
       if (key === "cpMax") return item.c.cpMax ? (item.c.cpMax.evolved || item.c.cpMax.cp) : null;
@@ -12688,6 +13541,68 @@
     return !top || dmg / top >= RAID_MIN_PCT;
   }
 
+  /**
+   * Žebříček mega forem — spočítaný, ne opsaný.
+   *
+   * V tabulce mega evolucí dlouho stálo jen jméno, druh evoluce a ručně
+   * psaná „priorita pro raidy". Nešlo z ní poznat, proč je jedna mega nad
+   * druhou, ani jakého je typu: pořadí bylo prostě to, v jakém formy přišly
+   * z herních dat. Přitom se všechno potřebné dá spočítat — mega forma má
+   * v pokédexu vlastní staty a typy a útoky si bere ze základního druhu
+   * (mega evolucí se moveset nemění).
+   *
+   * Měřítkem je „kolik procent špičky svého typu ta mega udělá". Špička je
+   * nejlepší BĚŽNÝ druh toho typu, takže číslo nad 100 % znamená, že mega
+   * ten typ vede — a přesně to je důvod, proč ji vůbec mít.
+   */
+  var megaRankCache = null;
+
+  function megaRanking() {
+    if (megaRankCache) return megaRankCache;
+    var podleTypu = {};
+    Object.keys(POKEDEX.mega || {}).forEach(function (key) {
+      var zaklad = POKEDEX.species[key];
+      var l = learnset(key);
+      if (!zaklad || !l || !l.fast.length || !l.charged.length) return;
+      (megaFormsForKey(key) || []).forEach(function (m) {
+        var dex = { types: m.types, a: m.a, d: m.d, s: m.s };
+        ALL_TYPES.forEach(function (typ) {
+          var best = 0, bestSet = null;
+          l.fast.forEach(function (fi) {
+            var f = fastMove(fi);
+            if (!f || f.type !== typ) return;
+            l.charged.forEach(function (ci) {
+              var c = chargedMove(ci);
+              if (!c || c.type !== typ) return;
+              var sc = raidScore(cycleDps(dex.types, f, c), dex);
+              if (sc > best) { best = sc; bestSet = f.name + " + " + c.name; }
+            });
+          });
+          if (!best) return;
+          var strop = typeCeiling(typ).score;
+          if (!podleTypu[typ]) podleTypu[typ] = [];
+          podleTypu[typ].push({
+            key: key, jmeno: m.name, druh: zaklad[1], kind: m.kind,
+            typy: m.types, energie: m.energy, set: bestSet,
+            atk: m.a, atkZaklad: zaklad[3], def: m.d, defZaklad: zaklad[4],
+            sta: m.s, skore: best, podil: strop ? best / strop : 0,
+            spicka: typeCeiling(typ).name,
+            // Aura pomáhá jen útokům TYPU MEGY. Mega, která daný typ mlátí
+            // cizími útoky, je proto jiná nabídka než mega se STAB.
+            aura: (m.types || []).indexOf(typ) !== -1
+          });
+        });
+      });
+    });
+    Object.keys(podleTypu).forEach(function (typ) {
+      podleTypu[typ].sort(function (a, b) {
+        return (b.skore - a.skore) || String(a.jmeno).localeCompare(String(b.jmeno), "cs");
+      });
+    });
+    megaRankCache = podleTypu;
+    return podleTypu;
+  }
+
   function typeCeiling(type) {
     if (ceilingCache[type] !== undefined) return ceilingCache[type];
     var list = typeRanking(type);
@@ -12698,6 +13613,9 @@
   // Kdo se počítá za raidového útočníka: musí být aspoň v top 30 svého typu
   // a dělat aspoň polovinu toho, co špička. Pod tím už je to plýtvání prachem.
   var RAID_TOP_N = 30, RAID_MIN_PCT = 0.5;
+  // Kolik mega forem se v žebříčku ukazuje na typ. Čtvrtá už je jen vata:
+  // mega se drží jedna aktivní, takže rozhoduje první, nejvýš druhá volba.
+  var MEGA_TOP_N = 3;
   var raidIndexCache = null;
 
   function raidRankIndex() {
@@ -13020,7 +13938,10 @@
       if (b.specialForm && b.formaStojiZa) {
         mark(b.row, "Speciální formy", b.formaText + (b.out.keepSub ? " · " + b.out.keepSub : ""));
       }
-      if (b.out.mega.indexOf("Ne") !== 0 && b.megaEntry && b.dupIndex === 1) {
+      // Do skupiny „Mega evoluce" patří ten kus, kterému megu dal rozpočet —
+      // ne první kopie v pořadí. U druhu, kde se mega veze na kusu s jinou
+      // rolí, to jsou dva různé kusy.
+      if (b.out.mega.indexOf("Ne") !== 0 && b.megaEntry && b.megaDrzi) {
         mark(b.row, "Mega evoluce", b.megaEntry.raidPriority.toLowerCase() + " priorita");
       }
       if (b.highIV && b.ivPct !== null) mark(b.row, "Vysoké IV", Math.round(b.ivPct * 100) + " %");
@@ -17629,10 +18550,30 @@
     });
     gymT.innerHTML = h2;
 
+    /* Mega tabulka byla dlouho jen výpis: jméno, „Mega/Primal" a ručně psaná
+       priorita, v pořadí, v jakém formy přišly z herních dat. Nešlo z ní
+       poznat ani typ, ani proč je jedna nad druhou. Teď je to žebříček jako
+       u raidů — po typech, spočítaný ze statů mega formy a útoků druhu.
+       100 % = nejlepší BĚŽNÝ (ne-mega) útočník toho typu, takže víc než
+       100 % znamená, že ta mega typ vede. */
     var megaT = document.getElementById("refMegaTable");
-    var h3 = "<tr><th>Pokémon</th><th>Typ evoluce</th><th>Priorita pro raidy</th></tr>";
-    REFERENCE.megaEvolutions.forEach(function (r) {
-      h3 += "<tr><td>" + r.pokemon + "</td><td>" + r.kind + "</td><td>" + r.raidPriority + "</td></tr>";
+    var h3 = "<tr><th>Typ</th><th>#</th><th>Mega</th><th>Sestava</th><th>% špičky</th></tr>";
+    var megaZeb = megaRanking();
+    ALL_TYPES.forEach(function (t) {
+      var list = megaZeb[t];
+      if (!list || !list.length) return;
+      list.slice(0, MEGA_TOP_N).forEach(function (e, i) {
+        var prio = megaPriority(e.druh, null);
+        var popis = [e.set, "útok " + e.atkZaklad + " → " + e.atk,
+          e.energie + " energie na další megu"];
+        // Aura zvedá útoky TYPU MEGY. Když mega mlátí typ, který sama nemá,
+        // je to holý útočník bez bonusu pro partu — a to je jiná nabídka.
+        if (!e.aura) popis.push("bez aury na tenhle typ");
+        if (prio) popis.push(String(prio).toLowerCase() + " priorita");
+        h3 += "<tr><td>" + (i === 0 ? t : "") + "</td><td>" + (i + 1) + "</td><td>"
+          + e.jmeno + "</td><td>" + popis.join(" · ") + "</td><td>"
+          + Math.round(e.podil * 100) + " %</td></tr>";
+      });
     });
     megaT.innerHTML = h3;
   }
@@ -19619,8 +20560,38 @@
           return '<option value="' + String(n).replace(/"/g, "&quot;") + '"></option>';
         }).join("");
       };
-      dopl("rbFastNames", MOVES.fastNames);
-      dopl("rbChargedNames", MOVES.chargedNames);
+      doplUtoky = dopl;
+      omezUtokyNaDruh();
+    }
+
+    /**
+     * Nabídka útoků jen pro vybraný druh.
+     *
+     * Celá hra má přes tři sta útoků a jeden druh jich umí pět. Nabízet
+     * všechny znamená, že si do rosteru snadno zapíšeš útok, který ten kus
+     * mít nemůže — a rozbor pak počítá se sestavou, která neexistuje.
+     * Dokud druh není vybraný, nabízí se všechno: filtrovat podle rozepsaného
+     * jména by seznam bezdůvodně vyprazdňovalo.
+     */
+    var doplUtoky = null;
+    window.__pgoOmezUtoky = function () { omezUtokyNaDruh(); };
+    function omezUtokyNaDruh() {
+      if (!doplUtoky) return;
+      var jm = ((document.getElementById("rbName") || {}).value || "").trim();
+      var P = window.__pgo;
+      var klic = (jm && P && P.dexKeyOf) ? P.dexKeyOf(jm) : "";
+      var l = (klic && P.learnsetOf) ? P.learnsetOf(klic) : null;
+      if (!l) {
+        doplUtoky("rbFastNames", MOVES.fastNames);
+        doplUtoky("rbChargedNames", MOVES.chargedNames);
+        return;
+      }
+      var jmena = function (indexy, zdroj) {
+        return indexy.map(function (i) { return zdroj[i]; })
+          .filter(function (x) { return !!x; });
+      };
+      doplUtoky("rbFastNames", jmena(l.fast, MOVES.fastNames));
+      doplUtoky("rbChargedNames", jmena(l.charged, MOVES.chargedNames));
     }
 
     /** Co se dá z vyplněného poskládat — a co ještě chybí. */
@@ -19763,6 +20734,9 @@
       img.hidden = false;
     };
     pole.name.addEventListener("input", obnovitNahled);
+    // Změna druhu mění i to, které útoky se dají nabídnout.
+    pole.name.addEventListener("input", omezUtokyNaDruh);
+    pole.name.addEventListener("change", omezUtokyNaDruh);
     window.__pgoOtevritPridat = function () {
       naplnitDruhy();
       box.hidden = false;
@@ -19802,7 +20776,11 @@
         // nezná výšku ani váhu a CP může být z gymu podstřelené.
         zGymu: true
       }));
-      renderBody(); renderTiles(); persist(true);
+      renderTiles(); persist(true);
+      // Detail se otevře hned. Ručně zadaný kus se skoro vždycky ještě
+      // dovyplňuje (útoky, značky) a hledat ho pak v rosteru je zbytečná
+      // práce navíc.
+      zamerKus(rows[rows.length - 1].id);
       ["cp", "a", "d", "st"].forEach(function (k) { pole[k].value = ""; });
       pole.name.value = "";
       // Vyčistit i doplňková pole, ať se další kus nepřidá s cizími útoky.
@@ -19816,12 +20794,13 @@
         var el = document.getElementById(id);
         if (el) el.checked = false;
       });
-      pole.name.focus();
       out.className = "rb-out ok";
-      out.textContent = v.jm + " (CP " + v.cp + ", L" + v.lv.level + ") přidán."
-        + " Můžeš rovnou psát další.";
+      out.textContent = "";
       pridat.textContent = "Přidat do rosteru";
       pridat.disabled = true;
+      // Okno se zavírá samo. Kus je v rosteru, detail se mu otevřel — nechat
+      // nad tím viset formulář znamená, že se na přidaný kus není jak podívat.
+      box.hidden = true;
     });
   })();
 
@@ -20027,6 +21006,55 @@
     if (!b) return;
     b.addEventListener("click", zrusitVsechnyFiltry);
   })();
+
+  (function duObsluha() {
+    var box = document.getElementById("doplnitBox");
+    if (!box) return;
+    document.getElementById("duZavrit").addEventListener("click", duZavri);
+    document.getElementById("duDal").addEventListener("click", function () { duPosun(1); });
+    document.getElementById("duZpet").addEventListener("click", function () { duPosun(-1); });
+    box.addEventListener("click", function (e) { if (e.target === box) duZavri(); });
+    document.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      // Ve výběru útoku dělají šipky něco jiného (pohyb v seznamu) a do
+      // psaného textu se taky sahat nesmí — jinak by „a" místo písmene
+      // přeskočilo na předchozí kus.
+      var t = e.target;
+      if (t && t.closest && t.closest(".uv-seznam, .uv-pole")) return;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA"
+          || t.tagName === "SELECT" || t.isContentEditable)) return;
+      var k = (e.key || "").toLowerCase();
+      if (e.key === "Escape") { e.preventDefault(); duZavri(); }
+      else if (e.key === "ArrowRight" || k === "d" || e.key === "Enter") {
+        e.preventDefault(); duPosun(1);
+      } else if (e.key === "ArrowLeft" || k === "a") {
+        e.preventDefault(); duPosun(-1);
+      }
+    });
+  })();
+
+  (function hraOknoObsluha() {
+    var box = document.getElementById("hraBox");
+    if (!box) return;
+    document.getElementById("hraZrusit").addEventListener("click", hraZavri);
+    document.getElementById("hraUlozit").addEventListener("click", function () {
+      var chyba = hraUloz();
+      if (chyba) { hraStav(chyba, true); return; }
+      hraZavri();
+    });
+    // Klik vedle okna zavírá. Uložit se tím nesmí nic — je to odchod, ne
+    // potvrzení.
+    box.addEventListener("click", function (e) { if (e.target === box) hraZavri(); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !box.hidden) hraZavri();
+      else if (e.key === "Enter" && !box.hidden && e.target
+          && e.target.tagName === "INPUT") {
+        document.getElementById("hraUlozit").click();
+      }
+    });
+  })();
+
+  document.getElementById("doplnitBtn").addEventListener("click", duOtevri);
 
   document.getElementById("addRowBtn").addEventListener("click", function () {
     // Dřív to vložilo prázdný řádek do tabulky, který se musel dovyplnit —
@@ -20788,12 +21816,57 @@
       + "bonus +20 % útoku, který je cennější než IV.</td></tr>"
       + "<tr><td><b>Mega — kolik kusů se nechává</b></td><td>ne. Mega je "
       + "<b>trvalé odemčení druhu</b> a energie se sbírá po druzích, takže stačí "
-      + "<b>jeden kus na druh</b> (ten s nejvyšším IV). Slot navíc nedostane "
-      + "mega s <b>nízkou</b> ani <b>neznámou</b> raidovou prioritou (držet kus "
+      + "<b>jeden kus na druh</b>. Který to je: přednost má kus, který si "
+      + "necháváš <b>kvůli jiné roli</b> (raid, liga, gym) — mega se na něm "
+      + "sveze a nezabíráš místo druhým kusem. Teprve mezi kusy <b>bez role</b> "
+      + "rozhoduje pořadí kopií, tedy IV mínus cena dotažení na strop; při "
+      + "shodném IV proto vyhraje ten <b>výš levelem</b>. Slot navíc nedostane "
+      + "mega s <b>nízkou</b> ani <b>neznámou</b> prioritou (držet kus "
       + "kvůli meze, kterou nikdy nepoužiješ, je jen zabrané místo) a kus, který "
       + "se na tu megu teprve musí <b>vyvinout</b>, jen když je priorita "
       + "<b>vysoká</b> — cesta stojí bonbóny a teprve pak mega energii. Ostatní "
-      + "kopie mají ve sloupci <b>Lepší kopie</b>.</td></tr>"
+      + "kopie mají ve sloupci <b>Lepší kopie</b> — a to <b>vždycky ten druhý</b> "
+      + "kus, ne ten, kterému slot patří.</td></tr>"
+      + "<tr><td><b>Mega — odkud se bere priorita</b></td><td><b>počítá se</b>, "
+      + "neopisuje. Mega forma má v pokédexu vlastní staty a typy a útoky si "
+      + "bere ze základního druhu (mega evolucí se moveset nemění), takže se "
+      + "dá spočítat úplně stejně jako raidový žebříček. Měřítkem je pořadí "
+      + "mezi megami <b>téhož typu</b> a podíl na špičce toho typu mezi "
+      + "<b>běžnými</b> druhy: <b>vysoká</b> = nejlepší mega svého typu a "
+      + "zároveň silnější než nejlepší běžný útočník (megovat ji ten typ "
+      + "opravdu povýší), <b>střední</b> = nejlepší mega svého typu i bez toho "
+      + "(aura se jinak k tomu typu nedostane) nebo druhá volba s aspoň "
+      + "85 % špičky, <b>nízká</b> = zbytek. Počítá se jen typ, na který mega "
+      + "dává <b>auru</b> — tedy který sama má; mega, co typ mlátí cizími "
+      + "útoky, partě nepomůže. Celý žebříček je dole v <b>referenčních "
+      + "seznamech</b>. Dřív to byla ručně psaná hodnota, která stárla s "
+      + "každým balance patchem: Mega Heracross v ní měla nízkou prioritu, "
+      + "přestože je to nejsilnější Bug útočník ve hře.</td></tr>"
+      + "<tr><td><b>Mega — k čemu vlastně je</b></td><td>mega evoluce je "
+      + "<b>dočasná</b> (osm hodin) a <b>aktivní může být jen jedna</b>. Dává "
+      + "tři věci. Zaprvé <b>silnější staty</b> toho kusu — mega forma má vlastní "
+      + "základní hodnoty a počítá se s <b>IV a levelem toho konkrétního kusu</b>, "
+      + "takže jako útočník je 96% mega lepší než 82%. Zadruhé <b>boost pro celou "
+      + "skupinu</b> v raidu: útoky <b>stejného typu</b> jako mega mají +30 %, "
+      + "ostatní +10 % — a ten je na IV <b>úplně nezávislý</b>, přidá ho i mega "
+      + "s 0 %. Zatřetí <b>bonbóny navíc</b> za chycení po raidu. Protože dvě "
+      + "ze tří výhod na IV nezáleží, appka kvůli meze nedrží druhý kus."
+      + "</td></tr>"
+      + "<tr><td><b>Mega — kdy ji použít</b></td><td>appka to nesleduje (mega "
+      + "energii ani úroveň megy neeviduje), takže tohle je jen pravidlo. "
+      + "Mega se vyplatí zapnout <b>před raidem</b> nebo <b>před sérií raidů</b> "
+      + "a vybrat ji podle <b>typu, kterým na bosse útočíš</b>, ne podle toho, "
+      + "která mega je nejsilnější — +30 % pro šestičlennou skupinu je víc než "
+      + "rozdíl mezi tvým a cizím útočníkem. V gymu se boost neuplatní vůbec. "
+      + "V <b>lize</b> megy běžně nasadit nejdou, ale Niantic pravidelně pouští "
+      + "omezené formáty <b>Great / Ultra / Master League: Mega Edition</b>, "
+      + "kde se do party smí jedna mega evoluce — appka je ukazuje v přehledu "
+      + "akcí ve sloupci <b>Ligy</b>. Ligové žebříčky v appce s megami "
+      + "<b>nepočítají</b> (PvPoke je pro ten formát nevydává), takže na Mega "
+      + "Edition si sestavu musíš poskládat sám. Mega <b>úroveň</b> roste "
+      + "megováním (a nejvýš jednou za den u druhu), s ní klesá cena energie — "
+      + "takže má smysl točit <b>pár stálých</b> mega druhů, ne pokaždé jinou."
+      + "</td></tr>"
       + "<tr><td><b>Vrácení už puštěného kusu</b></td><td>když puštěním "
       + "kusu uvolníš místo, může se do rozpočtu vejít někdo, koho jsi "
       + "zahodil dřív. Appka to <b>nikdy neudělá sama</b> — jen nad tlačítky "
@@ -21613,6 +22686,19 @@
     d.innerHTML = html;
     var v = d.querySelector(".d-verdict-row");
     if (v) v.remove();
+    // Proužek „ve hře jsem s ním něco udělal" patří jen do rosteru. Prohlídka
+    // druhu žádný konkrétní kus nemá a v čištění boxu má panel pevnou výšku,
+    // do které by řádek navíc přidal posuvník.
+    var hp = d.querySelector(".hra-pruh");
+    if (hp) hp.remove();
+    // Totéž pro „Nejlepší sestava teď / po evoluci": v čištění boxu se
+    // rozhoduje nechat/pustit, ne co přeučit, a panel má pevnou výšku.
+    var ses = d.querySelector('[data-sekce="sestavy"]');
+    if (ses) {
+      var mrizka = ses.nextElementSibling;
+      if (mrizka && mrizka.classList.contains("d-sestavy")) mrizka.remove();
+      ses.remove();
+    }
     return d.innerHTML;
   }
 
@@ -22289,6 +23375,88 @@
 
   // testovací háček (Playwright) — v běžném provozu se nepoužívá
   window.__pgo = {
+    /* ------------------------------------------------- API pro vzhledovou
+       vrstvu. Vrstva má vlastní ovládání: řazení rozbalovátkem místo klikání
+       do hlavičky a detail kusu ve vlastní plachtě místo v řádku tabulky.
+       Aby se kvůli tomu nemusel upravovat engine zvenčí, jsou tyhle tři věci
+       jeho veřejnou součástí. Viz docs/ATLAS_KONTRAKT.md. */
+
+    /**
+     * Seřadí roster zvenčí.
+     *
+     * Povolené klíče jsou přesně ty, které umí řadit i hlavička tabulky
+     * (`SORTABLE`) — kdyby si vrstva držela vlastní seznam, rozešel by se
+     * s enginem při prvním novém sloupci. Na neznámý klíč se stav nemění
+     * vůbec a vrátí se `false`.
+     *
+     * `smer`: 1 vzestupně, -1 sestupně. Prázdný klíč řazení zruší.
+     * Druhotné řazení (Shift+klik v hlavičce) se ruší vždycky — rozbalovátko
+     * umí zvolit jen jedno kritérium a tiché zbytkové druhé kritérium by
+     * vypadalo jako chyba řazení.
+     */
+    atlasSort: function (klic, smer) {
+      if (!klic) {
+        sortKey = null; sortKey2 = null; sortDir = 1; sortDir2 = 1;
+      } else {
+        if (!SORTABLE[klic]) return false;
+        sortKey = klic;
+        sortDir = smer === -1 ? -1 : 1;
+        sortKey2 = null; sortDir2 = 1;
+      }
+      renderHeader();   // jinak zůstane v hlavičce stará šipka
+      renderBody();
+      persist(true);
+      return true;
+    },
+
+    /**
+     * Vykreslí detail kusu do cizího kontejneru a napojí jeho ovládání.
+     *
+     * Obsah i chování (Lucky, Dynamax, útoky, vysvětlivky) musí zůstat
+     * tytéž jako v detailu pod řádkem — proto to skládá engine a vrstva
+     * dodá jen místo a funkci, kterou se detail zavírá.
+     *
+     * Po každé změně, která přepočítá verdikt, se pošle `atlas:refresh-detail`.
+     * Vrstva sama nepozná, kdy se verdikt překlopil; tohle je její signál,
+     * že si má detail otevřít znovu.
+     */
+    atlasDetail: function (id, kontejner, zavrit) {
+      if (!kontejner) return false;
+      var computed = analyze();
+      var radek = null, b = null;
+      rows.forEach(function (r) { if (r.id === id) radek = r; });
+      lastBase.forEach(function (x) { if (x.row.id === id) b = x; });
+      if (!radek || !b) return false;
+      kontejner.innerHTML = detailHtml(b, computed[id]);
+      vystreditVse(kontejner);
+      napojitDetail(kontejner, radek, {
+        zavrit: zavrit,
+        zmena: function () {
+          renderBody();
+          window.dispatchEvent(new CustomEvent("atlas:refresh-detail"));
+        }
+      });
+      slozitVysvetlivky(kontejner);
+      // Vrstva si do detailu přidává vlastní bloky. Engine o nich nic neví
+      // a nesmí na nich stát — když funkce není, prostě se nic nepřidá.
+      if (typeof window.AtlasEnhanceDetail === "function") {
+        window.AtlasEnhanceDetail(kontejner, radek, computed[id]);
+      }
+      return true;
+    },
+
+    /**
+     * Obrázek druhu jako hotová značka `<img>`, i se záložním zdrojem
+     * v `data-zaloha`.
+     *
+     * Vrstva má vlastní sadu artu, ale nemá ji pro všechny druhy. Tohle je
+     * to, na co spadne zpátky — a je to tentýž obrázek, jaký ukazuje řádek
+     * rosteru, takže se obojí nerozejde. Neznámý druh vrátí prázdný řetězec.
+     */
+    atlasImage: function (jmeno, trida) {
+      return obrazekHtml(jmeno, dexEntry(jmeno), trida || "");
+    },
+
     getRows: function () { return rows; },
     getComputed: function () { return analyze(); },
     setRows: function (r) {
@@ -22332,6 +23500,7 @@
       return null;
     },
     typeRanking: typeRanking,
+    megaRanking: megaRanking,
     renderEvents: renderEvents,
     renderFriend: renderFriend,
     friendRows: friendRows,
@@ -22394,6 +23563,9 @@
     },
     renderPrach: renderPrach,
     learnsetOf: learnset,
+    omezUtokyNaDruh: function () {
+      if (window.__pgoOmezUtoky) window.__pgoOmezUtoky();
+    },
     fastMoveAt: fastMove,
     chargedMoveAt: chargedMove,
     chargedByNameOf: chargedByName,
@@ -22525,6 +23697,17 @@
     scanMissInfo: function () { return scanMissInfo(buildRowsFromPending()); },
     renderMapPreview: renderMapPreview,
     tradePairs: tradePairs,
+    hraOtevri: hraOtevri,
+    duOtevri: duOtevri,
+    duZavri: duZavri,
+    duPosun: duPosun,
+    duStav: function () { return { poradi: duState.poradi.slice(), kde: duState.kde }; },
+    kusyBezUtoku: kusyBezUtoku,
+    hraUloz: hraUloz,
+    hraZavri: hraZavri,
+    evoKroky: evoKroky,
+    cpPodleUdaju: cpPodleUdaju,
+    zamerKus: zamerKus,
     spolecnaSila: spolecnaSila,
     indexMych: indexMych,
     typZHlasky: typZHlasky,
@@ -22651,6 +23834,10 @@
         });
       }
       try { window.localStorage.setItem("pgo_zalozka", klic); } catch (e) { /* nevadí */ }
+      // Vzhledová vrstva si podle záložky přepíná vlastní obrazovku. Ohlásí
+      // se i tiché přepnutí — „tiché" znamená neposkakovat stránkou, ne
+      // zamlčet, že se změnila záložka. Viz docs/ATLAS_KONTRAKT.md.
+      window.dispatchEvent(new CustomEvent("atlas:route", { detail: klic }));
       if (!tiche) window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -23241,7 +24428,14 @@
         document.body.appendChild(box);
         umistit(box, tlacitko);
         tlacitko.classList.add("otevreno");
-        otevrenySeznam = { obal: obal, seznam: box, tlacitko: tlacitko, polozky: polozky, kurzor: -1 };
+        // Kurzor začíná na tom, co je vybrané teď. Jinak by Enter hned po
+        // otevření neměl co potvrdit a šipky by se rozjížděly od začátku
+        // seznamu místo od současného útoku.
+        var kurzor = -1;
+        polozky.forEach(function (b, i) { if (b.classList.contains("vybrana")) kurzor = i; });
+        if (kurzor >= 0) polozky[kurzor].classList.add("zvyraznena");
+        otevrenySeznam = { obal: obal, seznam: box, tlacitko: tlacitko,
+          polozky: polozky, kurzor: kurzor };
         // scrollIntoView umí odrolovat i celou STRÁNKU, když se to prohlížeči
         // hodí. Uvnitř seznamu si to proto spočítáme sami — nic mimo box se
         // pohnout nesmí.
@@ -23258,8 +24452,13 @@
       });
 
       tlacitko.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tlacitko.click(); return; }
-        if (!otevrenySeznam || otevrenySeznam.tlacitko !== tlacitko) return;
+        // Zavřený seznam: Enter i mezerník ho otevřou. Otevřený: Enter musí
+        // POTVRDIT vybranou položku. Dřív tu první řádka brala Enter vždycky
+        // a seznam se jen zavřel — šipkami se dalo vybírat, ale potvrdit ne.
+        if (!otevrenySeznam || otevrenySeznam.tlacitko !== tlacitko) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tlacitko.click(); }
+          return;
+        }
         var st = otevrenySeznam;
         if (e.key === "ArrowDown" || e.key === "ArrowUp") {
           e.preventDefault();
