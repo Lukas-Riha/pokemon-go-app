@@ -376,3 +376,64 @@ Nové testovací háky v `window.__pgo`: `boxPrepocitat()`, `boxVraceni()`,
 (`evRozsah(null, null)` → `null.toDateString()`). Dnes takovou akci LeekDuck
 poslal („Houndour and Houndoom Spotlight Hour" se spawny, ale bez data).
 Opraveno a akce bez termínu se do sekce „co zrovna pouštějí" nedostane.
+
+---
+
+# Co zbývá do produkce (15. 9.) — jedna věc, ale podstatná
+
+Projel jsem testovací build proti enginu na šestikusovém rosteru. **Vzhled
+i chování jsou hotové, rozvaha „Přehled" ale ukazuje jiná čísla než engine.**
+Ostatní části sedí, takže tohle je poslední věc mezi testem a produkcí.
+
+**Roster (`Moji Pokémoni`)** ✓ ukáže všech šest kusů.
+**Čištění boxu (`Projít box`)** ✓ jede z enginu, včetně obou nových pruhů
+(`#bmVypadli`, `#bmVraceni`) a nových čísel („Dark 1/6, 114 % špičky").
+**Konzole** ✓ bez jediné chyby.
+
+### Co nesedí
+
+Testovací roster (6 kusů) a co k nim říká engine:
+
+| kus | IV | verdikt | raid |
+| --- | --- | --- | --- |
+| Tyranitar Shadow | 96 % | Ponechat | Dark 1/6 +1 |
+| Machamp | 93 % | Nechat zatím | Fighting 2/6 |
+| Azumarill Lucky | 69 % | Ponechat | Ne |
+| Blissey | 89 % | Ponechat | Ne |
+| Rhyhorn | 80 % | Ponechat | Ground 1/6 +1 |
+| Combusken | 53 % | Ponechat | Fighting 1/6 +1 |
+
+**1. Karta „Na co se zaměřit"** má podtitulek *„Ponechané kusy s vysokými
+IV"*, ale vypíše **jediný kus — Combuskena s 53 % IV**, tedy ten úplně
+nejhorší. Má tam být pět ponechaných seřazených podle IV, v čele Tyranitar.
+
+```js
+const c = window.__pgo.getComputed();
+window.__pgo.getRows()
+  .filter((r) => c[r.id] && c[r.id].keepGood)      // co si engine nechává
+  .sort((a, b) => c[b.id].ivPct - c[a.id].ivPct);  // od nejvyššího IV
+```
+
+**2. Karta „Raidové pokrytí"** ukazuje pevnou pětici Psychic / Ghost /
+Fighting / Steel / Water a u všeho `0 kandidátů` kromě Fightingu. V rosteru
+jsou přitom Dark, Ground i Rock — a ty v seznamu nejsou vůbec. Typy i počty
+musí vyjít z rozpočtu, ne z pevného seznamu:
+
+```js
+const pokryti = {};
+window.__pgo.base().forEach((b) => {
+  (b.sloty || []).forEach((sl) => {
+    if (sl.druh !== "raid") return;
+    pokryti[sl.typ] = (pokryti[sl.typ] || 0) + 1;
+  });
+});
+```
+
+Pořadí typů, kolik jich rozpočet pokrývá přednostně a kolik slotů má který,
+drží engine — nekopíruj si vlastní seznam, zestárne stejně jako ten ručně
+psaný seznam mega evolucí, který jsme kvůli tomu tenhle týden zahodili.
+
+### Až tohle sedne
+
+Pak už je to jen na rozhodnutí, kdy přepnout. Nic jiného jsem rozbitého
+nenašel.
