@@ -83,7 +83,10 @@ const MIME = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "
 
 const server = http.createServer((req, res) => {
   const rel = decodeURIComponent(req.url.split("?")[0]);
-  const file = path.join(WEB_DIR, rel === "/" ? "pokemon_tracker_app.html" : rel);
+  // Stejnou sadou se dá projet i build se vzhledovou vrstvou:
+  //   PGO_APP=pokemon_tracker_TEST.html node tests/web_app.test.mjs
+  const file = path.join(WEB_DIR,
+    rel === "/" ? (process.env.PGO_APP || "pokemon_tracker_app.html") : rel);
   if (!file.startsWith(WEB_DIR) || !fs.existsSync(file)) { res.writeHead(404).end("not found"); return; }
   res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });
   res.end(fs.readFileSync(file));

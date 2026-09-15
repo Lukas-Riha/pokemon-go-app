@@ -27,7 +27,11 @@ function eq(name, actual, expected) {
 
 const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  res.end(fs.readFileSync(path.join(ROOT, "web-app/pokemon_tracker_app.html")));
+  // Stejnou sadou se dá projet i build se vzhledovou vrstvou:
+  //   PGO_APP=web-app/pokemon_tracker_TEST.html node tests/...
+  res.end(fs.readFileSync(process.env.PGO_APP
+    ? path.resolve(ROOT, process.env.PGO_APP)
+    : path.join(ROOT, "web-app/pokemon_tracker_app.html")));
 });
 await new Promise((r) => server.listen(9099, r));
 
