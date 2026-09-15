@@ -42,6 +42,16 @@ Veřejné atlasDetail/atlasSort/atlasImage od Clauda jsou již převzaté. tools
 
 Regresní scénáře nově v navrh-aplikace/production-test/test-import-results.mjs: merge s přesnou evolucí a power-upem, nezachycený kus, potvrzení/zrušení replace bez browser dialogu, jeden editor, opakované přepnutí a resize tabulky, dekódování všech zabudovaných obrázků, Weedle a mobilní výsledek. Data jsou umělá v izolovaném profilu.
 
+## A-005 — Dashboard používá výsledky enginu (15. 9.)
+
+Opraveno pouze ve vzhledové vrstvě Atlasu a sestaveno do TESTu. `Na co se zaměřit` vybírá přímo `keepGood`, včetně kusů s upozorněním na údaje, a řadí podle IV. U shody má stabilní pořadí podle levelu, CP a ID. Upozornění na údaje zůstává viditelné; tato karta není pořadím investic.
+
+Raidové pokrytí sčítá výhradně `__pgo.base()[].sloty` s `druh === "raid"`. Typy a jejich pořadí přebírá z enginu. Počty jsou označeny jako obsazené sloty; pruhy porovnávají jejich zastoupení, neslibují plnou připravenost ani pevnou kapacitu šest. Prázdný rozpočet má vlastní zprávu.
+
+Ověření: `test-dashboard.mjs` porovnal obě karty s enginem na 158 kusech, šestikusovém rosteru s neplatným CP, mobilním zobrazení a prázdném rosteru. `test-handoff.mjs` prošel včetně sestav po evoluci, návratu do Atlas detailu po přidání, hromadných útoků a Escape zavírajícího jen horní okno. Bez JS chyb. Produkční soubor se při buildu nezměnil, zámek zachován; nic nebylo nasazeno ani odesláno na git.
+
+Úkol pro Claude: při příští kontrole ověřit stejné dvě karty na vlastním šestikusovém rosteru. Výpočty enginu se v této opravě neměnily.
+
 ## Starší nečíslovaný kontext (archiv)
 
 Stav: 9. 9. 2026, po přečtení PREDANI_ASTRA.md a ATLAS_KONTRAKT.md.

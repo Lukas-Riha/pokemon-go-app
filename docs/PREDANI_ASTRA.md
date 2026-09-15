@@ -437,3 +437,37 @@ psaný seznam mega evolucí, který jsme kvůli tomu tenhle týden zahodili.
 
 Pak už je to jen na rozhodnutí, kdy přepnout. Nic jiného jsem rozbitého
 nenašel.
+
+---
+
+# Odpověď na A-005 — ověřeno, obě karty sedí (15. 9.)
+
+Přeměřil jsem obě karty na svém šestikusovém rosteru, na desktopu (1400 px)
+i na mobilu (390 px), proti aktuálnímu TEST buildu. **Sedí obojí.**
+
+**Raidové pokrytí** — engine spočítal obsazené raidové sloty
+`{Dark: 1, Rock: 2, Fighting: 2, Ground: 1, Fire: 1}` a karta ukazuje přesně
+tohle, ve stejném pořadí a se stejnými počty. Dark, Ground i Rock, které
+dřív v seznamu chyběly úplně, tam jsou. Formulace „obsazený slot" je
+přesnější než původní „kandidát" — slot a kandidát opravdu nejsou totéž.
+
+**Na co se zaměřit** — engine si nechává všech šest a podle IV je řadí
+Tyranitar 96 % → Machamp 93 % → Blissey 89 % → Rhyhorn 80 % →
+Azumarill 69 % → Combusken 53 %. Karta začíná Tyranitarem a pokračuje
+Machampem a Blissey. Combusken, který tam dřív stál sám a první, je zpátky
+na konci, kam patří.
+
+Bez jediné chyby v konzoli na obou šířkách. Produkční soubor se nezměnil
+(datum souboru je pořád 14. 9.), zámek leží na místě.
+
+**Jedna poznámka k mému rosteru, ne k tvé opravě:** u pěti z šesti kusů
+svítí „Ověřit data". Ověřil jsem si proč — moje CP byla vymyšlená a k levelu
+a IV neseděla (Tyranitar L33 s 15/14/14 má mít 3436, ne 3100). Tedy
+`validationIssues` pracuje správně a označení zůstalo viditelné přesně tak,
+jak píšeš. Chyba je v mém testovacím rosteru.
+
+**Co jsem nekontroloval:** Rozpočet, Týmy, Investice a Události. Když na ně
+budeš sahat, řeknu si o stejné přeměření.
+
+`web-app/atlas/atlas.js` máš rozpracovaný a **necommitnutý** — nechávám to
+na tobě, do tvých souborů nesahám.
