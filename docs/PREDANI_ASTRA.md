@@ -530,3 +530,62 @@ je jen na JS chyby. Po A-005 jsem ověřoval dvě karty rozvahy — na zbytek si
 
 Jedním příkazem: `python tools/sync_reference.py --vzhled`, pak deploy.
 Zpátky stejně tak bez `--vzhled`. Engine je jeden, takže se tím nic nerozdvojí.
+
+---
+
+# Než se to propíše do devu — zkontroloval jsem zbytek (15. 9.)
+
+Doplnil jsem to, co jsem minule vynechal: prošel jsem **všech deset zbylých
+sekcí** a porovnal je s enginem. **Nic rozbitého, nula JS chyb.** Navíc:
+celá regresní sada **2142 testů projde i proti tvému TEST buildu**, ne jen
+proti produkčnímu souboru.
+
+| sekce | výsledek |
+| --- | --- |
+| Rozpočet | „4 cílů" = 4 položky z `prachovyPlan()` ✓ |
+| Pokrytí rolí | Ground 1, Dark 1, Rock 2, Fighting 0+1 náplast — sedí na `base()[].sloty` ✓ |
+| Žebříčky | Bug: Volcarona 100 %, Pheromosa 96 %, Heracross 92 %, Genesect 91 %, Kartana 89 % — přesně `typeRanking("Bug")` ✓ |
+| Typy a počasí, Výměna, Tahák, Nastavení, Metodika | vykreslí se, obsah z enginu ✓ |
+| Kalendář | raidy i osa z enginu ✓ |
+| Co chytat | **našla se chyba, viz níž** |
+
+## 1. Opravil jsem v enginu „Co chytat" — mění to DOM
+
+Sekce měla jediný nadpis **„Akce, které je zrovna pouštějí"** a pod ním
+vypisovala i akce, které teprve začnou. Dnes pod ním stály Spotlight Hour
+na 17. 9. a na 24. 9., přestože je 15. 9. a neběží ani jedna. Filtr totiž
+vyhazoval jen akce, které už **skončily**; na začátek se nekoukal.
+
+Nově jsou to **dvě skupiny se dvěma nadpisy**:
+
+- `Akce, které je zrovna pouštějí`
+- `Akce, které teprve začnou`
+
+Každá položka `coChytat().akce[]` má nové pole **`bezi` (boolean)**. Když si
+tu sekci kreslíš sama, tohle je ta změna: jeden `<h3 class="ch-h">` se může
+rozdělit na dva a mezi nimi je druhý `<div class="ch-sloupce">`. Když
+nic neběží, první nadpis se nevykreslí vůbec.
+
+## 2. Pozor na testy, které mají napevno pořadí z PvPoke
+
+`data/meta.json` se dnes obnovila (staženo 12. 9. → 15. 9.) a pořadí se
+pohnulo dost na to, aby mi spadly dva vlastní testy:
+
+- **Azumarill Great League #24 → #32.** Sleva z prahu se tím zmenšila
+  a týž 94% kus je nově **pod prahem**. Test čekal „Ano – GL", dostal
+  „GL 94 % · pod prahem".
+- **Mimikyu Great League #18 → #6** (Ultra zůstalo #10). Karta teď
+  doporučuje GL místo UL — správně, protože se řídí rozpočtem.
+
+Ani jedno není chyba. Oba testy jsem přepsal tak, aby ověřovaly **pravidlo**,
+ne jeho dnešní výsledek (práh musí být nižší pro výš postavený druh; karta
+musí mluvit o téže lize, jakou má kus ve slotu). **Jestli máš někde v UI
+testech napsané konkrétní pořadí nebo konkrétní ligu, projde ti to dnes
+a spadne za týden** — stejná past.
+
+## 3. Do produkce pořád zbývají ty tři věci z minule
+
+`pgo_test_atlas_theme` (6×), odznak „LOKÁLNÍ TEST", „TESTOVACÍ VERZE" (2×
+včetně věty o oddělených profilech). Build `--vzhled` se o ně zastaví.
+
+Nic jiného už mezi testem a produkcí nestojí.

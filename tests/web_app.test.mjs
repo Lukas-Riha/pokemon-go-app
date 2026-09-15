@@ -220,15 +220,28 @@ try {
   // žebříček se počítá z dat, takže druh může mít víc rolí najednou
   check("Metagross je Steel raid útočník", verdicts["Metagross|#1 z 2"].raid.indexOf("Steel") > -1,
     verdicts["Metagross|#1 z 2"].raid);
-  // Azumarill je v Great League vysoko, takže na 94% kus mu práh stačí —
-  // dřív tu bylo "GL 94 % (pod prahem)", protože práh byl placatý a neznal
-  // pořadí druhu. Že se u kusu POD prahem ukáže liga a procento místo Calcy
-  // ranku, hlídá blok 103 (slabší Ferroseed).
-  eq("u kusu nad prahem je z toho doporučení i s ligou",
-    verdicts["Azumarill|jediný kus"].pvp, "Ano – GL");
-  check("…a rozhodně to není Calcy IV rank",
-    !/rank/i.test(verdicts["Azumarill|jediný kus"].pvp),
+  // Práh pro ligu NENÍ placatý — čím výš je druh v žebříčku, tím míň se od
+  // kusu chce. Konkrétní výsledek u konkrétního druhu se ale nesmí psát
+  // natvrdo: pořadí v PvPoke driftuje. Azumarill tu byl "Ano – GL", dokud
+  // byl GL #24; po obnově dat spadl na #32, sleva se zmenšila a týž 94%
+  // kus je pod prahem. Testuje se proto PRAVIDLO, ne jeho dnešní výsledek.
+  check("u kusu je vidět liga a procento, ne Calcy IV rank",
+    !/rank/i.test(verdicts["Azumarill|jediný kus"].pvp)
+      && /GL|UL|ML|LC/.test(verdicts["Azumarill|jediný kus"].pvp),
     verdicts["Azumarill|jediný kus"].pvp);
+  const prahRankSleva = await page.evaluate(() => {
+    const P = window.__pgo;
+    // 90 % jako základ, limit pořadí 50, sleva 5 bodů — stejně jako výchozí
+    return { prvni: P.prahProRank(0.9, 1, 50, 0.05),
+      stredni: P.prahProRank(0.9, 25, 50, 0.05),
+      posledni: P.prahProRank(0.9, 50, 50, 0.05),
+      bezSlevy: P.prahProRank(0.9, 1, 50, 0) };
+  });
+  check("špičkový druh má práh níž než okrajový",
+    prahRankSleva.prvni < prahRankSleva.stredni && prahRankSleva.stredni < prahRankSleva.posledni,
+    JSON.stringify(prahRankSleva));
+  check("…a bez slevy je práh pro všechny stejný",
+    Math.abs(prahRankSleva.bezSlevy - 0.9) < 1e-9, String(prahRankSleva.bezSlevy));
 
   console.log("\n3) perzistence po zavření stránky");
   await page.goto(URL);
@@ -7346,10 +7359,17 @@ try {
   check("žebříček se najde i u pojmenované formy",
     pvpShoda["Mimikyu Disguised"].ligyVse.join(",").indexOf("UL=1") > -1,
     pvpShoda["Mimikyu Disguised"].ligyVse.join(","));
-  // Kus drží slot v GL i UL. Karta má mluvit o té lepší — a hlavně o téže,
-  // kterou ukazuje verdikt.
-  check("karta doporučí ligu podle rozpočtu, ne podle kvality kusu",
-    pvpShoda["Mimikyu Disguised"].pvpRec === "Ano – UL",
+  // Kus drží slot v GL i UL. Karta má mluvit o téže lize, kterou mu dal
+  // rozpočet — KTERÁ to je, záleží na pořadí v PvPoke a to driftuje
+  // (Mimikyu byl GL #18 a UL #10, po obnově dat GL #6). Testuje se proto
+  // shoda karty se slotem, ne konkrétní liga.
+  check("karta doporučí ligu podle rozpočtu, ne podle kvality kusu", (() => {
+    const rec = pvpShoda["Mimikyu Disguised"].pvpRec || "";
+    const liga = (rec.match(/(LC|GL|UL|ML)/) || [])[1];
+    if (!liga) return false;
+    return pvpShoda["Mimikyu Disguised"].sloty
+      .some((sl) => String(sl).indexOf(liga) > -1);
+  })(),
     pvpShoda["Mimikyu Disguised"].pvpRec + " · sloty "
     + pvpShoda["Mimikyu Disguised"].sloty.join(", "));
   // ---------------------------------------------------------------- 135
@@ -14966,6 +14986,43 @@ try {
   check("Pustit ho opravdu prepne rozhodnuti na pustit",
     vypadli.poPusteni === "drop", String(vypadli.poPusteni));
   check("…a ze seznamu zmizi", vypadli.zbyva < 2, String(vypadli.zbyva));
+
+  /* ------------------------------------------------------------------
+     238) CO CHYTAT: "ZROVNA POUSTEJI" MUSI OPRAVDU BEZET
+     Filtr vyhazoval jen akce, ktere UZ SKONCILY, takze pod nadpisem
+     "Akce, ktere je zrovna pousteji" stala akce zacinajici za dva dny.
+     ------------------------------------------------------------------ */
+  console.log("\n238) co chytat rozlisuje bezici a budouci akce");
+  const coChytatUI = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([{ pokemon: "Machamp", cp: 2600, level: 30, ivAtk: 15, ivDef: 14,
+      ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" }]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const d = P.coChytat(P.base(), P.getComputed());
+    const zal = [...document.querySelectorAll(".zal-btn")]
+      .filter((b) => b.dataset.klic === "catchCard")[0];
+    if (zal) zal.click();
+    await new Promise((r) => setTimeout(r, 900));
+    const t = (document.getElementById("catchBody") || document.body).innerText;
+    const ted = Date.now();
+    return {
+      akci: d.akce.length,
+      maPriznak: d.akce.every((a) => typeof a.bezi === "boolean"),
+      priznakSedi: d.akce.every((a) => {
+        const zac = Date.parse(a.od || "");
+        return !isFinite(zac) ? a.bezi === true : (a.bezi === (zac <= ted));
+      }),
+      bezicich: d.akce.filter((a) => a.bezi).length,
+      maZrovna: /zrovna pouštějí/.test(t),
+      maTeprve: /teprve začnou/.test(t)
+    };
+  });
+  check("kazda akce ma priznak, jestli uz bezi", coChytatUI.maPriznak);
+  check("…a priznak sedi na datum zacatku", coChytatUI.priznakSedi, JSON.stringify(coChytatUI));
+  check("nadpis „zrovna pouštějí“ je jen kdyz opravdu neco bezi",
+    coChytatUI.maZrovna === (coChytatUI.bezicich > 0), JSON.stringify(coChytatUI));
+  check("budouci akce maji vlastni nadpis",
+    coChytatUI.maTeprve === (coChytatUI.akci - coChytatUI.bezicich > 0), JSON.stringify(coChytatUI));
 
   await page.goto(URL);
   await page.waitForTimeout(700);
