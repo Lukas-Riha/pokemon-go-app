@@ -3514,7 +3514,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-15 21:56";
+  var BUILD = "2026-09-15 22:35";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -9487,8 +9487,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // purifikaci 100 % IV" nebo „Zahodit – kopie / Dynamax #3 z 5". Každá
       // věta zvlášť platí, dohromady si odporují — a čte se to jako chyba
       // rozhodnutí. Proč jde kus pryč, řekne bublina u verdiktu.
+      // Do seznamu patří i sestava po evoluci („Empoleon UL #8 · 97,5 %").
+      // Ta se zapisuje u kusu, kterého si appka všimla jako nejlepšího
+      // budoucího ligovníka svého druhu — jenže chránit ho to nezačne:
+      // o ponechání rozhoduje slot v rozpočtu. Když slot nedostane, spadne
+      // pod strop kopií a v tabulce pak stálo „Zahodit – kopie" a hned pod
+      // tím „Empoleon UL #8 · 97,5 %", jako by se vyhazoval osmý nejlepší
+      // kus Ultra ligy.
       if (keepLabel.indexOf("Zahodit") === 0
-          && /po purifikaci|vysoké IV|Dynamax/.test(String(keepSub || ""))) {
+          && (/po purifikaci|vysoké IV|Dynamax/.test(String(keepSub || ""))
+              || (b.evoMeta && String(keepSub || "").indexOf(b.evoMeta.name) === 0))) {
         keepSub = keepLabel.indexOf("kopie") > -1 ? "horší kopie" : "";
       }
 

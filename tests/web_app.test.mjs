@@ -15024,6 +15024,62 @@ try {
   check("budouci akce maji vlastni nadpis",
     coChytatUI.maTeprve === (coChytatUI.akci - coChytatUI.bezicich > 0), JSON.stringify(coChytatUI));
 
+  /* ------------------------------------------------------------------
+     239) PUSTENY KUS SE NESMI CHLUBIT LIGOU PO EVOLUCI
+     V rosteru stalo u Piplupa „Zahodit – kopie" a hned pod tim
+     „Empoleon UL #8 · 97,5 %" — jako by se vyhazoval osmy nejlepsi kus
+     Ultra ligy. Ten podtitulek se zapisuje u nejlepsiho budouciho
+     ligovnika druhu, jenze chranit ho to nezacne: o ponechani rozhoduje
+     slot v rozpoctu.
+     ------------------------------------------------------------------ */
+  console.log("\n239) pusteny kus neslibuje ligu po evoluci");
+  const evoSlib = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const rows = [];
+    // deset Piplupu ruzne kvality
+    [[10,9,9],[2,7,7],[9,10,9],[0,15,15],[1,15,14],[0,14,15],[4,7,8],
+     [15,8,8],[14,9,8],[13,9,9]].forEach((iv, i) => {
+      rows.push({ pokemon: "Piplup", cp: 200 + i * 60, level: 8 + i,
+        ivAtk: iv[0], ivDef: iv[1], ivSta: iv[2] });
+    });
+    // a silna Ultra liga jinymi druhy, at na Piplupa nezbude slot
+    [["Registeel","Lock On","Focus Blast"],["Cresselia","Psycho Cut","Moonblast"],
+     ["Swampert","Mud Shot","Hydro Cannon"],["Giratina","Shadow Claw","Dragon Claw"],
+     ["Talonflame","Incinerate","Brave Bird"],["Charizard","Fire Spin","Blast Burn"]]
+      .forEach(([jm, f, c2]) => rows.push({ pokemon: jm, cp: 2470, level: 25,
+        ivAtk: 0, ivDef: 15, ivSta: 15, fastMove: f, charged1: c2 }));
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 1800));
+    const c = P.getComputed();
+    const base = P.base();
+    const rozpory = [], sliby = [];
+    base.forEach((bb) => {
+      const v = c[bb.row.id];
+      if (!bb.evoMeta) return;
+      const slibuje = String(v.keepSub || "").indexOf(bb.evoMeta.name) === 0;
+      if (slibuje) sliby.push(bb.row.pokemon + " " + v.keep);
+      if (slibuje && String(v.keep || "").indexOf("Zahodit") === 0) {
+        rozpory.push(bb.row.pokemon + " " + bb.row.cp + ": " + v.keep + " / " + v.keepSub);
+      }
+    });
+    // u puštěného kusu musí být důvod v bublině
+    const pusteny = base.filter((bb) => bb.evoMeta
+      && String(c[bb.row.id].keep || "").indexOf("Zahodit") === 0)[0];
+    return { kusu: base.length, rozpory, sliby,
+      bublina: pusteny ? (c[pusteny.row.id].keepTitle || "") : "" };
+  });
+  check("roster na zkousku se poskladal", evoSlib.kusu >= 15, String(evoSlib.kusu));
+  check("aspon jeden kus ligu po evoluci slibuje", evoSlib.sliby.length >= 1,
+    evoSlib.sliby.join(", "));
+  check("…ale zadny z tech, ktere appka pousti",
+    evoSlib.rozpory.length === 0, evoSlib.rozpory.join(" | "));
+  // Důvod musí být vidět v bublině — ať už je to strop kopií, nebo že
+  // ligový slot po evoluci drží lepší kusy. Obojí je poctivá odpověď.
+  check("u pusteneho kusu bublina rekne, proc jde pryc",
+    /drží lepší kusy|pod tvým prahem|nedrží žádnou roli|lepších kusů toho druhu/i
+      .test(evoSlib.bublina),
+    evoSlib.bublina.slice(0, 160));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

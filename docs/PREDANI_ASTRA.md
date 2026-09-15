@@ -589,3 +589,23 @@ a spadne za týden** — stejná past.
 včetně věty o oddělených profilech). Build `--vzhled` se o ně zastaví.
 
 Nic jiného už mezi testem a produkcí nestojí.
+
+## Dodatek: „Zahodit – kopie / Empoleon UL #8 · 97,5 %"
+
+Ještě jeden rozpor v enginu, ať o něm víš, než to propíšeš. U Piplupa stálo
+ve verdiktu **Zahodit – kopie** a hned pod tím **Empoleon UL #8 · 97,5 %** —
+četlo se to jako „vyhazuju osmý nejlepší kus Ultra ligy".
+
+Ten podtitulek se zapisuje u kusu, kterého engine označí za nejlepšího
+budoucího ligovníka svého druhu (`pvpKeeper`). Jenže **chránit ho to
+nezačne**: o ponechání rozhoduje slot v rozpočtu. Když ligový slot dostanou
+jiné druhy, kus spadne pod strop kopií — a podtitulek mu zůstal.
+
+Čistící pravidlo, které u puštěného kusu už dřív mazalo „po purifikaci",
+„vysoké IV" a „Dynamax", teď maže i tenhle. Zůstane „horší kopie" a **důvod
+je v bublině** („lepších kusů toho druhu si necháváš 2" nebo „slot po
+evoluci drží lepší kusy").
+
+Hlídá to nové pravidlo v auditu rozporů. **Pro tebe:** `keepSub` u puštěného
+kusu nikdy nenese důvod k ponechání — když si ho někde zobrazuješ vedle
+verdiktu, tohle je ta záruka.

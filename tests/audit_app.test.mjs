@@ -707,6 +707,13 @@ try {
       // Kus, který drží slot AŽ PO EVOLUCI, měl ve sloupci Evolvovat "Ne"
       // s odůvodněním "ani vyvinutý by tenhle kus žádnou roli nedržel" —
       // a o dvě buňky vedle "drží místo v rozpočtu, ale až jako Blaziken".
+      // „Zahodit – kopie" a pod tím „Empoleon UL #8 · 97,5 %" — jako by se
+      // vyhazoval osmý nejlepší kus Ultra ligy. Ten podtitulek se zapisuje
+      // u nejlepšího budoucího ligovníka druhu, jenže chránit ho to nezačne:
+      // o ponechání rozhoduje slot v rozpočtu.
+      ["pouštíš ho, ale podtitulek slibuje ligu po evoluci",
+        (v, x) => pustis(v) && !!x.evoMeta
+          && String(v.keepSub || "").indexOf(x.evoMeta.name) === 0],
       ["drží slot až po evoluci, a přesto evolvovat Ne",
         (v, x) => (x.sloty || []).some((sl) => sl.poEvoluci)
           && String(v.evolve || "").indexOf("Ne") === 0],
