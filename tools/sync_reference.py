@@ -97,12 +97,22 @@ BLOCKS = [
 # Vzhledová vrstva se zapéká JEN do testovací verze. Do produkce se nic
 # nepřeklápí, dokud se to neodladí — proto `--test`:
 #
-#   python tools/sync_reference.py          → produkce, sloty prázdné
-#   python tools/sync_reference.py --test   → pokemon_tracker_TEST.html i se vzhledem
+#   python tools/sync_reference.py           → produkce, sloty prázdné
+#   python tools/sync_reference.py --vzhled  → produkce I SE VZHLEDEM
+#   python tools/sync_reference.py --test    → pokemon_tracker_TEST.html se vzhledem
 #
 # Engine je v obou stejný, je jen jeden. Testovací verze proto nemůže být
 # pozadu: vyrábí se z téhož souboru.
+#
+# `--vzhled` je přepnutí produkce na Atlas. Rozdíl proti `--test` je jen
+# v tom, co se k tomu přilepí:
+#   * úložiště se NEPŘEJMENOVÁVÁ na `pgo_test_` — produkce musí číst svoje,
+#   * obrázky se nezapékají (30 MB); kusy si je berou z herních URL enginu,
+#   * funkční můstky (strukturovaný report importu, zaměření kusu v Atlasu)
+#     se přilepí stejně jako v testu, protože bez nich vzhled nefunguje.
 TEST_BUILD = "--test" in sys.argv
+VZHLED_DO_PRODUKCE = "--vzhled" in sys.argv
+SE_VZHLEDEM = TEST_BUILD or VZHLED_DO_PRODUKCE
 TEST_APP = ROOT / "web-app" / "pokemon_tracker_TEST.html"
 ATLAS = ROOT / "web-app" / "atlas"
 ART = ATLAS / "atlas-art.json"
@@ -125,9 +135,10 @@ for start_mark, end_mark, cesta in RAW_BLOCKS:
     if start is None or end is None:
         atlas_stav.append(cesta.name + ": v appce chybí značka, přeskočeno")
         continue
-    if not TEST_BUILD:
-        # Produkce: slot se vyprázdní. Kdyby v něm z minulého --test běhu něco
-        # zbylo, odejde to na Pages, aniž by o tom kdokoli věděl.
+    if not SE_VZHLEDEM:
+        # Produkce bez vzhledu: slot se vyprázdní. Kdyby v něm z minulého
+        # --test běhu něco zbylo, odešlo by to na Pages, aniž by o tom
+        # kdokoli věděl.
         lines = lines[:start] + [lines[start], lines[end]] + lines[end + 1:]
         continue
     if not cesta.exists():
@@ -164,7 +175,26 @@ if TEST_BUILD:
     from atlas_ui_hooks import prepare_atlas_ui
     TEST_APP.write_text(prepare_atlas_ui(prepare_atlas_import(prepare_atlas_test("\n".join(lines)))), encoding="utf-8")
 else:
-    APP.write_text("\n".join(lines), encoding="utf-8")
+    text = "\n".join(lines)
+    if VZHLED_DO_PRODUKCE:
+        # Tytéž funkční můstky jako v testu, ale BEZ přejmenování úložiště:
+        # produkce musí číst svoje `pgo_`, ne testovací `pgo_test_`.
+        from atlas_import_hooks import prepare_atlas_import
+        from atlas_ui_hooks import prepare_atlas_ui
+        text = prepare_atlas_ui(prepare_atlas_import(text))
+        # Pojistka proti tomu, aby na Pages odešla appka, která si sahá do
+        # testovacího úložiště nebo se sama označuje za testovací verzi.
+        # Bez ní by si uživatel otevřel produkci a nenašel v ní svůj roster.
+        spatne = [z for z in ("pgo_test_", "LOKÁLNÍ TEST", "TESTOVACÍ VERZE")
+                  if z in text]
+        if spatne:
+            raise SystemExit(
+                "STOP: vzhledova vrstva by do produkce vzala: "
+                + ", ".join(spatne)
+                + "\n       Testovaci popisky a klice uloziste musi ve"
+                  " web-app/atlas/atlas.js zmizet.")
+        atlas_stav.append("zapečeno DO PRODUKCE")
+    APP.write_text(text, encoding="utf-8")
 
 print("verze:     " + build)
 print("reference: raid={} gym={} mega={}".format(

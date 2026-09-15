@@ -471,3 +471,62 @@ budeš sahat, řeknu si o stejné přeměření.
 
 `web-app/atlas/atlas.js` máš rozpracovaný a **necommitnutý** — nechávám to
 na tobě, do tvých souborů nesahám.
+
+---
+
+# Prověření před přepnutím produkce (15. 9.)
+
+Postavil jsem **produkčního kandidáta** — engine + `atlas.css` + `atlas.js`,
+bez testovacího úložiště a bez zapečených obrázků — a prohnal ho vším, co mám.
+
+## Co sedí
+
+| kontrola | výsledek |
+| --- | --- |
+| audit výpočtů (98 kontrol) | prošlo |
+| regresní sada (2137 testů) | prošlo, **stejně jako produkce** |
+| JS chyby, 14 položek navigace × 3 šířky (1400 / 500 / 390 px) | **žádná** |
+| obrázky bez 30MB balíku | 233 obrázků, 1 se nenačetl (jedna forma z PokeMiners) |
+| velikost | **1,71 MB** místo 31,9 MB |
+| osobní data v buildu | žádná; seed rosteru tam není |
+| plánovač rout, audit dat | prošlo |
+
+Že projde celá regresní sada, je hlavní zpráva: vzhledová vrstva **nic
+z enginu nezakrývá ani nerozbíjí** — čištění boxu, oba nové pruhy, nastavení,
+detail i dokumentace fungují pod Atlasem stejně jako pod starou tabulkou.
+Obrázky navíc jedou z herních URL enginu, takže se 30MB balík do produkce
+vůbec nemusí.
+
+## Co jsem připravil na své straně
+
+`tools/sync_reference.py --vzhled` = **produkce i se vzhledem**. Proti
+`--test` dělá tři věci jinak: nepřejmenovává úložiště na `pgo_test_`,
+nezapéká obrázky a přilepí jen funkční můstky (report importu, zaměření
+kusu). Součástí je **pojistka**: když by do produkce šel `pgo_test_`,
+`LOKÁLNÍ TEST` nebo `TESTOVACÍ VERZE`, build se zastaví a nic nepřepíše.
+Zkusil jsem to — zastaví se.
+
+## Co zbývá na tobě (a je to všechno v atlas.js)
+
+Tahle tři místa teď tu pojistku spouštějí:
+
+1. **`pgo_test_atlas_theme`** — 6× natvrdo. V produkci by si vzhled ukládal
+   motiv do testovacího klíče. Má to být `pgo_atlas_theme`, nebo ještě líp
+   předponu brát z jednoho místa, ať ji build umí přepnout.
+2. **Odznak „LOKÁLNÍ TEST"** v hlavičce.
+3. **„TESTOVACÍ VERZE"** 2× (nadpis stránky a patička postranního panelu,
+   včetně věty „Oddělené profily a zálohy").
+
+Nejsou to bugy, jsou to správné popisky testovací verze — jen musí zmizet
+(nebo se zapínat podle příznaku), než se přepne produkce.
+
+## Co jsem NEkontroloval
+
+Obsah karet Rozpočet, Týmy, Investice a Události proti enginu. Prošel jsem
+je jen na JS chyby. Po A-005 jsem ověřoval dvě karty rozvahy — na zbytek si
+řekni, až na ně sáhneš.
+
+## Jak to pak přepnout
+
+Jedním příkazem: `python tools/sync_reference.py --vzhled`, pak deploy.
+Zpátky stejně tak bez `--vzhled`. Engine je jeden, takže se tím nic nerozdvojí.
