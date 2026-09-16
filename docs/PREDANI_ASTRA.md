@@ -793,3 +793,16 @@ by byly za týden zase dobré. Nově:
 - Šipky posunu v tabulce žebříčků (`.ref-pvp-tab .d-lg-posun`) mají nově
   barvu nahoru/dolů jako v detailu kusu.
 
+## Širší bublina u lig (17. 9.)
+
+Bublina se seznamem (liga: držitelé a „Nejblíž pod čarou") se v enginu
+roztáhne na `max-width: min(460px, calc(100vw - 16px))` přes
+`.tip-bublina:has(.tip-seznam)`. Ve 320 px se řádek „Fennekin 440 CP #38 —
+kvalita 94,2 %, potřeba 95,3 %" lámal a procento zůstalo samo na dalším
+řádku. Čísla a znak % jsou teď spojené nezlomitelnou mezerou.
+
+**Na vrstvě:** `.atlas-test .tip-bublina{max-width:min(430px,…)}` v
+`atlas.css` má stejnou specifičnost a načítá se později, takže engine
+přebije. 430 px zatím stačí (test chce aspoň 400), ale kdybys bublinu
+zužovala, nech u `:has(.tip-seznam)` aspoň 440 px.
+

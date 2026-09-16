@@ -2265,6 +2265,10 @@
     opacity: 0; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease;     white-space: pre-line;
   }
   .tip-bublina.vidno { opacity: 1; transform: translateY(0); }
+  /* Bublina se seznamem (liga: držitelé a „pod čarou") je širší — ve 320 px
+     se řádek „Fennekin 440 CP #38 — kvalita 94,2 %, potřeba 95,3 %" lámal
+     a procento zůstávalo samo na dalším řádku. */
+  .tip-bublina:has(.tip-seznam) { max-width: min(460px, calc(100vw - 16px)); }
   .tip-hlava { font-weight: 700; font-size: 13.5px; margin-bottom: 6px;
     padding-bottom: 6px; border-bottom: 1px solid var(--grid); color: var(--text-primary); }
   /* Seznam utoku v bublině: odrážky pryč, typ jako malá plaketka. */
@@ -3600,7 +3604,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-16 21:09";
+  var BUILD = "2026-09-16 22:07";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -11658,9 +11662,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + (d.rank ? " <em>#" + d.rank + "</em>" : "")
           + (d.poEvoluci ? ' <span class="tip-znak">až po evoluci</span>' : "")
           + ' <span class="tip-znak">— '
+          // Nezlomitelné mezery: číslo se znakem % a „potřeba" s číslem
+          // se nesmí rozdělit na dva řádky.
           + (d.duvod === "prah"
-            ? "kvalita " + (Math.round(d.pct * 1000) / 10) + " %, potřeba "
-              + (Math.round(d.prah * 1000) / 10) + " %"
+            ? "kvalita\u00a0" + (Math.round(d.pct * 1000) / 10) + "\u00a0%, potřeba\u00a0"
+              + (Math.round(d.prah * 1000) / 10) + "\u00a0%"
             : "všechna místa drží lepší")
           + "</span>"
           + (ten ? ' <span class="tip-znak">← tenhle kus</span>' : "")

@@ -15801,6 +15801,30 @@ try {
     const chip = [...document.querySelectorAll('#tbody tr[data-row-id="' + skrelp.id + '"] .lg-chip')]
       .filter((e) => /^LC/.test(e.textContent))[0];
     out.bublina = chip ? chip.getAttribute("data-tip") || "" : "";
+    // Vykreslena bublina: je siroka a zadne „%" neni na radku samo.
+    if (chip) {
+      chip.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      await cekej(250);
+      const tip = document.querySelector(".tip-bublina.vidno");
+      out.tipSirka = tip ? parseFloat(getComputedStyle(tip).maxWidth) : null;
+      out.rozdelene = [];
+      if (tip) {
+        const w = document.createTreeWalker(tip.querySelector(".tip-pod") || tip, NodeFilter.SHOW_TEXT);
+        let n;
+        while ((n = w.nextNode())) {
+          const re = /\d+(?:[.,]\d+)?\s%/g;
+          let m;
+          while ((m = re.exec(n.textContent))) {
+            const r = document.createRange();
+            r.setStart(n, m.index);
+            r.setEnd(n, m.index + m[0].length);
+            const radku = new Set([...r.getClientRects()].map((x) => Math.round(x.top)));
+            if (radku.size > 1) out.rozdelene.push(m[0]);
+          }
+        }
+      }
+      chip.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
+    }
     // Vsech sedm nad prahem a bez rezervy: sedmy nejhorsi druh se nevejde
     // -> duvod „plno"
     nastav("spThresh", 98);
@@ -15822,8 +15846,16 @@ try {
       JSON.stringify(podCarou));
     check("bublina ligy ma „Nejbliz pod carou\"", /Nejblíž pod čarou/.test(podCarou.bublina),
       podCarou.bublina.slice(-400));
+    check("bublina se seznamem je sirsi nez obycejna (aspon 400 px)",
+      podCarou.tipSirka !== null && podCarou.tipSirka >= 400, String(podCarou.tipSirka));
+    check("…a zadne procento v ni neni rozdelene na dva radky",
+      Array.isArray(podCarou.rozdelene) && podCarou.rozdelene.length === 0,
+      JSON.stringify(podCarou.rozdelene));
+    check("cislo a % pod carou drzi nezlomitelna mezera",
+      /\d\u00a0%/.test(podCarou.bublina) || /\d&nbsp;%/.test(podCarou.bublina),
+      podCarou.bublina.slice(-300));
     check("…u kusu rekne kvalitu a potrebny prah a oznaci ho",
-      /kvalita 98[.,]\d %, potřeba 99 %/.test(podCarou.bublina) && /tenhle kus/.test(podCarou.bublina)
+      /kvalita\s98[.,]\d\s%, potřeba\s99\s%/.test(podCarou.bublina) && /tenhle kus/.test(podCarou.bublina)
         && !/Tenhle kus mezi nimi není/.test(podCarou.bublina),
       podCarou.bublina.slice(-400));
     check("bez rezervy a nad prahem: sedmy kus je pod carou, protoze je plno",
