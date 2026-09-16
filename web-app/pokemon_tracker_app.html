@@ -960,6 +960,10 @@
   .ref-pvp-tab td:nth-child(3) { text-align: right; width: 42px; }
   .ref-pvp-tab td:nth-child(4) { color: var(--text-secondary); }
   .ref-pvp-tab .d-lg-posun { display: inline; font-size: 10.5px; margin-left: 3px; }
+  /* Barvy jako v detailu kusu. Dřív platily jen uvnitř .d-ligy-tab, takže
+     v žebříčcích byly šipky bílé a nahoru/dolů se poznalo jen podle tvaru. */
+  .ref-pvp-tab .d-lg-posun.nahoru { color: var(--status-good); }
+  .ref-pvp-tab .d-lg-posun.dolu { color: var(--status-critical); }
   /* Pořadí mimo metu: informace, ne doporučení — proto tlumeně. */
   .d-ligy-tab td.d-lg-mimo { color: var(--text-secondary); text-align: left; }
   .d-ligy-tab td.d-lg-mimo b { font-size: 15px; color: var(--text-secondary); }
@@ -2906,7 +2910,9 @@
         <input type="number" id="rankLimit" min="5" max="500" value="50" />
         <span class="hint">Pořadí druhu v PvPoke žebříčku dané ligy. Do <b>#20</b> je
           skutečná meta, do <b>#50</b> solidní, do <b>#100</b> použitelné. Nad tímhle číslem
-          appka ligu považuje za ztrátu času, i kdyby ten konkrétní kus měl 100 %.</span>
+          appka ligu považuje za ztrátu času, i kdyby ten konkrétní kus měl 100 %.
+          <b>Neříká, kolik kusů se drží</b> — to je 6 na ligu plus rezerva níž.
+          Kdo se nevešel a proč, ukáže bublina u ligy („Nejblíž pod čarou").</span>
       </div>
       <div class="setting">
         <label for="ligaRezerva">Rezerva v lize — <b>kusů navíc</b> nad šest</label>
@@ -3594,7 +3600,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-16 19:51";
+  var BUILD = "2026-09-16 21:09";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4147,6 +4153,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // aby se špičkový kus nezahodil, a víc místa neberou.
   var SLOTU_MIMO_POKRYTI = 3;
   var SLOTU_NA_LIGU = 6;     // 3 do týmu + 3 odpovědi na to, co tě láme
+  // Kdo se do ligy nevešel, ač druh v limitu pořadí je — po lize, nejlepší
+  // druh první. Bublina z toho odpoví na „proč mám v LC jen šest kusů".
+  var ligaPodCarou = {};
   var SLOTU_GYM = 8;
   // Kolik procent špičky svého typu musí kus dělat, aby se bral jako pořádné
   // řešení, ne jako náplast. Je to tatáž hranice, kterou appka jinde označuje
@@ -7378,6 +7387,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // protože každá liga si vybírá zvlášť.
     var LIGY_VSE = LEAGUES.map(function (l) { return { label: l.label, nazev: l.nazev }; })
       .concat([{ label: "ML", nazev: "Master League" }]);
+    ligaPodCarou = {};
     LIGY_VSE.forEach(function (lg) {
       var podleDruhu = {};
       base.forEach(function (b) {
@@ -7506,9 +7516,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var celkemLiga = SLOTU_NA_LIGU + (s.ligaRezerva || 0);
       var obsazeno = 0;
       kand.forEach(function (k) {
-        if (obsazeno >= celkemLiga) return;
         var vRezerve = obsazeno >= SLOTU_NA_LIGU;
-        if (vRezerve && !k.prahOK) return;
+        if (obsazeno >= celkemLiga || (vRezerve && !k.prahOK)) {
+          (ligaPodCarou[lg.label] = ligaPodCarou[lg.label] || []).push({
+            id: k.b.row.id, jmeno: k.b.row.pokemon, cp: k.b.row.cp || "", rank: k.rank,
+            pct: k.pct, poEvoluci: !!k.poEvoluci,
+            prah: lg.label === "ML" ? s.ivThresh
+              : prahProRank(s.spThresh, k.rank, s.rankLimit, s.prahSleva),
+            duvod: k.prahOK ? "plno" : "prah"
+          });
+          return;
+        }
         obsazeno++;
         var rez = vRezerve || k.jenPamet;
         var i = obsazeno - 1;
@@ -10040,7 +10058,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "<li><strong>Rezerva v lize</strong> (nastavení, výchozí 6 míst navíc):"
       + " dobré kusy, které se do šestky nevešly, jsou oranžově <em>Nechat –"
       + " rezerva</em>. Nepouštějí se, vyvinout je můžeš, ale prach do nich appka"
-      + " neradí. Náplasti (kusy pod prahem) do rezervy nepatří.</li>"
+      + " neradí. Náplasti (kusy pod prahem) do rezervy nepatří — proto může"
+      + " liga držet méně než dvanáct kusů i s limitem pořadí #50. Kdo se nevešel"
+      + " a o kolik mu chybí kvalita, ukáže bublina ligy v části <em>Nejblíž pod"
+      + " čarou</em>.</li>"
       + "<li><strong>Paměť pořadí</strong> (30 dní): o nechat/pustit rozhoduje"
       + " nejlepší pořadí druhu v PvPoke za posledních 30 dní, o prachu dnešní."
       + " PvPoke přehazuje pořadí každý týden — Great League za čtyři dny posunula"
@@ -11619,7 +11640,35 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + (drzi.length >= SLOTU_NA_LIGU ? " v rezervě (bere jen kusy nad prahem)" : "")
         + ".</div>";
     }
-    if (kusId !== undefined && kusId !== null && !jeMezi) {
+    /* Kdo se nevešel, i když druh v limitu pořadí je. Limit pořadí („brát
+       vážně do #50") říká, KTERÉ druhy se počítají — ne kolik kusů se drží.
+       Když zbude místo v rezervě a nikdo ho nedostal, je to tím, že ostatní
+       kusy nemají na tu ligu dost dobré IV; tady je vidět o kolik. */
+    var zkr = ligaKlic === "master" ? "ML"
+      : ((LEAGUES.filter(function (l) { return l.meta === ligaKlic; })[0] || {}).label || zkratka);
+    var pod = (ligaPodCarou[zkr] || []).slice(0, 4);
+    var tenPod = false;
+    if (pod.length) {
+      h += '<div class="tip-podnadpis">Nejblíž pod čarou</div><ul class="tip-seznam tip-pod">';
+      pod.forEach(function (d) {
+        var ten = kusId !== undefined && kusId !== null && d.id === kusId;
+        if (ten) tenPod = true;
+        h += "<li" + (ten ? ' class="tip-ten"' : "") + "><b>" + escHtml(d.jmeno) + "</b>"
+          + (d.cp ? " " + escHtml(String(d.cp)) + " CP" : "")
+          + (d.rank ? " <em>#" + d.rank + "</em>" : "")
+          + (d.poEvoluci ? ' <span class="tip-znak">až po evoluci</span>' : "")
+          + ' <span class="tip-znak">— '
+          + (d.duvod === "prah"
+            ? "kvalita " + (Math.round(d.pct * 1000) / 10) + " %, potřeba "
+              + (Math.round(d.prah * 1000) / 10) + " %"
+            : "všechna místa drží lepší")
+          + "</span>"
+          + (ten ? ' <span class="tip-znak">← tenhle kus</span>' : "")
+          + "</li>";
+      });
+      h += "</ul>";
+    }
+    if (kusId !== undefined && kusId !== null && !jeMezi && !tenPod) {
       h += '<div class="tip-radek">Tenhle kus mezi nimi není.</div>';
     }
     return h;
@@ -24470,6 +24519,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     ligovePoradi: ligovePoradi,
     posunVLize: posunVLize, drziteleLigy: drziteleLigy,
     pametPoradi: pametPoradi,
+    // kdo se do ligy (LC/GL/UL/ML) nevešel, ač druh v limitu pořadí je
+    ligaPodCarou: function (label) { return (ligaPodCarou[label] || []).slice(); },
     // Data paměti pořadí. S argumentem je přepíše — jen pro testy, které
     // nesmí viset na tom, jak se PvPoke zrovna hýbe.
     pametPoradiData: function (data) {

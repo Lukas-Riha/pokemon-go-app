@@ -787,4 +787,9 @@ by byly za týden zase dobré. Nově:
   `null`; `pametPoradiData(data?)` čte nebo (pro testy) přepíše data paměti.
   Sloty z `drziteleLigy` mají navíc `rezerva`, `rezervaDuvod` („misto" /
   „pamet") a `pamet: {rank, datum}`.
+- **Bublina ligy má novou část „Nejblíž pod čarou"** (`ul.tip-seznam.tip-pod`):
+  kusy, které se nevešly, s důvodem („kvalita 90,3 %, potřeba 94,8 %" nebo
+  „všechna místa drží lepší"). API `ligaPodCarou("LC"|"GL"|"UL"|"ML")`.
+- Šipky posunu v tabulce žebříčků (`.ref-pvp-tab .d-lg-posun`) mají nově
+  barvu nahoru/dolů jako v detailu kusu.
 

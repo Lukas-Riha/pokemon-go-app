@@ -15206,6 +15206,20 @@ try {
       ligy[1].open = true;
       await new Promise((r) => setTimeout(r, 300));
       out.ligRadku = ligy[1].querySelectorAll("tr").length - 1;
+      // barva sipky posunu: nahoru zelene, dolu cervene — jako v detailu kusu
+      const barva = (sel) => {
+        const e = ligy[1].querySelector(sel);
+        return e ? getComputedStyle(e).color : null;
+      };
+      const tmp = document.createElement("span");
+      document.body.appendChild(tmp);
+      tmp.style.color = "var(--status-good)";
+      out.zelena = getComputedStyle(tmp).color;
+      tmp.style.color = "var(--status-critical)";
+      out.cervena = getComputedStyle(tmp).color;
+      tmp.remove();
+      out.barvaNahoru = barva(".d-lg-posun.nahoru");
+      out.barvaDolu = barva(".d-lg-posun.dolu");
     }
     return out;
   });
@@ -15223,6 +15237,13 @@ try {
     tahakUI.ligSekci + " lig, otevřených " + tahakUI.ligOtevrenych);
   check("…a v lize je nejvys sto radku",
     tahakUI.ligRadku > 50 && tahakUI.ligRadku <= 100, String(tahakUI.ligRadku));
+  // Posun zavisi na datech — kdyz se nic nehnulo, sipka neni a neni co merit.
+  check("sipka nahoru v zebricku je zelena (kdyz nejaka je)",
+    tahakUI.barvaNahoru === null || tahakUI.barvaNahoru === tahakUI.zelena,
+    tahakUI.barvaNahoru + " vs " + tahakUI.zelena);
+  check("sipka dolu v zebricku je cervena (kdyz nejaka je)",
+    tahakUI.barvaDolu === null || tahakUI.barvaDolu === tahakUI.cervena,
+    tahakUI.barvaDolu + " vs " + tahakUI.cervena);
 
   check("jeden typ funguje jako dřív", /SCHYTÁ ZVÝŠENĚ/.test(dvojtyp.jeden),
     dvojtyp.jeden.slice(0, 100));
@@ -15744,6 +15765,75 @@ try {
   check("doporucene nastaveni vrati rezervu 6 a zapne pamet",
     rezerva.poResetu.rezerva === "6" && rezerva.poResetu.pamet === true,
     JSON.stringify(rezerva.poResetu));
+
+  // ---------------------------------------------------------------- 248
+  // „Proc mam v LC jen sest, kdyz mam limit #50?" Limit poradi rika, ktere
+  // DRUHY se pocitaji, ne kolik kusu se drzi. Kdo se nevesel, je v bubline
+  // „Nejbliz pod carou" s duvodem: kvalita pod prahem, nebo plno. Prahy se
+  // tu nastavi natvrdo, aby vysledek nevisel na tom, jak se PvPoke hybe.
+  console.log("\n248) Liga: kdo je nejbliz pod carou a proc");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const podCarou = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const nastav = (id, v) => {
+      const el = document.getElementById(id);
+      if (el.type === "checkbox") el.checked = v; else el.value = v;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    nastav("rankLimit", 200);
+    nastav("spThresh", 99);
+    nastav("prahSleva", 0);
+    nastav("ligaRezerva", 6);
+    // sest kusu s LC kvalitou 99,4-100 % a Skrelp s 98,5 %
+    const dobre = ["Ducklett", "Pumpkaboo", "Dewpider", "Carvanha", "Lileep", "Wooper"];
+    const rows = dobre.map((d) => ({ pokemon: d, cp: 200, level: 5, ivAtk: 0, ivDef: 15, ivSta: 15 }));
+    rows.push({ pokemon: "Skrelp", cp: 200, level: 5, ivAtk: 0, ivDef: 15, ivSta: 15 });
+    P.setRows(rows);
+    await cekej(1400);
+    const out = { drzi: P.drziteleLigy("little").map((d) => d.jmeno), pod: P.ligaPodCarou("LC") };
+    const skrelp = P.getRows().filter((r) => r.pokemon === "Skrelp")[0];
+    const rosterZal = document.querySelector('.zal-btn[data-klic="roster"]');
+    if (rosterZal) rosterZal.click();
+    await cekej(300);
+    const chip = [...document.querySelectorAll('#tbody tr[data-row-id="' + skrelp.id + '"] .lg-chip')]
+      .filter((e) => /^LC/.test(e.textContent))[0];
+    out.bublina = chip ? chip.getAttribute("data-tip") || "" : "";
+    // Vsech sedm nad prahem a bez rezervy: sedmy nejhorsi druh se nevejde
+    // -> duvod „plno"
+    nastav("spThresh", 98);
+    nastav("ligaRezerva", 0);
+    await cekej(900);
+    out.plno = P.ligaPodCarou("LC").map((d) => d.jmeno + ":" + d.duvod);
+    out.drziPlno = P.drziteleLigy("little").length;
+    document.getElementById("resetSettingsBtn").click();
+    await cekej(400);
+    return out;
+  });
+  check("kazdy kus pod carou ma duvod: kvalita pod prahem, nebo plno",
+    podCarou.pod.every((d) => d.duvod === "plno" || (d.duvod === "prah" && d.pct < d.prah)),
+    JSON.stringify(podCarou.pod));
+  if (podCarou.drzi.length === 6) {
+    const sk = podCarou.pod.filter((d) => d.jmeno === "Skrelp")[0];
+    check("Skrelp pod prahem se do rezervy nedostane a je pod carou s duvodem",
+      podCarou.drzi.indexOf("Skrelp") === -1 && !!sk && sk.duvod === "prah",
+      JSON.stringify(podCarou));
+    check("bublina ligy ma „Nejbliz pod carou\"", /Nejblíž pod čarou/.test(podCarou.bublina),
+      podCarou.bublina.slice(-400));
+    check("…u kusu rekne kvalitu a potrebny prah a oznaci ho",
+      /kvalita 98[.,]\d %, potřeba 99 %/.test(podCarou.bublina) && /tenhle kus/.test(podCarou.bublina)
+        && !/Tenhle kus mezi nimi není/.test(podCarou.bublina),
+      podCarou.bublina.slice(-400));
+    check("bez rezervy a nad prahem: sedmy kus je pod carou, protoze je plno",
+      podCarou.drziPlno === 6 && podCarou.plno.length >= 1
+        && podCarou.plno.every((t) => /:plno$/.test(t)),
+      podCarou.plno.join(", ") + " / drzi " + podCarou.drziPlno);
+  } else {
+    check("LC data maji sest druhu z testu (jinak se pod carou neda overit)", false,
+      podCarou.drzi.join(", "));
+  }
 
   await page.goto(URL);
   await page.waitForTimeout(700);
