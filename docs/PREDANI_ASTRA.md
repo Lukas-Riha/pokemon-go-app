@@ -609,3 +609,25 @@ evoluci drží lepší kusy").
 Hlídá to nové pravidlo v auditu rozporů. **Pro tebe:** `keepSub` u puštěného
 kusu nikdy nenese důvod k ponechání — když si ho někde zobrazuješ vedle
 verdiktu, tohle je ta záruka.
+
+## Posun v PvPoke a kdo drží ligu (16. 9.)
+
+Dvě nová pole, obě odpovídají na otázku „proč se to změnilo / proč se tam
+nevejdu".
+
+**`window.__pgo.posunVLize(klicDruhu, ligaKlic)`** → `{drive, ted, rozdil,
+odKdy}` nebo `null`. Kladný `rozdil` je posun **nahoru** (menší číslo pořadí
+je lepší). `null` znamená „nehnulo se to" nebo „srovnávací základ ještě
+není". Základ je pořadí z **minulého stažení** dat, ne pevné okno dní —
+`data/meta.json` má nově `poradiDrive: {datum, ligy}` a `build_meta.py` ho
+přepisuje jen tehdy, když se pořadí opravdu změnilo. Hlídá se jen **meta**
+ligy (~144 druhů), ne celý žebříček.
+
+**`window.__pgo.drziteleLigy(ligaKlic)`** → pole `{jmeno, cp, poradi, celkem,
+rank, mezera, poEvoluci}` seřazené podle slotu. To je odpověď na „proč se mi
+#8 Ultra ligy nevejde": sloty drží tyhle konkrétní kusy.
+
+V rozboru kusu je u pořadí v lize nově `<span class="d-lg-posun nahoru|dolu">`
+s `▲N` / `▼N` a do bubliny se přidalo obojí — posun i seznam držitelů.
+Ověřeno na 1500, 500 i 390 px. **Když si rozbor kreslíš sama, tohle jsou dvě
+volání, která to dají bez dalšího výpočtu.**

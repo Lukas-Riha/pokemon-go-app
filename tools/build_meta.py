@@ -219,6 +219,58 @@ def main():
         poradi_vse[league] = tabulka
         poradi_vse_shadow[league] = tabulka_sh
 
+    # --- posun v žebříčku od minulé obnovy -------------------------------
+    # PvPoke přepočítává pořadí často a rosterem to hýbe: Azumarill spadl
+    # v Great League z #24 na #32 a s ním se u téhož kusu změnil verdikt.
+    # Bez porovnání to vypadá, že se appka rozmyslela sama od sebe.
+    # Uloží se pořadí z minulého STAŽENÍ (ne z minulého běhu skriptu) —
+    # přegenerování týž den nesmí srovnávací základ zahodit.
+    def vsechna_poradi(meta_dict):
+        """Pořadí druhů v metě — jen z `leagues`.
+
+        Dlouhý ocas z `poradiVse` se schválně nebere: jsou to stovky druhů
+        kolem #500, kde je posun o deset míst bez následku (rozpočet bere
+        vážně zhruba prvních padesát). Do appky by to přidalo 26 kB dat,
+        která by nikdy nikoho nezajímala."""
+        vys = {}
+        for zdroj in ("leagues",):
+            for liga, tab in (meta_dict.get(zdroj) or {}).items():
+                cil = vys.setdefault(liga, {})
+                for k, v in (tab or {}).items():
+                    if v and k not in cil:
+                        cil[k] = v[0]
+        return vys
+
+    dnes = date.today().isoformat()
+    nova_poradi = vsechna_poradi({"leagues": leagues, "poradiVse": poradi_vse})
+    drive = {"datum": None, "ligy": {}}
+    if OUT.exists():
+        try:
+            stary = json.loads(OUT.read_text(encoding="utf-8"))
+        except Exception:
+            stary = None
+        if stary:
+            stara_poradi = vsechna_poradi(stary)
+            if stara_poradi and stara_poradi != nova_poradi:
+                # Pořadí se opravdu pohnulo -> tohle je nový srovnávací základ.
+                # Rozhoduje OBSAH, ne datum: skript se pouští i bez --refresh
+                # a přegenerování z týchž dat nesmí základ zahodit.
+                #
+                # Ukládá se JEN to, co se změnilo. Celá tabulka by do appky
+                # přidala 26 kB kvůli stovkám druhů, u kterých se nehnulo nic
+                # a appka u nich stejně nic neukáže.
+                zmenene = {}
+                for liga, tab in stara_poradi.items():
+                    nove = nova_poradi.get(liga) or {}
+                    rozdily = {k: v for k, v in tab.items()
+                               if k in nove and nove[k] != v}
+                    if rozdily:
+                        zmenene[liga] = rozdily
+                drive = {"datum": (stary.get("_meta") or {}).get("stazeno") or dnes,
+                         "ligy": zmenene}
+            else:
+                drive = stary.get("poradiDrive") or drive
+
     out = {
         "_meta": {
             "zdroj": "https://github.com/pvpoke/pvpoke (src/data/rankings/all/overall)",
@@ -233,6 +285,7 @@ def main():
         "shadow": shadow_leagues,
         "poradiVse": poradi_vse,
         "poradiVseShadow": poradi_vse_shadow,
+        "poradiDrive": drive,
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     with_moves = {k: sum(1 for v in t.values() if len(v) > 3 and v[3]) for k, t in leagues.items()}

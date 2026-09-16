@@ -59,6 +59,9 @@ meta = {"leagues": meta_all["leagues"],
         # −17 % obrana) a mívají jinou sestavu, takže je nelze slučovat
         # pod klíč běžného druhu
         "shadow": meta_all.get("shadow") or {},
+        # Pořadí z minulé obnovy — appka z něj u druhu ukáže, o kolik se
+        # v žebříčku pohnul. Bez toho vypadá změna verdiktu jako rozmar.
+        "poradiDrive": meta_all.get("poradiDrive") or {"datum": None, "ligy": {}},
         # kompletní pořadí pro prohlídku druhu (bez ořezu na metu)
         "poradiVse": meta_all.get("poradiVse") or {},
         "poradiVseShadow": meta_all.get("poradiVseShadow") or {}}

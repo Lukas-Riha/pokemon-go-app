@@ -2223,9 +2223,9 @@ try {
   // ODDĚLENÉ SHADOW ŽEBŘÍČKY: shadow varianta má vlastní pořadí
   // i sestavu (39 kB dat), protože se pod jedním klíčem s běžnou
   // formou slévat nedá — 86 druhů ukazovalo cizí číslo.
-  // 1,70 MB: posudek každého útoku, kontrola vstupu, nejlepší sestava druhu
-  // a spočítaný žebříček mega forem (ten nahradil ručně psané priority).
-  check("appka se drží pod 1,70 MB", velikostSouboru < 1700000, String(velikostSouboru));
+  // 1,75 MB: posudek každého útoku, kontrola vstupu, nejlepší sestava druhu,
+  // spočítaný žebříček mega forem a posuny v PvPoke od minulé obnovy dat.
+  check("appka se drží pod 1,75 MB", velikostSouboru < 1750000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {
@@ -15075,6 +15075,59 @@ try {
     evoSlib.rozpory.length === 0, evoSlib.rozpory.join(" | "));
   // Důvod musí být vidět v bublině — ať už je to strop kopií, nebo že
   // ligový slot po evoluci drží lepší kusy. Obojí je poctivá odpověď.
+  /* ------------------------------------------------------------------
+     240) POSUN V PVPOKE A KDO DRZI LIGU
+     PvPoke prepocitava poradi casto a rosterem to hybe: Azumarill spadl
+     v Great League z #24 na #32 a s nim se obratil verdikt u kusu, ktery
+     se nezmenil. A na otazku „proc se mi #8 Ultra ligy nevejde" odpovida
+     seznam drzitelu slotu, at se to nemusi hledat v Rolich.
+     ------------------------------------------------------------------ */
+  console.log("\n240) posun v zebricku a drzitele ligy");
+  const posunLigy = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Azumarill", forma: "Lucky", cp: 1482, level: 24.5, ivAtk: 0,
+        ivDef: 15, ivSta: 15, fastMove: "Bubble", charged1: "Ice Beam", charged2: "Play Rough" },
+      { pokemon: "Registeel", cp: 2480, level: 26, ivAtk: 1, ivDef: 15, ivSta: 14,
+        fastMove: "Lock On", charged1: "Focus Blast" }
+    ]);
+    await new Promise((r) => setTimeout(r, 1400));
+    const zaklad = (P.pokedex && P.metaPoradiDrive) ? null : null;
+    const out = {
+      posunDolu: P.posunVLize("azumarill", "great"),
+      beziceZmeny: ["little", "great", "ultra", "master"]
+        .map((l) => P.posunVLize("azumarill", l)).filter(Boolean).length,
+      drziteleGL: P.drziteleLigy("great"),
+      drziteleUL: P.drziteleLigy("ultra")
+    };
+    const cell = [...document.querySelectorAll("#tbody td")]
+      .filter((td) => /rozbalí se podrobný rozbor/.test(td.getAttribute("data-tip") || ""))[0];
+    if (cell) cell.click();
+    await new Promise((r) => setTimeout(r, 1200));
+    out.sipky = [...document.querySelectorAll(".d-lg-posun")].map((e) => e.textContent);
+    out.bublina = ([...document.querySelectorAll(".d-ligy-tab td[title], .d-ligy-tab td[data-tip]")]
+      .map((e) => e.getAttribute("title") || e.getAttribute("data-tip") || "")
+      .filter((t) => /Sloty téhle ligy/.test(t))[0]) || "";
+    return out;
+  });
+  check("engine zna posun druhu v lize", !!posunLigy.posunDolu,
+    JSON.stringify(posunLigy.posunDolu));
+  check("…a je to pokles, ne vzestup",
+    posunLigy.posunDolu && posunLigy.posunDolu.rozdil < 0,
+    JSON.stringify(posunLigy.posunDolu));
+  check("…hlasi se jen liga, kde se opravdu neco hnulo",
+    posunLigy.beziceZmeny >= 1 && posunLigy.beziceZmeny <= 4,
+    String(posunLigy.beziceZmeny));
+  check("v detailu je u poradi sipka posunu",
+    posunLigy.sipky.some((t) => /[▲▼]\d/.test(t)), posunLigy.sipky.join(" | "));
+  check("bublina rekne, kdo sloty te ligy drzi",
+    /Sloty téhle ligy drží/.test(posunLigy.bublina), posunLigy.bublina.slice(0, 140));
+  check("…a jmenuje konkretni kus", /Azumarill/.test(posunLigy.bublina),
+    posunLigy.bublina.slice(0, 140));
+  check("drzitele ligy zna i engine primo",
+    posunLigy.drziteleGL.length >= 1 && !!posunLigy.drziteleGL[0].jmeno,
+    JSON.stringify(posunLigy.drziteleGL));
+
   check("u pusteneho kusu bublina rekne, proc jde pryc",
     /drží lepší kusy|pod tvým prahem|nedrží žádnou roli|lepších kusů toho druhu/i
       .test(evoSlib.bublina),
