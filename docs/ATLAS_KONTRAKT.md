@@ -130,6 +130,7 @@ ne funkce — datumy zdrojů),
 | `worseCopy`, `copies`, `procKopie` | kopie téhož druhu |
 | `jenZnamka` | drží ho jen CUTE nebo 100 %, žádnou roli nezastává |
 | `jeMezera` | drží roli jen jako náplast |
+| `jeRezerva` | drží jen rezervu ligy nebo ho drží jen paměť pořadí: `keep` je „Nechat – rezerva" (`keepTone: warning`), `powerup` je „Ne", do plánu prachu nejde; vyvinout smí |
 | `stoProcent`, `cute`, `shiny`, `lucky`, `dynamax` | značky |
 | `strong`, `strongAll`, `strongTypes` | proti čemu je silný |
 | `utoky` | posudek KAŽDÉHO útoku zvlášť (viz níž) |

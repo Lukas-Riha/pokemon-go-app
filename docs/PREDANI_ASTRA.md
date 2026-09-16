@@ -770,3 +770,21 @@ u prvků s třídou `evo-klikaci` — bublinu ukázat a klik pustit dál.
 Test 246 („klik otevře dialog evoluce na Machampa") na TEST verzi do té
 doby padá.
 
+## Rezerva v lize a paměť pořadí (16. 9.)
+
+PvPoke přehazuje pořadí každý týden, takže appka vyhazovala kusy, které
+by byly za týden zase dobré. Nově:
+
+- **Nastavení** (sekce „Rozpočet rolí"): `#ligaRezerva` (číslo, výchozí 6)
+  a `#pametPoradi` (zaškrtávátko `.setting-prepinac`, výchozí zapnuto).
+- **Verdikt „Nechat – rezerva"** s `keepTone: "warning"` (oranžová) a
+  `getComputed()[id].jeRezerva = true`. `powerup` je „Ne" s podtitulkem
+  „rezerva — prach zatím ne". Pokud si verdikty mapuješ na barvy nebo
+  ikony, doplň ho — jinak spadne do výchozí větve.
+- **Bublina ligy**: podnadpis „Sloty téhle ligy drží (N z 12, z toho 6
+  hlavních)", u položek v rezervě `<span class="tip-znak tip-rezerva">`.
+- **API**: `pametPoradi(klic, liga, forma)` → `{rank, datum, dni}` nebo
+  `null`; `pametPoradiData(data?)` čte nebo (pro testy) přepíše data paměti.
+  Sloty z `drziteleLigy` mají navíc `rezerva`, `rezervaDuvod` („misto" /
+  „pamet") a `pamet: {rank, datum}`.
+

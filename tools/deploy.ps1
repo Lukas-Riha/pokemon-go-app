@@ -100,6 +100,20 @@ if ($LASTEXITCODE -ne 0) { "  (nepodarilo se stahnout, jedu s tim, co je v data/
 
 
 
+# Zebricky PvPoke. Kazda obnova prida snimek do data/poradi_historie.json,
+
+# z nej appka bere nejlepsi poradi za 30 dni (pamet poradi) - bez obnovy
+
+# se pamet neplni a o nechat/pustit by rozhodovala jen stara data.
+
+"Obnovuji zebricky PvPoke..."
+
+& $python (Join-Path $root "tools\build_meta.py") --refresh
+
+if ($LASTEXITCODE -ne 0) { "  (nepodarilo se stahnout, jedu s tim, co je v data/raw)" }
+
+
+
 # 2) Data v appce musí být čerstvá — jinak bychom sdíleli starý pokédex.
 
 "Zapékám data do appky..."

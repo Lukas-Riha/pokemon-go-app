@@ -512,6 +512,45 @@ if _ev:
                 chyba("eventy", "%s: okno konci driv, nez zacina (%s - %s)" % (_nazev, _od, _do))
 
 
+# --- pamet poradi --------------------------------------------------------
+# O nechat/pustit rozhoduje nejlepsi poradi za 30 dni. Kdyby v pameti bylo
+# poradi HORSI nez dnesni, nic by se nestalo; kdyby bylo lepsi a stare pres
+# okno, appka by drzela druhy, ktere meta davno opustila.
+try:
+    _meta = json.load(io.open(ROOT / "data" / "meta.json", encoding="utf-8"))
+except Exception:
+    _meta = None
+if _meta is not None:
+    _pam = _meta.get("poradiPamet")
+    if not _pam:
+        varuj("pamet", "meta.json nema poradiPamet - spust tools/build_meta.py")
+    else:
+        _dni = _pam.get("dni") or 30
+        _dnes_poradi = {}
+        for _zdroj, _pred in (("leagues", ""), ("poradiVse", ""), ("shadow", "shadow:"),
+                              ("poradiVseShadow", "shadow:")):
+            for _liga, _tab in (_meta.get(_zdroj) or {}).items():
+                _cil = _dnes_poradi.setdefault(_pred + _liga, {})
+                for _k, _v in (_tab or {}).items():
+                    if _v and _k not in _cil:
+                        _cil[_k] = _v[0]
+        _stazeno = (_meta.get("_meta") or {}).get("stazeno") or ""
+        for _sekce, _pred in (("ligy", ""), ("shadow", "shadow:")):
+            for _liga, _tab in (_pam.get(_sekce) or {}).items():
+                for _k, _z in (_tab or {}).items():
+                    _ted = _dnes_poradi.get(_pred + _liga, {}).get(_k)
+                    if _ted is not None and _z[0] >= _ted:
+                        chyba("pamet", "%s %s: v pameti #%s, dnes #%s - pamet ma byt jen lepsi"
+                              % (_pred + _liga, _k, _z[0], _ted))
+                    try:
+                        _st = (date.fromisoformat(_stazeno) - date.fromisoformat(_z[1])).days
+                        if _st > _dni:
+                            chyba("pamet", "%s %s: poradi z %s je starsi nez okno %d dni"
+                                  % (_pred + _liga, _k, _z[1], _dni))
+                    except ValueError:
+                        chyba("pamet", "%s %s: nesmyslne datum %r" % (_pred + _liga, _k, _z[1]))
+
+
 if varovani:
     print("\nVAROVANI (%d):" % len(varovani))
     for v in varovani[:40]:

@@ -66,6 +66,10 @@ meta = {"leagues": meta_all["leagues"],
         # Pořadí z minulé obnovy — appka z něj u druhu ukáže, o kolik se
         # v žebříčku pohnul. Bez toho vypadá změna verdiktu jako rozmar.
         "poradiDrive": meta_all.get("poradiDrive") or {"datum": None, "ligy": {}},
+        # Nejlepší pořadí za posledních 30 dní (jen kde je lepší než dnes).
+        # Podle něj se rozhoduje nechat/pustit, ať týdenní výkyvy PvPoke
+        # nevyhazují kusy, které budou za týden zase dobré.
+        "poradiPamet": meta_all.get("poradiPamet") or {"dni": 30, "ligy": {}, "shadow": {}},
         # kompletní pořadí pro prohlídku druhu (bez ořezu na metu)
         "poradiVse": meta_all.get("poradiVse") or {},
         "poradiVseShadow": meta_all.get("poradiVseShadow") or {}}

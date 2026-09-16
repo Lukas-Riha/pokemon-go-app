@@ -25,14 +25,130 @@ Spuštění:
 """
 import json
 import re
+import subprocess
 import sys
 import urllib.request
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "meta.json"
+HISTORIE = ROOT / "data" / "poradi_historie.json"
+
+# --- paměť pořadí ---------------------------------------------------------
+# PvPoke přepočítává žebříčky tak často, že kus, který appka minulý týden
+# poslala vyvíjet, tenhle týden posílala pryč — a za další týden by byl zase
+# dobrý. O nechat/pustit proto rozhoduje NEJLEPŠÍ pořadí druhu za posledních
+# PAMET_DNI dní, ne jen to dnešní.
+PAMET_DNI = 30
+# Hlouběji se neukládá: rozpočet bere vážně zhruba prvních padesát míst
+# (nastavitelné nejvýš na pár set) a dlouhý ocas by historii jen nafoukl.
+PAMET_MAX_RANK = 200
+
+
+def snimek_poradi(leagues, poradi_vse, shadow, poradi_vse_shadow, max_rank=PAMET_MAX_RANK):
+    """Pořadí druhů do `max_rank` jako {liga: {klíč: pořadí}}.
+
+    Shadow varianty jsou pod klíčem ligy s předponou „shadow:" — bijí se
+    jinak a mají vlastní pořadí, slévat je s běžným druhem nejde."""
+    vys = {}
+    for predpona, zdroje in (("", (leagues, poradi_vse)),
+                             ("shadow:", (shadow, poradi_vse_shadow))):
+        for zdroj in zdroje:
+            for liga, tab in (zdroj or {}).items():
+                cil = vys.setdefault(predpona + liga, {})
+                for k, v in (tab or {}).items():
+                    if v and v[0] <= max_rank and k not in cil:
+                        cil[k] = v[0]
+    return {liga: tab for liga, tab in vys.items() if tab}
+
+
+def aktualni_poradi(leagues, poradi_vse, shadow, poradi_vse_shadow):
+    """Dnešní pořadí BEZ ořezu — druh na #350 je pořád „dnes #350"."""
+    return snimek_poradi(leagues, poradi_vse, shadow, poradi_vse_shadow, max_rank=10 ** 9)
+
+
+def pridej_snimek(historie, datum, snimek):
+    """Přidá snímek, jen když se liší od posledního uloženého.
+
+    Skript se pouští i bez --refresh; přegenerování z týchž dat nesmí do
+    historie přidat „nový" den, jinak by okno paměti ujíždělo naprázdno."""
+    snimky = historie.setdefault("snimky", {})
+    starsi = sorted(d for d in snimky if d < datum)
+    if starsi and snimky[starsi[-1]] == snimek and datum not in snimky:
+        return False
+    if snimky.get(datum) == snimek:
+        return False
+    snimky[datum] = snimek
+    return True
+
+
+def orez_historii(historie, dnes, dni=PAMET_DNI):
+    """Smaže snímky starší než okno — kromě posledního PŘED oknem.
+
+    Ten se nechává schválně: jeho pořadí platilo ještě v první den okna
+    (další snímek přišel až později), takže do paměti patří."""
+    hranice = (dnes - timedelta(days=dni)).isoformat()
+    snimky = historie.get("snimky", {})
+    pred = sorted(d for d in snimky if d < hranice)
+    for d in pred[:-1]:
+        del snimky[d]
+    return historie
+
+
+def nejlepsi_poradi(historie, dnes, aktualni, dni=PAMET_DNI):
+    """Nejlepší pořadí za posledních `dni` dní — jen tam, kde je LEPŠÍ než dnes.
+
+    Vrací {liga: {klíč: [pořadí, datum]}}. Druh, který dnes v datech vůbec
+    není, se bere jako propadlý (paměť ho drží). Snímek z doby před oknem
+    dostane datum začátku okna — tehdy ještě platil."""
+    hranice = (dnes - timedelta(days=dni)).isoformat()
+    snimky = historie.get("snimky", {})
+    datumy = sorted(snimky)
+    v_okne = [d for d in datumy if hranice <= d <= dnes.isoformat()]
+    pred = [d for d in datumy if d < hranice]
+    if pred:
+        v_okne = [pred[-1]] + v_okne
+    vys = {}
+    for d in v_okne:
+        platnost = d if d >= hranice else hranice
+        for liga, tab in snimky[d].items():
+            ted = aktualni.get(liga, {})
+            cil = vys.setdefault(liga, {})
+            for k, r in tab.items():
+                t = ted.get(k)
+                if t is not None and r >= t:
+                    continue
+                # Při shodě se nechá POZDĚJŠÍ datum: „ještě před 3 dny #40"
+                # řekne víc než „před měsícem #40".
+                if k not in cil or r < cil[k][0] or (r == cil[k][0] and platnost > cil[k][1]):
+                    cil[k] = [r, platnost]
+    return {liga: tab for liga, tab in vys.items() if tab}
+
+
+def seed_z_gitu():
+    """Poprvé se historie poskládá z dřívějších verzí data/meta.json v gitu."""
+    historie = {"snimky": {}}
+    try:
+        hashe = subprocess.run(
+            ["git", "log", "--reverse", "--format=%h", "--", "data/meta.json"],
+            cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+    except Exception:
+        return historie
+    for h in hashe:
+        try:
+            obsah = subprocess.run(["git", "show", h + ":data/meta.json"], cwd=ROOT,
+                                   capture_output=True, check=True).stdout.decode("utf-8")
+            m = json.loads(obsah)
+        except Exception:
+            continue
+        datum = (m.get("_meta") or {}).get("stazeno")
+        if not datum or not m.get("leagues"):
+            continue
+        pridej_snimek(historie, datum, snimek_poradi(
+            m.get("leagues"), m.get("poradiVse"), m.get("shadow"), m.get("poradiVseShadow")))
+    return historie
 
 BASE = "https://raw.githubusercontent.com/pvpoke/pvpoke/master/src/data/rankings/all/overall/"
 LEAGUES = {"little": 500, "great": 1500, "ultra": 2500, "master": 10000}
@@ -271,6 +387,33 @@ def main():
             else:
                 drive = stary.get("poradiDrive") or drive
 
+    # --- paměť pořadí: historie snímků a nejlepší pořadí za okno ----------
+    if HISTORIE.exists():
+        historie = json.loads(HISTORIE.read_text(encoding="utf-8"))
+    else:
+        historie = seed_z_gitu()
+        print("historie poradi poskladana z gitu:", len(historie.get("snimky", {})), "snimku")
+    pridej_snimek(historie, dnes, snimek_poradi(leagues, poradi_vse,
+                                                shadow_leagues, poradi_vse_shadow))
+    orez_historii(historie, date.today())
+    historie["_meta"] = {
+        "pozn": "Snímky pořadí PvPoke pro paměť pořadí (build_meta.py). Ukládá se jen"
+                " den, kdy se pořadí změnilo; starší než okno se mažou kromě posledního.",
+        "okno_dni": PAMET_DNI, "max_rank": PAMET_MAX_RANK,
+    }
+    HISTORIE.write_text(json.dumps(historie, ensure_ascii=False, separators=(",", ":"),
+                                   sort_keys=True) + "\n", encoding="utf-8")
+    nejlepsi = nejlepsi_poradi(historie, date.today(), aktualni_poradi(
+        leagues, poradi_vse, shadow_leagues, poradi_vse_shadow))
+    snimky = sorted(historie.get("snimky", {}))
+    pamet = {
+        "dni": PAMET_DNI,
+        "od": max(snimky[0], (date.today() - timedelta(days=PAMET_DNI)).isoformat()) if snimky else None,
+        "snimku": len(snimky),
+        "ligy": {l: t for l, t in nejlepsi.items() if not l.startswith("shadow:")},
+        "shadow": {l.split(":", 1)[1]: t for l, t in nejlepsi.items() if l.startswith("shadow:")},
+    }
+
     out = {
         "_meta": {
             "zdroj": "https://github.com/pvpoke/pvpoke (src/data/rankings/all/overall)",
@@ -286,6 +429,7 @@ def main():
         "poradiVse": poradi_vse,
         "poradiVseShadow": poradi_vse_shadow,
         "poradiDrive": drive,
+        "poradiPamet": pamet,
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     with_moves = {k: sum(1 for v in t.values() if len(v) > 3 and v[3]) for k, t in leagues.items()}

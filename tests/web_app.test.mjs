@@ -720,9 +720,12 @@ try {
   // herní data, PvP žebříčky, spočítaní gymoví obránci, ruční seznam jako
   // záloha, vlastní DPS žebříček útočníků, spočítané pořadí typů podle
   // pokrytí bossů, časová osa akcí ze stránek LeekDucku, evoluční graf
-  // a pravidla výměn. Devět řádků plus hlavička — obránci a ruční seznam
-  // se rozdělili na dva řádky, protože to není jeden zdroj.
-  eq("tabulka zdrojů má hlavičku a devět řádků", info.radku, 10);
+  // a pravidla výměn, paměť pořadí PvPoke. Deset řádků plus hlavička —
+  // obránci a ruční seznam se rozdělili na dva řádky, protože to není jeden
+  // zdroj, a paměť pořadí rozhoduje o nechat/pustit, takže patří mezi zdroje.
+  eq("tabulka zdrojů má hlavičku a deset řádků", info.radku, 11);
+  check("je vidět, odkud je paměť pořadí a kolik má snímků",
+    /Paměť pořadí/.test(info.text) && /snímků teď \d+/.test(info.text), info.text.slice(0, 400));
   check("tvrdá data jsou označená jako tvrdá", info.text.indexOf("tvrdá data") > -1);
   check("ruční seznam je označený jako náchylný zastarat", info.text.indexOf("náchylné zastarat") > -1);
   check("je vidět, odkud je PvP meta a jak je stará", info.text.indexOf("PvPoke top") > -1, info.text.slice(0, 200));
@@ -15415,8 +15418,10 @@ try {
   check("v cisteni boxu ma drzitel odznacek GL", !!boxDrzi, JSON.stringify(cisteniLigy.box));
   check("…bez holeho title (bublina je HTML)", !!boxDrzi && !boxDrzi.title,
     JSON.stringify(boxDrzi));
-  check("bublina v boxu rekne, kolik slotu z sesti je obsazenych",
-    !!boxDrzi && /Sloty téhle ligy drží \(\d z 6\)/.test(boxDrzi.tip),
+  // Mezera za „z" muze byt nezlomitelna (vrstva Atlas ji tak sazi) a mist
+  // je sest plus rezerva z nastaveni.
+  check("bublina v boxu rekne, kolik mist v lize je obsazenych",
+    !!boxDrzi && /Sloty téhle ligy drží \(\d+\sz\s\d+/.test(boxDrzi.tip),
     boxDrzi ? boxDrzi.tip.slice(0, 200) : "");
   check("…a vyznaci, ze tenhle kus mezi nimi je",
     !!boxDrzi && /tip-ten/.test(boxDrzi.tip) && /tenhle kus/.test(boxDrzi.tip),
@@ -15575,6 +15580,170 @@ try {
     JSON.stringify(evoNaKonec));
   check("…a utoky se vymazaly (evoluce je prehodi)", evoNaKonec.po.utok === "",
     evoNaKonec.po.utok);
+
+  // ---------------------------------------------------------------- 247
+  // Rezerva v lize a pamet poradi. PvPoke prehazuje poradi kazdy tyden,
+  // takze kus, ktery se do sestky nevesel nebo na par dni spadl pod hranici,
+  // se nepousti: „Nechat – rezerva", vyvinout smi, prach ne. Konkretni
+  // poradi se v testu nikde natvrdo nebere — pamet se podstrci a hranice
+  // se nastavi podle toho, kde druh dnes je.
+  console.log("\n247) Rezerva v lize a pamet poradi");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const rezerva = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const nastav = (id, v) => {
+      const el = document.getElementById(id);
+      if (el.type === "checkbox") el.checked = v; else el.value = v;
+      // cislo posloucha na input, zaskrtavatko na change
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const out = {};
+    const puvodniPamet = P.pametPoradiData();
+    out.vychoziRezerva = document.getElementById("ligaRezerva").defaultValue;
+    out.vychoziPamet = document.getElementById("pametPoradi").defaultChecked;
+
+    // --- rezerva: hodne dobrych kusu do Great League
+    nastav("rankLimit", 100);
+    nastav("ligaRezerva", 6);
+    nastav("pametPoradi", false);
+    const druhy = ["Azumarill", "Registeel", "Medicham", "Swampert", "Lickitung",
+      "Galvantula", "Corviknight", "Trevenant", "Skarmory", "Umbreon", "Altaria",
+      "Lanturn", "Jellicent", "Quagsire", "Empoleon", "Mantine", "Snorlax",
+      "Ninetales", "Dewgong", "Sableye", "Stunfisk", "Froslass", "Walrein", "Toxapex"];
+    P.setRows(druhy.map((d) => ({ pokemon: d, cp: 1400, level: 20, ivAtk: 0, ivDef: 15, ivSta: 15 })));
+    await cekej(1500);
+    const sRezervou = P.drziteleLigy("great");
+    const comp = P.getComputed();
+    const rows = P.getRows();
+    const plan = P.prachovyPlan().map((e) => e.row.id);
+    out.sRezervou = sRezervou.map((d) => ({ poradi: d.poradi, celkem: d.celkem, rezerva: d.rezerva,
+      duvod: d.rezervaDuvod, mezera: d.mezera, id: d.id, jmeno: d.jmeno }));
+    out.rezervni = rows.filter((r) => comp[r.id].jeRezerva).map((r) => ({ id: r.id, jmeno: r.pokemon,
+      keep: comp[r.id].keep, keepTone: comp[r.id].keepTone, powerup: comp[r.id].powerup,
+      vPlanu: plan.indexOf(r.id) > -1 }));
+    // --- rezerva 0: jen sest
+    nastav("ligaRezerva", 0);
+    await cekej(900);
+    const comp0 = P.getComputed();
+    out.bezRezervy = P.drziteleLigy("great").length;
+    out.poVypnuti = out.rezervni.map((x) => comp0[x.id].keep);
+
+    // --- pamet: druh dnes za hranici, za posledni mesic pred ni
+    nastav("ligaRezerva", 6);
+    P.setRows([{ pokemon: "Azumarill", cp: 1400, level: 20, ivAtk: 0, ivDef: 15, ivSta: 15 }]);
+    await cekej(900);
+    const azu = P.getRows()[0];
+    const gl = (P.getComputed()[azu.id].pvpLigy || []).filter((l) => l.liga === "GL")[0];
+    const dnes = gl && gl.rank ? gl.rank : null;
+    out.azuDnes = dnes;
+    if (dnes && dnes > 8) {
+      nastav("rankLimit", dnes - 1);
+      P.pametPoradiData({ dni: 30, od: "2026-08-20", snimku: 3,
+        ligy: { great: { azumarill: [dnes - 3, "2026-09-10"] } }, shadow: {} });
+      nastav("pametPoradi", true);
+      await cekej(900);
+      const cA = P.getComputed()[azu.id];
+      const dA = P.drziteleLigy("great");
+      out.pamet = { keep: cA.keep, keepSub: cA.keepSub, keepTitle: cA.keepTitle || "",
+        powerup: cA.powerup, jeRezerva: cA.jeRezerva,
+        drzi: dA.map((d) => d.jmeno + ":" + d.rezervaDuvod + ":" + (d.pamet ? d.pamet.rank : "")),
+        vPlanu: P.prachovyPlan().some((e) => e.row.id === azu.id) };
+      // bublina odznacku ukaze rezervu s datem (tabulka je v zalozce Roster)
+      const rosterZal = document.querySelector('.zal-btn[data-klic="roster"]');
+      if (rosterZal) rosterZal.click();
+      await cekej(300);
+      const chip = [...document.querySelectorAll('#tbody tr[data-row-id="' + azu.id + '"] .lg-chip')]
+        .filter((e) => /^GL/.test(e.textContent))[0];
+      out.pametBublina = chip ? chip.getAttribute("data-tip") || "" : "";
+      // bez pameti o slot prijde
+      nastav("pametPoradi", false);
+      await cekej(900);
+      out.bezPameti = { drzi: P.drziteleLigy("great").length, keep: P.getComputed()[azu.id].keep };
+      // pamet horsi nez dnesek se nebere
+      nastav("pametPoradi", true);
+      nastav("rankLimit", dnes + 10);
+      P.pametPoradiData({ dni: 30, ligy: { great: { azumarill: [dnes + 5, "2026-09-10"] } }, shadow: {} });
+      await cekej(900);
+      const dH = P.drziteleLigy("great");
+      out.horsiPamet = dH.map((d) => d.jmeno + ":" + (d.rezerva ? "R" : "-"));
+      // pamet nezachrani slaby kus (15/15/15 je do Great League spatny)
+      nastav("rankLimit", dnes - 1);
+      P.pametPoradiData({ dni: 30, ligy: { great: { azumarill: [dnes - 3, "2026-09-10"] } }, shadow: {} });
+      P.setRows([{ pokemon: "Azumarill", cp: 1400, level: 20, ivAtk: 15, ivDef: 15, ivSta: 15 }]);
+      await cekej(900);
+      out.slabyDrzi = P.drziteleLigy("great").length;
+    }
+    // uklid: puvodni data a doporucene nastaveni
+    P.pametPoradiData(puvodniPamet);
+    document.getElementById("resetSettingsBtn").click();
+    await cekej(400);
+    out.poResetu = { rezerva: document.getElementById("ligaRezerva").value,
+      pamet: document.getElementById("pametPoradi").checked };
+    return out;
+  });
+  check("vychozi rezerva je 6 a pamet poradi zapnuta",
+    rezerva.vychoziRezerva === "6" && rezerva.vychoziPamet === true,
+    rezerva.vychoziRezerva + " / " + rezerva.vychoziPamet);
+  check("s rezervou drzi Great League vic nez sest kusu, nejvys 12",
+    rezerva.sRezervou.length > 6 && rezerva.sRezervou.length <= 12,
+    rezerva.sRezervou.map((d) => d.poradi + "." + d.jmeno).join(", "));
+  check("prvnich sest mist je hlavnich, dalsi jsou rezerva",
+    rezerva.sRezervou.every((d) => d.poradi <= 6 ? !d.rezerva : (d.rezerva && d.duvod === "misto")),
+    JSON.stringify(rezerva.sRezervou.map((d) => [d.poradi, d.rezerva, d.duvod])));
+  check("v rezerve nejsou naplasti (kusy pod prahem)",
+    rezerva.sRezervou.every((d) => d.poradi <= 6 || !d.mezera),
+    JSON.stringify(rezerva.sRezervou.filter((d) => d.mezera)));
+  check("mista maji celkem 12", rezerva.sRezervou.every((d) => d.celkem === 12),
+    rezerva.sRezervou.map((d) => d.celkem).join(","));
+  check("aspon jeden kus drzi jen rezervu", rezerva.rezervni.length >= 1,
+    JSON.stringify(rezerva.sRezervou));
+  check("kus jen v rezerve je oranzove „Nechat – rezerva\"",
+    rezerva.rezervni.every((x) => x.keep === "Nechat – rezerva" && x.keepTone === "warning"),
+    JSON.stringify(rezerva.rezervni));
+  check("…prach do nej ne (vylepsit Ne, v planu prachu neni)",
+    rezerva.rezervni.every((x) => x.powerup === "Ne" && !x.vPlanu), JSON.stringify(rezerva.rezervni));
+  check("rezerva 0 = zase jen sest", rezerva.bezRezervy <= 6, String(rezerva.bezRezervy));
+  check("…a kusy, ktere drzela jen rezerva, uz rezervou nejsou",
+    rezerva.poVypnuti.every((k) => k !== "Nechat – rezerva"), rezerva.poVypnuti.join(", "));
+  check("Azumarill ma v Great League dnesni poradi (pro test pameti)", !!rezerva.azuDnes && rezerva.azuDnes > 8,
+    String(rezerva.azuDnes));
+  if (rezerva.pamet) {
+    check("pamet: druh dnes za hranici, pred tydnem pred ni -> Nechat – rezerva",
+      rezerva.pamet.keep === "Nechat – rezerva" && rezerva.pamet.jeRezerva,
+      JSON.stringify(rezerva.pamet));
+    check("…slot rika, ze ho drzi pamet (s poradim z pameti)",
+      rezerva.pamet.drzi.length === 1 && rezerva.pamet.drzi[0] === "Azumarill:pamet:" + (rezerva.azuDnes - 3),
+      rezerva.pamet.drzi.join(" | "));
+    check("…podtitulek ukaze drivejsi poradi",
+      rezerva.pamet.keepSub.indexOf("bylo #" + (rezerva.azuDnes - 3)) > -1, rezerva.pamet.keepSub);
+    check("…vysvetleni zminuje pamet poradi a datum",
+      /paměť pořadí/.test(rezerva.pamet.keepTitle) && /10\. 9\./.test(rezerva.pamet.keepTitle),
+      rezerva.pamet.keepTitle);
+    check("…prach ne", rezerva.pamet.powerup === "Ne" && !rezerva.pamet.vPlanu,
+      JSON.stringify(rezerva.pamet));
+    check("…bublina ligy oznaci rezervu s datem",
+      /tip-rezerva/.test(rezerva.pametBublina) && /10\. 9\. #/.test(rezerva.pametBublina),
+      rezerva.pametBublina.slice(-300));
+    // Popisek stavu ligy („správný kus, chybí prach") nesmí radit prach,
+    // kdyz verdikt vedle rika „prach zatim ne".
+    check("…a popisek odznacku rekne, ze je v rezerve a prach zatim ne",
+      /v rezervě ligy — prach zatím ne/.test(rezerva.pametBublina),
+      rezerva.pametBublina.slice(0, 300));
+    check("bez pameti o slot v Great League prijde",
+      rezerva.bezPameti.drzi === 0 && rezerva.bezPameti.keep !== "Nechat – rezerva",
+      JSON.stringify(rezerva.bezPameti));
+    check("pamet horsi nez dnesek se nebere (kus drzi normalne, ne jako rezerva)",
+      rezerva.horsiPamet.length === 1 && rezerva.horsiPamet[0] === "Azumarill:-",
+      rezerva.horsiPamet.join(" | "));
+    check("pamet nezachrani slaby kus pod prahem", rezerva.slabyDrzi === 0,
+      String(rezerva.slabyDrzi));
+  }
+  check("doporucene nastaveni vrati rezervu 6 a zapne pamet",
+    rezerva.poResetu.rezerva === "6" && rezerva.poResetu.pamet === true,
+    JSON.stringify(rezerva.poResetu));
 
   await page.goto(URL);
   await page.waitForTimeout(700);
