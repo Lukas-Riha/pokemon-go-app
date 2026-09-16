@@ -14056,7 +14056,7 @@ try {
   if (fs.existsSync(ATLAS_JS)) {
     const zdroj = fs.readFileSync(ATLAS_JS, "utf8");
     const volana = [...new Set(
-      (zdroj.match(/(?:P|window\.__pgo)\.[a-zA-Z_][a-zA-Z0-9_]*/g) || [])
+      (zdroj.match(/(?:\bP|window\.__pgo)\.[a-zA-Z_][a-zA-Z0-9_]*/g) || [])
         .map((x) => x.split(".").pop()))];
     const chybi = await page.evaluate((jmena) =>
       jmena.filter((j) => window.__pgo[j] === undefined), volana);
@@ -15269,6 +15269,84 @@ try {
     /drží lepší kusy|pod tvým prahem|nedrží žádnou roli|lepších kusů toho druhu/i
       .test(evoSlib.bublina),
     evoSlib.bublina.slice(0, 160));
+
+  // ---------------------------------------------------------------- 243
+  // Herni ikony forem, slouceni mega skenu a neviditelne znaky ve zdrojich.
+  console.log("\n243) Ikony forem, mega pri slouceni, ridici znaky");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const ikonyForem = await page.evaluate(() => {
+    const P = window.__pgo;
+    const soubor = (j) => ((/src="([^"]+)"/.exec(P.atlasImage(j) || "") || [])[1] || "")
+      .split("/").pop();
+    const out = {};
+    ["Mimikyu", "Mimikyu Busted", "Darmanitan", "Darmanitan Zen",
+      "Galarian Darmanitan", "Galarian Darmanitan Zen", "Thundurus",
+      "Thundurus Therian", "Landorus", "Enamorus", "Shellos", "Gastrodon East Sea",
+      "Galarian Meowth", "Alolan Vulpix", "Machamp", "Zenith"]
+      .forEach((j) => { out[j] = soubor(j); });
+    return out;
+  });
+  // PokeMiners u techto druhu ikonu bez pripony nema (pm778.icon.png = 404),
+  // takze se misto herniho obrazku ukazoval nahradni pixelovy sprite.
+  const ocekavane = {
+    "Mimikyu": "pm778.fDISGUISED.icon.png", "Mimikyu Busted": "pm778.fBUSTED.icon.png",
+    "Darmanitan": "pm555.fSTANDARD.icon.png", "Darmanitan Zen": "pm555.fZEN.icon.png",
+    "Galarian Darmanitan": "pm555.fGALARIAN_STANDARD.icon.png",
+    "Galarian Darmanitan Zen": "pm555.fGALARIAN_ZEN.icon.png",
+    "Thundurus": "pm642.fINCARNATE.icon.png", "Thundurus Therian": "pm642.fTHERIAN.icon.png",
+    "Landorus": "pm645.fINCARNATE.icon.png", "Enamorus": "pm905.fINCARNATE.icon.png",
+    "Shellos": "pm422.fWEST_SEA.icon.png", "Gastrodon East Sea": "pm423.fEAST_SEA.icon.png",
+    // ostatni galarske a alolske formy jdou dal pres klic druhu, beze zmeny
+    "Galarian Meowth": "pm52.fGALARIAN.icon.png", "Alolan Vulpix": "pm37.fALOLA.icon.png",
+    "Machamp": "pm68.icon.png"
+  };
+  Object.keys(ocekavane).forEach((j) => {
+    check("ikona " + j + " -> " + ocekavane[j], ikonyForem[j] === ocekavane[j], ikonyForem[j]);
+  });
+  check("slovo zen uprostred jmena neni forma Zen", !/ZEN/.test(ikonyForem.Zenith || ""),
+    ikonyForem.Zenith);
+
+  // Mega a zakladni forma se stejnym otiskem v JEDNOM importu: mega radek
+  // nesmi prebit zakladni, i kdyz ma presnejsi IV — jeho CP a level plati
+  // jen 8 hodin. Regex, ktery megu poznava, byl rozbity neviditelnym znakem
+  // a nechytal nic, takze tohle pravidlo tise nefungovalo.
+  const megaSlouceni = await page.evaluate(() => {
+    const P = window.__pgo;
+    const H = "Name,CP,Level,Min IV%,Max IV%,Fast move,Special move,"
+      + "Height (cm),Weight (g),Scan date";
+    const zaklad = "Charizard,2200,25,80,90,Fire Spin,Blast Burn,170,90500," + datumPred(1);
+    const mega = "Mega Charizard X,3100,25,86.7,86.7,Fire Spin,Blast Burn,170,90500,"
+      + datumPred(0);
+    const db = document.getElementById("dedupeScans");
+    if (db) db.checked = true;
+    const zkus = (radky) => {
+      P.setRows([]); P.setDiscarded([]);
+      P.importText([H].concat(radky).join(String.fromCharCode(10)));
+      P.finishImport(true);
+      return P.getRows().map((r) => r.pokemon + " " + r.cp);
+    };
+    return { zakladPrvni: zkus([zaklad, mega]), megaPrvni: zkus([mega, zaklad]) };
+  });
+  check("mega sken se presnejsim IV neprebije zakladni formu",
+    megaSlouceni.zakladPrvni.length === 1 && megaSlouceni.zakladPrvni[0] === "Charizard 2200",
+    megaSlouceni.zakladPrvni.join(" | "));
+  check("…ani kdyz je v souboru prvni",
+    megaSlouceni.megaPrvni.length === 1 && megaSlouceni.megaPrvni[0] === "Charizard 2200",
+    megaSlouceni.megaPrvni.join(" | "));
+
+  // Heredoc v shellu umi z \b udelat znak backspace — regex pak vypada
+  // normalne, ale nechyta nic. Stalo se to uz ctyrikrat, proto hlidac.
+  const zdroje = [path.join(WEB_DIR, "pokemon_tracker_app.html"),
+    path.join(WEB_DIR, "atlas", "atlas.js"), path.join(WEB_DIR, "atlas", "atlas.css")];
+  [path.join(ROOT, "tests"), path.join(ROOT, "tools")].forEach((dir) => {
+    fs.readdirSync(dir).filter((f) => /\.(mjs|js|py|ps1)$/.test(f))
+      .forEach((f) => zdroje.push(path.join(dir, f)));
+  });
+  const sRidicimZnakem = zdroje.filter((f) => fs.existsSync(f)).filter((f) =>
+    fs.readFileSync(f).some((c) => c < 32 && c !== 9 && c !== 10 && c !== 13));
+  check("ve zdrojich neni zadny neviditelny ridici znak (napr. backspace z \\b)",
+    sRidicimZnakem.length === 0, sRidicimZnakem.map((f) => path.basename(f)).join(", "));
 
   await page.goto(URL);
   await page.waitForTimeout(700);

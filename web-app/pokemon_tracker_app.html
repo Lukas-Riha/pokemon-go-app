@@ -3570,7 +3570,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-16 09:47";
+  var BUILD = "2026-09-16 14:20";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -10829,8 +10829,30 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      rozbitého rámečku je právě tohle. */
   var MORE_PRIPONA = [
     [/east\s*sea/i, "EAST_SEA"],
-    [/west\s*sea/i, "WEST_SEA"]
+    [/west\s*sea/i, "WEST_SEA"],
+    // Formy, které ve jménu kusu stojí slovem. Ověřeno dotazem na PokeMiners:
+    // tihle tři nemají ikonu bez přípony vůbec (pm778/pm555/pm642.icon.png
+    // vrací 404), takže se dřív místo herní ikony ukazoval náhradní sprite.
+    [/busted/i, "BUSTED"],
+    [/disguised/i, "DISGUISED"],
+    // Galarský Darmanitan má formu zvlášť pro Standard i Zen. Ostatní galarské
+    // druhy řeší už FORMA_PRIPONA, sem se nedostanou — proto jen Darmanitan.
+    [/^(?=.*\bgalar)(?=.*\bzen\b)(?=.*darmanitan)/i, "GALARIAN_ZEN"],
+    [/^(?=.*\bgalar)(?=.*darmanitan)/i, "GALARIAN_STANDARD"],
+    [/\bzen\b/i, "ZEN"],
+    [/therian/i, "THERIAN"],
+    [/incarnate/i, "INCARNATE"]
   ];
+
+  /* Druhy, u kterých PokeMiners ikonu BEZ přípony nemá. Když kus formu ve
+     jménu nemá („Darmanitan", „Thundurus"), bere se ta základní — lepší
+     správný obrázek než náhradní pixelový sprite. */
+  var VYCHOZI_FORMA_IKONY = {
+    422: "WEST_SEA", 423: "WEST_SEA",       // Shellos, Gastrodon
+    555: "STANDARD",                         // Darmanitan
+    641: "INCARNATE", 642: "INCARNATE", 645: "INCARNATE", 905: "INCARNATE",
+    778: "DISGUISED"                         // Mimikyu
+  };
 
   function herniObrazek(name, dex) {
     if (!dex || !dex.id) return "";
@@ -10841,9 +10863,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       for (var i = 0; i < MORE_PRIPONA.length; i++) {
         if (MORE_PRIPONA[i][0].test(jm)) { pripona = MORE_PRIPONA[i][1]; break; }
       }
-      // Shellos a Gastrodon bez určeného moře: ikona bez přípony neexistuje,
-      // takže se bere západní. Lepší správný obrázek jiné barvy než žádný.
-      if (!pripona && (dex.id === 422 || dex.id === 423)) pripona = "WEST_SEA";
+      // Shellos a Gastrodon bez určeného moře, Darmanitan, Thundurus a spol.:
+      // ikona bez přípony neexistuje, takže se bere základní forma.
+      if (!pripona && VYCHOZI_FORMA_IKONY[dex.id]) pripona = VYCHOZI_FORMA_IKONY[dex.id];
     }
     return HERNI_URL + "pm" + dex.id + (pripona ? ".f" + pripona : "") + ".icon.png";
   }
@@ -19520,8 +19542,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         merged++;
         // nechat ten přesnější sken; mega řádek nikdy nepřebije základní formu,
         // protože jeho CP a level platí jen těch 8 hodin
-        var novyMega = /(mega|primal)/i.test(String(r.pokemon || ""));
-        var staryMega = /(mega|primal)/i.test(String(stary.pokemon || ""));
+        var novyMega = /\b(mega|primal)\b/i.test(String(r.pokemon || ""));
+        var staryMega = /\b(mega|primal)\b/i.test(String(stary.pokemon || ""));
         var vzitNovy = staryMega && !novyMega ? true
           : (novyMega && !staryMega ? false : ivSpread(r) < ivSpread(stary));
         if (vzitNovy) {

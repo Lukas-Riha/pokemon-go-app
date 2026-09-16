@@ -1,5 +1,18 @@
 # Předání: jak přesunout GO Atlas do vlastních souborů
 
+> **Otevřené na tvé straně (stav 16. 9.)** — podrobnosti v sekcích níž:
+>
+> 1. Do produkce brání tři věci v `atlas.js`: klíč `pgo_test_atlas_theme`
+>    (6×), text „LOKÁLNÍ TEST" a „TESTOVACÍ VERZE" (2×) — viz
+>    „Do produkce pořád zbývají ty tři věci z minule".
+> 2. „Vylepšil jsem ho" patří vedle „Upravit tohoto Pokémona", ne pod něj.
+> 3. Bublina evoluční řady zasahuje do posuvníku stránky.
+> 4. V detailu se dubluje verdikt („Ponechat · Max Electric 1/3", „Dynamax 1/2").
+> 5. Sticky panel evoluční řady ukazuje nadpis dvakrát pod sebou.
+>
+> Body 2–5 rozepisuje sekce „Co je na vzhledové vrstvě (16. 9., ze
+> screenshotů TEST verze)".
+
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
 
@@ -697,3 +710,17 @@ druhu.
 `cs-raketa`, ne `cs-type` — jinak by se počítaly mezi typové karty. A text
 Taháku teď obsahuje i **soupeřovy** pokémony, takže „je v taháku Charizard?"
 už neznamená „mám Charizarda"; hledej v `.cs-picks`.
+
+## Ikony forem, mega při slučování a hlídač řídicích znaků (16. 9.)
+
+**Herní ikony u Mimikyu, Darmanitana, Thundura, Tornada, Landora
+a Enamoruse** se dřív nenačetly (PokeMiners je bez přípony formy nemá)
+a místo nich naskočil náhradní pixelový sprite. `atlasImage` teď vrací
+adresu s formou (`pm778.fDISGUISED`, `pm555.fGALARIAN_ZEN` …). Na vrstvě
+se nic měnit nemusí.
+
+**Nový test čte i tvoje soubory.** Kontrola „vrstva nevolá nic, co engine
+nemá" měla v regexu místo `\b` neviditelný znak, takže viděla jen volání
+`window.__pgo.x`, a ne `P.x`. Teď vidí obojí. A nový hlídač projde
+`atlas.js` a `atlas.css` na řídicí znaky (backspace a spol.) — kdyby ti
+tam nějaký vlezl, test to řekne jménem souboru.
