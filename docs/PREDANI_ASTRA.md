@@ -9,6 +9,9 @@
 > 3. Bublina evoluční řady zasahuje do posuvníku stránky.
 > 4. V detailu se dubluje verdikt („Ponechat · Max Electric 1/3", „Dynamax 1/2").
 > 5. Sticky panel evoluční řady ukazuje nadpis dvakrát pod sebou.
+> 6. **Klik na stupeň evoluční řady v `#atlasModal` neotevře dialog evoluce**
+>    — capture listener v `atlas.js` volá `stopPropagation()`. Viz sekce
+>    „Evoluce rovnou na poslední stupeň".
 >
 > Body 2–5 rozepisuje sekce „Co je na vzhledové vrstvě (16. 9., ze
 > screenshotů TEST verze)".
@@ -740,3 +743,30 @@ tabulka. Dřív tam byla vlastní kopie s `title`. Změny v DOM:
 **Engine:** předevoluce se v lize počítá jako druh, kterým se stane.
 Rookidee a Corviknight už nedrží dva sloty Great League. Může se tím
 změnit verdikt u kusů, které dřív držely druhý slot téhož druhu.
+
+## Evoluce rovnou na poslední stupeň (16. 9.)
+
+**Engine:** v evoluční řadě jde kliknout na kterýkoli pozdější stupeň, ne
+jen na ten hned další. Machop → Machamp se zapíše jedním dialogem („Přes
+Machoke — obě evoluce se zapíšou najednou"). Nové API `evoCile(radek)` vrací
+`[{klic, jmeno, pres: [mezistupně]}]`; `evoKroky` dál vrací jen krok hned
+další (tlačítka „Vyvinul jsem ho na…").
+
+**Na vrstvě to nefunguje — a nefungovalo ani předtím.** V `atlas.js`
+(bublina evoluční řady) je:
+
+```js
+document.addEventListener('click', e => {
+  const el = e.target.closest('#atlasModal .d-evo-kus[data-tip]');
+  if (el) { show(el); e.stopPropagation() } ...
+}, true);
+```
+
+Listener běží v capture fázi na `document`, takže `stopPropagation()`
+zastaví klik dřív, než dojde k prvku. Posluchač enginu na `.evo-klikaci`
+se nespustí a dialog evoluce se neotevře (ověřeno Playwrightem: produkce
+otevře „Vyvinul jsi ho na Machamp?", TEST nic). Stačí nezastavovat klik
+u prvků s třídou `evo-klikaci` — bublinu ukázat a klik pustit dál.
+Test 246 („klik otevře dialog evoluce na Machampa") na TEST verzi do té
+doby padá.
+

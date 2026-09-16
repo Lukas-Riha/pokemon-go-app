@@ -15492,6 +15492,90 @@ try {
       && jedenDruh.tam.great.some((t) => /^(Azumarill|Marill)/.test(t)),
     jedenDruh.tam.great.join(" | "));
 
+  // ---------------------------------------------------------------- 246
+  // Rucni evoluce rovnou na posledni stupen. Driv se dalo kliknout jen na
+  // stupen hned dalsi, takze Machop -> Machamp byly dve kolecka dialogu.
+  console.log("\n246) Evoluce rovnou na posledni stupen");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const evoNaKonec = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Machop", cp: 600, level: 20, ivAtk: 14, ivDef: 13, ivSta: 12,
+        fastMove: "Counter", charged1: "Cross Chop" },
+      { pokemon: "Eevee", cp: 500, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 },
+      { pokemon: "Machamp", cp: 2000, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 }
+    ]);
+    await cekej(800);
+    const rows = P.getRows();
+    const cile = (r) => P.evoCile(r).map((e) => e.jmeno + (e.pres.length ? "<" + e.pres.join(">") : ""));
+    const out = {
+      machop: cile(rows[0]), machopKroky: P.evoKroky(rows[0]).map((e) => e.jmeno),
+      eevee: cile(rows[1]), machamp: cile(rows[2]),
+      cpMachamp: P.cpPodleUdaju({ pokemon: "Machamp", level: 20, ivAtk: 14, ivDef: 13, ivSta: 12 })
+    };
+    // klik v evolucni rade primo na Machampa — v zalozce Roster; predchozi
+    // bloky nechavaji otevrenou jinou zalozku a tabulka je pak skryta
+    const rosterZal = document.querySelector('.zal-btn[data-klic="roster"]');
+    if (rosterZal) rosterZal.click();
+    await cekej(300);
+    P.zamerKus(rows[0].id);
+    await cekej(900);
+    // Jen detail kusu (tabulka nebo okno Atlasu) — evolucni radu kresli
+    // i Prohlidka a v ni se na nic kliknout nema.
+    const vsechny = [...document.querySelectorAll('.d-evo-kus[data-druh="Machamp"]')];
+    out.kde = vsechny.map((e) => ((e.closest("[id]") || {}).id || "?")
+      + (e.getClientRects().length ? "" : "(skryty)")).join(", ");
+    const stupen = vsechny.filter((e) => e.closest("#tbody, #atlasModal")
+      && e.getClientRects().length)[0];
+    out.klikaci = !!stupen && stupen.classList.contains("evo-klikaci");
+    out.tipStupne = stupen ? stupen.getAttribute("data-tip") || "" : "";
+    if (stupen) stupen.click();
+    await cekej(300);
+    const box = document.getElementById("hraBox");
+    out.dialog = !!box && !box.hidden;
+    out.nadpis = (document.getElementById("hraNadpis") || {}).textContent || "";
+    out.popis = (document.getElementById("hraPopis") || {}).textContent || "";
+    out.navrhCp = (document.getElementById("hraCp") || {}).value || "";
+    if (!out.dialog) P.hraOtevri(rows[0].id, "evoluce", "Machamp");
+    out.chyba = P.hraUloz();
+    await cekej(600);
+    const po = P.getRows().filter((r) => r.id === rows[0].id)[0] || {};
+    out.po = { jmeno: po.pokemon, cp: po.cp, iv: [po.ivAtk, po.ivDef, po.ivSta].join("/"),
+      utok: po.fastMove || "" };
+    P.hraZavri();
+    return out;
+  });
+  check("Machop se muze vyvinout na Machoke i rovnou na Machampa",
+    evoNaKonec.machop.indexOf("Machoke") > -1 && evoNaKonec.machop.indexOf("Machamp<Machoke") > -1,
+    evoNaKonec.machop.join(", "));
+  check("…evoKroky dal vraci jen krok hned dalsi (tlacitka v detailu)",
+    JSON.stringify(evoNaKonec.machopKroky) === JSON.stringify(["Machoke"]),
+    evoNaKonec.machopKroky.join(", "));
+  check("Eevee ma vsechny vetve primo, bez mezikroku",
+    evoNaKonec.eevee.length >= 8 && evoNaKonec.eevee.every((t) => t.indexOf("<") === -1),
+    evoNaKonec.eevee.join(", "));
+  check("finalni forma se uz nikam nevyviji", evoNaKonec.machamp.length === 0,
+    evoNaKonec.machamp.join(", "));
+  check("v evolucni rade jde kliknout primo na posledni stupen", evoNaKonec.klikaci,
+    "stupne Machamp: " + evoNaKonec.kde + " | " + evoNaKonec.tipStupne.slice(-160));
+  check("…bublina rekne, ze to jde i pres mezistupen",
+    /i přes Machoke/.test(evoNaKonec.tipStupne), evoNaKonec.tipStupne.slice(-160));
+  check("klik otevre dialog evoluce na Machampa",
+    evoNaKonec.dialog && /Machamp/.test(evoNaKonec.nadpis), evoNaKonec.nadpis);
+  check("…dialog rekne, ze jde pres Machoke", /Přes Machoke/.test(evoNaKonec.popis),
+    evoNaKonec.popis);
+  check("…a navrhne CP Machampa z levelu a IV",
+    Number(evoNaKonec.navrhCp) === evoNaKonec.cpMachamp,
+    evoNaKonec.navrhCp + " vs " + evoNaKonec.cpMachamp);
+  check("po ulozeni je z Machopa Machamp se spravnym CP a stejnymi IV",
+    evoNaKonec.chyba === null && evoNaKonec.po.jmeno === "Machamp"
+      && evoNaKonec.po.cp === evoNaKonec.cpMachamp && evoNaKonec.po.iv === "14/13/12",
+    JSON.stringify(evoNaKonec));
+  check("…a utoky se vymazaly (evoluce je prehodi)", evoNaKonec.po.utok === "",
+    evoNaKonec.po.utok);
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

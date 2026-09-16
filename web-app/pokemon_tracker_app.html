@@ -11109,15 +11109,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     Array.prototype.forEach.call(kontejner.querySelectorAll(".d-evo-kus[data-druh]"),
       function (el) {
         var cil = el.getAttribute("data-druh");
-        var jdeTam = radek && evoKroky(radek).some(function (e) { return e.jmeno === cil; });
-        if (!jdeTam) return;
+        // Klikat jde na kterýkoli pozdější stupeň, nejen na ten hned další —
+        // Machopa vyvinutého rovnou na Machampa se zapíše jedním kliknutím.
+        var cesta = radek ? evoCile(radek).filter(function (e) { return e.jmeno === cil; })[0] : null;
+        if (!cesta) return;
         el.classList.add("evo-klikaci");
         // Systémový `title` se tu nastavit NESMÍ: appka si ho přepisuje do
         // vlastní bubliny, takže by obsah bubliny přepsal a zmizela by
         // informace o tom, co ten stupeň umí. Nápověda jde dovnitř bubliny.
         var tip = el.getAttribute("data-tip") || "";
         el.setAttribute("data-tip", tip
-          + '<div class="tip-pozn">Klikni, když jsi ho na tohle ve hře vyvinul.</div>');
+          + '<div class="tip-pozn">Klikni, když jsi ho na tohle ve hře vyvinul'
+          + (cesta.pres.length ? " (i přes " + escHtml(cesta.pres.join(" a ")) + ")" : "")
+          + ".</div>");
         el.addEventListener("click", function () {
           hraOtevri(radek.id, "evoluce", cil);
         });
@@ -12954,6 +12958,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     }).filter(function (x) { return !!x; });
   }
 
+  /** Všechny stupně, na které se kus může vyvinout — i přes mezikrok.
+   *  Ve hře jsou to dvě evoluce za sebou, jenže zapisovat je po jedné
+   *  znamenalo klikat v evoluční řadě dvakrát. IV se evolucí nemění a CP se
+   *  dopočítá z cílového druhu, takže mezikrok nic nepotřebuje. `pres` jsou
+   *  jména mezistupňů v pořadí (u přímé evoluce prázdné). */
+  function evoCile(r) {
+    var g = POKEDEX.evoluce || {};
+    var out = [], videno = {};
+    var jdi = function (k, pres) {
+      (g[k] || []).forEach(function (ck) {
+        if (videno[ck]) return;
+        videno[ck] = true;
+        var d = dexByKey(ck);
+        if (!d) return;
+        out.push({ klic: ck, jmeno: d.name, pres: pres.slice() });
+        jdi(ck, pres.concat([d.name]));
+      });
+    };
+    jdi(dexKey(r.pokemon), []);
+    return out;
+  }
+
   /**
    * Proužek „ve hře jsem s ním něco udělal".
    *
@@ -13008,8 +13034,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
     if (akce === "evoluce") {
       if (!cil || !dexEntry(cil)) { hraKus = null; hraAkce = null; return false; }
+      var pres = (evoCile(r).filter(function (e) { return e.jmeno === cil; })[0] || {}).pres || [];
       nadpis.textContent = "Vyvinul jsi ho na " + cil + "?";
-      popis.innerHTML = "IV se evolucí nemění a CP se dopočítá."
+      popis.innerHTML = (pres.length
+          ? "Přes <b>" + escHtml(pres.join(" a ")) + "</b> — obě evoluce se zapíšou"
+            + " najednou. "
+          : "")
+        + "IV se evolucí nemění a CP se dopočítá."
         + " <b>Útoky se ale evolucí přehodí</b>, takže se vymažou —"
         + " doplň je, až je ve hře uvidíš.";
       var poEvoluci = { pokemon: cil, level: r.level,
@@ -24353,6 +24384,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     hraUloz: hraUloz,
     hraZavri: hraZavri,
     evoKroky: evoKroky,
+    evoCile: evoCile,
     cpPodleUdaju: cpPodleUdaju,
     zamerKus: zamerKus,
     spolecnaSila: spolecnaSila,
