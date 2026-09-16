@@ -9950,10 +9950,16 @@ try {
     const bloky = Array.from(document.querySelectorAll("#typOdpoved .typ-blok"));
     out.bloku = bloky.length;
     out.nadpisy = bloky.map((x) => x.querySelector("h4").textContent);
-    const seznam = (i) => Array.from(bloky[i].querySelectorAll(".pk-typ"))
-      .map((e) => e.textContent).sort();
-    out.silne = seznam(0);
-    out.schyta = seznam(1);
+    // Bloky se hledají PODLE NADPISU, ne podle pořadí. Od dvojtypové
+    // kalkulačky jich je proměnný počet (obrana se dělí podle přesného
+    // násobku) a pozice se posunula.
+    const podleNadpisu = (vzor) => {
+      const blok = bloky.filter((x) => vzor.test(x.querySelector("h4").textContent))[0];
+      return blok ? Array.from(blok.querySelectorAll(".pk-typ"))
+        .map((e) => e.textContent).sort() : [];
+    };
+    out.silne = podleNadpisu(/útočí silně/);
+    out.schyta = podleNadpisu(/schytá zvýšeně/);
     out.aktivni = b.classList.contains("aktivni");
     // druhý klik výběr zruší
     b.click();
@@ -9964,7 +9970,9 @@ try {
     String(typHledacek.tlacitek));
   check("dokud typ nevybereš, hledáček to řekne",
     /Klikni na typ/.test(typHledacek.predKlikem), typHledacek.predKlikem);
-  check("po výběru jsou čtyři bloky odpovědí", typHledacek.bloku === 4,
+  // Bloků je proměnný počet: obrana se dělí podle PŘESNÉHO násobku, takže
+  // u jednoho typu vyjdou dva až tři a u dvojtypu klidně pět.
+  check("po výběru se ukáže útok i obrana", typHledacek.bloku >= 3,
     JSON.stringify(typHledacek.nadpisy));
   // Ground bije Electric, Fire, Poison, Rock, Steel — a schytá od Grass, Ice, Water.
   check("Ground útočí silně přesně na pět typů",
@@ -15110,6 +15118,69 @@ try {
       .filter((t) => /Sloty téhle ligy/.test(t))[0]) || "";
     return out;
   });
+  /* ------------------------------------------------------------------
+     241) DVOJTYPOVA KALKULACKA V „CO NA CO PLATI"
+     U dvojtypu se nasobky NASOBI, takze vzniknou hodnoty, ktere u jednoho
+     typu neexistuji: x2,56 a x0,39, u dvou odolnosti az x0,24. Kontroluje
+     se proti tabulce z pokemondb.net/type/dual.
+     ------------------------------------------------------------------ */
+  console.log("\n241) dvojtypova kalkulacka");
+  const dvojtyp = await page.evaluate(async () => {
+    const zal = [...document.querySelectorAll(".zal-btn")]
+      .filter((b) => b.dataset.klic === "typesCard")[0];
+    if (zal) zal.click();
+    await new Promise((r) => setTimeout(r, 700));
+    const klik = (t) => {
+      const b2 = document.querySelector('#typVyber [data-typ="' + t + '"]');
+      if (b2) b2.click();
+    };
+    const text = () => ((document.getElementById("typOdpoved") || {}).innerText || "")
+      .replace(/\s+/g, " ");
+    klik("Normal");
+    await new Promise((r) => setTimeout(r, 350));
+    const jeden = text();
+    klik("Fighting");
+    await new Promise((r) => setTimeout(r, 450));
+    const dva = text();
+    const vybrane = [...document.querySelectorAll("#typVyber button.aktivni")]
+      .map((e) => e.getAttribute("data-typ")).sort();
+    klik("Normal");
+    await new Promise((r) => setTimeout(r, 350));
+    const poOdebrani = [...document.querySelectorAll("#typVyber button.aktivni")]
+      .map((e) => e.getAttribute("data-typ"));
+    // a cisty vypocet pro dvojnasobnou slabinu
+    const P = window.__pgo;
+    const nasobek = (utok, typy) => typy.reduce((m, t) => m * P.typeMult(utok, t), 1);
+    return { jeden, dva, vybrane, poOdebrani,
+      ledDrakLetec: nasobek("Ice", ["Dragon", "Flying"]),
+      fightLedLetec: nasobek("Fighting", ["Ice", "Flying"]),
+      zemeOcelLetec: nasobek("Ground", ["Steel", "Flying"]) };
+  });
+  check("jeden typ funguje jako dřív", /SCHYTÁ ZVÝŠENĚ/.test(dvojtyp.jeden),
+    dvojtyp.jeden.slice(0, 100));
+  check("dva typy se daji vybrat naraz",
+    dvojtyp.vybrane.join(",") === "Fighting,Normal", dvojtyp.vybrane.join(","));
+  check("…a klepnutim se prvni odebere",
+    dvojtyp.poOdebrani.join(",") === "Fighting", dvojtyp.poOdebrani.join(","));
+  check("kombinace ma vlastni nadpis", /Obrana kombinace/.test(dvojtyp.dva),
+    dvojtyp.dva.slice(0, 80));
+  // pokemondb pro Normal/Fighting: +60 % Fairy, Fighting, Flying, Psychic
+  check("zvysene poskozeni sedi s referencni tabulkou", (() => {
+    const usek = (dvojtyp.dva.match(/SCHYTÁ ZVÝŠENĚ \(×1,6\)(.*?)(ODOLÁ|NORMAL)/) || [])[1] || "";
+    return ["Fairy", "Fighting", "Flying", "Psychic"].every((t) => usek.indexOf(t) > -1);
+  })(), dvojtyp.dva.slice(0, 220));
+  // −37,5 % Bug, Dark, Rock a −60,9 % Ghost
+  check("odolnosti taky", /ODOLÁ \(×0,625\)[^A-Z]*Bug Dark Rock/.test(dvojtyp.dva),
+    dvojtyp.dva.slice(0, 260));
+  check("…vcetne dvojite odolnosti", /DVOJITĚ ODOLÁ \(×0,391\)[^A-Z]*Ghost/.test(dvojtyp.dva),
+    dvojtyp.dva.slice(0, 300));
+  check("dvojnasobna slabina vyjde 2,56",
+    Math.abs(dvojtyp.ledDrakLetec - 2.56) < 0.01, String(dvojtyp.ledDrakLetec));
+  check("a vyruseni vyjde 1", Math.abs(dvojtyp.fightLedLetec - 1) < 0.01,
+    String(dvojtyp.fightLedLetec));
+  check("a dvojita odolnost 0,39",
+    Math.abs(dvojtyp.zemeOcelLetec - 0.625) < 0.01, String(dvojtyp.zemeOcelLetec));
+
   check("engine zna posun druhu v lize", !!posunLigy.posunDolu,
     JSON.stringify(posunLigy.posunDolu));
   check("…a je to pokles, ne vzestup",

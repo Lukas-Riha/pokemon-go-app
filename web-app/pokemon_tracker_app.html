@@ -938,6 +938,12 @@
      obarví sám na tutéž barvu — kolečko je bílé, symbol barevný. */
   #typVyber button .typ-ikona g { fill: var(--typ-barva, currentColor); }
   #typVyber button .typ-ikona { width: 1.25em; height: 1.25em; }
+  /* Druhý typ kombinace: stejně vybraný, jen s čárkovaným obrysem, ať je
+     poznat, který je který, až se to bude odebírat. */
+  #typVyber button.druhy { outline-style: dashed; }
+  .typ-hledacek-pozn { display: block; margin-top: 3px; font-size: 12px;
+    font-weight: 400; color: var(--text-secondary); }
+  .typ-kombi-h { margin: 6px 0 2px; font-size: 13px; color: var(--text-secondary); }
   /* Pořadí mimo metu: informace, ne doporučení — proto tlumeně. */
   .d-ligy-tab td.d-lg-mimo { color: var(--text-secondary); text-align: left; }
   .d-ligy-tab td.d-lg-mimo b { font-size: 15px; color: var(--text-secondary); }
@@ -2386,6 +2392,18 @@
     border: 1px solid transparent; white-space: nowrap; line-height: 1.6; cursor: help;
     letter-spacing: .01em; }
   .lg-chip .lg-znak { font-size: 13px; margin-left: 2px; }
+  /* Bublina u ligy: nadpis, posun v PvPoke a číslovaný seznam držitelů slotů.
+     Dřív to byla jedna dlouhá věta s tečkami — nedalo se v ní nic najít. */
+  .tip-podnadpis { margin: 7px 0 3px; font-size: 11px; font-weight: 800;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .tip-radek { font-size: 12.5px; color: var(--text-secondary); }
+  .tip-posun { margin-top: 5px; font-size: 12.5px; font-weight: 700; }
+  .tip-posun.nahoru { color: var(--status-good); }
+  .tip-posun.dolu { color: var(--status-critical); }
+  .tip-seznam { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.55; }
+  .tip-seznam li { margin: 0; }
+  .tip-seznam em { font-style: normal; color: var(--text-muted); }
+  .tip-znak { font-size: 11px; color: var(--text-muted); }
   .lg-ready { background: color-mix(in srgb, var(--status-good) 26%, transparent);
     border-color: var(--status-good); }
   .lg-up    { background: color-mix(in srgb, var(--status-warning) 26%, transparent);
@@ -2972,7 +2990,10 @@
       <span class="weather-note" id="weatherNote"></span>
     </div>
     <div class="typ-hledacek">
-      <div class="typ-hledacek-h">Vyber typ a hned uvidíš, co na co platí</div>
+      <div class="typ-hledacek-h">Vyber typ a hned uvidíš, co na co platí
+        <span class="typ-hledacek-pozn">klepni na druhý typ a spočítá se
+        <b>kombinace</b> — u dvojtypů se násobky násobí, takže vzniknou
+        i ×2,56 a ×0,39, které u jednoho typu neexistují</span></div>
       <div id="typVyber" class="typ-vyber"></div>
       <div id="typOdpoved" class="typ-odpoved"></div>
     </div>
@@ -3521,7 +3542,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-16 07:05";
+  var BUILD = "2026-09-16 08:40";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5237,10 +5258,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function ligoveChipy(ligy) {
     return (ligy || []).map(function (l) {
       var znak = LIGA_ZNAK[l.stav] || "";
-      return '<span class="lg-chip lg-' + l.stav + '" title="' + l.liga + ": " + ligaPopis(l)
+      /* Bublina místo holého `title`: odznáček je jediné místo, kde se dá
+         rovnou odpovědět na „proč se mi tenhle #8 nevejde" — sloty té ligy
+         drží konkrétní kusy, tak ať jsou vidět. Skládá to `bublinaLigy`,
+         takže tabulka i čištění boxu ukazují totéž. */
+      var uvod = ligaPopis(l)
         + (l.pct !== null && l.pct !== undefined
             ? " · kvalita kusu " + (Math.round(l.pct * 1000) / 10) + " %" : "")
-        + (l.rank ? " · PvPoke #" + l.rank : "") + '">'
+        + (l.rank ? " · PvPoke #" + l.rank : "");
+      return '<span class="lg-chip lg-' + l.stav + '" data-tip="'
+        + escHtml(bublinaLigy(l.liga, l.klic || null, uvod)) + '">'
         + l.liga + (l.rank ? " #" + l.rank : "")
         + '<span class="lg-znak">' + znak + "</span></span>";
     }).join("");
@@ -8823,6 +8850,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           }
           out.push({ liga: lg.label, stav: stav, pct: c.pct, level: c.level, cp: c.cp,
             jmeno: jmenoCile, evoluce: c.evoluce,
+            // Klíč DRUHU, o kterém ten odznáček mluví — u stavu „evo" je to
+            // vyvinutá forma. Z něj se v bublině dohledá posun v PvPoke.
+            klic: dexKey(stav === "evo" && jmenoCile ? jmenoCile : b.row.pokemon),
             // varuje se jen u ligy, kterou ten druh OPRAVDU hraje — jinak by to
             // svítilo u každého kusu a nikdo by si toho nevšímal
             varovani: !!(c.odsudBlizko && c.cena === null && !c.evoluce && metaIn(b, lg.label)),
@@ -11257,6 +11287,60 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return out;
   }
 
+  /** Zkratka ligy (LC/GL/UL/ML) -> klíč v datech (little/great/ultra/master). */
+  function ligaKlicZeZkratky(zkratka) {
+    var out = null;
+    // Snese i klíč rovnou („great"), ať se volající nemusí hlídat.
+    if (["little", "great", "ultra", "master"].indexOf(zkratka) > -1) return zkratka;
+    LEAGUES.concat([{ label: "ML", meta: "master" }]).forEach(function (lg) {
+      if (lg.label === zkratka) out = lg.meta;
+    });
+    return out;
+  }
+
+  /**
+   * Bublina u ligy: kdo v rosteru drží její sloty a jak se druh pohnul.
+   *
+   * Vzniklo ze dvou otázek naráz — „proč se mi #8 Ultra ligy nevejde"
+   * (odpověď je seznam těch, co sloty drží) a „proč se verdikt změnil, když
+   * jsem s kusem nic neudělal" (odpověď je posun v PvPoke). Skládá se na
+   * jednom místě, protože visí u odznáčku v tabulce, v čištění boxu
+   * i u pořadí v rozboru — a tři kopie by se rozešly.
+   *
+   * Vrací HTML; bublina ho vykreslí, protože začíná značkou.
+   */
+  function bublinaLigy(zkratka, druhKlic, uvod) {
+    var ligaKlic = ligaKlicZeZkratky(zkratka);
+    var h = '<div class="tip-hlava">' + escHtml(zkratka
+      + (ligaKlic ? " · " + ((leagueByLabel(zkratka) || {}).nazev || "") : "")) + "</div>";
+    if (uvod) h += '<div class="tip-radek">' + escHtml(uvod) + "</div>";
+    if (!ligaKlic) return h;
+    var pos = druhKlic ? posunVLize(druhKlic, ligaKlic) : null;
+    if (pos) {
+      h += '<div class="tip-posun ' + (pos.rozdil > 0 ? "nahoru" : "dolu") + '">'
+        + (pos.rozdil > 0 ? "▲" : "▼") + Math.abs(pos.rozdil)
+        + " v PvPoke od " + escHtml(pos.odKdy)
+        + " (#" + pos.drive + " → #" + pos.ted + ")</div>";
+    }
+    var drzi = drziteleLigy(ligaKlic);
+    h += '<div class="tip-podnadpis">Sloty téhle ligy drží</div>';
+    if (!drzi.length) {
+      h += '<div class="tip-radek">Zatím nikdo — je volno.</div>';
+      return h;
+    }
+    h += '<ol class="tip-seznam">';
+    drzi.forEach(function (d) {
+      h += "<li><b>" + escHtml(d.jmeno) + "</b>"
+        + (d.cp ? " " + escHtml(String(d.cp)) + " CP" : "")
+        + (d.rank ? ' <em>#' + d.rank + "</em>" : "")
+        + (d.poEvoluci ? ' <span class="tip-znak">až po evoluci</span>' : "")
+        + (d.mezera ? ' <span class="tip-znak">jen náplast</span>' : "")
+        + "</li>";
+    });
+    h += "</ol>";
+    return h;
+  }
+
   /** Text sestavy („Rollout + Body Slam") z META zaznamu ligy. */
   function sestavaText(zaznam) {
     var rec = recMoveset(zaznam);
@@ -12327,19 +12411,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           var posun = ligaKlic ? posunVLize(dexKey(v.jmeno || r.pokemon), ligaKlic) : null;
           if (!posun && ligaKlic) posun = posunVLize(dexKey(r.pokemon), ligaKlic);
           var drzitele = ligaKlic ? drziteleLigy(ligaKlic) : [];
-          if (posun) {
-            bublina += " · Pořadí druhu se od " + posun.odKdy + " posunulo z #"
-              + posun.drive + " na #" + posun.ted + ".";
-          }
-          bublina += drzitele.length
-            ? " · Sloty téhle ligy drží: " + drzitele.map(function (d2) {
-                return d2.poradi + ". " + d2.jmeno + (d2.cp ? " " + d2.cp + " CP" : "")
-                  + (d2.rank ? " (#" + d2.rank + ")" : "")
-                  + (d2.poEvoluci ? " až po evoluci" : "")
-                  + (d2.mezera ? ", jen náplast" : "");
-              }).join(" · ")
-            : " · V téhle lize zatím nedržíš žádný kus.";
-          return '<td class="' + trida + '" title="' + escHtml(bublina) + '">'
+          /* Bublina se skládá stejně jako u odznáčku v tabulce — nadpis,
+             posun a číslovaný seznam držitelů. Jedna dlouhá věta s tečkami
+             se nedala číst. */
+          var tipHtml = bublinaLigy(L.liga || L.label || "", dexKey(v.jmeno || r.pokemon), bublina);
+          return '<td class="' + trida + '" data-tip="' + escHtml(tipHtml) + '">'
             + '<div class="d-lg-in">'
             + '<div class="d-lg-hlava"><b>#' + v.rank + "</b>"
             + (posun ? '<span class="d-lg-posun ' + (posun.rozdil > 0 ? "nahoru" : "dolu")
@@ -16019,6 +16095,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   var vybranyTyp = null;
+  /* Druhý typ. Dvojtyp NENÍ průměr dvou jednotypů — násobky se násobí, takže
+     Fighting proti Ice/Flying vyjde 1,6 × 0,625 = ×1 a útok, který vypadá
+     jako trefa, neudělá nic navíc. Právě kvůli tomuhle se to nedá spočítat
+     z hlavy a patří to sem. */
+  var vybranyTyp2 = null;
 
   /** Bublina typu, stejná jako v rozboru kusu. */
   function typBublina(t) {
@@ -16032,37 +16113,72 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var box = document.getElementById("typOdpoved");
     if (!box) return;
     if (!vybranyTyp) {
-      box.innerHTML = '<p class="prazdne">Klikni na typ nahoře.</p>';
+      box.innerHTML = '<p class="prazdne">Klikni na typ nahoře.'
+        + " Druhým klepnutím přidáš <b>druhý typ</b> a uvidíš kombinaci.</p>";
       return;
     }
-    var t = vybranyTyp;
-    var utoci = { silne: [], slabe: [], nula: [] };
-    var brani = { schyta: [], odola: [] };
-    ALL_TYPES.forEach(function (d) {
-      var m = typeMult(t, d);
-      if (m > 1) utoci.silne.push(d);
-      else if (m < 0.5) utoci.nula.push(d);
-      else if (m < 1) utoci.slabe.push(d);
-      var o = typeMult(d, t);
-      if (o > 1) brani.schyta.push(d);
-      else if (o < 1) brani.odola.push(d);
-    });
+    var moje = [vybranyTyp];
+    if (vybranyTyp2 && vybranyTyp2 !== vybranyTyp) moje.push(vybranyTyp2);
+    var popis = moje.join(" / ");
     var blok = function (nadpis, list) {
       return '<div class="typ-blok"><h4>' + nadpis + "</h4>"
         + (list.length
             ? '<span class="pk-vypis">' + list.map(typBublina).join("") + "</span>"
             : '<span class="prazdne">nic</span>') + "</div>";
     };
-    box.innerHTML =
-      blok(t + " útočí silně na (×1,6)", utoci.silne)
-      + blok(t + " od těchhle schytá (×1,6)", brani.schyta)
-      + blok(t + " útočí slabě na (×0,63 a míň)", utoci.slabe.concat(utoci.nula))
-      + blok(t + " odolá útokům (×0,63 a míň)", brani.odola);
+
+    /* OBRANA. Tady se ten dvojtyp opravdu počítá: násobky obou typů se
+       pronásobí, takže vzniknou hodnoty, které u jednoho typu neexistují
+       (×2,56 a ×0,39, u dvou odolností dokonce ×0,24). Seskupuje se podle
+       PŘESNÉHO násobku, ne podle „schytá / odolá" — mezi ×1,6 a ×2,56 je
+       v raidu rozdíl, který rozhoduje o tom, jestli tam ten kus poslat. */
+    var obrana = {};
+    ALL_TYPES.forEach(function (utocnik) {
+      var m = 1;
+      moje.forEach(function (mt) { m *= typeMult(utocnik, mt); });
+      var klic = (Math.round(m * 10000) / 10000).toString();
+      (obrana[klic] = obrana[klic] || []).push(utocnik);
+    });
+    var poradiNasobku = Object.keys(obrana).map(Number)
+      .sort(function (a, z) { return z - a; });
+    var jmenoNasobku = function (m) {
+      var txt = String(Math.round(m * 1000) / 1000).replace(".", ",");
+      if (m > 1.9) return "schytá dvojnásobně (×" + txt + ")";
+      if (m > 1) return "schytá zvýšeně (×" + txt + ")";
+      if (m === 1) return "bere normálně (×1)";
+      if (m < 0.3) return "skoro neucítí (×" + txt + ")";
+      if (m < 0.5) return "dvojitě odolá (×" + txt + ")";
+      return "odolá (×" + txt + ")";
+    };
+    var h = "";
+    if (moje.length > 1) {
+      h += '<div class="typ-kombi-h">Obrana kombinace <b>' + escHtml(popis)
+        + "</b> — násobky obou typů se pronásobí</div>";
+    }
+    poradiNasobku.forEach(function (m) {
+      if (m === 1) return;                       // „nic zvláštního" nikoho nezajímá
+      h += blok(jmenoNasobku(m), obrana[String(m)]);
+    });
+
+    /* ÚTOK. Kus se dvěma typy útočí útoky obou, takže se seznamy sjednotí
+       a u každého cíle se bere ten lepší z obou násobků. */
+    var utociSilne = [], utociSlabe = [];
+    ALL_TYPES.forEach(function (cil) {
+      var nej = 0;
+      moje.forEach(function (mt) { nej = Math.max(nej, typeMult(mt, cil)); });
+      if (nej > 1) utociSilne.push(cil);
+      else if (nej < 1) utociSlabe.push(cil);
+    });
+    h += blok(popis + " útočí silně na (×1,6)", utociSilne);
+    h += blok(popis + " útočí slabě na (×0,63 a míň)", utociSlabe);
+    box.innerHTML = h;
   }
 
   function oznacVybranyTyp(box) {
     Array.prototype.forEach.call(box.querySelectorAll("[data-typ]"), function (x) {
-      x.classList.toggle("aktivni", x.getAttribute("data-typ") === vybranyTyp);
+      var t = x.getAttribute("data-typ");
+      x.classList.toggle("aktivni", t === vybranyTyp || t === vybranyTyp2);
+      x.classList.toggle("druhy", t === vybranyTyp2 && t !== vybranyTyp);
     });
   }
 
@@ -16087,7 +16203,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var b = e.target.closest ? e.target.closest("[data-typ]") : null;
       if (!b) return;
       var t = b.getAttribute("data-typ");
-      vybranyTyp = vybranyTyp === t ? null : t;
+      /* Tři stavy jedním tlačítkem: první klepnutí vybere typ, druhé na
+         JINÝ typ přidá druhý (dvojtyp), klepnutí na už vybraný ho odebere.
+         Dva výběry stačí — víc typů pokémon mít nemůže. */
+      if (vybranyTyp === t) { vybranyTyp = vybranyTyp2; vybranyTyp2 = null; }
+      else if (vybranyTyp2 === t) { vybranyTyp2 = null; }
+      else if (!vybranyTyp) { vybranyTyp = t; }
+      else { vybranyTyp2 = t; }
       oznacVybranyTyp(box);
       renderTypOdpoved();
       // Matice ukáže tentýž typ podsvíceným řádkem a sloupcem.

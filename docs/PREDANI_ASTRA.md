@@ -631,3 +631,30 @@ V rozboru kusu je u pořadí v lize nově `<span class="d-lg-posun nahoru|dolu">
 s `▲N` / `▼N` a do bubliny se přidalo obojí — posun i seznam držitelů.
 Ověřeno na 1500, 500 i 390 px. **Když si rozbor kreslíš sama, tohle jsou dvě
 volání, která to dají bez dalšího výpočtu.**
+
+## Bublina u ligy je HTML seznam + dvojtypová kalkulačka (16. 9.)
+
+**1. `bublinaLigy(zkratka, klicDruhu, uvod)`** vrací **HTML** — nadpis,
+řádek s posunem v PvPoke a číslovaný `<ol class="tip-seznam">` s držiteli
+slotů. Bublina appky HTML vykreslí, protože obsah začíná značkou.
+
+Visí to teď na **odznáčcích lig** (`ligoveChipy`, tedy tabulka **i čištění
+boxu**) a u **pořadí v rozboru**. Odznáček nově nemá `title`, ale `data-tip`.
+**Pokud si odznáčky kreslíš sama, tohle je jedno volání a máš totéž.**
+Nové třídy: `tip-podnadpis`, `tip-radek`, `tip-posun` (`nahoru`/`dolu`),
+`tip-seznam`, `tip-znak`.
+
+`ligoveStavy()` má u každého odznáčku nové pole **`klic`** — klíč druhu,
+o kterém ten odznáček mluví (u stavu `evo` je to vyvinutá forma). Z něj se
+dohledá posun.
+
+**2. „Co na co platí" umí dvojtyp.** Druhé klepnutí na jiný typ přidá
+kombinaci, klepnutí na vybraný ho odebere. Obrana se nově dělí podle
+**přesného násobku** (×2,56, ×1,6, ×0,625, ×0,391, ×0,244), ne na dvě
+hromádky — mezi ×1,6 a ×2,56 je v raidu rozdíl, který rozhoduje.
+**Bloků odpovědi je proto proměnný počet**; když je někde počítáš nebo
+bereš podle pořadí, ber je podle nadpisu. Druhý vybraný typ má na tlačítku
+třídu `druhy`.
+
+Ověřeno proti pokemondb.net/type/dual: Normal/Fighting dá +60 % Fairy,
+Fighting, Flying, Psychic; −37,5 % Bug, Dark, Rock; −60,9 % Ghost.
