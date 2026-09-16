@@ -7354,11 +7354,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var podleDruhu = {};
       base.forEach(function (b) {
         var m = lg.label === "ML" ? b.metaML : metaIn(b, lg.label);
+        // Druh, který za kus v lize OPRAVDU nastoupí. Podle něj se kusy
+        // porovnávají: Rookidee s budoucím Corviknightem a hotový Corviknight
+        // jsou v téže lize tentýž druh a o jedno místo se přetahují. Dřív se
+        // porovnávalo podle vlastního druhu kusu, takže oba drželi každý svůj
+        // slot a vytlačili druh, který by v týmu opravdu chyběl.
+        var mKlic = null;
         if (!m && lg.label === "ML" && b.isFinalEvo === false) {
           // Nejlepší (nejnižší rank) z možných finálních forem.
           moznaFinale(b).forEach(function (fk) {
             var e = metaZaznam(fk, "master", b.row.forma);
-            if (e && (!m || e[0] < m[0])) m = e;
+            if (e && (!m || e[0] < m[0])) { m = e; mKlic = fk; }
           });
         }
         // Do téže ligy vedou dvě cesty: kus jak je teď, a kus po evoluci.
@@ -7368,11 +7374,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // jinak by appka pustila Marill a čekala Azumarilla z nebe.
         var kandidati = [];
         if (m) {
-          kandidati.push({ rank: m[0], poEvoluci: false,
+          kandidati.push({ rank: m[0], poEvoluci: false, hraje: mKlic || b.groupKey,
             pct: lg.label === "ML" ? b.ivPct : potVLize(b, lg.label) });
         }
         (b.evoMetaVse || []).forEach(function (k) {
-          if (k.league === lg.label) kandidati.push({ rank: k.rank, pct: k.pct, poEvoluci: true });
+          if (k.league === lg.label) {
+            kandidati.push({ rank: k.rank, pct: k.pct, poEvoluci: true,
+              hraje: k.klic || b.groupKey });
+          }
         });
         var nejC = null;
         kandidati.forEach(function (k) {
@@ -7383,7 +7392,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             ? k.pct >= s.ivThresh
             : k.pct >= prahProRank(s.spThresh, k.rank, s.rankLimit, s.prahSleva);
           if (!nejC || (ok !== nejC.ok ? ok : k.pct > nejC.pct)) {
-            nejC = { rank: k.rank, pct: k.pct, ok: ok, poEvoluci: k.poEvoluci };
+            nejC = { rank: k.rank, pct: k.pct, ok: ok, poEvoluci: k.poEvoluci, hraje: k.hraje };
           }
         });
         if (!nejC) return;
@@ -7398,7 +7407,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // držet ho navždycky: Magikarp se slabým IV je jako budoucí ML Gyarados
         // (#32) bezcenný, i když ten druh v žebříčku opravdu je.
         if (lg.label === "ML" && !prahOK) return;
-        var g = podleDruhu[b.groupKey];
+        var druh = nejC.hraje || b.groupKey;
+        var g = podleDruhu[druh];
         // Kus, který už jednu ligu obsluhuje, se pro druhou bere až jako
         // druhá volba. Každá liga má jiný CP cap, tedy jiný cílový level —
         // jeden kus fyzicky nemůže hrát obojí. Cramorant je GL #13 i UL #27
@@ -7407,16 +7417,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var uzHraje = (b.sloty || []).some(function (sl) { return sl.druh === "pvp"; });
         var zaznam = { b: b, rank: rank, pct: pct, prahOK: prahOK, uzHraje: uzHraje,
           poEvoluci: nejC.poEvoluci };
-        if (!g) { podleDruhu[b.groupKey] = zaznam; return; }
+        if (!g) { podleDruhu[druh] = zaznam; return; }
         if (uzHraje !== g.uzHraje) {
-          if (!uzHraje) podleDruhu[b.groupKey] = zaznam;
+          if (!uzHraje) podleDruhu[druh] = zaznam;
           return;
         }
         if (pct !== g.pct) {
-          if (pct > g.pct) podleDruhu[b.groupKey] = zaznam;
+          if (pct > g.pct) podleDruhu[druh] = zaznam;
           return;
         }
-        if (priShode(b, g.b) < 0) podleDruhu[b.groupKey] = zaznam;
+        if (priShode(b, g.b) < 0) podleDruhu[druh] = zaznam;
       });
       var kand = Object.keys(podleDruhu).map(function (k) { return podleDruhu[k]; });
       // Napřed druhy, které v lize opravdu něco znamenají (nižší rank),
@@ -7834,7 +7844,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             evoMetaVse.forEach(function (x) { if (x.league === pair[1]) uz = x; });
             if (uz && uz.rank <= e[0]) return;
             if (uz) evoMetaVse.splice(evoMetaVse.indexOf(uz), 1);
-            evoMetaVse.push({ league: pair[1], rank: e[0], name: e[2], pct: pct,
+            evoMetaVse.push({ league: pair[1], rank: e[0], name: e[2], pct: pct, klic: fk,
               vLimitu: e[0] <= s.rankLimit });
           });
         });
@@ -9891,7 +9901,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + " jedna</strong>. Díru zalepenou sourozencem nemá cenu lepit podruhé.</li>"
       + "<li><strong>" + SLOTU_NA_LIGU + " druhů na každou ligu</strong> (tým jsou"
       + " tři, plus tři odpovědi na to, co tě láme). Po <em>jedné</em> kopii —"
-      + " dva kusy téhož druhu do jednoho týmu nepostavíš. Druhá kopie má smysl"
+      + " dva kusy téhož druhu do jednoho týmu nepostavíš. Kus, který hraje až"
+      + " po evoluci, se počítá jako druh, kterým se stane: Rookidee a hotový"
+      + " Corviknight se přetahují o jedno místo. Druhá kopie má smysl"
       + " jen tehdy, když hraje jinou ligu: jiný CP cap znamená jiný cílový"
       + " level, tedy fyzicky jiný kus.</li>"
       + "<li><strong>" + SLOTU_GYM + " obránců na gym.</strong> Strop je 50 mincí"

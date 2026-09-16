@@ -15440,6 +15440,58 @@ try {
       !!boxDrzi && !/[▲▼]/.test(boxDrzi.text), boxDrzi ? boxDrzi.text : "");
   }
 
+  // ---------------------------------------------------------------- 245
+  // Predevoluce a hotova forma jsou v lize TYZ druh. Rookidee s budoucim
+  // Corviknightem a Corviknight drzely kazdy svuj slot Great League, takze
+  // v sesti mistech byly dve kopie jednoho druhu — proti pravidlu „po jedne
+  // kopii" z dokumentace a na ukor druhu, ktery by v tymu opravdu chybel.
+  console.log("\n245) Predevoluce a hotova forma drzi v lize jedno misto");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const jedenDruh = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const radky = [
+      { pokemon: "Corviknight", cp: 1495, level: 20, ivAtk: 0, ivDef: 14, ivSta: 13 },
+      { pokemon: "Rookidee", cp: 59, level: 4, ivAtk: 1, ivDef: 15, ivSta: 12 },
+      { pokemon: "Azumarill", cp: 1482, level: 24.5, ivAtk: 0, ivDef: 15, ivSta: 15 },
+      { pokemon: "Marill", cp: 420, level: 20, ivAtk: 1, ivDef: 15, ivSta: 14 }
+    ];
+    const rodina = { Corviknight: "corv", Corvisquire: "corv", Rookidee: "corv",
+      Azumarill: "azu", Marill: "azu", Azurill: "azu" };
+    const drzitele = async (rows) => {
+      P.setRows(rows.map((r) => Object.assign({}, r)));
+      await cekej(1300);
+      const out = {};
+      ["great", "ultra"].forEach((l) => {
+        out[l] = P.drziteleLigy(l).map((d) => d.jmeno + " " + d.cp
+          + (d.poEvoluci ? " (po evoluci)" : "")).sort();
+      });
+      return out;
+    };
+    const tam = await drzitele(radky);
+    const zpet = await drzitele(radky.slice().reverse());
+    return { tam, zpet, rodina };
+  });
+  ["great", "ultra"].forEach((l) => {
+    const pocty = {};
+    jedenDruh.tam[l].forEach((t) => {
+      const r = jedenDruh.rodina[t.split(" ")[0]];
+      if (r) pocty[r] = (pocty[r] || 0) + 1;
+    });
+    check(l + ": z rodiny Corviknight drzi slot nejvys jeden kus",
+      (pocty.corv || 0) <= 1, jedenDruh.tam[l].join(" | "));
+    check(l + ": z rodiny Azumarill drzi slot nejvys jeden kus",
+      (pocty.azu || 0) <= 1, jedenDruh.tam[l].join(" | "));
+    check(l + ": vysledek nezavisi na poradi v rosteru",
+      JSON.stringify(jedenDruh.tam[l]) === JSON.stringify(jedenDruh.zpet[l]),
+      jedenDruh.tam[l].join(" | ") + "  vs  " + jedenDruh.zpet[l].join(" | "));
+  });
+  check("great: Corviknight i Azumarill v lize dal nekdo drzi (oprava nevyhodila oba)",
+    jedenDruh.tam.great.some((t) => /^(Corviknight|Rookidee)/.test(t))
+      && jedenDruh.tam.great.some((t) => /^(Azumarill|Marill)/.test(t)),
+    jedenDruh.tam.great.join(" | "));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

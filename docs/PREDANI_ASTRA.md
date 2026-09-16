@@ -724,3 +724,19 @@ nemá" měla v regexu místo `\b` neviditelný znak, takže viděla jen volání
 `window.__pgo.x`, a ne `P.x`. Teď vidí obojí. A nový hlídač projde
 `atlas.js` a `atlas.css` na řídicí znaky (backspace a spol.) — kdyby ti
 tam nějaký vlezl, test to řekne jménem souboru.
+
+## Odznáčky lig v čištění boxu + jeden druh na ligu (16. 9.)
+
+**Čištění boxu teď kreslí odznáčky lig přes `ligoveChipy`**, stejně jako
+tabulka. Dřív tam byla vlastní kopie s `title`. Změny v DOM:
+
+- uvnitř `.lg-chip` přibyl `<span class="lg-posun nahoru|dolu">▲3</span>`
+  (posun v PvPoke), před `.lg-znak`;
+- odznáček nemá `title`, ale `data-tip` s HTML bublinou;
+- v bublině je podnadpis „Sloty téhle ligy drží (N z 6)", aktuální kus má
+  `li.tip-ten` a pod seznamem může být „Volno ještě N sloty" nebo „Tenhle
+  kus mezi nimi není".
+
+**Engine:** předevoluce se v lize počítá jako druh, kterým se stane.
+Rookidee a Corviknight už nedrží dva sloty Great League. Může se tím
+změnit verdikt u kusů, které dřív držely druhý slot téhož druhu.
