@@ -2408,6 +2408,11 @@
     border: 1px solid transparent; white-space: nowrap; line-height: 1.6; cursor: help;
     letter-spacing: .01em; }
   .lg-chip .lg-znak { font-size: 13px; margin-left: 2px; }
+  .lg-chip .lg-posun { font-size: 10.5px; margin-left: 3px; }
+  .lg-chip .lg-posun.nahoru { color: var(--status-good); }
+  .lg-chip .lg-posun.dolu { color: var(--status-critical); }
+  .tip-seznam li.tip-ten { color: var(--text-primary); font-weight: 700; }
+  .tip-seznam li.tip-ten::marker { color: var(--status-good); }
   /* Bublina u ligy: nadpis, posun v PvPoke a číslovaný seznam držitelů slotů.
      Dřív to byla jedna dlouhá věta s tečkami — nedalo se v ní nic najít. */
   .tip-podnadpis { margin: 7px 0 3px; font-size: 11px; font-weight: 800;
@@ -5294,9 +5299,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + (l.pct !== null && l.pct !== undefined
             ? " · kvalita kusu " + (Math.round(l.pct * 1000) / 10) + " %" : "")
         + (l.rank ? " · PvPoke #" + l.rank : "");
+      /* Posun v PvPoke přímo na odznáčku, ne až v bublině: verdikt se kusu
+         mění, i když se s ním nic nestalo, a šipka je jediné, co to prozradí
+         bez najetí myší. */
+      var ligaKlic = ligaKlicZeZkratky(l.liga);
+      var pos = l.klic && ligaKlic ? posunVLize(l.klic, ligaKlic) : null;
       return '<span class="lg-chip lg-' + l.stav + '" data-tip="'
-        + escHtml(bublinaLigy(l.liga, l.klic || null, uvod)) + '">'
+        + escHtml(bublinaLigy(l.liga, l.klic || null, uvod, l.kusId)) + '">'
         + l.liga + (l.rank ? " #" + l.rank : "")
+        + (pos ? '<span class="lg-posun ' + (pos.rozdil > 0 ? "nahoru" : "dolu") + '">'
+            + (pos.rozdil > 0 ? "▲" : "▼") + Math.abs(pos.rozdil) + "</span>" : "")
         + '<span class="lg-znak">' + znak + "</span></span>";
     }).join("");
   }
@@ -8881,6 +8893,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             // Klíč DRUHU, o kterém ten odznáček mluví — u stavu „evo" je to
             // vyvinutá forma. Z něj se v bublině dohledá posun v PvPoke.
             klic: dexKey(stav === "evo" && jmenoCile ? jmenoCile : b.row.pokemon),
+            // Kus, kterému odznáček patří — bublina ho v seznamu držitelů
+            // zvýrazní, ať je hned vidět, jestli mezi těmi šesti je.
+            kusId: b.row.id,
             // varuje se jen u ligy, kterou ten druh OPRAVDU hraje — jinak by to
             // svítilo u každého kusu a nikdo by si toho nevšímal
             varovani: !!(c.odsudBlizko && c.cena === null && !c.evoluce && metaIn(b, lg.label)),
@@ -11333,7 +11348,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     (lastBase || []).forEach(function (b) {
       (b.sloty || []).forEach(function (sl) {
         if (sl.druh !== "pvp" || sl.typ !== zkratka) return;
-        out.push({ jmeno: b.row.pokemon, cp: b.row.cp || "", poradi: sl.poradi,
+        out.push({ id: b.row.id, jmeno: b.row.pokemon, cp: b.row.cp || "", poradi: sl.poradi,
           celkem: sl.celkem, rank: sl.rank || null, mezera: !!sl.mezera,
           poEvoluci: !!sl.poEvoluci });
       });
@@ -11364,7 +11379,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *
    * Vrací HTML; bublina ho vykreslí, protože začíná značkou.
    */
-  function bublinaLigy(zkratka, druhKlic, uvod) {
+  function bublinaLigy(zkratka, druhKlic, uvod, kusId) {
     var ligaKlic = ligaKlicZeZkratky(zkratka);
     var h = '<div class="tip-hlava">' + escHtml(zkratka
       + (ligaKlic ? " · " + ((leagueByLabel(zkratka) || {}).nazev || "") : "")) + "</div>";
@@ -11378,21 +11393,33 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + " (#" + pos.drive + " → #" + pos.ted + ")</div>";
     }
     var drzi = drziteleLigy(ligaKlic);
-    h += '<div class="tip-podnadpis">Sloty téhle ligy drží</div>';
+    h += '<div class="tip-podnadpis">Sloty téhle ligy drží (' + drzi.length
+      + " z " + SLOTU_NA_LIGU + ")</div>";
     if (!drzi.length) {
       h += '<div class="tip-radek">Zatím nikdo — je volno.</div>';
       return h;
     }
+    var jeMezi = false;
     h += '<ol class="tip-seznam">';
     drzi.forEach(function (d) {
-      h += "<li><b>" + escHtml(d.jmeno) + "</b>"
+      var ten = kusId !== undefined && kusId !== null && d.id === kusId;
+      if (ten) jeMezi = true;
+      h += "<li" + (ten ? ' class="tip-ten"' : "") + "><b>" + escHtml(d.jmeno) + "</b>"
         + (d.cp ? " " + escHtml(String(d.cp)) + " CP" : "")
         + (d.rank ? ' <em>#' + d.rank + "</em>" : "")
+        + (ten ? ' <span class="tip-znak">← tenhle kus</span>' : "")
         + (d.poEvoluci ? ' <span class="tip-znak">až po evoluci</span>' : "")
         + (d.mezera ? ' <span class="tip-znak">jen náplast</span>' : "")
         + "</li>";
     });
     h += "</ol>";
+    if (drzi.length < SLOTU_NA_LIGU) {
+      h += '<div class="tip-radek">Volno ještě ' + (SLOTU_NA_LIGU - drzi.length)
+        + (SLOTU_NA_LIGU - drzi.length === 1 ? " slot." : " sloty.") + "</div>";
+    }
+    if (kusId !== undefined && kusId !== null && !jeMezi) {
+      h += '<div class="tip-radek">Tenhle kus mezi nimi není.</div>';
+    }
     return h;
   }
 
@@ -12469,7 +12496,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           /* Bublina se skládá stejně jako u odznáčku v tabulce — nadpis,
              posun a číslovaný seznam držitelů. Jedna dlouhá věta s tečkami
              se nedala číst. */
-          var tipHtml = bublinaLigy(L.liga || L.label || "", dexKey(v.jmeno || r.pokemon), bublina);
+          var tipHtml = bublinaLigy(L.liga || L.label || "", dexKey(v.jmeno || r.pokemon), bublina, r.id);
           return '<td class="' + trida + '" data-tip="' + escHtml(tipHtml) + '">'
             + '<div class="d-lg-in">'
             + '<div class="d-lg-hlava"><b>#' + v.rank + "</b>"
@@ -23259,15 +23286,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // řádek vždycky; když kus nehraje nic, zůstane řádek prázdný, ale zůstane.
     // Podrobnosti jsou v bublině a v rozbalném rozboru.
     var ligy = c.pvpLigy || [];
+    // Odznáčky skládá `ligoveChipy`, stejně jako v tabulce. Dřív tu byla
+    // vlastní kopie s holým popiskem — bez posunu v PvPoke a bez seznamu
+    // kusů, které sloty ligy drží, takže se při čištění nedalo zjistit,
+    // proč se #7 do ligy nevejde.
     var ligyHtml = '<div class="bm-ligy">' + (ligy.length
-      ? ligy.map(function (l) {
-          return '<span class="lg-chip lg-' + l.stav + '" title="' + escHtml(l.liga
-            + ": " + ligaPopis(l)
-            + (l.pct !== null && l.pct !== undefined
-                ? " · kvalita kusu " + (Math.round(l.pct * 1000) / 10) + " %" : ""))
-            + '">' + l.liga + (l.rank ? " #" + l.rank : "")
-            + '<span class="lg-znak">' + (LIGA_ZNAK[l.stav] || "") + "</span></span>";
-        }).join("")
+      ? ligoveChipy(ligy)
       : '<span class="bm-ligy-nic">v žádné lize nehraje</span>') + "</div>";
 
     // Pruh „jen po jednom" je pryč. Že shiny nejde poslat hromadně, je

@@ -5378,7 +5378,7 @@ try {
       const box = document.getElementById("bmBody");
       return { text: box.textContent, chipy: box.querySelectorAll(".bm-ligy .lg-chip").length,
         bubliny: [...box.querySelectorAll(".bm-ligy .lg-chip")]
-          .map((x) => x.getAttribute("title") || "").join(" | "),
+          .map((x) => x.getAttribute("data-tip") || x.getAttribute("title") || "").join(" | "),
         vyska: Math.round(box.getBoundingClientRect().height),
         aktualni: P.boxStav().aktualni };
     };
@@ -15347,6 +15347,98 @@ try {
     fs.readFileSync(f).some((c) => c < 32 && c !== 9 && c !== 10 && c !== 13));
   check("ve zdrojich neni zadny neviditelny ridici znak (napr. backspace z \\b)",
     sRidicimZnakem.length === 0, sRidicimZnakem.map((f) => path.basename(f)).join(", "));
+
+  // ---------------------------------------------------------------- 244
+  // Odznacky lig v cisteni boxu: stejne jako v tabulce — sipka posunu
+  // v PvPoke primo na odznacku a v bubline sest kusu, ktere drzi sloty ligy,
+  // s vyznacenym aktualnim kusem. Driv tu byla vlastni kopie s holym
+  // popiskem, takze se pri cisteni nedalo zjistit, proc se #7 nevejde.
+  console.log("\n244) Odznacky lig v cisteni boxu");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const cisteniLigy = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Azumarill", cp: 1482, level: 24.5, ivAtk: 0, ivDef: 15, ivSta: 15,
+        fastMove: "Bubble", charged1: "Ice Beam", charged2: "Play Rough" },
+      { pokemon: "Azumarill", cp: 1650, level: 24.5, ivAtk: 15, ivDef: 15, ivSta: 15,
+        fastMove: "Bubble", charged1: "Ice Beam", charged2: "Play Rough" },
+      { pokemon: "Registeel", cp: 2480, level: 26, ivAtk: 1, ivDef: 15, ivSta: 14,
+        fastMove: "Lock On", charged1: "Focus Blast" }
+    ]);
+    await cekej(1400);
+    const rows = P.getRows();
+    const drziGL = P.drziteleLigy("great").map((d) => d.id);
+    const posunGL = P.posunVLize("azumarill", "great");
+    const glChip = (koren) => [...koren.querySelectorAll(".lg-chip")]
+      .filter((e) => /^GL/.test(e.textContent))[0] || null;
+
+    // tabulka
+    const tabulka = {};
+    rows.forEach((r) => {
+      const tr = document.querySelector('#tbody tr[data-row-id="' + r.id + '"]');
+      const ch = tr ? glChip(tr) : null;
+      tabulka[r.id] = ch ? { text: ch.textContent, tip: ch.getAttribute("data-tip") || "" } : null;
+    });
+
+    // cisteni boxu: projit vsechny karty
+    P.boxOtevrit();
+    await cekej(400);
+    const box = {};
+    for (let i = 0; i < 3; i++) {
+      const st = P.boxStav();
+      if (st.index >= st.delka) break;
+      const karta = document.querySelector(".bm-ligy");
+      const panel = karta ? karta.closest("[id]") || document.body : document.body;
+      const cp = Number(((panel.textContent || "").match(/(\d+)\s*CP/) || [])[1]);
+      const r = rows.filter((x) => x.pokemon === st.aktualni && Number(x.cp) === cp)[0];
+      const ch = karta ? glChip(karta) : null;
+      if (r) {
+        box[r.id] = ch ? { text: ch.textContent, tip: ch.getAttribute("data-tip") || "",
+          title: ch.hasAttribute("title") } : null;
+      }
+      document.getElementById("bmKeep").click();
+      await cekej(300);
+    }
+    P.boxZavritNatvrdo();
+    return { rows: rows.map((r) => ({ id: r.id, jm: r.pokemon, cp: r.cp })),
+      drziGL, posunGL, tabulka, box };
+  });
+  const azu = cisteniLigy.rows.filter((r) => r.jm === "Azumarill");
+  const azuDrzi = azu.filter((r) => cisteniLigy.drziGL.indexOf(r.id) > -1)[0];
+  const azuNe = azu.filter((r) => cisteniLigy.drziGL.indexOf(r.id) === -1)[0];
+  check("jeden Azumarill drzi slot Great League, druhy ne", !!azuDrzi && !!azuNe,
+    JSON.stringify(cisteniLigy.drziGL) + " " + JSON.stringify(azu));
+  const boxDrzi = azuDrzi ? cisteniLigy.box[azuDrzi.id] : null;
+  const boxNe = azuNe ? cisteniLigy.box[azuNe.id] : null;
+  check("v cisteni boxu ma drzitel odznacek GL", !!boxDrzi, JSON.stringify(cisteniLigy.box));
+  check("…bez holeho title (bublina je HTML)", !!boxDrzi && !boxDrzi.title,
+    JSON.stringify(boxDrzi));
+  check("bublina v boxu rekne, kolik slotu z sesti je obsazenych",
+    !!boxDrzi && /Sloty téhle ligy drží \(\d z 6\)/.test(boxDrzi.tip),
+    boxDrzi ? boxDrzi.tip.slice(0, 200) : "");
+  check("…a vyznaci, ze tenhle kus mezi nimi je",
+    !!boxDrzi && /tip-ten/.test(boxDrzi.tip) && /tenhle kus/.test(boxDrzi.tip),
+    boxDrzi ? boxDrzi.tip.slice(0, 300) : "");
+  check("u kusu mimo sloty rekne, ze mezi nimi neni",
+    !!boxNe && /Tenhle kus mezi nimi není/.test(boxNe.tip) && !/tip-ten/.test(boxNe.tip),
+    boxNe ? boxNe.tip.slice(0, 300) : JSON.stringify(cisteniLigy.box));
+  check("odznacek v boxu je stejny jako v tabulce",
+    !!boxDrzi && !!cisteniLigy.tabulka[azuDrzi.id]
+      && cisteniLigy.tabulka[azuDrzi.id].tip === boxDrzi.tip
+      && cisteniLigy.tabulka[azuDrzi.id].text === boxDrzi.text,
+    JSON.stringify([cisteniLigy.tabulka[azuDrzi ? azuDrzi.id : ""], boxDrzi]));
+  // Poradi v PvPoke se meni, takze se nekontroluje konkretni cislo, ale
+  // shoda odznacku s tim, co engine o posunu vi.
+  if (cisteniLigy.posunGL) {
+    const sipka = (cisteniLigy.posunGL.rozdil > 0 ? "▲" : "▼") + Math.abs(cisteniLigy.posunGL.rozdil);
+    check("posun v PvPoke je videt primo na odznacku (" + sipka + ")",
+      !!boxDrzi && boxDrzi.text.indexOf(sipka) > -1, boxDrzi ? boxDrzi.text : "");
+  } else {
+    check("bez posunu v PvPoke odznacek zadnou sipku nema",
+      !!boxDrzi && !/[▲▼]/.test(boxDrzi.text), boxDrzi ? boxDrzi.text : "");
+  }
 
   await page.goto(URL);
   await page.waitForTimeout(700);
