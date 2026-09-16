@@ -12,6 +12,7 @@ import io
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -420,6 +421,73 @@ for _k, _v in species.items():
                 chyba("pokedex", "%s pod holym jmenem nese regionalni formu %s (%s), "
                                  "ale druh ma i %s (%s)"
                       % (_k, _r, "/".join(species[_r][2]), _jine[0], "/".join(species[_jine[0]][2])))
+
+
+# ---------------------------------------------------------------- Tym GO Rocket
+# Hlasky a sestavy se meni s kazdou rocket akci. Scraper se pri zmene struktury
+# stranky zastavi sam (STOP:), tohle hlida to druhe: ze data v repu nezestarla
+# a ze jsou cela. Bez toho by appka tise radila proti sestavam, ktere uz nejsou.
+try:
+    _rak = json.load(io.open(ROOT / "data" / "raketa.json", encoding="utf-8"))
+except Exception:
+    _rak = None
+if _rak is None:
+    varuj("raketa", "data/raketa.json chybi - spust tools/build_raketa.py")
+else:
+    _grunti = _rak.get("grunti") or []
+    _vudci = _rak.get("vudci") or []
+    if len(_grunti) < 15:
+        chyba("raketa", "jen %d gruntu - parser nejspis oslepl" % len(_grunti))
+    if len(_vudci) < 3:
+        chyba("raketa", "jen %d vudcu - parser nejspis oslepl" % len(_vudci))
+    _zname_typy = set(typy) | {"Misc"}
+    for _g in _grunti:
+        if not str(_g.get("hlaska") or "").strip():
+            chyba("raketa", "grunt %r nema hlasku - podle ni se pozna ve hre" % _g.get("typ"))
+        if _g.get("typ") not in _zname_typy:
+            chyba("raketa", "grunt ma neznamy typ %r" % _g.get("typ"))
+        if not any(_g.get("sloty") or []):
+            chyba("raketa", "grunt %r nema zadnou sestavu" % _g.get("typ"))
+    # Jmena musi jit dohledat v pokedexu, jinak k nim appka nespocita countery.
+    _REGIONY = {"alolan": "alola", "galarian": "galar", "hisuian": "hisui",
+                "paldean": "paldea"}
+
+    def _klice_jmena(jm):
+        """Kandidati na klic druhu. pokemondb pise 'Alolan Sandshrew' nebo
+        'Darmanitan (Standard Mode)', pokedex ma 'sandshrew-alola' a
+        'darmanitan'."""
+        t = str(jm or "").strip()
+        zavorka = re.sub(r"\s*\(.*?\)", "", t).strip()
+        out = []
+        for varianta in (t, zavorka):
+            slova = varianta.split()
+            if slova and slova[0].lower() in _REGIONY:
+                zbytek = re.sub(r"[^a-z0-9]", "", " ".join(slova[1:]).lower())
+                out.append(zbytek + "-" + _REGIONY[slova[0].lower()])
+                out.append(zbytek)
+            out.append(re.sub(r"[^a-z0-9]", "", varianta.lower()))
+        return [k for k in out if k]
+
+    _nezname = []
+    for _kdo in _grunti + _vudci:
+        for _slot in _kdo.get("sloty") or []:
+            for _jm in _slot:
+                if not any(k in species for k in _klice_jmena(_jm)):
+                    _nezname.append(_jm)
+    _nezname = sorted(set(_nezname))
+    if len(_nezname) > 8:
+        varuj("raketa", "%d jmen ze sestav pokedex nezna: %s"
+              % (len(_nezname), ", ".join(_nezname[:6])))
+    # Staroba dat. Rocket akce chodi zhruba mesicne.
+    _stazeno = (_rak.get("_meta") or {}).get("stazeno") or ""
+    if _stazeno:
+        try:
+            _stari = (date.today() - date.fromisoformat(_stazeno)).days
+            if _stari > 45:
+                varuj("raketa", "sestavy jsou %d dni stare - spust"
+                                " tools/build_raketa.py --refresh" % _stari)
+        except ValueError:
+            chyba("raketa", "nesmyslne datum stazeni %r" % _stazeno)
 
 
 # ---------------------------------------------------------------- akce a okna

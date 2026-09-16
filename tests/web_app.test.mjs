@@ -2687,7 +2687,11 @@ try {
     ]);
     document.getElementById("cheatCard").open = true;
     window.__pgo.renderCheatSheet();
-    const jmena = () => document.getElementById("cheatBody").textContent;
+    // Jen SEZNAMY DOPORUČENÝCH KUSŮ, ne celý tahák: od sekce Týmu GO Rocket
+    // je v textu i soupeřova sestava, a v ní Charizard je bez ohledu na to,
+    // co máš v rosteru.
+    const jmena = () => Array.from(document.querySelectorAll("#cheatBody .cs-picks"))
+      .map((e) => e.textContent).join(" ");
     const pred = jmena();
     // smazat Charizarda a tahák se musí přepočítat sám
     document.querySelectorAll("#tbody tr").forEach((tr) => {
@@ -15156,13 +15160,75 @@ try {
       fightLedLetec: nasobek("Fighting", ["Ice", "Flying"]),
       zemeOcelLetec: nasobek("Ground", ["Steel", "Flying"]) };
   });
+  /* ------------------------------------------------------------------
+     242) TAHAK: SBALENE SEKCE, TYM GO ROCKET A PVP ZEBRICKY
+     ------------------------------------------------------------------ */
+  console.log("\n242) tahak sbaleny + raketaci + zebricky po ligach");
+  const tahakUI = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Machamp", cp: 2600, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13,
+        fastMove: "Counter", charged1: "Dynamic Punch" },
+      { pokemon: "Metagross", cp: 2900, level: 32, ivAtk: 15, ivDef: 15, ivSta: 15,
+        fastMove: "Bullet Punch", charged1: "Meteor Mash" }
+    ]);
+    await new Promise((r) => setTimeout(r, 1200));
+    const zal = (k) => {
+      const b2 = [...document.querySelectorAll(".zal-btn")].filter((x) => x.dataset.klic === k)[0];
+      if (b2) b2.click();
+    };
+    zal("cheatCard");
+    await new Promise((r) => setTimeout(r, 1300));
+    const sekce = [...document.querySelectorAll("#cheatBody details.cs-sekce")];
+    const out = {
+      sekci: sekce.length,
+      otevrenych: sekce.filter((d) => d.open).length,
+      nadpisy: sekce.map((d) => d.querySelector("summary").textContent.trim())
+    };
+    const rak = sekce.filter((d) => /Rocket/.test(d.querySelector("summary").textContent))[0];
+    if (rak) {
+      rak.open = true;
+      await new Promise((r) => setTimeout(r, 400));
+      out.raketKaret = rak.querySelectorAll(".cs-raketa").length;
+      out.maHlasku = !!rak.querySelector(".cs-hlaska");
+      out.maSestavu = !!rak.querySelector(".cs-sestava");
+      out.maCountery = !!rak.querySelector(".cs-picks li");
+    }
+    zal("refCard");
+    await new Promise((r) => setTimeout(r, 1300));
+    const ligy = [...document.querySelectorAll("#refPvpTables details")];
+    out.ligSekci = ligy.length;
+    out.ligOtevrenych = ligy.filter((d) => d.open).length;
+    if (ligy[1]) {
+      ligy[1].open = true;
+      await new Promise((r) => setTimeout(r, 300));
+      out.ligRadku = ligy[1].querySelectorAll("tr").length - 1;
+    }
+    return out;
+  });
+  check("tahak ma sbalene sekce", tahakUI.sekci >= 3 && tahakUI.otevrenych === 0,
+    tahakUI.sekci + " sekcí, otevřených " + tahakUI.otevrenych);
+  check("…a mezi nimi je Tym GO Rocket",
+    tahakUI.nadpisy.some((t) => /Rocket/.test(t)), tahakUI.nadpisy.join(" | "));
+  check("raketaku je aspon patnact", tahakUI.raketKaret >= 15,
+    String(tahakUI.raketKaret));
+  check("u kazdeho je hlaska", tahakUI.maHlasku);
+  check("…i sestava, kterou posila", tahakUI.maSestavu);
+  check("…i countery z tveho rosteru", tahakUI.maCountery);
+  check("zebricky maji ctyri ligy, vsechny sbalene",
+    tahakUI.ligSekci === 4 && tahakUI.ligOtevrenych === 0,
+    tahakUI.ligSekci + " lig, otevřených " + tahakUI.ligOtevrenych);
+  check("…a v lize je nejvys sto radku",
+    tahakUI.ligRadku > 50 && tahakUI.ligRadku <= 100, String(tahakUI.ligRadku));
+
   check("jeden typ funguje jako dřív", /SCHYTÁ ZVÝŠENĚ/.test(dvojtyp.jeden),
     dvojtyp.jeden.slice(0, 100));
   check("dva typy se daji vybrat naraz",
     dvojtyp.vybrane.join(",") === "Fighting,Normal", dvojtyp.vybrane.join(","));
   check("…a klepnutim se prvni odebere",
     dvojtyp.poOdebrani.join(",") === "Fighting", dvojtyp.poOdebrani.join(","));
-  check("kombinace ma vlastni nadpis", /Obrana kombinace/.test(dvojtyp.dva),
+  // Nadpis nad kombinací byl zbytečná věta navíc — obsah ji řekne sám.
+  check("kombinace zmeni obsah proti jednomu typu", dvojtyp.dva !== dvojtyp.jeden,
     dvojtyp.dva.slice(0, 80));
   // pokemondb pro Normal/Fighting: +60 % Fairy, Fighting, Flying, Psychic
   check("zvysene poskozeni sedi s referencni tabulkou", (() => {

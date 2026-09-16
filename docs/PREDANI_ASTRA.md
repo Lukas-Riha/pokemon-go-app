@@ -658,3 +658,42 @@ třídu `druhy`.
 
 Ověřeno proti pokemondb.net/type/dual: Normal/Fighting dá +60 % Fairy,
 Fighting, Flying, Psychic; −37,5 % Bug, Dark, Rock; −60,9 % Ghost.
+
+## Co je na vzhledové vrstvě (16. 9., ze screenshotů TEST verze)
+
+Čtyři věci z dnešního kola jsou ve tvé části, nesahal jsem na ně:
+
+1. **„Vylepšil jsem ho" visí pod tlačítkem „Upravit tohoto Pokémona"**, ne
+   vedle něj. Patří do jedné řady.
+2. **Bublina evoluční řady zasahuje do posuvníku stránky** — musí se posunout
+   dovnitř, ať nepřekrývá scrollbar.
+3. **V detailu se dubluje informace**: „Ponechat · Max Electric 1/3" je
+   v zeleném boxu a hned vpravo od něj ještě jednou samostatně. Totéž
+   u „Dynamax 1/2".
+4. **Panel evoluční řady se stickuje i s nadpisem**, takže při scrollování
+   je „EVOLUČNÍ ŘADA" dvakrát pod sebou.
+
+Z mé strany k tomu: **„už přerostl" v tabulce lig je nově na střed** (bylo
+vlevo, zatímco zbytek sloupce na střed) — kdybys to přebíjela, tohle je
+záměr, ne omyl.
+
+## Tým GO Rocket v Taháku + sbalené sekce (16. 9.)
+
+**Nová data `RAKETA` v appce** (`{grunti: [{typ, hlaska, sloty}], vudci:
+[{jmeno, sloty}]}`) ze scraperu `tools/build_raketa.py`, který se pouští
+při nasazení. Tahák z nich skládá kartu na každou hlášku: typ, co grunt
+vykřikne, jeho tříslotovou sestavu a **tvoje tři nejlepší countery
+z rosteru**.
+
+**Sekce Taháku jsou nově sbalené** (`<details class="cs-sekce">`): Raid
+bossové, Tým GO Rocket, Na bosse typu… Rozbalený Tahák byl přes dvacet
+bossů po šesti counterech.
+
+**Žebříčky mají novou tabulku „PvP žebříčky — top 100 v každé lize"**
+(`#refPvpTables`), taky sbalenou po ligách, s posunem v PvPoke u každého
+druhu.
+
+**Pozor při počítání karet:** raketácké karty mají vlastní třídu
+`cs-raketa`, ne `cs-type` — jinak by se počítaly mezi typové karty. A text
+Taháku teď obsahuje i **soupeřovy** pokémony, takže „je v taháku Charizard?"
+už neznamená „mám Charizarda"; hledej v `.cs-picks`.

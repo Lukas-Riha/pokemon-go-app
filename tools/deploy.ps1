@@ -86,6 +86,20 @@ if ($LASTEXITCODE -ne 0) { "  (nepodařilo se stáhnout, jedu s tím, co je v da
 
 
 
+# Sestavy Tymu GO Rocket. Hlasky i sestavy se meni s kazdou rocket akci,
+
+# takze je nema smysl drzet rucne — scraper se pri zmene struktury stranky
+
+# zastavi sam a audit dat hlasi, kdyz data zestarnou.
+
+"Obnovuji sestavy Tymu GO Rocket..."
+
+& $python (Join-Path $root "tools\build_raketa.py") --refresh
+
+if ($LASTEXITCODE -ne 0) { "  (nepodarilo se stahnout, jedu s tim, co je v data/raw)" }
+
+
+
 # 2) Data v appce musí být čerstvá — jinak bychom sdíleli starý pokédex.
 
 "Zapékám data do appky..."

@@ -36,6 +36,10 @@ moves_all = json.loads(MOVES.read_text(encoding="utf-8"))
 moves = {k: moves_all[k] for k in ("fastNames", "fast", "chargedNames", "charged",
                                    "pvpFast", "pvpCharged", "learn")}
 
+RAKETA = ROOT / "data" / "raketa.json"
+raketa_all = json.loads(RAKETA.read_text(encoding="utf-8")) if RAKETA.exists() else {}
+raketa = {k: raketa_all.get(k, []) for k in ("grunti", "vudci")}
+
 EVENTS = ROOT / "data" / "events.json"
 events_all = json.loads(EVENTS.read_text(encoding="utf-8"))
 # „ligy" = rotace GO Battle League (co běží teď a co bude dál). Je to jediný
@@ -74,6 +78,7 @@ data_info = {
     "reference": reference_all["_meta"].get("aktualizovano", ""),
     "moves": moves_all["_meta"].get("stazeno", ""),
     "events": events_all["_meta"].get("stazeno", ""),
+    "raketa": (raketa_all.get("_meta") or {}).get("stazeno", ""),
 }
 
 # Razítko sestavení. Bez něj se u sdíleného souboru nepozná, jestli má druhý
@@ -86,6 +91,7 @@ BLOCKS = [
     ("// === META START", "// === META END ===", "META", meta),
     ("// === MOVES START", "// === MOVES END ===", "MOVES", moves),
     ("// === EVENTS START", "// === EVENTS END ===", "EVENTS", events),
+    ("// === RAKETA START", "// === RAKETA END ===", "RAKETA", raketa),
     ("// === SPRITES START", "// === SPRITES END ===", "SPRITES", sprites),
     ("// === TYPE ICONS START", "// === TYPE ICONS END ===", "TYPE_ICONS", type_icons),
     ("// === DATA INFO START", "// === DATA INFO END ===", "DATA_INFO", data_info),
