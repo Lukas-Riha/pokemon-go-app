@@ -95,7 +95,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   // „48.0“ a „14.0“ ze skenu jako 48 a 14; IV procento (nebo rozsah ze skenu) za hodnotami IV.
   const cisloKusu=v=>v===''||v==null?'?':(isNaN(Number(v))?String(v):String(Number(v)));
   const ivKusu=id=>{const c=(P.getComputed()||{})[id]||{};const t=c.ivUncertain&&c.ivRange?c.ivRange:(c.ivPct==null?'':Math.round(c.ivPct*100)+' %');return t?' · '+esc(t):''};
-  function openDetail(id,retain=false){const r=P.getRows().find(r=>r.id===id);if(!r)return;if(!retain)previousFocus=document.activeElement;dialogId=id;$('#atlasIdentity').innerHTML=`<div class="atlas-detail-identity">${monImage(r)}<div><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}${r.star?' · OZNAČENO ★':''}</div><h2 id="atlasDetailTitle">${esc(r.pokemon)}</h2><p>${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}</p><p>IV ${esc(cisloKusu(r.ivAtk))} / ${esc(cisloKusu(r.ivDef))} / ${esc(cisloKusu(r.ivSta))}${ivKusu(id)}</p></div></div>`;$('#atlasModal').hidden=false;P.atlasDetail(id,$('#atlasDetailContent'),closeDetail);document.body.style.overflow='hidden';if(!retain)$('.atlas-drawer-header button').focus();}
+  function openDetail(id,retain=false){const r=P.getRows().find(r=>r.id===id);if(!r)return;if(!retain)previousFocus=document.activeElement;dialogId=id;$('#atlasIdentity').innerHTML=`<div class="atlas-detail-identity">${monImage(r)}<div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}${r.star?' · OZNAČENO ★':''}</div><h2 id="atlasDetailTitle">${esc(r.pokemon)}</h2><p>${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}</p><p>IV ${esc(cisloKusu(r.ivAtk))} / ${esc(cisloKusu(r.ivDef))} / ${esc(cisloKusu(r.ivSta))}${ivKusu(id)}</p></div></div>`;$('#atlasModal').hidden=false;P.atlasDetail(id,$('#atlasDetailContent'),closeDetail);document.body.style.overflow='hidden';if(!retain)$('.atlas-drawer-header button').focus();}
   function closeDetail(){if(!dialogId)return;dialogId=null;$('#atlasModal').hidden=true;$('#atlasDetailContent').innerHTML='';document.body.style.overflow='';previousFocus?.focus({preventScroll:true});}
   window.addEventListener('atlas:refresh-detail',()=>{refresh();if(dialogId)openDetail(dialogId,true)});
   function setCompact(value){compact=value;document.body.classList.toggle('atlas-compact',value);try{localStorage.setItem('pgo_test_atlas_compact',value?'1':'0')}catch{}renderRoster();}
@@ -374,8 +374,39 @@ globalThis.AtlasBudget = (() => {
     if(typy.length){const obal=document.createElement('span');obal.className='atlas-vyhoda';obal.setAttribute('data-tip','Proti těmto typům je jeho útok silný. Dvojtyp s jedním z nich schytá 1,6×, se dvěma z nich 2,56× — kde to druhý typ vyruší, je v Typovém pokrytí.');obal.innerHTML='<small>silný proti</small>';typy.forEach(t=>obal.append(t));titulek.append(obal)}
     pokryti.closest('details')?.remove();
   }
+  const identita=document.querySelector('#atlasIdentity .atlas-detail-identity');
+  // Útoky a nejlepší sestava taky do hlavičky — pod sebou vedle jména, ať se
+  // kvůli nim nemusí rolovat dolů. Věty (stav útoků, procento movesetu,
+  // „evolucí se útoky losují znovu") jsou v bublinách.
+  const utokySekce=container.querySelector('[data-detail-section=utoky]'),sestavySekce=container.querySelector('[data-detail-section=sestavy]');
+  if(utokySekce&&identita){
+    identita.querySelector('.atlas-ident-utoky')?.remove();
+    const box=document.createElement('section');box.className='atlas-ident-utoky';
+    const nadpis=document.createElement('div');nadpis.className='d-box-h';nadpis.textContent='Útoky';box.append(nadpis);
+    const stav=utokySekce.querySelector('.atlas-move-status'),moves=utokySekce.querySelector('.d-moves');
+    const why=moves?moves.querySelector('.d-why'):null;
+    const veta=[stav?stav.textContent.trim():'',why?why.textContent.trim():''].filter(Boolean).join(' ');
+    if(why)why.remove();
+    if(moves)box.append(moves);
+    if(sestavySekce){
+      [...sestavySekce.querySelectorAll('.d-sestavy > div')].forEach(d=>{
+        const h=(d.querySelector('.d-role-h')||{}).textContent||'',v=(d.querySelector('.d-role-v')||{}).textContent||'',pop=(d.querySelector('.d-role-p')||{}).textContent||'';
+        const radek=document.createElement('div');radek.className='atlas-sestava';
+        radek.setAttribute('data-tip',(h?h+' — ':'')+pop);
+        const kdy=document.createElement('small');kdy.textContent=/^Po evoluci/.test(h)?'Po evo':'Teď';
+        const kus=document.createElement('b');kus.textContent=v;
+        radek.append(kdy,kus);box.append(radek);
+      });
+    }
+    if(veta)box.setAttribute('data-tip',veta);
+    identita.append(box);
+    utokySekce.remove();sestavySekce?.remove();
+  }
+  // Herní využití bez rámečku sekce — jen čtyři bubliny, text zarovnaný nahoru.
+  const nacoSekce=container.querySelector('[data-detail-section=naco]');
+  if(nacoSekce){const role=nacoSekce.querySelector('.d-roles');if(role){role.classList.add('atlas-vyuziti');nacoSekce.before(role)}nacoSekce.remove()}
   // Statistiky, IV a strop CP do hlavičky vedle jména a obrázku; sekce dole odpadá.
-  const statsSekce=container.querySelector('[data-detail-section=stats]'),identita=document.querySelector('#atlasIdentity .atlas-detail-identity');if(statsSekce&&identita){identita.querySelector('.atlas-ident-stats')?.remove();const mrizka=statsSekce.querySelector('.d-grid');if(mrizka){mrizka.classList.add('atlas-ident-stats');mrizka.querySelectorAll('.d-box-h').forEach(h=>{if(/^IV/.test(h.textContent))h.textContent='IV'});identita.append(mrizka)}statsSekce.remove()}
+  const statsSekce=container.querySelector('[data-detail-section=stats]');if(statsSekce&&identita){identita.querySelector('.atlas-ident-stats')?.remove();const mrizka=statsSekce.querySelector('.d-grid');if(mrizka){mrizka.classList.add('atlas-ident-stats');mrizka.querySelectorAll('.d-box-h').forEach(h=>{if(/^IV/.test(h.textContent))h.textContent='IV'});identita.append(mrizka)}statsSekce.remove()}
   document.querySelectorAll('.atlas-detail-paging [data-detail-step]').forEach(b=>{b.title=b.dataset.detailStep==='1'?'Další kus (→ nebo D)':'Předchozí kus (← nebo A)'});
   // Doporučený krok vedle verdiktu místo vlastní sekce dole.
   const verd=container.querySelector('.atlas-verdict-first'),coted=container.querySelector('[data-detail-section=coted]');if(verd){const radek=document.createElement('div');radek.className='atlas-verdict-radek';verd.before(radek);radek.append(verd);const akce=coted&&coted.querySelector('.d-roles-akce');if(akce){const krok=document.createElement('section');krok.className='atlas-krok';krok.setAttribute('aria-label','Doporučený krok');krok.append(akce);radek.append(krok)}}coted?.remove();

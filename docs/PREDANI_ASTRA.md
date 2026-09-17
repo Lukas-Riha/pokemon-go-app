@@ -75,6 +75,15 @@
 > „silný proti"), cena vylepšení je krátká na jeden řádek („L40 · 475 tis.
 > + 248 candy + 296 XL", celá věta je v bublině) a „silný proti" má menší
 > bubliny s menšími mezerami.
+>
+> **Sedmé kolo 17. 9. (Claude)** — do hlavičky přibyl blok `.atlas-ident-utoky`
+> (útoky pod sebou + „Teď" / „Po evo" nejlepší sestava, věty v bublinách);
+> sekce „Útoky a připravenost" i „Nejlepší sestava" dole zmizely. „Herní
+> využití" je bez rámečku sekce — jen `.d-roles.atlas-vyuziti` se čtyřmi
+> kartami, text zarovnaný nahoru. Evoluční sloupec se roztáhne do výšky
+> (žádný prázdný rám pod řadou). Hlavička má pevnou geometrii: výška 200 px,
+> jméno `.atlas-ident-text` 300 px, útoky 260 px, staty 150 px — dlouhé jméno
+> ani poznámka u shadow statů s ní nehnou. Pod 1100 px se to rozpadá do řádků.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

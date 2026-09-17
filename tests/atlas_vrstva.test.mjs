@@ -387,7 +387,7 @@ const d7 = await vzhled.evaluate(async () => {
   out.krok = krok ? { spolecnyRadek: verd.parentElement === krok.parentElement && Math.abs(vr.top - kr.top) < 4,
     vedle: kr.left >= vr.right, uzsi: vr.width < sloupec.getBoundingClientRect().width * 0.6,
     karet: krok.querySelectorAll(".d-role").length } : null;
-  const naco = m.querySelector("[data-detail-section=naco]");
+  const naco = m.querySelector(".atlas-vyuziti");
   out.karty = naco ? [...naco.querySelectorAll(".d-role-h")].map((e) => e.textContent) : [];
   // karty rolí vedle sebe v jednom řádku, stejně široké, bez textu
   const karty7 = naco ? [...naco.querySelectorAll(".d-role")].map((k) => k.getBoundingClientRect()) : [];
@@ -491,8 +491,16 @@ const d8 = await p8.evaluate(async () => {
   out.sirkaDlouhy = Math.round(m.querySelector(".atlas-detail-identity").getBoundingClientRect().width);
   out.detailTyp = st(m.querySelector(".detail-title .d-type"));
   out.detailZnacky = [...m.querySelectorAll(".detail-title .rarity-chip, .detail-title .atlas-lucky-tag")].map(st);
-  out.karty = [...m.querySelectorAll("[data-detail-section=naco] .d-role")].map((k) => Math.round(k.getBoundingClientRect().height));
-  out.kartyTop = [...m.querySelectorAll("[data-detail-section=naco] .d-role")].map((k) => Math.round(k.getBoundingClientRect().top));
+  out.karty = [...m.querySelectorAll(".atlas-vyuziti .d-role")].map((k) => Math.round(k.getBoundingClientRect().height));
+  out.kartyTop = [...m.querySelectorAll(".atlas-vyuziti .d-role")].map((k) => Math.round(k.getBoundingClientRect().top));
+  // útoky a nejlepší sestava v hlavičce, ne v sekci dole
+  const utokyBox = m.querySelector(".atlas-detail-identity .atlas-ident-utoky");
+  out.utoky = utokyBox ? { utoku: utokyBox.querySelectorAll(".d-move").length,
+    sestav: utokyBox.querySelectorAll(".atlas-sestava").length,
+    tip: !!utokyBox.getAttribute("data-tip"),
+    prepad: Math.max(0, utokyBox.scrollHeight - utokyBox.clientHeight),
+    vHlavicce: utokyBox.getBoundingClientRect().bottom <= m.querySelector(".atlas-detail-identity").getBoundingClientRect().bottom + 1 } : null;
+  out.sekceDole = [...m.querySelectorAll("[data-detail-section]")].map((x) => x.dataset.detailSection);
   out.tipDmax = ([...m.querySelectorAll(".atlas-verdict-first .dv-chip")].find((e) => e.textContent === "Dynamax") || { getAttribute: () => "" })
     .getAttribute("data-tip");
   A.closeDetail();
@@ -512,6 +520,11 @@ const d8 = await p8.evaluate(async () => {
   const krok8 = [...m.querySelectorAll(".atlas-krok .d-role")].map((k) => ({ h: k.querySelector(".d-role-h").textContent,
     r: k.getBoundingClientRect() }));
   const verd8 = m.querySelector(".atlas-verdict-first").getBoundingClientRect();
+  const utokyRhydon = m.querySelector(".atlas-ident-utoky");
+  out.sestavy = { radku: utokyRhydon ? utokyRhydon.querySelectorAll(".atlas-sestava").length : 0,
+    text: utokyRhydon ? [...utokyRhydon.querySelectorAll(".atlas-sestava")].map((x) => x.textContent.trim()) : [],
+    tipy: utokyRhydon ? [...utokyRhydon.querySelectorAll(".atlas-sestava")].every((x) => !!x.getAttribute("data-tip")) : false,
+    prepad: utokyRhydon ? Math.max(0, utokyRhydon.scrollHeight - utokyRhydon.clientHeight) : -1 };
   out.krok = { karty: krok8.map((k) => k.h), vedle: krok8.length >= 2 && krok8.every((k, i) => !i || (Math.abs(k.r.top - krok8[0].r.top) < 2
       && k.r.left >= krok8[i - 1].r.right)),
     stejnaVyska: krok8.every((k) => Math.abs(k.r.height - krok8[0].r.height) < 2),
@@ -550,6 +563,16 @@ check("značky v kartě mají výšku, písmo a zaoblení typového štítku",
 check("…i v detailu",
   d8.detailZnacky.length >= 4 && d8.detailZnacky.every((z) => z.h === d8.detailTyp.h && z.fs === d8.detailTyp.fs && z.r === d8.detailTyp.r),
   JSON.stringify({ typ: d8.detailTyp, znacky: d8.detailZnacky }));
+check("útoky a nejlepší sestava jsou v hlavičce a nepřetečou",
+  !!d8.utoky && d8.utoky.utoku >= 1 && d8.utoky.tip
+    && d8.utoky.prepad === 0 && d8.utoky.vHlavicce, JSON.stringify(d8.utoky));
+check("…u kusu s evolucí jsou v nich obě nejlepší sestavy (teď i po evoluci) a vejdou se",
+  d8.sestavy.radku === 2 && d8.sestavy.tipy && d8.sestavy.prepad === 0
+    && /^Teď/.test(d8.sestavy.text[0]) && /^Po evo/.test(d8.sestavy.text[1]),
+  JSON.stringify(d8.sestavy));
+check("…a sekce Útoky, Nejlepší sestava a Herní využití dole nejsou",
+  ["utoky", "sestavy", "naco", "stats", "proti", "coted"].every((k) => d8.sekceDole.indexOf(k) === -1),
+  JSON.stringify(d8.sekceDole));
 check("herní využití: čtyři karty v jednom řádku, stejně vysoké", d8.karty.length === 4
   && d8.karty.every((h) => h === d8.karty[0]) && d8.kartyTop.every((t) => t === d8.kartyTop[0]),
   JSON.stringify({ vysky: d8.karty, top: d8.kartyTop }));
@@ -590,7 +613,7 @@ const d9 = await p9.evaluate(async () => {
     return Math.round(r.top) + "/" + Math.round(r.height) + "/" + Math.round(r.width); };
   const bloky = { identita: ".atlas-detail-identity", staty: ".atlas-ident-stats", verdikt: ".atlas-verdict-radek",
     znacky: ".detail-title", evoluce: ".atlas-evolution-column", prvniSekce: "[data-detail-section]",
-    vyuziti: "[data-detail-section=naco]", utoky: "[data-detail-section=utoky]" };
+    vyuziti: ".atlas-vyuziti", utoky: ".atlas-ident-utoky" };
   const out = { kusy: [], pokryti: 0, cena: [] };
   for (const r of P.getRows()) {
     A.openDetail(r.id);
