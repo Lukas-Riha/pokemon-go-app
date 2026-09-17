@@ -36,6 +36,18 @@
 > gym, Max, mega, elitní útok, 100 %, CUTE, ostatní), karty „Herní
 > využití" jdou PvP, Raid, Gym, Mega; typové pokrytí vypisuje výhodu jen
 > proti samotným typům po útočném typu + „Výhoda se vyruší".
+>
+> **Třetí kolo 17. 9. (Claude)** — značky SHADOW/DMAX/100%/CUTE/SHINY/LUCKY
+> mají tvar i velikost typových štítků (engine `.rarity-chip`, v `atlas.css`
+> blok „Claude 17. 9. (3)"): v kartě 18 px / 10 px, v detailu 24 px / 12 px,
+> zaoblení 11 px, vypnutý přepínač čárkovaně. Test porovnává výšku, písmo
+> a zaoblení s `.d-type` — barvy jsou tvoje. Štítky „pod čarou" u pouštěného
+> kusu (`.dv-pod`, čárkované) a jeden štítek Dynamax místo Max Dragon/Ground/
+> tank. Herní využití: všechny karty `.d-role-radek` (bez textu a pruhu).
+> V `atlas.js`: IV procento v identitě („IV 14 / 15 / 15 · 98 %", čísla bez
+> „.0"), pod pruhy IV a ve stropu bez textu, šipky ←/→ a A/D listují detailem.
+> Evoluční řada je i u druhu bez evoluce (jeden stupeň + „Tenhle druh se
+> nevyvíjí.") — engine ji kreslí vždy.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

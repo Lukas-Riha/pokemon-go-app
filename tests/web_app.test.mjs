@@ -6492,8 +6492,12 @@ try {
       ? linie.flabebe.tady.join(",") : "bez boxu");
   check("…a řada má tři stupně", linie.flabebe.stupnu === 3, String(linie.flabebe.stupnu));
 
-  check("u druhu bez evoluce se box vůbec neukazuje",
-    linie.absol === null, JSON.stringify(linie.absol));
+  // Od 17. 9. má i druh bez evoluce řadu o jednom stupni — sekce nesmí
+  // mizet, jinak rozložení detailu skáče kus od kusu (Lukáš).
+  check("druh bez evoluce má řadu se sebou samým a poznámkou",
+    !!linie.absol && linie.absol.kusu === 1 && linie.absol.stupnu === 1
+      && linie.absol.tady.join() === "Absol" && /nevyvíjí/.test(linie.absol.text),
+    JSON.stringify(linie.absol));
 
   // Panel „Odkud se to bere" musí popisovat appku, jaká je TEĎ — jinak
   // uživatel čte návod k něčemu, co už neplatí.
@@ -9009,21 +9013,24 @@ try {
     if (bunka) bunka.click();
     const det = document.querySelector(".detail-inner");
     if (!det) return { chybi: true };
-    const bar = det.querySelector(".d-role-bar i");
+    // Od 17. 9. jsou karty rolí na jeden řádek (Lukáš): procento je
+    // v textu verdiktu, pruh a vysvětlení zmizely (vysvětlení je v bublině).
+    const raid = Array.from(det.querySelectorAll(".d-roles:not(.d-roles-akce) .d-role"))
+      .find((k) => /Raid/.test(k.textContent));
+    const pct = raid ? raid.querySelector(".d-role-pct") : null;
     return {
       maRoli: det.querySelectorAll(".d-role").length > 0,
-      maPruhRole: !!bar,
-      // šířka pruhu musí odpovídat procentu v textu, ne být napevno
-      sirka: bar ? bar.style.width : "",
-      vRozsahu: bar ? (parseFloat(bar.style.width) > 0
-        && parseFloat(bar.style.width) <= 100) : false,
+      maPruhRole: !!det.querySelector(".d-roles:not(.d-roles-akce) .d-role-bar"),
+      pct: pct ? pct.textContent : "",
+      tip: raid ? !!raid.getAttribute("data-tip") : false,
     };
   });
   check("detail má karty rolí", detailPruhy.maRoli === true);
-  check("…a u role, která něco umí, i pruh",
-    detailPruhy.maPruhRole === true, JSON.stringify(detailPruhy));
-  check("…jehož šířka odpovídá procentu",
-    detailPruhy.vRozsahu === true, detailPruhy.sirka);
+  check("…na jeden řádek bez pruhu",
+    detailPruhy.maPruhRole === false, JSON.stringify(detailPruhy));
+  check("…procento role je v textu a vysvětlení v bublině",
+    /^\d+ % špičky$/.test(detailPruhy.pct.replace(/\s/g, " ")) && detailPruhy.tip === true,
+    JSON.stringify(detailPruhy));
 
   console.log("\n162) Rozpočet po krocích — víc kusů najednou, ne jeden celý");
   const kroky = await page.evaluate(() => {
@@ -9841,21 +9848,21 @@ try {
     document.getElementById("boxModeBtn").click();
     await new Promise((r) => setTimeout(r, 400));
     const det = document.getElementById("bmDetail");
-    const btn = det.querySelector(".vic-btn");
-    const p = btn ? btn.previousElementSibling : null;
-    const pred = p ? Math.round(p.getBoundingClientRect().height) : 0;
-    if (btn) btn.click();
-    const po = p ? Math.round(p.getBoundingClientRect().height) : 0;
+    // Karty rolí jsou od 17. 9. bez textu (jeden řádek), vysvětlení je
+    // v bublině — „víc" u nich tedy není co rozbalovat.
+    const role = Array.from(det.querySelectorAll(".d-roles:not(.d-roles-akce) .d-role"));
+    const rolePopis = role.filter((k) => k.querySelector(".d-role-p")).length;
+    const roleTip = role.filter((k) => k.getAttribute("data-tip")).length;
     // strop CP před evolucí musí být v řádku vidět, ne jen v bublině
     const stropu = det.querySelectorAll(".d-lg-strop").length;
     const stropEl = stropu ? det.querySelector(".d-lg-strop") : null;
     const stropText = stropEl ? stropEl.textContent : "";
     const stropTitle = stropEl ? (stropEl.title || stropEl.dataset.tip || "") : "";
     P.boxZavritNatvrdo();
-    return { maBtn: !!btn, pred, po, stropu, stropText, stropTitle };
+    return { rolí: role.length, rolePopis, roleTip, stropu, stropText, stropTitle };
   });
-  check("v čištění boxu se popis role opravdu rozbalí",
-    vicVBoxu.maBtn && vicVBoxu.po > vicVBoxu.pred, JSON.stringify(vicVBoxu));
+  check("v čištění boxu jsou role bez textu, vysvětlení je v bublině",
+    vicVBoxu.rolí === 4 && vicVBoxu.rolePopis === 0 && vicVBoxu.roleTip === 4, JSON.stringify(vicVBoxu));
   check("a strop CP před evolucí je v řádku ligy vidět",
     vicVBoxu.stropu > 0 && /Totodile\s*\d+/.test(vicVBoxu.stropText),
     JSON.stringify(vicVBoxu));
@@ -16464,6 +16471,126 @@ try {
     poradi255.pokryti && poradi255.pokryti.vyrusene.length > 0 && poradi255.pokryti.vyrusene.every((n) => n === 2)
       && /jeden typ je proti útoku slabý, druhý odolá/.test(poradi255.pokryti.text),
     JSON.stringify(poradi255.pokryti && poradi255.pokryti.vyrusene));
+
+  // ---------------------------------------------------------------- 256
+  // Max Battle v jednom štítku „Dynamax" (pořadí po typech v bublině),
+  // pouštěný kus se štítky „pod čarou" místo věty, karty rolí na jeden
+  // řádek, evoluční řada i u druhu bez evoluce, značky jako typové štítky.
+  console.log("\n256) Dynamax stitek, pod carou, karty roli, evolucni rada, znacky");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  const s256 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15,
+        fastMove: "Dragon Tail", charged1: "Earth Power", dynamax: "Ano" },
+      { pokemon: "Garchomp", cp: 2000, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10, dynamax: "Ano" },
+      { pokemon: "Garchomp", cp: 1900, level: 20, ivAtk: 8, ivDef: 10, ivSta: 10, dynamax: "Ano" },
+      { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15 },
+      { pokemon: "Heracross", cp: 2800, level: 35, ivAtk: 12, ivDef: 13, ivSta: 14 },
+      { pokemon: "Annihilape", cp: 1756, level: 20.5, ivAtk: 1, ivDef: 10, ivSta: 9 },
+      { pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15, dynamax: "Ano" },
+      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const sel = document.getElementById("viewSelect");
+    sel.value = "verdict";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 300));
+    const comp = P.getComputed(), rows = P.getRows();
+    const kus = (jm, cp) => rows.find((r) => r.pokemon === jm && (!cp || r.cp === cp));
+    const tipy = (html) => { const d = document.createElement("div"); d.innerHTML = html || "";
+      return [...d.querySelectorAll(".dv-chip:not(.dv-vic)")].map((e) => ({ t: e.textContent,
+        tip: e.getAttribute("data-tip") || "", pod: e.classList.contains("dv-pod") })); };
+    const out = {};
+    const g1 = kus("Garchomp", 4357), g3 = kus("Garchomp", 1900);
+    out.g1Stitky = (comp[g1.id].duvody || []).map((d) => d.stitek);
+    out.g1Dmax = tipy(P.atlasDuvody(comp[g1.id])).find((x) => x.t === "Dynamax") || null;
+    out.g1MaxSloty = P.base().find((b) => b.row.id === g1.id).sloty.filter((s) => s.druh === "dmax").map((s) => s.popis);
+    out.g3Keep = comp[g3.id].keep;
+    out.g3Pod = (comp[g3.id].podCarou || []).map((x) => x.druh + ":" + x.typ);
+    out.g3Chipy = tipy(P.atlasDuvody(comp[g3.id]));
+    // tabulka: pouštěný kus má v buňce verdiktu štítky pod čarou, ne větu
+    const tr = [...document.querySelectorAll("#tbody tr")].find((t) => /1\s?900/.test(t.textContent) && /Garchomp/.test(t.textContent));
+    const td = tr && [...tr.querySelectorAll("td")].find((x) => x.querySelector(".dv-radek-pod"));
+    out.g3Bunka = td ? { pod: td.querySelectorAll(".dv-pod").length, sub: !!td.querySelector(".cell-sub") } : null;
+    out.rattata = { pod: (comp[kus("Rattata").id].podCarou || []).length, keep: comp[kus("Rattata").id].keep };
+    // přerostlé ligy se nikde neobjeví
+    out.prerostle = [];
+    P.base().forEach((b) => {
+      const c = comp[b.row.id];
+      (b.ligyVse || []).forEach((L) => {
+        const mimo = [L.ted, L.po].every((v) => !v || v.prerostl || v.nevejde || !v.rank);
+        if (!mimo) return;
+        if ((c.podCarou || []).some((x) => x.druh === "pvp" && x.typ === L.liga)) out.prerostle.push(b.row.pokemon + " pod:" + L.liga);
+        if (!c.keepGood && new RegExp("v " + L.nazev + " na #").test(c.keepTitle || "")) out.prerostle.push(b.row.pokemon + " věta:" + L.nazev);
+      });
+    });
+    // detail: karty rolí, evolvovat, evoluční řada, značky
+    const detail = (id) => { const box = document.createElement("div"); document.body.append(box); P.atlasDetail(id, box); return box; };
+    const bG = detail(g1.id);
+    const karty = [...bG.querySelectorAll(".d-roles:not(.d-roles-akce) > .d-role")];
+    out.karty = karty.map((k) => ({ h: k.querySelector(".d-role-h").textContent, radek: k.classList.contains("d-role-radek"),
+      popis: !!k.querySelector(".d-role-p"), bar: !!k.querySelector(".d-role-bar"), vyska: Math.round(k.getBoundingClientRect().height),
+      tip: !!k.getAttribute("data-tip") }));
+    const typ = bG.querySelector(".detail-title .d-type"), zn = [...bG.querySelectorAll(".detail-title .rarity-chip")];
+    const st = (e) => { const c = getComputedStyle(e); return { h: Math.round(e.getBoundingClientRect().height), fs: c.fontSize, r: c.borderRadius }; };
+    out.typ = typ ? st(typ) : null;
+    out.znacky = zn.map((e) => Object.assign({ t: e.textContent.trim() }, st(e)));
+    bG.remove();
+    const bR = detail(kus("Rhydon").id);
+    const evo = [...bR.querySelectorAll(".d-roles-akce .d-role")].find((k) => /Evolvovat/.test(k.textContent));
+    out.evolvovat = evo ? { popis: !!evo.querySelector(".d-role-p"), tip: evo.getAttribute("data-tip") || "",
+      text: evo.textContent.replace(/\s+/g, " ").trim() } : null;
+    bR.remove();
+    const bH = detail(kus("Heracross").id);
+    out.heracross = { evo: !!bH.querySelector(".d-evo-side"), kusu: bH.querySelectorAll(".d-evo-kus").length,
+      tady: bH.querySelectorAll(".d-evo-kus.tady").length, text: (bH.querySelector(".d-evo-side") || {}).textContent || "" };
+    bH.remove();
+    return out;
+  });
+  check("Dynamax kus má jeden štítek Dynamax místo Max Dragon / Max Ground / Max tank",
+    s256.g1Stitky.filter((x) => x === "Dynamax").length === 1 && !s256.g1Stitky.some((x) => /^Max /.test(x)),
+    JSON.stringify(s256.g1Stitky));
+  check("…sloty v Max Battle v rozpočtu zůstaly", s256.g1MaxSloty.length >= 2, JSON.stringify(s256.g1MaxSloty));
+  check("…a bublina ukáže pořadí ve všech typech i jako tank",
+    !!s256.g1Dmax && /Max Dragon 1\/3/.test(s256.g1Dmax.tip) && /Max Ground \d\/3/.test(s256.g1Dmax.tip)
+      && /Max tank \d\/3/.test(s256.g1Dmax.tip) && /tenhle kus/.test(s256.g1Dmax.tip) && /Dmax kus druhu 1\/2/.test(s256.g1Dmax.tip),
+    s256.g1Dmax ? s256.g1Dmax.tip.replace(/<[^>]+>/g, " ").slice(0, 300) : "bez štítku");
+  check("pouštěný kus (3. Garchomp) má štítky pod čarou: ML, kvalita, raid, gym, Dynamax",
+    /^Zahodit/.test(s256.g3Keep) && ["pvp:ML", "kvalita:ML", "raid:Ground", "gym:Gym", "dmax:Dynamax"].every((k) => s256.g3Pod.indexOf(k) > -1),
+    s256.g3Keep + " " + JSON.stringify(s256.g3Pod));
+  const g3Kval = s256.g3Chipy.find((x) => /%$/.test(x.t));
+  check("…všechny čárkované, liga s pořadím a kvalita jen s procentem",
+    s256.g3Chipy.length >= 5 && s256.g3Chipy.every((x) => x.pod) && s256.g3Chipy.some((x) => /^ML #\d+$/.test(x.t))
+      && !!g3Kval && /^\d+(,\d)?\s%$/.test(g3Kval.t),
+    JSON.stringify(s256.g3Chipy.map((x) => x.t)));
+  check("…bublina kvality: kolik je potřeba a kolik má",
+    !!g3Kval && /Potřeba/.test(g3Kval.tip) && /Tenhle kus/.test(g3Kval.tip), g3Kval ? g3Kval.tip.replace(/<[^>]+>/g, " ") : "");
+  check("…bublina raidu pod čarou má držitele a místo tohohle kusu",
+    s256.g3Chipy.some((x) => /^Ground \d+\/6$/.test(x.t) && /tip-seznam/.test(x.tip) && /(lepší kopie|by byl)/.test(x.tip)),
+    JSON.stringify(s256.g3Chipy.map((x) => x.t)));
+  check("…v tabulce jsou u něj štítky pod čarou místo věty", !!s256.g3Bunka && s256.g3Bunka.pod >= 1 && !s256.g3Bunka.sub,
+    JSON.stringify(s256.g3Bunka));
+  check("kus bez jakékoli šance (Rattata) štítky pod čarou nemá", s256.rattata.pod === 0, JSON.stringify(s256.rattata));
+  check("přerostlá liga se neobjeví ve štítcích ani ve větě verdiktu", s256.prerostle.length === 0,
+    JSON.stringify(s256.prerostle));
+  check("herní využití: všechny karty na jeden řádek, bez textu a pruhu, vysvětlení v bublině",
+    s256.karty.length === 4 && s256.karty.every((k) => k.radek && !k.popis && !k.bar && k.tip),
+    JSON.stringify(s256.karty));
+  check("Evolvovat ukazuje jen výsledek, text je v bublině",
+    !!s256.evolvovat && !s256.evolvovat.popis && s256.evolvovat.tip.length > 20 && /^Evolvovat\s*Ano$/.test(s256.evolvovat.text),
+    JSON.stringify(s256.evolvovat));
+  check("druh bez evoluce má evoluční řadu se sebou samým",
+    s256.heracross.evo && s256.heracross.kusu === 1 && s256.heracross.tady === 1 && /nevyvíjí/.test(s256.heracross.text),
+    JSON.stringify(s256.heracross));
+  check("značky v detailu mají velikost a tvar typového štítku",
+    !!s256.typ && s256.znacky.length >= 3
+      && s256.znacky.every((z) => z.h === s256.typ.h && z.fs === s256.typ.fs && z.r === s256.typ.r),
+    JSON.stringify({ typ: s256.typ, znacky: s256.znacky }));
+  await page.setViewportSize({ width: 1920, height: 1000 });
 
   await page.goto(URL);
   await page.waitForTimeout(700);

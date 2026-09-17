@@ -69,7 +69,7 @@ je obojí jeho veřejnou součástí.
 | `atlasSort(klic, smer)` | seřadí roster; `smer` 1 vzestupně, −1 sestupně |
 | `atlasDetail(id, kontejner, zavrit)` | vykreslí detail kusu do cizího prvku a napojí jeho ovládání |
 | `atlasImage(jmeno, trida)` | obrázek druhu jako hotová značka `<img>` i se záložním zdrojem |
-| `atlasDuvody(id nebo computed)` | štítky důvodů verdiktu jako hotové HTML (`.dv-radek` se štítky a bublinami `data-tip`); pouštěný kus vrátí `""` |
+| `atlasDuvody(id nebo computed)` | štítky k verdiktu jako hotové HTML (`.dv-radek` se štítky a bublinami `data-tip`). Ponechaný kus: důvody. Pouštěný kus: štítky „pod čarou" (`.dv-radek-pod`, `.dv-chip.dv-pod`, kvalita `.dv-kvalita`) — kde se nevešel; `""`, když nemá kde |
 | `srovnejDuvody(kontejner)` | po vložení štítků schová, co se do šířky nevejde, do „+N" s bublinou |
 | `utokyDruhu(jmeno)` | útoky, které se druh může naučit: `{fast: [jména], charged: [jména], znamy}`; neznámý druh vrátí všechny |
 | `atlasSort("liga:LC"/"liga:GL"/"liga:UL"/"liga:ML", 1/-1)` | řazení podle pořadí druhu v jedné lize; kdo ji nehraje, je na konci v obou směrech |

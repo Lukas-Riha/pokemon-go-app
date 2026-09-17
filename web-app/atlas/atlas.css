@@ -100,3 +100,7 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-detail-modern [data-detail-section=stats] .d-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 @media(max-width:650px){.atlas-verdict-radek{grid-template-columns:1fr}}
 .atlas-verdict-radek:not(:has(.atlas-krok)){grid-template-columns:1fr}
+/* Claude 17. 9. (3): značky (SHADOW, DMAX, 100%, CUTE, SHINY, LUCKY) stejně velké a stejného tvaru jako typové štítky — liší se jen barvou */
+.atlas-test .atlas-row .atlas-roster-tag{font-size:10px;line-height:normal;padding:2px 6px;border-radius:11px}
+.atlas-test .atlas-row .atlas-roster-type{font-size:10px}
+.atlas-test .atlas-detail-modern .detail-title .rarity-chip,.atlas-test .atlas-detail-modern .detail-title .atlas-lucky-tag{min-height:0;font-size:12px;font-weight:700;line-height:18px;padding:2px 10px;border-radius:11px;letter-spacing:.02em}

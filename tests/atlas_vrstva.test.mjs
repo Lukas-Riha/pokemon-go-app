@@ -428,6 +428,92 @@ check("…přepínač přepne na světlý a po načtení si ho pamatuje", d7.poK
   d7.poKliku + " → " + temaPoReloadu);
 await vzhled.close();
 
+// ------------------------------- IV nahoře, klávesy, značky, pod čarou, evoluce
+console.log("\n8) IV u hodnot, šipky a A/D, značky jako typy, pouštěný kus, evoluční řada");
+const S8 = [
+  { pokemon: "Garchomp", cp: 4357, level: "48.0", ivAtk: "14.0", ivDef: "15.0", ivSta: "15.0",
+    fastMove: "Dragon Tail", charged1: "Earth Power", dynamax: "Ano", cute: "Ano" },
+  { pokemon: "Garchomp", cp: 2000, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10, dynamax: "Ano" },
+  { pokemon: "Garchomp", cp: 1900, level: 20, ivAtk: 8, ivDef: 10, ivSta: 10, dynamax: "Ano" },
+  { pokemon: "Heracross", cp: 2800, level: 35, ivAtk: 12, ivDef: 13, ivSta: 14 },
+  { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
+];
+const p8 = await otevri(1400, S8);
+const d8 = await p8.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const st = (e) => { const c = getComputedStyle(e); return { t: e.textContent.trim(), h: Math.round(e.getBoundingClientRect().height),
+    fs: c.fontSize, r: c.borderRadius }; };
+  const out = {};
+  const rows = P.getRows();
+  const g1 = rows.find((r) => r.cp === 4357), g3 = rows.find((r) => r.cp === 1900);
+  const karta = [...document.querySelectorAll(".atlas-row")].find((k) => k.dataset.atlasDetail === g1.id);
+  out.kartaTyp = st(karta.querySelector(".atlas-roster-type"));
+  out.kartaZnacky = [...karta.querySelectorAll(".atlas-roster-tag")].map(st);
+  const karta3 = [...document.querySelectorAll(".atlas-row")].find((k) => k.dataset.atlasDetail === g3.id);
+  out.karta3 = { pod: karta3.querySelectorAll(".dv-pod").length, small: !!karta3.querySelector(".atlas-decision small") };
+  A.openDetail(g1.id);
+  await cekej(1200);
+  const m = document.getElementById("atlasModal");
+  out.identita = [...m.querySelectorAll(".atlas-detail-identity p")].map((p) => p.textContent.trim());
+  const stats = m.querySelector("[data-detail-section=stats]");
+  const box = (re) => [...stats.querySelectorAll(".d-box")].find((b) => re.test((b.querySelector(".d-box-h") || {}).textContent || ""));
+  out.ivPoznamka = !!box(/^IV/).querySelector(".d-note");
+  out.stropText = !!box(/^Strop/).querySelector(".d-proc");
+  out.detailTyp = st(m.querySelector(".detail-title .d-type"));
+  out.detailZnacky = [...m.querySelectorAll(".detail-title .rarity-chip, .detail-title .atlas-lucky-tag")].map(st);
+  out.karty = [...m.querySelectorAll("[data-detail-section=naco] .d-role")].map((k) => Math.round(k.getBoundingClientRect().height));
+  out.tipDmax = ([...m.querySelectorAll(".atlas-verdict-first .dv-chip")].find((e) => e.textContent === "Dynamax") || { getAttribute: () => "" })
+    .getAttribute("data-tip");
+  A.closeDetail();
+  A.openDetail(g3.id);
+  await cekej(1200);
+  out.zahodit = { pod: m.querySelectorAll(".atlas-verdict-first .dv-pod").length,
+    why: !!m.querySelector(".atlas-verdict-first .d-why"),
+    hlavaTip: !!m.querySelector(".atlas-verdict-first .d-verdict>b[data-tip]") };
+  A.closeDetail();
+  A.openDetail(rows.find((r) => r.pokemon === "Heracross").id);
+  await cekej(1200);
+  out.heracross = { sloupec: !!m.querySelector(".atlas-evolution-column"), kusu: m.querySelectorAll(".atlas-evolution-column .d-evo-kus").length };
+  A.closeDetail();
+  A.openDetail(g1.id);
+  await cekej(1000);
+  return out;
+});
+const pozice = () => p8.evaluate(() => (document.querySelector(".atlas-detail-paging span") || {}).textContent || "");
+const klavesy = [await pozice()];
+for (const k of ["ArrowRight", "d", "a", "ArrowLeft"]) {
+  await p8.keyboard.press(k);
+  await p8.waitForTimeout(900);
+  klavesy.push(await pozice());
+}
+// psaní do pole detail nelistuje
+await p8.evaluate(() => { const i = document.createElement("input"); i.id = "zkouskaKlaves"; document.getElementById("atlasDetailContent").append(i); i.focus(); });
+await p8.keyboard.press("d");
+await p8.waitForTimeout(600);
+klavesy.push(await pozice());
+await p8.close();
+check("nahoře IV s procentem za tečkou a čísla bez „.0“",
+  d8.identita.some((t) => t === "IV 14 / 15 / 15 · 98 %") && d8.identita.some((t) => /L48$/.test(t)), JSON.stringify(d8.identita));
+check("pod pruhy IV už není procento a ve stropu není vysvětlující text", !d8.ivPoznamka && !d8.stropText, JSON.stringify(d8));
+check("šipky a A/D listují detailem (1 → 2 → 3 → 2 → 1)",
+  JSON.stringify(klavesy.slice(0, 5).map((t) => t.split(" / ")[0])) === JSON.stringify(["1", "2", "3", "2", "1"]), JSON.stringify(klavesy));
+check("…ale ne při psaní do pole", klavesy[5] === klavesy[4], JSON.stringify(klavesy));
+check("značky v kartě mají výšku, písmo a zaoblení typového štítku",
+  d8.kartaZnacky.length >= 2 && d8.kartaZnacky.every((z) => z.h === d8.kartaTyp.h && z.fs === d8.kartaTyp.fs && z.r === d8.kartaTyp.r),
+  JSON.stringify({ typ: d8.kartaTyp, znacky: d8.kartaZnacky }));
+check("…i v detailu",
+  d8.detailZnacky.length >= 4 && d8.detailZnacky.every((z) => z.h === d8.detailTyp.h && z.fs === d8.detailTyp.fs && z.r === d8.detailTyp.r),
+  JSON.stringify({ typ: d8.detailTyp, znacky: d8.detailZnacky }));
+check("herní využití: každá karta na jeden řádek", d8.karty.length === 4 && d8.karty.every((h) => h <= 60), JSON.stringify(d8.karty));
+check("štítek Dynamax má v bublině pořadí v Max Battle", /Max Dragon/.test(d8.tipDmax) && /tenhle kus/.test(d8.tipDmax),
+  d8.tipDmax.replace(/<[^>]+>/g, " ").slice(0, 200));
+check("pouštěný kus: v kartě štítky pod čarou místo textu", d8.karta3.pod >= 1 && !d8.karta3.small, JSON.stringify(d8.karta3));
+check("…v detailu taky, a vysvětlující věta je v bublině nadpisu",
+  d8.zahodit.pod >= 1 && !d8.zahodit.why && d8.zahodit.hlavaTip, JSON.stringify(d8.zahodit));
+check("druh bez evoluce má sloupec evoluční řady se sebou samým",
+  d8.heracross.sloupec && d8.heracross.kusu === 1, JSON.stringify(d8.heracross));
+
 // ----------------------------------------------------------------- telefon
 console.log("\n5) Telefon (390 px)");
 const tel = await otevri(390);
