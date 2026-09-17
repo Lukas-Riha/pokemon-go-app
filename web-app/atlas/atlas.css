@@ -89,3 +89,14 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .uv-seznam{z-index:1600!important}
 /* Claude 17. 9.: prazdna lista pod rosterem - zbyl v ni jen skryty vyber profilu; ukaze se, az se profil otevre. */
 .atlas-test .card.roster>.toolbar:not(:has(.profile-box:not([hidden]))){display:none!important}
+/* Claude 17. 9. (2): detail — verdikt užší, vedle něj doporučený krok; staty vedle sebe; bez popisku řazení */
+.atlas-mode{justify-content:flex-end}
+.atlas-verdict-radek{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:stretch;margin:0 0 16px}
+.atlas-verdict-radek>.atlas-verdict-first{margin:0;display:flex}
+.atlas-verdict-radek>.atlas-verdict-first .d-verdict{height:100%;box-sizing:border-box}
+.atlas-krok .d-roles-akce{display:grid;grid-template-columns:1fr;gap:8px;margin:0;height:100%}
+.atlas-krok .d-role{padding:12px 14px}
+.atlas-detail-modern .d-role.d-role-radek{grid-column:1/-1;padding:10px 16px}
+.atlas-detail-modern [data-detail-section=stats] .d-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+@media(max-width:650px){.atlas-verdict-radek{grid-template-columns:1fr}}
+.atlas-verdict-radek:not(:has(.atlas-krok)){grid-template-columns:1fr}

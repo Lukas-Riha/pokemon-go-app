@@ -80,7 +80,7 @@ const ROSTER = [
   { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
 ];
 
-async function otevri(sirka) {
+async function otevri(sirka, radky = ROSTER) {
   const page = await browser.newPage({ viewport: { width: sirka, height: 950 } });
   page.on("pageerror", (e) => chyby.push(sirka + " px: " + String(e)));
   await page.goto(`http://localhost:${PORT}/`);
@@ -92,7 +92,7 @@ async function otevri(sirka) {
     A.go("roster");
     A.refresh();
     await new Promise((r) => setTimeout(r, 900));
-  }, ROSTER);
+  }, radky);
   return page;
 }
 
@@ -133,7 +133,9 @@ async function detail(page) {
       subVedle: !!document.querySelector(".atlas-verdict-first .d-sub"),
       evoNadpisu: [...document.querySelectorAll(".atlas-evolution-column .d-box-h")]
         .filter((e) => e.getClientRects().length).length,
-      evoSummary: (document.querySelector(".atlas-evolution-column > summary") || {}).textContent || ""
+      evoSummary: (document.querySelector(".atlas-evolution-column > summary") || {}).textContent || "",
+      krokPod: (() => { const v = document.querySelector(".atlas-verdict-first"), k = document.querySelector(".atlas-krok");
+        return v && k ? k.getBoundingClientRect().top >= v.getBoundingClientRect().bottom - 1 : null; })()
     };
   });
 }
@@ -357,6 +359,75 @@ check("počet akcí je česky správně (1–4 akce, 0 a 5+ akcí)",
   JSON.stringify(stav.akce));
 await ui.close();
 
+// ------------------------------------- tmavý režim, detail kusu, pořadí štítků
+console.log("\n7) Tmavý režim, detail bez souhrnu, krok vedle verdiktu, pořadí značek");
+const GYA = [
+  { pokemon: "Gyarados", cp: 3834, level: 50, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Dragon Breath", charged1: "Crunch", charged2: "Aqua Tail", cute: "Ano", dynamax: "Ano" },
+  { pokemon: "Metagross", cp: 3700, level: 40, ivAtk: 15, ivDef: 15, ivSta: 14, fastMove: "Bullet Punch", charged1: "Meteor Mash" },
+  { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
+];
+const vzhled = await otevri(1400, GYA);
+const d7 = await vzhled.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = { tema: document.documentElement.dataset.theme,
+    modeText: (document.querySelector(".atlas-mode") || {}).textContent || "" };
+  const radek = [...document.querySelectorAll(".atlas-row")].find((k) => /Gyarados/.test(k.textContent));
+  out.tagy = radek ? [...radek.querySelectorAll(".atlas-roster-tag")].map((e) => e.textContent.trim()) : [];
+  const gya = P.getRows().find((r) => r.pokemon === "Gyarados");
+  A.openDetail(gya.id);
+  await cekej(1200);
+  const m = document.getElementById("atlasModal");
+  const verd = m.querySelector(".atlas-verdict-first"), krok = m.querySelector(".atlas-krok");
+  const vr = verd && verd.getBoundingClientRect(), kr = krok && krok.getBoundingClientRect();
+  const sloupec = m.querySelector(".atlas-detail-column");
+  out.journey = !!m.querySelector(".atlas-journey");
+  out.coted = !!m.querySelector("[data-detail-section=coted]");
+  out.krok = krok ? { spolecnyRadek: verd.parentElement === krok.parentElement && Math.abs(vr.top - kr.top) < 4,
+    vedle: kr.left >= vr.right, uzsi: vr.width < sloupec.getBoundingClientRect().width * 0.6,
+    karet: krok.querySelectorAll(".d-role").length } : null;
+  const naco = m.querySelector("[data-detail-section=naco]");
+  out.karty = naco ? [...naco.querySelectorAll(".d-role-h")].map((e) => e.textContent) : [];
+  const mega = naco && [...naco.querySelectorAll(".d-role")].find((k) => /Mega/.test(k.textContent));
+  out.megaVyska = mega ? Math.round(mega.getBoundingClientRect().height) : null;
+  const stats = m.querySelector("[data-detail-section=stats]");
+  if (stats) stats.open = true;
+  await cekej(50);
+  const boxy = stats ? [...stats.querySelectorAll(".d-grid > .d-box")].map((b) => Math.round(b.getBoundingClientRect().top)) : [];
+  out.statsVedle = boxy.length >= 2 && boxy.every((t) => Math.abs(t - boxy[0]) < 4);
+  out.statsBoxu = boxy.length;
+  out.detailTagy = [...m.querySelectorAll(".detail-title .rarity-chip, .detail-title .atlas-lucky-tag")].map((e) => e.textContent.trim());
+  A.closeDetail();
+  // přepínač motivu: světlý si appka pamatuje
+  const prepinac = document.querySelector('[data-atlas-action="theme"]');
+  if (prepinac) prepinac.click();
+  out.poKliku = document.documentElement.dataset.theme;
+  return out;
+});
+check("tmavý režim je výchozí", d7.tema === "dark", String(d7.tema));
+check("nad seznamem už není popisek „Zobrazení rosteru“", !/Zobrazení rosteru/.test(d7.modeText), d7.modeText);
+const PORADI_TAGU = ["SHADOW", "PURIFIED", "DMAX", "100%", "CUTE", "SHINY", "LUCKY"];
+const vPoradi = (t) => { const i = t.map((x) => PORADI_TAGU.indexOf(x)).filter((x) => x > -1); return i.every((v, k) => !k || v > i[k - 1]); };
+check("značky u jména v kartě: DMAX, 100%, CUTE",
+  d7.tagy.indexOf("DMAX") > -1 && d7.tagy.indexOf("100%") > -1 && d7.tagy.indexOf("CUTE") > -1 && vPoradi(d7.tagy),
+  JSON.stringify(d7.tagy));
+check("…i v detailu stejně", vPoradi(d7.detailTagy) && d7.detailTagy.indexOf("100%") > -1, JSON.stringify(d7.detailTagy));
+check("detail nemá souhrnný box Využití / Krok / Cena / Chybí", !d7.journey, String(d7.journey));
+check("doporučený krok stojí vedle verdiktu, ne v sekci dole",
+  !d7.coted && d7.krok && d7.krok.spolecnyRadek && d7.krok.vedle && d7.krok.karet >= 1, JSON.stringify(d7));
+check("…a verdikt je užší (méně než 60 % sloupce)", d7.krok && d7.krok.uzsi, JSON.stringify(d7.krok));
+check("herní využití: PvP, Raid, Gym, Mega",
+  JSON.stringify(d7.karty) === JSON.stringify(["PvP", "Raid", "Gym — obránce", "Mega"]), JSON.stringify(d7.karty));
+check("…Mega je jednořádková karta", d7.megaVyska !== null && d7.megaVyska <= 60, String(d7.megaVyska));
+check("statistiky, IV a strop CP stojí vedle sebe", d7.statsVedle && d7.statsBoxu === 3, JSON.stringify(d7));
+await vzhled.reload();
+await vzhled.waitForFunction(() => window.__pgo && window.__atlasTest, null, { timeout: 60000 });
+const temaPoReloadu = await vzhled.evaluate(() => document.documentElement.dataset.theme);
+check("…přepínač přepne na světlý a po načtení si ho pamatuje", d7.poKliku === "light" && temaPoReloadu === "light",
+  d7.poKliku + " → " + temaPoReloadu);
+await vzhled.close();
+
 // ----------------------------------------------------------------- telefon
 console.log("\n5) Telefon (390 px)");
 const tel = await otevri(390);
@@ -368,6 +439,7 @@ check("na telefonu je lišta změn na vlastním řádku nad „Upravit“",
   dTel.barPredEdit && dTel.stejnyRadek === false, JSON.stringify(dTel));
 const sirkaStranky = await tel.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 check("stránka nemá vodorovný posuvník", sirkaStranky <= 1, String(sirkaStranky));
+check("na telefonu je doporučený krok pod verdiktem, ne vedle", dTel.krokPod === true, JSON.stringify(dTel));
 await tel.close();
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));

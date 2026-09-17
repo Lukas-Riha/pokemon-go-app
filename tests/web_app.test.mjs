@@ -9625,8 +9625,11 @@ try {
       && znackaVzhled.sto.h === znackaVzhled.shiny.h
       && znackaVzhled.sto.fs === znackaVzhled.shiny.fs,
     JSON.stringify(znackaVzhled));
-  check("…a stojí až za ním",
-    znackaVzhled.poradi.indexOf("100%") > znackaVzhled.poradi.indexOf("SHINY"),
+  // Pořadí značek všude stejné (17. 9.): DMAX, 100%, CUTE, SHINY, LUCKY.
+  check("…a stojí mezi DMAX a CUTE",
+    znackaVzhled.poradi.indexOf("100%") > znackaVzhled.poradi.indexOf("DMAX")
+      && znackaVzhled.poradi.indexOf("100%") < znackaVzhled.poradi.indexOf("CUTE")
+      && znackaVzhled.poradi.indexOf("CUTE") < znackaVzhled.poradi.indexOf("SHINY"),
     JSON.stringify(znackaVzhled.poradi));
 
   // Sken, který dá IV jen jako rozsah, o 100 % nic neříká.
@@ -15762,7 +15765,7 @@ try {
     // Popisek stavu ligy („správný kus, chybí prach") nesmí radit prach,
     // kdyz verdikt vedle rika „prach zatim ne".
     check("…a popisek odznacku rekne, ze je v rezerve a prach zatim ne",
-      /v rezervě ligy — prach zatím ne/.test(rezerva.pametBublina),
+      /v rezervě — prach zatím ne/.test(rezerva.pametBublina),
       rezerva.pametBublina.slice(0, 300));
     check("bez pameti o slot v Great League prijde",
       rezerva.bezPameti.drzi === 0 && rezerva.bezPameti.keep !== "Nechat – rezerva",
@@ -15990,8 +15993,11 @@ try {
     JSON.stringify([kus("Pikachu").duvody, kus("Snorlax").duvody, kus("Machamp").duvody]));
   const vsechnyTipy = [].concat(...stitky.kusy.map((k) => k.tipy.map((t) => Object.assign({ jmeno: k.jmeno }, t))));
   const raidTip = vsechnyTipy.filter((t) => /do raidu drží/.test(t.tip))[0];
+  // Věta „Ground do raidu, 1. z 6 (65 % špičky)" nad seznamem je pryč (17. 9.)
+  // — opakovala, co stojí v seznamu. Procento je u každého držitele.
   check("bublina raid stitku ma poradi drzitelu a oznaci tenhle kus",
-    !!raidTip && /tip-seznam/.test(raidTip.tip) && /tenhle kus/.test(raidTip.tip) && /% špičky/.test(raidTip.tip),
+    !!raidTip && /tip-seznam/.test(raidTip.tip) && /tenhle kus/.test(raidTip.tip)
+      && /<em>\d+\s%<\/em>/.test(raidTip.tip) && !/špičky/.test(raidTip.tip),
     raidTip ? raidTip.tip.slice(0, 300) : JSON.stringify(vsechnyTipy.map((t) => t.duvod)));
   const gymTip = vsechnyTipy.filter((t) => t.duvod === "Gym")[0];
   check("bublina gym stitku ma poradi obrancu",
@@ -16329,6 +16335,135 @@ try {
   check("na telefonu jsou pole po dvou",
     Math.abs(proh400[0].top - proh400[1].top) <= 4 && proh400[2].top > proh400[1].top,
     JSON.stringify(proh400.map((x) => x.top)));
+
+  // ---------------------------------------------------------------- 255
+  // Jedno pořadí štítků všude: ligy LC→GL→UL→ML, raid typy, gym, Max, mega,
+  // elitní útok, 100 %, CUTE. Bubliny bez věty, která opakuje seznam pod ní.
+  // Herní využití ve stejném pořadí, Mega na jeden řádek. Typové pokrytí jen
+  // samotné typy (dvojtypy z nich plynou) + „Výhoda se vyruší".
+  console.log("\n255) Poradi stitku, bubliny, herni vyuziti, typove pokryti");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const poradi255 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { id: "p1", pokemon: "Gyarados", cp: 3834, level: 50, ivAtk: 15, ivDef: 15, ivSta: 15,
+        fastMove: "Dragon Breath", charged1: "Crunch", charged2: "Aqua Tail", cute: "Ano", dynamax: "Ano" },
+      { id: "p2", pokemon: "Azumarill", cp: 1489, level: 24.5, ivAtk: 12, ivDef: 14, ivSta: 15,
+        fastMove: "Bubble", charged1: "Play Rough", cute: "Ano" },
+      { id: "p3", pokemon: "Metagross", cp: 3700, level: 40, ivAtk: 15, ivDef: 15, ivSta: 14,
+        fastMove: "Bullet Punch", charged1: "Meteor Mash" },
+      { id: "p4", pokemon: "Blissey", cp: 2700, level: 40, ivAtk: 10, ivDef: 15, ivSta: 15 },
+      { id: "p5", pokemon: "Medicham", cp: 1500, level: 50, ivAtk: 0, ivDef: 15, ivSta: 15,
+        fastMove: "Counter", charged1: "Ice Punch", charged2: "Psychic" }
+    ]);
+    await new Promise((r) => setTimeout(r, 900));
+    const sel = document.getElementById("viewSelect");
+    sel.value = "verdict";
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 300));
+    const comp = P.getComputed();
+    const LIGA = { LC: 0, GL: 1, UL: 2, ML: 3 };
+    const DRUH = { pvp: 1, raid: 2, gym: 3, dmax: 4, mega: 5 };
+    const ZN = { "Dynamax": 4, "Elitní útok": 6, "100 %": 7, "CUTE": 8 };
+    const rank = (d) => (d.druh === "znacka" ? (ZN[d.filtr] || 9) : (DRUH[d.druh] || 9)) * 10
+      + (d.druh === "pvp" ? (LIGA[d.filtr] || 0) : 0);
+    const out = { duvody: {}, spatne: [], tagy: [], ligyTip: [], roleTip: {} };
+    P.getRows().forEach((r) => {
+      const ds = comp[r.id].duvody || [];
+      out.duvody[r.pokemon] = ds.map((d) => d.druh + ":" + d.filtr);
+      ds.forEach((d, i) => {
+        if (i && rank(d) < rank(ds[i - 1])) out.spatne.push(r.pokemon + " " + ds[i - 1].filtr + " > " + d.filtr);
+      });
+    });
+    out.tagy = [...document.querySelectorAll("#tbody .poke-tagy")].map((t) =>
+      [...t.querySelectorAll(".rarity-chip")].map((e) => e.textContent.trim()));
+    out.ligyTip = [...document.querySelectorAll("#tbody .lg-chip[data-tip]")].map((e) => e.getAttribute("data-tip"));
+    // bubliny štítků lig, raidu a gymu: seznam držitelů, bez věty „proč"
+    P.getRows().forEach((r) => {
+      const c = comp[r.id];
+      const div = document.createElement("div");
+      div.innerHTML = P.atlasDuvody(c) || "";
+      (c.duvody || []).forEach((d) => {
+        if (d.druh !== "raid" && d.druh !== "gym" && d.druh !== "pvp") return;
+        const chip = [...div.querySelectorAll("[data-tip]")]
+          .find((e) => e.textContent.trim().indexOf(d.stitek) === 0);
+        if (!chip) return;
+        const tip = chip.getAttribute("data-tip");
+        out.roleTip[r.pokemon + " " + d.stitek] = { seznam: /tip-seznam/.test(tip),
+          proc: !!d.proc && tip.indexOf(d.proc) > -1 };
+      });
+    });
+    // detail Gyaradosu
+    const box = document.createElement("div");
+    document.body.append(box);
+    out.detailOk = P.atlasDetail(P.getRows().find((r) => r.pokemon === "Gyarados").id, box);
+    const role = [...box.querySelectorAll(".d-roles:not(.d-roles-akce) > .d-role")];
+    const nadpis = (k) => ((k.querySelector(".d-role-h") || {}).textContent || "");
+    out.karty = role.map(nadpis);
+    const mega = role.find((k) => /Mega/.test(nadpis(k)));
+    out.mega = mega ? { radek: mega.classList.contains("d-role-radek"), popis: !!mega.querySelector(".d-role-p"),
+      tip: mega.getAttribute("data-tip") || "" } : null;
+    const gym = role.find((k) => /Gym/.test(nadpis(k)));
+    out.gym = gym ? { v: gym.querySelector(".d-role-v").textContent, tone: gym.className } : null;
+    const pk = box.querySelector(".d-pokryti");
+    out.pokryti = pk ? {
+      text: pk.textContent.replace(/\s+/g, " "),
+      vyhoda: [...pk.querySelectorAll(".d-pokryti-radek:not(.d-pokryti-pozor)")].flatMap((r) =>
+        [...r.querySelectorAll(".pk-kombinace")].map((k) => k.querySelectorAll(".pk-typ").length)),
+      radkyVyhody: [...pk.querySelectorAll(".d-pokryti-radek > b")].map((b) => b.textContent),
+      vyrusene: [...pk.querySelectorAll(".d-pokryti-pozor .pk-kombinace")].map((k) => k.querySelectorAll(".pk-typ").length)
+    } : null;
+    box.remove();
+    return out;
+  });
+  check("štítky důvodů jdou vždy v pořadí ligy → raid → gym → Max → mega → elitní → 100 % → CUTE",
+    poradi255.spatne.length === 0, poradi255.spatne.join(" | ") + " " + JSON.stringify(poradi255.duvody));
+  check("…a test má kusy s víc druhy důvodů",
+    Object.values(poradi255.duvody).some((d) => new Set(d.map((x) => x.split(":")[0])).size >= 2),
+    JSON.stringify(poradi255.duvody));
+  const gyaDuvody = poradi255.duvody.Gyarados || [];
+  check("…Gyarados: 100 % před CUTE",
+    gyaDuvody.indexOf("znacka:100 %") > -1 && gyaDuvody.indexOf("znacka:100 %") < gyaDuvody.indexOf("znacka:CUTE"),
+    JSON.stringify(gyaDuvody));
+  const TAG_PORADI = ["SHADOW", "PURIFIED", "DMAX", "100%", "CUTE", "SHINY", "LUCKY"];
+  const tagyOk = poradi255.tagy.every((t) => {
+    const idx = t.map((x) => TAG_PORADI.indexOf(x)).filter((i) => i > -1);
+    return idx.every((v, i) => !i || v > idx[i - 1]);
+  });
+  check("značky u jména v tabulce: DMAX, 100%, CUTE, SHINY, LUCKY",
+    tagyOk && poradi255.tagy.some((t) => t.indexOf("100%") > -1 && t.indexOf("CUTE") > -1),
+    JSON.stringify(poradi255.tagy));
+  check("bublina odznáčku ligy neopakuje PvPoke # ze seznamu",
+    poradi255.ligyTip.length > 0 && poradi255.ligyTip.every((t) => !/PvPoke #\d/.test(t)),
+    poradi255.ligyTip.slice(0, 1).join(""));
+  const roleTipy = Object.values(poradi255.roleTip);
+  check("bubliny štítků lig, raidu a gymu: seznam ano, věta o pořadí ne",
+    roleTipy.length >= 2 && roleTipy.every((x) => x.seznam && !x.proc), JSON.stringify(poradi255.roleTip));
+  eq("herní využití v pořadí PvP, Raid, Gym, Mega",
+    JSON.stringify(poradi255.karty), JSON.stringify(["PvP", "Raid", "Gym — obránce", "Mega"]));
+  check("Mega je na jeden řádek bez vysvětlujícího textu (ten je v bublině)",
+    poradi255.mega && poradi255.mega.radek && !poradi255.mega.popis && /Mega forma/.test(poradi255.mega.tip),
+    JSON.stringify(poradi255.mega));
+  check("gym karta „Ano 1/N“ je zelená, ne červená",
+    poradi255.gym && /^Ano/.test(poradi255.gym.v) && / good/.test(poradi255.gym.tone),
+    JSON.stringify(poradi255.gym));
+  check("typové pokrytí: Výhoda jen samotné typy",
+    poradi255.pokryti && poradi255.pokryti.vyhoda.length > 0 && poradi255.pokryti.vyhoda.every((n) => n === 1),
+    JSON.stringify(poradi255.pokryti));
+  check("…po útočném typu (Gyarados: Dragon a Water)",
+    poradi255.pokryti && poradi255.pokryti.radkyVyhody.some((t) => /Dragon/.test(t))
+      && poradi255.pokryti.radkyVyhody.some((t) => /Water/.test(t)),
+    JSON.stringify(poradi255.pokryti && poradi255.pokryti.radkyVyhody));
+  check("…bez výpisu dvojnásobné slabiny a věty o 161 kombinacích",
+    poradi255.pokryti && !/Dvojnásobná slabina/.test(poradi255.pokryti.text)
+      && !/Počítá se přes všech/.test(poradi255.pokryti.text),
+    poradi255.pokryti && poradi255.pokryti.text.slice(0, 200));
+  check("…„Výhoda se vyruší“ jsou dvojtypy a říká proč",
+    poradi255.pokryti && poradi255.pokryti.vyrusene.length > 0 && poradi255.pokryti.vyrusene.every((n) => n === 2)
+      && /jeden typ je proti útoku slabý, druhý odolá/.test(poradi255.pokryti.text),
+    JSON.stringify(poradi255.pokryti && poradi255.pokryti.vyrusene));
 
   await page.goto(URL);
   await page.waitForTimeout(700);

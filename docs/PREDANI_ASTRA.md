@@ -18,6 +18,24 @@
 > text verdiktu v detailu pryč, „Vylepšil jsem ho" vedle „Upravit", bublina
 > evoluční řady mimo posuvník, jeden nadpis evoluční řady. Klik na evoluční
 > řadu (dřívější bod 6) jsi opravila sama.
+>
+> **Druhé kolo 17. 9. (Claude, na Lukášovo přání)** — v `atlas.js`:
+> tmavý režim je výchozí (světlý jen po přepnutí, pamatuje se), popisek
+> „Zobrazení rosteru" nad řazením je pryč, značky u jména jdou v pořadí
+> SHADOW, PURIFIED, DMAX, 100%, CUTE, SHINY, LUCKY. V detailu zmizel
+> souhrnný box Využití / Potřebný krok / Cena / Chybějící údaje
+> (`.atlas-journey` se v detailu už nevkládá, v kartách rosteru zůstal);
+> verdikt stojí v `.atlas-verdict-radek` vedle `.atlas-krok`, kam se
+> přesunul obsah sekce „Doporučené kroky" (sekce `coted` se ruší).
+> V `atlas.css` je na konci blok „Claude 17. 9. (2)": mřížka verdikt/krok
+> 1fr 1fr (pod 650 px pod sebou), staty/IV/strop vedle sebe, Mega karta
+> `.d-role-radek` na jeden řádek. Klidně to přestyluj — testy hlídají jen
+> rozložení (krok vedle verdiktu, verdikt < 60 % sloupce, staty v jednom
+> řádku, Mega do 60 px, na telefonu krok pod verdiktem).
+> V enginu: štítky důvodů mají všude jedno pořadí (ligy LC→ML, raid,
+> gym, Max, mega, elitní útok, 100 %, CUTE, ostatní), karty „Herní
+> využití" jdou PvP, Raid, Gym, Mega; typové pokrytí vypisuje výhodu jen
+> proti samotným typům po útočném typu + „Výhoda se vyruší".
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
