@@ -78,4 +78,12 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 @media(max-width:650px){.atlas-drawer-header{grid-template-columns:1fr auto auto}.atlas-drawer-header .hra-pruh{grid-column:1/-1;justify-content:flex-start}}
 .atlas-evolution-column .d-evo>.d-box-h{display:none}
 /* Claude 17. 9. (Lukas): veta o ulozeni pryc - zustava jen varovani, ze zaloha chybi. */
-#saveState{display:none!important}#backupState:not(.warn){display:none!important}
+#saveState{display:none!important}#backupState{display:none!important}.atlas-test .tb-radek.tb-hledani{display:none!important}
+/* Claude 17. 9. (Lukas): Vyhledavani - druh, CP, level a tri IV na jednom radku, utoky pod nimi; na sirokem monitoru vse v jednom radku. */
+.atlas-test #prohlidkaCard .proh-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.atlas-test #prohlidkaCard .proh-grid>.proh-utok{grid-column:span 2}
+@media(min-width:1700px){.atlas-test #prohlidkaCard .proh-grid{grid-template-columns:repeat(9,minmax(0,1fr))}.atlas-test #prohlidkaCard .proh-grid>.proh-utok{grid-column:auto}}
+@media(max-width:900px){.atlas-test #prohlidkaCard .proh-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.atlas-test #prohlidkaCard .proh-grid>.proh-utok{grid-column:auto}}
+@media(max-width:520px){.atlas-test #prohlidkaCard .proh-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.atlas-test #prohlidkaCard .proh-grid>.proh-utok{grid-column:1/-1}}
+.atlas-row-editor .atlas-utok-vyber .uv-pole{width:100%;min-height:44px;box-sizing:border-box}
+/* Claude 17. 9.: seznam utoku (uv-seznam) musi byt nad oknem detailu (#atlasModal ma 1500). */
+.uv-seznam{z-index:1600!important}

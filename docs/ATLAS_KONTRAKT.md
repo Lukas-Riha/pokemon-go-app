@@ -73,6 +73,7 @@ je obojí jeho veřejnou součástí.
 | `srovnejDuvody(kontejner)` | po vložení štítků schová, co se do šířky nevejde, do „+N" s bublinou |
 | `utokyDruhu(jmeno)` | útoky, které se druh může naučit: `{fast: [jména], charged: [jména], znamy}`; neznámý druh vrátí všechny |
 | `atlasSort("liga:LC"/"liga:GL"/"liga:UL"/"liga:ML", 1/-1)` | řazení podle pořadí druhu v jedné lize; kdo ji nehraje, je na konci v obou směrech |
+| `atlasSort("scanDate"/"catchDate", 1/-1)` | řazení podle data skenu a data chycení (`row.catchDate`: „2022-05-09", jen rok „2026-?-?", prázdné = nevíme); neznámé na konci |
 
 `atlasSort` bere jen ty klíče, které umí řadit i hlavička tabulky. Kdyby si
 vrstva držela vlastní seznam, rozešel by se s enginem při prvním novém

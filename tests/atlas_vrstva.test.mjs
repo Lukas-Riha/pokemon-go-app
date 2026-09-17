@@ -226,6 +226,8 @@ const stav = await ui.evaluate(async () => {
   out.saveState = disp("saveState");
   out.backupWarn = (document.getElementById("backupState") || {}).className || "";
   out.backupState = disp("backupState");
+  const radek = document.getElementById("backupState") && document.getElementById("backupState").parentElement;
+  out.radekHledani = radek ? getComputedStyle(radek).display : "chybi";
   // úprava kusu: nabídka útoků druhu
   const garchomp = P.getRows().filter((r) => r.pokemon === "Garchomp")[0];
   A.openDetail(garchomp.id);
@@ -236,18 +238,44 @@ const stav = await ui.evaluate(async () => {
   window.AtlasEditRow(garchomp.id);
   await cekej(300);
   const form = document.getElementById("atlasRowEditor");
-  const moznosti = (id) => [...(document.getElementById(id) || { options: [] }).options].map((o) => o.value);
-  out.fastList = form ? form.elements.fastMove.getAttribute("list") : null;
-  out.chargedList = form ? form.elements.charged2.getAttribute("list") : null;
-  out.fast = moznosti("atlasFastList");
-  out.charged = moznosti("atlasChargedList");
+  const nazvy = (pol) => pol.map((e) => ((e.querySelector(".uv-nazev") || {}).textContent || "").trim());
+  const otevriVyber = async (k) => {
+    const tl = form && form.querySelector('[data-utok-obal="' + k + '"] .uv-pole');
+    if (!tl) return [];
+    tl.click();
+    await cekej(250);
+    return [...document.querySelectorAll(".uv-seznam .uv-polozka")];
+  };
+  out.vyberu = form ? form.querySelectorAll(".atlas-utok-vyber .uv-pole").length : 0;
+  out.skryte = form ? ["fastMove", "charged1", "charged2"].every((k) => form.elements[k].type === "hidden") : false;
+  const rychle = await otevriVyber("fastMove");
+  // seznam musí být NAD oknem detailu, jinak ho nejde vidět ani kliknout myší
+  const seznam = document.querySelector(".uv-seznam");
+  if (seznam) {
+    const sr = seznam.getBoundingClientRect();
+    const nahore = document.elementFromPoint(sr.left + 20, sr.top + 15);
+    out.seznamNahore = !!(nahore && seznam.contains(nahore));
+  }
+  out.fast = nazvy(rychle);
+  out.fastTyp = rychle.some((e) => e.querySelector(".uv-typ"));
+  out.fastSila = rychle.some((e) => /síla|PvP/.test(e.textContent));
+  const mud = rychle.filter((e) => /Mud Shot/.test(e.textContent))[0];
+  if (mud) { mud.click(); await cekej(250); }
+  out.fastHodnota = form ? form.elements.fastMove.value : "";
+  out.charged = nazvy(await otevriVyber("charged2"));
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(150);
   if (form) {
     form.elements.pokemon.value = "Machamp";
     form.elements.pokemon.dispatchEvent(new Event("change", { bubbles: true }));
-    await cekej(100);
-    out.fastMachamp = moznosti("atlasFastList");
+    await cekej(150);
+    out.fastMachamp = nazvy(await otevriVyber("fastMove"));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     form.remove();
   }
+  out.fold = !!document.querySelector(".atlas-storage-fold");
+  const warn = document.getElementById("zalWarn");
+  out.warnVDetails = !!(warn && warn.closest("details"));
   A.closeDetail();
   await cekej(300);
   // řazení
@@ -280,21 +308,26 @@ const stav = await ui.evaluate(async () => {
 check("„Smazat neoznačené“ je v menu Správa rosteru hned nad „Vymazat vše“",
   stav.smazatVMenu && stav.smazatPredVse, JSON.stringify([stav.smazatVMenu, stav.smazatPredVse]));
 check("věta o uložení není vidět", stav.saveState === "none", stav.saveState);
-check("stav zálohy je vidět jen jako varování",
-  /warn/.test(stav.backupWarn) ? stav.backupState !== "none" : stav.backupState === "none",
-  stav.backupWarn + " / " + stav.backupState);
+check("oranžový řádek „Bez zálohy“ není vidět (varování dělá žlutý box)", stav.backupState === "none" && stav.radekHledani === "none",
+  stav.backupState + " / " + stav.radekHledani);
 check("vysvětlení verdiktu se neopakuje pod štítky (je v bublině nadpisu)",
   stav.duvody && !stav.why && stav.hlavaTip.length > 10, JSON.stringify([stav.duvody, stav.why, stav.hlavaTip.slice(0, 60)]));
-check("úprava kusu nabízí rychlé útoky druhu",
-  stav.fastList === "atlasFastList" && stav.fast.indexOf("Mud Shot") > -1 && stav.fast.indexOf("Counter") === -1,
-  JSON.stringify(stav.fast));
-check("…i nabité útoky (pro oba nabité)", stav.chargedList === "atlasChargedList"
-  && stav.charged.indexOf("Earthquake") > -1, JSON.stringify(stav.charged));
+check("úprava kusu má hezký výběr útoků (3 pole, hodnoty ve skrytých polích)",
+  stav.vyberu === 3 && stav.skryte, JSON.stringify([stav.vyberu, stav.skryte]));
+check("…rychlé útoky jen toho druhu, s typem a silou",
+  stav.fast.indexOf("Mud Shot") > -1 && stav.fast.indexOf("Counter") === -1 && stav.fastTyp && stav.fastSila,
+  JSON.stringify([stav.fast, stav.fastTyp, stav.fastSila]));
+check("…vybraný útok se propíše do formuláře", stav.fastHodnota === "Mud Shot", stav.fastHodnota);
+check("…seznam útoků je vidět nad oknem detailu", stav.seznamNahore === true, String(stav.seznamNahore));
+check("…i nabité útoky druhu", stav.charged.indexOf("Earthquake") > -1, JSON.stringify(stav.charged));
 check("…a po změně druhu se nabídka přepočítá", (stav.fastMachamp || []).indexOf("Counter") > -1,
   JSON.stringify(stav.fastMachamp));
+check("prázdné rozbalovátko „Uložení a zálohování“ zmizelo a varování je vidět bez rozbalování",
+  !stav.fold && !stav.warnVDetails, JSON.stringify([stav.fold, stav.warnVDetails]));
 check("řazení nabízí obě směry i jednotlivé ligy",
   ["pokemon:1", "pokemon:-1", "cp:1", "cp:-1", "ivPct:1", "ivPct:-1", "level:1", "level:-1",
-    "liga:LC:1", "liga:GL:1", "liga:GL:-1", "liga:UL:1", "liga:ML:-1"].every((v) => stav.volby.indexOf(v) > -1),
+    "liga:LC:1", "liga:GL:1", "liga:GL:-1", "liga:UL:1", "liga:ML:-1",
+    "scanDate:-1", "scanDate:1", "catchDate:-1", "catchDate:1"].every((v) => stav.volby.indexOf(v) > -1),
   JSON.stringify(stav.volby));
 const sGl = stav.glVzestupne.filter((x) => x.gl !== null).map((x) => x.gl);
 check("Great League: nejlepší první — pořadí roste a kusy bez GL jsou na konci",

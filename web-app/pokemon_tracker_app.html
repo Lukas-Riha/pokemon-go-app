@@ -2198,6 +2198,22 @@
   .proh-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px;
     color: var(--text-secondary); min-width: 0; }
   .proh-grid input { width: 100%; }
+  /* Šest čísel (druh, CP, level, tři IV) na jeden řádek, útoky pod nimi.
+     Na širokém monitoru se vejde všech devět, na telefonu jde po dvou. */
+  #prohlidkaCard .proh-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  #prohlidkaCard .proh-grid > .proh-utok { grid-column: span 2; }
+  @media (min-width: 1700px) {
+    #prohlidkaCard .proh-grid { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+    #prohlidkaCard .proh-grid > .proh-utok { grid-column: auto; }
+  }
+  @media (max-width: 900px) {
+    #prohlidkaCard .proh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #prohlidkaCard .proh-grid > .proh-utok { grid-column: auto; }
+  }
+  @media (max-width: 520px) {
+    #prohlidkaCard .proh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #prohlidkaCard .proh-grid > .proh-utok { grid-column: 1 / -1; }
+  }
   /* Mřížka zarovnává buňky dolů, takže rozdílná výška pole zvedne jeho
      nadpis nad ostatní. Výběr útoku je vyšší než <input> — srovnají se. */
   .proh-grid input, .proh-grid .uv-pole { min-height: 26px; box-sizing: border-box; }
@@ -2435,6 +2451,7 @@
   .d-duvody .dv-radek { flex-wrap: wrap; overflow: visible; margin-top: 6px; }
   .d-duvody .dv-chip { font-size: 12px; line-height: 1.6; }
   .tip-oddel { border: 0; border-top: 1px solid var(--grid); margin: 8px 0; }
+  .d-casy { margin-top: 14px; font-size: 11.5px; color: var(--text-muted); }
   .filtr-duvody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 10px; max-height: 45vh; overflow-y: auto; }
   .lg-chip { font-size: 12px; font-weight: 700; padding: 1px 6px; border-radius: 5px;
@@ -3093,16 +3110,16 @@
       <label>Pokémon<input id="prohName" list="prohNames" autocomplete="off"
         placeholder="Machamp" /></label>
       <label>CP<input id="prohCp" type="number" min="10" step="1" placeholder="2167" /></label>
+      <label title="Nepovinné — z CP a IV se dopočítá sám.">Level<input id="prohLv"
+        type="number" min="1" max="51" step="0.5" placeholder="dopočítá se" /></label>
       <label>IV útok<input id="prohA" type="number" min="0" max="15" step="1" /></label>
       <label>IV obrana<input id="prohD" type="number" min="0" max="15" step="1" /></label>
       <label>IV HP<input id="prohS" type="number" min="0" max="15" step="1" /></label>
-      <label title="Nepovinné — z CP a IV se dopočítá sám.">Level<input id="prohLv"
-        type="number" min="1" max="51" step="0.5" placeholder="dopočítá se" /></label>
-      <label>Rychlý útok<input id="prohF" list="prohFast" autocomplete="off"
+      <label class="proh-utok">Rychlý útok<input id="prohF" list="prohFast" autocomplete="off"
         placeholder="nepovinné" /></label>
-      <label>Nabitý útok<input id="prohC1" list="prohCharged" autocomplete="off"
+      <label class="proh-utok">Nabitý útok<input id="prohC1" list="prohCharged" autocomplete="off"
         placeholder="nepovinné" /></label>
-      <label>Druhý nabitý<input id="prohC2" list="prohCharged" autocomplete="off"
+      <label class="proh-utok">Druhý nabitý<input id="prohC2" list="prohCharged" autocomplete="off"
         placeholder="nepovinné" /></label>
     </div>
     <datalist id="prohNames"></datalist>
@@ -3629,7 +3646,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 10:31";
+  var BUILD = "2026-09-17 11:03";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5495,6 +5512,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // Řazení podle pořadí v jedné konkrétní lize — sloupec k tomu není, ale
   // vrstva Atlas ho nabízí v rozbalovátku („Great League: nejlepší první").
   ["liga:LC", "liga:GL", "liga:UL", "liga:ML"].forEach(function (k) { SORTABLE[k] = true; });
+  // Podle data skenu a chycení — „co je nového" bez skenování celého boxu.
+  SORTABLE.scanDate = true;
+  SORTABLE.catchDate = true;
   var INPUT_KEYS = COLS.filter(function (c) { return !c.readonly; }).map(function (c) { return c.key; });
 
   // ---------- stav ----------
@@ -13237,6 +13257,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // se záhlaví. Napravo od detailu je přitom volné místo — tabulka je
     // širší než 1180 px sama o sobě, takže se tam řada vejde, aniž by
     // cokoli rostlo.
+    // Úplně dole: kdy byl kus naskenovaný a chycený. Podle toho jde roster
+    // seřadit a najít nové kusy bez skenování celého boxu.
+    var chycen = chyceniInfo(r.catchDate);
+    var sken = parseScanTime(r.scanDate);
+    if (chycen || sken !== null) {
+      var skenD = sken !== null ? new Date(sken) : null;
+      h += '<div class="d-casy">'
+        + (skenD ? "Naskenováno " + skenD.getUTCDate() + ". " + (skenD.getUTCMonth() + 1) + ". "
+            + skenD.getUTCFullYear() : "")
+        + (skenD && chycen ? " · " : "")
+        + (chycen ? "Chycen " + chycen.text : (skenD ? " · datum chycení sken nedal" : ""))
+        + "</div>";
+    }
     return '<div class="detail-main">' + h + "</div>" + evoLinieHtml(b);
   }
 
@@ -13792,6 +13825,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (key === "pokemon") return (item.row.pokemon || "").toLowerCase();
       // Pořadí druhu v jedné lize (u kusu, který ji hraje až po evoluci, pořadí
       // vyvinuté formy). Kdo tu ligu nehraje, jde na konec v obou směrech.
+      if (key === "scanDate") return parseScanTime(item.row.scanDate);
+      if (key === "catchDate") {
+        var chyc = chyceniInfo(item.row.catchDate);
+        return chyc ? chyc.ts : null;
+      }
       if (key.indexOf("liga:") === 0) {
         var ligaR = key.slice(5);
         if (ligaR === "ML") return item.b && item.b.metaML ? item.b.metaML[0] : null;
@@ -19797,6 +19835,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     { key: "shiny", label: "SHINY (nepovinné)", aliases: ["shiny"], exactOnly: true },
     { key: "buddy", label: "Buddy?", aliases: ["buddy", "kamarad"], exactOnly: true },
     { key: "scanDate", label: "Datum skenu", aliases: ["scandate", "datumskenu", "datum", "date", "scantime"] },
+    // Calcy IV ho vyplní, jen když při skenu vidí spodek karty kusu — jinak „?"
+    // (nevíme) nebo jen rok „2026-?-?". Poké Genie ho má taky.
+    { key: "catchDate", label: "Datum chycení", aliases: ["catchdate", "datumchyceni", "caughtdate", "caughton"], exactOnly: true },
     // Výška a váha se losují při chycení a **power-upem se nemění** — jsou to
     // jediná pole, která rozliší dva kusy téhož druhu i bez Appraisal.
     { key: "vyska", label: "Výška (cm)", aliases: ["heightcm", "height", "vyska", "vyskacm"] },
@@ -20256,7 +20297,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   var SCAN_FIELDS = ["cp", "level", "ivAtk", "ivDef", "ivSta", "ivPctIn", "ivPctMin", "ivPctMax",
     "fastMove", "charged1", "charged2", "lcRank", "glRank", "ulRank", "mlRank", "scanDate",
-    "vyska", "vaha"];
+    "vyska", "vaha", "catchDate"];
 
   /** Konec evolučního řetězce — dva kusy stejné „rodiny" (Machop i Machoke mají
    *  machamp) můžou být tentýž pokémon před evolucí a po ní. */
@@ -20463,6 +20504,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // mega je fyzicky větší — přepsat jimi řádek by rozbilo otisk kusu
         // (druh + výška + váha), podle kterého se páruje příští sken.
         if (jeMega && MEGA_NEBRAT[k]) return;
+        // Přesnější datum chycení se nepřepíše méně přesným (celé datum vs.
+        // jen rok) — Calcy ho při dalším skenu často nevidí celé.
+        if (k === "catchDate" && presnostChyceni(target[k]) > presnostChyceni(imp[k])) return;
         target[k] = imp[k];
       });
       // ruční úpravy se nepřepisují, jen doplňují
@@ -20498,6 +20542,25 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   var HOUR = 3600000;
 
   /** Datum i čas skenu — pro krátká okna (poslední hodina) nestačí jen den. */
+  /** Datum chycení: „2022-05-09", jen rok „2026-?-?", nebo den/měsíc/rok
+   *  z jiných exportů. Vrací {ts, presnost (3 den, 2 měsíc, 1 rok), text}. */
+  function chyceniInfo(v) {
+    var s = String(v === undefined || v === null ? "" : v).trim();
+    if (!s || s === "?") return null;
+    var m = /^(\d{4})-(\d{1,2}|\?)-(\d{1,2}|\?)/.exec(s);
+    if (m) {
+      var y = +m[1], mo = m[2] === "?" ? null : +m[2], d = m[3] === "?" ? null : +m[3];
+      return { ts: Date.UTC(y, mo ? mo - 1 : 0, d || 1), presnost: mo && d ? 3 : (mo ? 2 : 1),
+        text: mo && d ? d + ". " + mo + ". " + y : (mo ? mo + ". " + y : "v roce " + y) };
+    }
+    var ts = parseScanDate(s);
+    if (ts === null) return null;
+    var dt = new Date(ts);
+    return { ts: ts, presnost: 3,
+      text: dt.getUTCDate() + ". " + (dt.getUTCMonth() + 1) + ". " + dt.getUTCFullYear() };
+  }
+  function presnostChyceni(v) { var i = chyceniInfo(v); return i ? i.presnost : 0; }
+
   function parseScanTime(v) {
     var s = String(v === undefined || v === null ? "" : v).trim();
     if (!s) return null;
@@ -21359,7 +21422,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function csvText() {
     var computed = analyze();
     var header = ["Pokémon", "Forma", "Finální evoluce", "CP", "Level", "IV Attack", "IV Defense", "IV Stamina", "IV %", "Rychlý útok", "Nabitý útok 1", "Nabitý útok 2", "GL Rank", "UL Rank", "ML Rank", "Buddy", "Poznámka", "Označeno", "Dynamax", "CUTE", "SHINY",
-      "Datum skenu"];
+      "Datum skenu", "Datum chycení"];
     var lines = [header.map(csvEscape).join(",")];
     rows.forEach(function (r) {
       var c = computed[r.id];
@@ -21367,7 +21430,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         c && c.ivPct !== null ? Math.round(c.ivPct * 1000) / 1000 : "", r.fastMove, r.charged1, r.charged2,
         r.glRank, r.ulRank, r.mlRank, r.buddy, r.note, r.star ? "★" : "",
         r.dynamax === "Ano" ? "D" : "", r.cute === "Ano" ? "C" : "",
-        r.shiny === "Ano" ? "S" : "", r.scanDate || ""];
+        r.shiny === "Ano" ? "S" : "", r.scanDate || "", r.catchDate || ""];
       lines.push(vals.map(csvEscape).join(","));
     });
     return lines.join("\n");

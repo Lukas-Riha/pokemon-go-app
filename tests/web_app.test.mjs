@@ -16189,6 +16189,123 @@ try {
   check("…a u neznameho druhu nabidne vsechny", !razeniLiga.utoky.nicZnamy && razeniLiga.utoky.nicFast > 50,
     JSON.stringify([razeniLiga.utoky.nicZnamy, razeniLiga.utoky.nicFast]));
 
+  // ---------------------------------------------------------------- 253
+  // Datum chyceni z importu (Calcy „Catch Date": plne, jen rok, „?"), dole
+  // v detailu, razeni podle chyceni i skenu, slucovani a export.
+  console.log("\n253) Datum chyceni a skenu");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const chyceni = await page.evaluate(async (csv) => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rosterZal = document.querySelector('.zal-btn[data-klic="roster"]');
+    if (rosterZal) rosterZal.click();
+    const box = document.getElementById("celyBox");
+    if (box) box.checked = false;
+    P.setRows([]); P.setDiscarded([]);
+    await cekej(300);
+    const mapa = P.automatickeMapovani(csv) || {};
+    P.importText(csv); P.finishImport(true);
+    await cekej(1000);
+    const podle = () => { const o = {}; P.getRows().forEach((r) => { o[r.pokemon] = r; }); return o; };
+    let p1 = podle();
+    const out = { mapa: mapa["Datum chycení"], combee: p1.Combee.catchDate, mewtwo: p1.Mewtwo.catchDate,
+      ampharos: p1.Ampharos.catchDate };
+    const casy = async (id) => {
+      P.zamerKus(id);
+      await cekej(800);
+      return ((document.querySelector("#tbody .d-casy") || {}).textContent || "").replace(/\s+/g, " ");
+    };
+    out.detailCombee = await casy(p1.Combee.id);
+    out.detailMewtwo = await casy(p1.Mewtwo.id);
+    out.detailAmpharos = await casy(p1.Ampharos.id);
+    const poradi = () => [...document.querySelectorAll("#tbody tr[data-row-id]")]
+      .map((tr) => (P.getRows().filter((r) => r.id === tr.dataset.rowId)[0] || {}).pokemon);
+    P.atlasSort("catchDate", -1); await cekej(300); out.chyceniNovejsi = poradi();
+    P.atlasSort("catchDate", 1); await cekej(300); out.chyceniStarsi = poradi();
+    P.atlasSort("scanDate", -1); await cekej(300); out.skenNovejsi = poradi();
+    P.atlasSort("", 1);
+    // slučování: jen rok nepřepíše celé datum, celé datum doplní jen rok, „?" nic nesmaže
+    const H = "Name,CP,Level,min IV%,max IV%,Height (cm),Weight (g),Scan date,Catch Date";
+    P.importText([H,
+      "Combee,36,3,91.1,100,31,5840," + datumPred(0) + ",2022-?-?",
+      "Clamperl,554,,,,46,72390," + datumPred(0) + ",2026-06-01",
+      "Litten,572,,,,49,6110," + datumPred(0) + ",?"].join(String.fromCharCode(10)));
+    P.finishImport("merge");
+    await cekej(1000);
+    p1 = podle();
+    out.poSlouceni = { combee: p1.Combee.catchDate, clamperl: p1.Clamperl.catchDate, litten: p1.Litten.catchDate };
+    // export a zpět
+    const exp = P.csvText();
+    out.exportHlava = exp.split(String.fromCharCode(10))[0];
+    out.exportCombee = exp.split(String.fromCharCode(10)).filter((l) => /Combee/.test(l))[0] || "";
+    out.exportMapa = (P.automatickeMapovani(exp) || {})["Datum chycení"];
+    return out;
+  }, fs.readFileSync(path.join(__dirname, "fixtures", "calcy_iv_export.csv"), "utf-8"));
+  check("import Calcy zná sloupec Catch Date", chyceni.mapa === "Catch Date", String(chyceni.mapa));
+  check("…plné datum, jen rok i „?\" se načtou správně",
+    chyceni.combee === "2022-05-09" && chyceni.mewtwo === "2026-?-?" && chyceni.ampharos === "",
+    JSON.stringify([chyceni.combee, chyceni.mewtwo, chyceni.ampharos]));
+  check("detail dole ukáže datum skenu i chycení",
+    /Naskenováno 20\. 8\. 2026/.test(chyceni.detailCombee) && /Chycen 9\. 5\. 2022/.test(chyceni.detailCombee),
+    chyceni.detailCombee);
+  check("…u data jen s rokem řekne rok", /Chycen v roce 2026/.test(chyceni.detailMewtwo), chyceni.detailMewtwo);
+  check("…a když chycení sken nedal, řekne to", /datum chycení sken nedal/.test(chyceni.detailAmpharos),
+    chyceni.detailAmpharos);
+  check("řazení podle chycení: nejnovější první, neznámé na konci",
+    chyceni.chyceniNovejsi.indexOf("Combee") > chyceni.chyceniNovejsi.indexOf("Mewtwo")
+      && ["Ampharos", "Gyarados"].every((j) => chyceni.chyceniNovejsi.indexOf(j) >= chyceni.chyceniNovejsi.length - 2),
+    JSON.stringify(chyceni.chyceniNovejsi));
+  check("…a nejstarší první", chyceni.chyceniStarsi[0] === "Combee", JSON.stringify(chyceni.chyceniStarsi));
+  check("řazení podle skenu: naposledy naskenovaný první",
+    chyceni.skenNovejsi[0] === "Ampharos" && chyceni.skenNovejsi[chyceni.skenNovejsi.length - 1] === "Clamperl",
+    JSON.stringify(chyceni.skenNovejsi));
+  check("slučování: jen rok nepřepíše celé datum chycení", chyceni.poSlouceni.combee === "2022-05-09",
+    JSON.stringify(chyceni.poSlouceni));
+  check("…celé datum doplní to, kde byl jen rok", chyceni.poSlouceni.clamperl === "2026-06-01",
+    JSON.stringify(chyceni.poSlouceni));
+  check("…a „?\" nic nesmaže", chyceni.poSlouceni.litten === "2026-?-?", JSON.stringify(chyceni.poSlouceni));
+  check("export má sloupec Datum chycení a import ho zase pozná",
+    /Datum chycení/.test(chyceni.exportHlava) && /2022-05-09/.test(chyceni.exportCombee)
+      && chyceni.exportMapa === "Datum chycení",
+    JSON.stringify([chyceni.exportHlava.slice(-40), chyceni.exportMapa]));
+
+  // ---------------------------------------------------------------- 254
+  // Vyhledavani: druh, CP, level a tri IV na jednom radku, utoky pod nimi;
+  // na sirokem monitoru vsech devet v jednom radku, na telefonu po dvou.
+  console.log("\n254) Vyhledavani: rozlozeni poli");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const radkyProh = async () => page.evaluate(async () => {
+    const zal = document.querySelector('.zal-btn[data-klic="prohlidkaCard"]');
+    if (zal) zal.click();
+    const karta = document.getElementById("prohlidkaCard");
+    if (karta) karta.open = true;
+    await new Promise((r) => setTimeout(r, 300));
+    const labels = [...document.querySelectorAll("#prohlidkaCard .proh-grid > label")];
+    return labels.map((l) => ({ text: (l.childNodes[0] && l.childNodes[0].textContent || "").trim(),
+      top: Math.round(l.getBoundingClientRect().top) }));
+  });
+  await page.setViewportSize({ width: 1400, height: 1000 });
+  const proh1400 = await radkyProh();
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  const proh1800 = await radkyProh();
+  await page.setViewportSize({ width: 400, height: 900 });
+  const proh400 = await radkyProh();
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  const stejnyRadekProh = (arr) => arr.every((x) => Math.abs(x.top - arr[0].top) <= 4);
+  check("level je hned za CP, před IV",
+    proh1400.map((x) => x.text).slice(0, 6).join("|") === "Pokémon|CP|Level|IV útok|IV obrana|IV HP",
+    proh1400.map((x) => x.text).join("|"));
+  check("na 1400 px je šest hodnot v jednom řádku a útoky pod nimi",
+    proh1400.length === 9 && stejnyRadekProh(proh1400.slice(0, 6)) && stejnyRadekProh(proh1400.slice(6))
+      && proh1400[6].top > proh1400[0].top, JSON.stringify(proh1400.map((x) => x.top)));
+  check("na širokém monitoru je všech devět v jednom řádku", stejnyRadekProh(proh1800),
+    JSON.stringify(proh1800.map((x) => x.top)));
+  check("na telefonu jsou pole po dvou",
+    Math.abs(proh400[0].top - proh400[1].top) <= 4 && proh400[2].top > proh400[1].top,
+    JSON.stringify(proh400.map((x) => x.top)));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

@@ -903,7 +903,25 @@ Druhé kolo téhož dne (Lukášovy screenshoty):
 - **Přehled:** počty akcí česky („1–4 akce", „0 a 5+ akcí"), stejně
   „Další 2 akce / Dalších 7 akcí najdeš…".
 
-Hlídá to **`tests/atlas_vrstva.test.mjs`** (32 kontrol, běží proti TEST
+Třetí kolo (17. 9. odpoledne):
+
+- **Rozbalovátko „Uložení a zálohování rosteru" zrušené** — obsahovalo jen
+  `#zalWarn`, který je bez chybějící zálohy schovaný, takže bylo prázdné.
+  `#zalWarn` je teď hned pod lištou rosteru. Řádek `.tb-radek.tb-hledani`
+  (jen skrytý `viewSelect`, `#saveState`, `#backupState`) je ve vrstvě
+  schovaný celý.
+- **Úprava kusu:** místo datalistu stejný výběr útoků jako ve Vyhledávání
+  (`window.__pgoUtoky.vyber` — typ, síla, ★ elitní) na dočasném objektu,
+  hodnota jde do skrytých polí formuláře. `.uv-seznam` má ve vrstvě
+  `z-index:1600`, jinak byl schovaný pod `#atlasModal` (1500).
+- **Řazení podle času:** „Naposledy naskenované / Nejdéle nenaskenované"
+  (`scanDate`) a „Nejnověji / Nejdéle chycené" (`catchDate`, z importu
+  Calcy „Catch Date").
+- **Vyhledávání:** Level je v HTML hned za CP; mřížka 6 sloupců (útoky přes
+  dva), od 1700 px všech 9 v řádku, do 900 px 3, do 520 px 2. Tvoje pravidla
+  `label:nth-child(-n+6)` sedí dál — prvních šest jsou pořád čísla.
+
+Hlídá to **`tests/atlas_vrstva.test.mjs`** (36 kontrol, běží proti TEST
 verzi, i na 390 px). Když to budeš graficky předělávat, nech třídy `dv-*`,
 `hra-pruh` před `#atlasEditPokemon` a `atlasEvoTooltip`, ať test sedí.
 
