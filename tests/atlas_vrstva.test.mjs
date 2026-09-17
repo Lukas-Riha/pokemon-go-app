@@ -501,6 +501,10 @@ const d8 = await p8.evaluate(async () => {
     prepad: Math.max(0, utokyBox.scrollHeight - utokyBox.clientHeight),
     vHlavicce: utokyBox.getBoundingClientRect().bottom <= m.querySelector(".atlas-detail-identity").getBoundingClientRect().bottom + 1 } : null;
   out.sekceDole = [...m.querySelectorAll("[data-detail-section]")].map((x) => x.dataset.detailSection);
+  const ligyBlok = m.querySelector("[data-detail-section=ligy]");
+  out.ligy = ligyBlok ? { tag: ligyBlok.tagName.toLowerCase(),
+    nadpis: ((ligyBlok.querySelector(".atlas-sekce-nadpis") || {}).textContent || "").trim(),
+    sbalitelne: !!ligyBlok.querySelector("summary"), tabulka: !!ligyBlok.querySelector(".d-ligy-tab") } : null;
   // pořadí v hlavičce: staty, IV, strop a až za nimi útoky
   const statyBox = m.querySelector(".atlas-ident-stats");
   out.poradiHlavicky = !!(utokyBox && statyBox
@@ -587,6 +591,9 @@ check("…u kusu s evolucí jsou v nich obě nejlepší sestavy (teď i po evolu
 check("…a sekce Útoky, Nejlepší sestava a Herní využití dole nejsou",
   ["utoky", "sestavy", "naco", "stats", "proti", "coted"].every((k) => d8.sekceDole.indexOf(k) === -1),
   JSON.stringify(d8.sekceDole));
+check("„Ligy“ se jmenují jen Ligy a nejdou sbalit",
+  !!d8.ligy && d8.ligy.tag === "section" && d8.ligy.nadpis === "Ligy" && !d8.ligy.sbalitelne && d8.ligy.tabulka,
+  JSON.stringify(d8.ligy));
 check("v hlavičce jsou útoky až za statistikami (vpravo)", d8.poradiHlavicky, String(d8.poradiHlavicky));
 check("obrázek kusu je v pevném okénku a ani zvětšený nehne hlavičkou",
   !!d8.obrazek && d8.obrazek.overflow === "hidden" && d8.obrazek.w === 150 && d8.obrazek.h === 150

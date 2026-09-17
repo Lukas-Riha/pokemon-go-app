@@ -403,6 +403,14 @@ globalThis.AtlasBudget = (() => {
     utokyBox=box;
     utokySekce.remove();sestavySekce?.remove();
   }
+  // Ligy jsou hlavní tabulka detailu — nesbalují se a jmenují se prostě „Ligy".
+  const ligySekce=container.querySelector('[data-detail-section=ligy]');
+  if(ligySekce&&ligySekce.tagName==='DETAILS'){
+    const sek=document.createElement('section');sek.className=ligySekce.className;sek.dataset.detailSection='ligy';
+    const nadpis=document.createElement('div');nadpis.className='atlas-sekce-nadpis';nadpis.textContent='Ligy';sek.append(nadpis);
+    [...ligySekce.children].forEach(ch=>{if(ch.tagName!=='SUMMARY')sek.append(ch)});
+    ligySekce.replaceWith(sek);
+  }
   // Herní využití bez rámečku sekce — jen čtyři bubliny, text zarovnaný nahoru.
   const nacoSekce=container.querySelector('[data-detail-section=naco]');
   if(nacoSekce){const role=nacoSekce.querySelector('.d-roles');if(role){role.classList.add('atlas-vyuziti');nacoSekce.before(role)}nacoSekce.remove()}

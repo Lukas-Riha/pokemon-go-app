@@ -163,3 +163,6 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 @media(max-width:1100px){.atlas-test .atlas-detail-identity .atlas-ident-utoky{margin-left:0}}
 @media(max-width:900px){.atlas-test .atlas-detail-identity .atlas-ident-obr{flex:0 0 115px;width:115px;height:125px}}
 @media(max-width:650px){.atlas-test .atlas-detail-identity .atlas-ident-obr{flex:0 0 88px;width:88px;height:95px}}
+/* Claude 17. 9. (9): Ligy jsou napevno rozbalené, nadpis vypadá jako u ostatních sekcí */
+.atlas-test .atlas-detail-modern .atlas-sekce-nadpis{padding:17px 18px;font-size:15px;font-weight:650;color:var(--text-primary);background:var(--input-bg);border-bottom:1px solid var(--border)}
+@media(max-width:650px){.atlas-test .atlas-detail-modern .atlas-sekce-nadpis{padding:15px;font-size:14px}}

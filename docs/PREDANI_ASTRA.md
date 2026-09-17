@@ -91,6 +91,11 @@
 > a posouvá, takže bez ořezu vyskakovaly z hlavičky ven — to bylo to
 > „poskakování mimo rámečky". Kdyby se okénko stylovalo jinak, ořez musí
 > zůstat. Test to hlídá (zvětší sprite a měří výšku hlavičky).
+>
+> **Deváté kolo 17. 9. (Claude)** — sekce lig se v `atlas.js` mění z `details`
+> na `section` s nadpisem `.atlas-sekce-nadpis` („Ligy"): je napevno
+> rozbalená a nejde sbalit. Nadpis má styl summary bez šipky (blok „Claude
+> 17. 9. (9)").
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
