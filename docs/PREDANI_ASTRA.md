@@ -96,6 +96,17 @@
 > na `section` s nadpisem `.atlas-sekce-nadpis` („Ligy"): je napevno
 > rozbalená a nejde sbalit. Nadpis má styl summary bez šipky (blok „Claude
 > 17. 9. (9)").
+>
+> **Desáté kolo 17. 9. (Claude)** — čištění boxu kreslí ten samý rozbor jako
+> detail kusu. Hlavička je společná funkce `window.AtlasIdentitaHTML(row)`,
+> rozbor vkládá `boxRozbor()` do `#bmBody` jako `.atlas-box-rozbor`
+> (MutationObserver hlídá překreslení enginem, vlastní vložení ignoruje).
+> `AtlasEnhanceDetail` teď hledá hlavičku v `container.closest('#atlasModal,
+> .atlas-box-rozbor')` — kdyby se přidal další hostitel, musí se doplnit sem.
+> Zjednodušené bloky enginu (`.bm-head`, `.bm-verdikt`, `.bm-why`, `.bm-roles`,
+> `.bm-ligy`, `#bmVic`, `#bmVicBtn`) jsou schované a panel je široký jako
+> „Celý rozbor". Lišta „ve hře jsem s ním něco udělal" jde nad 650 px nahoru
+> k postupu, na telefonu zůstává v rozboru. CSS blok „Claude 17. 9. (10)".
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

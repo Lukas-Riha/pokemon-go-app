@@ -166,3 +166,12 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 /* Claude 17. 9. (9): Ligy jsou napevno rozbalené, nadpis vypadá jako u ostatních sekcí */
 .atlas-test .atlas-detail-modern .atlas-sekce-nadpis{padding:17px 18px;font-size:15px;font-weight:650;color:var(--text-primary);background:var(--input-bg);border-bottom:1px solid var(--border)}
 @media(max-width:650px){.atlas-test .atlas-detail-modern .atlas-sekce-nadpis{padding:15px;font-size:14px}}
+/* Claude 17. 9. (10): čištění boxu ukazuje stejný rozbor jako detail kusu */
+.atlas-test .box-mode .bm-panel{width:min(1720px,100%)}
+.atlas-test .bm-body>.bm-head,.atlas-test .bm-body>.bm-verdikt,.atlas-test .bm-body>.bm-why,.atlas-test .bm-body>.bm-roles,.atlas-test .bm-body>.bm-ligy,.atlas-test #bmVic,.atlas-test #bmVicBtn{display:none!important}
+.atlas-test .atlas-box-rozbor{margin:0 0 6px}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity{border-radius:13px;margin-bottom:12px}
+.atlas-test .atlas-box-rozbor .atlas-detail-content,.atlas-test .atlas-box-obsah{display:block}
+.atlas-test .atlas-box-rozbor .detail-close{display:none!important}
+.atlas-test #boxMode .bm-top .hra-pruh{margin-left:auto;font-size:12px}
+.atlas-test #boxMode .bm-top .hra-btn{padding:4px 10px}
