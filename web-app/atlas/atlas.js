@@ -364,6 +364,16 @@ globalThis.AtlasBudget = (() => {
   // Vysvětlení verdiktu (d-why) opakuje bubliny štítků — když štítky jsou, přesune se do bubliny nadpisu verdiktu.
   // IV procento je nahoře u hodnot IV — poznámka pod pruhy pryč; ve stropu jen CP, level a pořadí kopie (proč je v bublině).
   container.querySelectorAll('[data-detail-section=stats] .d-box').forEach(box=>{const h=(box.querySelector('.d-box-h')||{}).textContent||'';if(/^IV/.test(h))box.querySelectorAll('.d-note').forEach(n=>n.remove());if(/^Strop/.test(h))box.querySelectorAll('.d-proc').forEach(n=>{const note=n.parentElement;if(n.textContent.trim())note.setAttribute('data-tip',n.textContent.trim());if(n.previousElementSibling&&n.previousElementSibling.tagName==='BR')n.previousElementSibling.remove();n.remove()})});
+  // Typové pokrytí: „Výhoda" jako typy vpravo na řádku značek. V sekci dole
+  // zůstane jen to, co se vyruší — zbytek se dal odvodit a jen zabíral místo.
+  const pokryti=container.querySelector('.d-pokryti'),titulek=container.querySelector('.detail-title');
+  if(pokryti&&titulek){
+    const typy=[];
+    pokryti.querySelectorAll('.d-pokryti-radek:not(.d-pokryti-pozor)').forEach(r=>{r.querySelectorAll('.pk-typ').forEach(t=>{if(!typy.some(x=>x.textContent===t.textContent))typy.push(t)});r.remove()});
+    titulek.querySelector('.atlas-vyhoda')?.remove();
+    if(typy.length){const obal=document.createElement('span');obal.className='atlas-vyhoda';obal.setAttribute('data-tip','Proti těmto typům je jeho útok silný. Dvojtyp s jedním z nich schytá 1,6×, se dvěma z nich 2,56× — kde to druhý typ vyruší, je v Typovém pokrytí.');obal.innerHTML='<small>silný proti</small>';typy.forEach(t=>obal.append(t));titulek.append(obal)}
+    if(!pokryti.querySelector('.d-pokryti-radek'))pokryti.closest('details')?.remove();
+  }
   // Statistiky, IV a strop CP do hlavičky vedle jména a obrázku; sekce dole odpadá.
   const statsSekce=container.querySelector('[data-detail-section=stats]'),identita=document.querySelector('#atlasIdentity .atlas-detail-identity');if(statsSekce&&identita){identita.querySelector('.atlas-ident-stats')?.remove();const mrizka=statsSekce.querySelector('.d-grid');if(mrizka){mrizka.classList.add('atlas-ident-stats');mrizka.querySelectorAll('.d-box-h').forEach(h=>{if(/^IV/.test(h.textContent))h.textContent='IV'});identita.append(mrizka)}statsSekce.remove()}
   document.querySelectorAll('.atlas-detail-paging [data-detail-step]').forEach(b=>{b.title=b.dataset.detailStep==='1'?'Další kus (→ nebo D)':'Předchozí kus (← nebo A)'});

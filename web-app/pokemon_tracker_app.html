@@ -2951,8 +2951,9 @@
         <span class="hint">Do Max Battle se berou tři kusy, proto tři. Platí zvlášť
           na každý typ útočníka a zvlášť na tanky. <b>Veřejný žebříček Max Battle mety
           neexistuje</b>, takže se Dmax kusy měří tím, co jde spočítat z herních dat:
-          poškozením podle typu (jako u raidů) a výdrží (jako u gymů). U kusu je to
-          jeden štítek Dynamax, pořadí po typech je v jeho bublině.</span>
+          poškozením v tom konkrétním typu (jako u raidů, každý typ zvlášť) a výdrží
+          (jako u gymů). U kusu je to jeden štítek Dynamax, pořadí po typech je
+          v jeho bublině.</span>
       </div>
       <div class="setting">
         <label for="roleThresh">Práh užitečnosti role (%)</label>
@@ -3662,7 +3663,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 19:42";
+  var BUILD = "2026-09-17 20:22";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -7738,9 +7739,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           dmaxTypy[typ].push(b);
         });
       });
+      // Síla se počítá PRO TEN TYP, ne jedním číslem na kus. `raidPct` je
+      // podíl druhu na špičce jeho NEJLEPŠÍHO typu krát kvalita kusu —
+      // u Garchompa tak vycházel Dragon i Ground na 83 %, i když druh je
+      // v každém z nich jinde. Kvalita kusu (útok, výdrž, shadow) se vezme
+      // z `raidPct` jako poměr a přenásobí podílem druhu v tom typu.
+      var silaVTypu = function (b, typ) {
+        var role = raidRoliVTypu(b, typ);
+        if (!role) return b.raidPct || 0;
+        var kvalita = (b.raidSpeciesPct && b.raidPct !== null)
+          ? b.raidPct / b.raidSpeciesPct : 1;
+        return role.pct * kvalita;
+      };
       Object.keys(dmaxTypy).forEach(function (typ) {
         var kand = dmaxTypy[typ].slice().sort(function (x, y) {
-          return ((y.raidPct || 0) - (x.raidPct || 0)) || priShode(x, y);
+          return (silaVTypu(y, typ) - silaVTypu(x, typ)) || priShode(x, y);
         });
         // od druhu jen jeden kus na typ: tři sloty se nemají zaplnit
         // třemi kusy téhož druhu, když Max Battle chce partu
@@ -7750,14 +7763,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           videl[b.groupKey] = 1;
           return true;
         });
-        maxPoradi.typy[typ] = kand.map(function (b) { return maxZaznam(b, b.raidPct); });
+        maxPoradi.typy[typ] = kand.map(function (b) { return maxZaznam(b, silaVTypu(b, typ)); });
         kand.slice(0, s.dmaxSlotu).forEach(function (b, i) {
+          var sila = silaVTypu(b, typ);
           b.sloty.push({
             druh: "dmax", klic: "dmax:" + typ, typ: typ, poradi: i + 1,
             celkem: s.dmaxSlotu, jadro: true,
-            mezera: (b.raidPct || 0) < s.roleThresh, pct: b.raidPct || 0,
+            mezera: sila < s.roleThresh, pct: sila,
             popis: "Max útočník na " + typ + ", " + (i + 1) + ". z " + s.dmaxSlotu
-              + " (" + Math.round((b.raidPct || 0) * 100) + " % špičky toho typu)"
+              + " (" + Math.round(sila * 100) + " % špičky toho typu)"
           });
         });
       });

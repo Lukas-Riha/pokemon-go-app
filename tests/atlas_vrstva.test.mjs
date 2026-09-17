@@ -470,6 +470,25 @@ const d8 = await p8.evaluate(async () => {
   const box = (re) => [...stats.querySelectorAll(".d-box")].find((b) => re.test((b.querySelector(".d-box-h") || {}).textContent || ""));
   out.ivPoznamka = !!box(/^IV/).querySelector(".d-note");
   out.stropText = !!box(/^Strop/).querySelector(".d-proc");
+  // „Výhoda" z typového pokrytí jako typy vpravo na řádku značek
+  const titulek = m.querySelector(".detail-title");
+  const vyhoda = titulek.querySelector(".atlas-vyhoda");
+  const posledniZnacka = [...titulek.querySelectorAll(".rarity-chip, .atlas-lucky-tag")].pop();
+  out.vyhoda = { je: !!vyhoda, typu: vyhoda ? vyhoda.querySelectorAll(".pk-typ").length : 0,
+    tip: !!(vyhoda && vyhoda.getAttribute("data-tip")),
+    // zarovnané doprava: poslední prvek řádku a u pravého okraje (i když se řádek zalomí)
+    vpravo: !!(vyhoda && titulek.lastElementChild === vyhoda && posledniZnacka
+      && Math.abs(vyhoda.getBoundingClientRect().right - titulek.getBoundingClientRect().right) < 30) };
+  out.pokrytiVyhoda = m.querySelectorAll(".d-pokryti-radek:not(.d-pokryti-pozor)").length;
+  out.pokrytiVyrusi = m.querySelectorAll(".d-pokryti-pozor").length;
+  // LUCKY se chová jako ostatní vypnuté značky
+  const luckyVyp = titulek.querySelector(".atlas-lucky-tag:not(.active)");
+  const znackaVyp = titulek.querySelector(".rarity-chip.vypnuto");
+  out.lucky = luckyVyp && znackaVyp
+    ? { l: getComputedStyle(luckyVyp).backgroundColor, z: getComputedStyle(znackaVyp).backgroundColor }
+    : null;
+  out.gutter = getComputedStyle(document.querySelector(".atlas-drawer")).scrollbarGutter;
+  out.sirkaDlouhy = Math.round(m.querySelector(".atlas-detail-identity").getBoundingClientRect().width);
   out.detailTyp = st(m.querySelector(".detail-title .d-type"));
   out.detailZnacky = [...m.querySelectorAll(".detail-title .rarity-chip, .detail-title .atlas-lucky-tag")].map(st);
   out.karty = [...m.querySelectorAll("[data-detail-section=naco] .d-role")].map((k) => Math.round(k.getBoundingClientRect().height));
@@ -482,6 +501,11 @@ const d8 = await p8.evaluate(async () => {
   out.zahodit = { pod: m.querySelectorAll(".atlas-verdict-first .dv-pod").length,
     why: !!m.querySelector(".atlas-verdict-first .d-why"),
     hlavaTip: !!m.querySelector(".atlas-verdict-first .d-verdict>b[data-tip]") };
+  A.closeDetail();
+  A.closeDetail();
+  A.openDetail(rows.find((r) => r.pokemon === "Rattata").id);
+  await cekej(1200);
+  out.sirkaKratky = Math.round(m.querySelector(".atlas-detail-identity").getBoundingClientRect().width);
   A.closeDetail();
   A.openDetail(rows.find((r) => r.pokemon === "Rhydon").id);
   await cekej(1200);
@@ -537,6 +561,14 @@ check("štítek Dynamax má v bublině pořadí v Max Battle", /Max Dragon/.test
 check("pouštěný kus: v kartě štítky pod čarou místo textu", d8.karta3.pod >= 1 && !d8.karta3.small, JSON.stringify(d8.karta3));
 check("…v detailu taky, a vysvětlující věta je v bublině nadpisu",
   d8.zahodit.pod >= 1 && !d8.zahodit.why && d8.zahodit.hlavaTip, JSON.stringify(d8.zahodit));
+check("„silný proti“ stojí vpravo na řádku značek a má bublinu",
+  d8.vyhoda.je && d8.vyhoda.typu >= 2 && d8.vyhoda.tip && d8.vyhoda.vpravo, JSON.stringify(d8.vyhoda));
+check("…a v typovém pokrytí zbylo jen „Výhoda se vyruší“",
+  d8.pokrytiVyhoda === 0 && d8.pokrytiVyrusi >= 0, JSON.stringify({ vyhoda: d8.pokrytiVyhoda, vyrusi: d8.pokrytiVyrusi }));
+check("LUCKY vypadá jako ostatní vypnuté značky", !!d8.lucky && d8.lucky.l === d8.lucky.z, JSON.stringify(d8.lucky));
+check("detail drží místo pro posuvník, takže šířka neskáče",
+  d8.gutter === "stable" && d8.sirkaDlouhy === d8.sirkaKratky,
+  JSON.stringify({ gutter: d8.gutter, dlouhy: d8.sirkaDlouhy, kratky: d8.sirkaKratky }));
 check("druh bez evoluce má sloupec evoluční řady se sebou samým",
   d8.heracross.sloupec && d8.heracross.kusu === 1, JSON.stringify(d8.heracross));
 

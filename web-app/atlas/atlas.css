@@ -118,3 +118,10 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .atlas-detail-modern [data-detail-section=naco] .d-roles{grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch}
 @media(max-width:900px){.atlas-test .atlas-detail-modern [data-detail-section=naco] .d-roles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .atlas-test .atlas-detail-modern [data-detail-section=naco] .d-role.d-role-radek{flex-direction:column;align-items:flex-start;gap:4px}
+/* Claude 17. 9. (5): místo pro posuvník, LUCKY jako ostatní vypnuté značky, „silný proti" na řádku značek */
+.atlas-drawer,.atlas-test #atlasDetailContent{scrollbar-gutter:stable}
+.atlas-test .atlas-detail-modern .detail-title .atlas-lucky-tag:not(.active){background:transparent;color:var(--text-muted);border:1px dashed var(--border)}
+.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda{margin-left:auto;display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px}
+.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda small{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda .pk-typ{font-size:12px;font-weight:700;line-height:18px;padding:2px 10px;border-radius:11px;color:#fff;letter-spacing:.02em}
+@media(max-width:650px){.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda{margin-left:0;width:100%}}

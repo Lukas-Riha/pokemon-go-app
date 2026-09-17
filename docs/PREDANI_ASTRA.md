@@ -56,6 +56,14 @@
 > sloupcích stejné výšky, „Herní využití" jsou čtyři stejně široké karty
 > v řádku (nadpis nad hodnotou). CSS v bloku „Claude 17. 9. (4)" — pod
 > 1100 px jdou staty pod jméno, pod 650 px pod sebe.
+>
+> **Páté kolo 17. 9. (Claude)** — `.atlas-drawer` a `#atlasDetailContent` mají
+> `scrollbar-gutter:stable`, aby detail neskákal o šířku posuvníku. Z typového
+> pokrytí se „Výhoda" přesouvá na řádek značek vpravo jako `.atlas-vyhoda`
+> (`<small>silný proti</small>` + barevné `.pk-typ`); v sekci „Typové pokrytí"
+> zůstává jen „Výhoda se vyruší" (a když ani ta není, sekce se odstraní).
+> Vypnutý `.atlas-lucky-tag` je průhledný jako ostatní vypnuté značky (dřív
+> měl tmavou výplň). CSS v bloku „Claude 17. 9. (5)".
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

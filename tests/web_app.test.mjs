@@ -16508,7 +16508,16 @@ try {
     const g1 = kus("Garchomp", 4357), g3 = kus("Garchomp", 1900);
     out.g1Stitky = (comp[g1.id].duvody || []).map((d) => d.stitek);
     out.g1Dmax = tipy(P.atlasDuvody(comp[g1.id])).find((x) => x.t === "Dynamax") || null;
-    out.g1MaxSloty = P.base().find((b) => b.row.id === g1.id).sloty.filter((s) => s.druh === "dmax").map((s) => s.popis);
+    const bG1 = P.base().find((b) => b.row.id === g1.id);
+    out.g1MaxSloty = bG1.sloty.filter((s) => s.druh === "dmax").map((s) => s.popis);
+    // síla v Max Battle se počítá pro každý typ zvlášť: nejlepší typ sedí
+    // s raidPct kusu, ostatní jsou nižší (dřív mělo všech typů totéž číslo)
+    const utocne = bG1.sloty.filter((s) => s.druh === "dmax" && s.typ !== "tank").map((s) => s.pct);
+    out.g1Sila = { typu: utocne.length, pct: utocne.map((x) => Math.round(x * 1000) / 1000),
+      raidPct: Math.round((bG1.raidPct || 0) * 1000) / 1000,
+      nejvicSedi: utocne.length > 0 && Math.abs(Math.max.apply(null, utocne) - (bG1.raidPct || 0)) < 0.002,
+      vsechnyDoRaidPct: utocne.every((x) => x <= (bG1.raidPct || 0) + 0.002),
+      tank: (bG1.sloty.filter((s) => s.typ === "tank")[0] || {}).pct };
     out.g3Keep = comp[g3.id].keep;
     out.g3Pod = (comp[g3.id].podCarou || []).map((x) => x.druh + ":" + x.typ);
     out.g3Chipy = tipy(P.atlasDuvody(comp[g3.id]));
@@ -16555,6 +16564,10 @@ try {
     s256.g1Stitky.filter((x) => x === "Dynamax").length === 1 && !s256.g1Stitky.some((x) => /^Max /.test(x)),
     JSON.stringify(s256.g1Stitky));
   check("…sloty v Max Battle v rozpočtu zůstaly", s256.g1MaxSloty.length >= 2, JSON.stringify(s256.g1MaxSloty));
+  check("…síla se počítá pro každý typ zvlášť (nejlepší typ = raidPct, ostatní níž)",
+    s256.g1Sila.typu >= 2 && s256.g1Sila.nejvicSedi && s256.g1Sila.vsechnyDoRaidPct
+      && new Set(s256.g1Sila.pct).size > 1,
+    JSON.stringify(s256.g1Sila));
   check("…a bublina ukáže pořadí ve všech typech i jako tank",
     !!s256.g1Dmax && /Max Dragon 1\/3/.test(s256.g1Dmax.tip) && /Max Ground \d\/3/.test(s256.g1Dmax.tip)
       && /Max tank \d\/3/.test(s256.g1Dmax.tip) && /tenhle kus/.test(s256.g1Dmax.tip) && /Dmax kus druhu 1\/2/.test(s256.g1Dmax.tip),
