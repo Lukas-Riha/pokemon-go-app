@@ -670,55 +670,91 @@ check("cena vylepšení je krátká a na jednom řádku",
 
 // ------------------------------- čištění boxu ukazuje stejný rozbor jako detail
 console.log("\n10) Čištění boxu má stejný rozbor jako detail kusu");
-const p10 = await otevri(1500, [
+const ROSTER10 = [
   { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15, fastMove: "Mud Slap", charged1: "Earthquake" },
   { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15, fastMove: "Dragon Tail", charged1: "Earth Power", dynamax: "Ano" },
-  { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
-]);
-const d10 = await p10.evaluate(async () => {
-  const P = window.__pgo;
-  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-  document.getElementById("boxModeBtn").click();
-  await cekej(900);
-  const vidno = (s) => { const e = document.querySelector(s); return !!(e && e.offsetParent !== null); };
-  const rozbor = () => {
-    const b = document.querySelector("#bmBody .atlas-box-rozbor");
-    if (!b) return null;
-    return { jmeno: (b.querySelector(".atlas-ident-text h2") || {}).textContent || "",
-      staty: b.querySelectorAll(".atlas-ident-stats > .d-box").length,
-      utoky: !!b.querySelector(".atlas-ident-utoky"),
-      verdikt: !!b.querySelector(".atlas-verdict-radek"),
-      krok: !!b.querySelector(".atlas-krok"),
-      znacky: b.querySelectorAll(".detail-title .rarity-chip").length,
-      vyhoda: !!b.querySelector(".detail-title .atlas-vyhoda"),
-      ligy: (b.querySelector("[data-detail-section=ligy]") || {}).tagName || "",
-      vyuziti: b.querySelectorAll(".atlas-vyuziti .d-role").length,
-      evoluce: !!b.querySelector(".atlas-evolution-column"),
-      sekceDole: [...b.querySelectorAll("[data-detail-section]")].map((x) => x.dataset.detailSection).join(",") };
-  };
-  const out = { prvni: rozbor(),
-    schovane: ["#bmBody > .bm-head", "#bmBody > .bm-verdikt", "#bmBody > .bm-why", "#bmBody > .bm-roles", "#bmBody > .bm-ligy", "#bmVic"]
-      .filter((s) => vidno(s)),
-    hraPruh: !!document.querySelector("#boxMode .bm-top .hra-pruh"),
-    pozice: (document.getElementById("bmPos") || {}).textContent || "" };
-  document.getElementById("bmKeep").click();
-  await cekej(700);
-  out.druhy = rozbor();
-  out.pozice2 = (document.getElementById("bmPos") || {}).textContent || "";
-  P.boxZavritNatvrdo();
-  return out;
-});
+  { pokemon: "Eevee", cp: 800, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 }
+];
+async function boxKontrola(page) {
+  return page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.getElementById("boxModeBtn").click();
+    await cekej(900);
+    const vidno = (s) => { const e = document.querySelector(s); return !!(e && e.offsetParent !== null); };
+    const prebytek = () => { const s = document.querySelector(".bm-scroll"); return Math.max(0, s.scrollHeight - s.clientHeight); };
+    const rozbor = () => {
+      const b = document.querySelector("#bmBody .atlas-box-rozbor");
+      if (!b) return null;
+      return { jmeno: (b.querySelector(".atlas-ident-text h2") || {}).textContent || "",
+        staty: b.querySelectorAll(".atlas-ident-stats > .d-box").length,
+        utoky: vidno(".atlas-box-rozbor .atlas-ident-utoky"),
+        verdikt: vidno(".atlas-box-rozbor .atlas-verdict-radek"),
+        krok: !!b.querySelector(".atlas-krok"),
+        znacky: b.querySelectorAll(".detail-title .rarity-chip").length,
+        vyhoda: !!b.querySelector(".detail-title .atlas-vyhoda"),
+        ligyTag: (b.querySelector("[data-detail-section=ligy]") || {}).tagName || "",
+        ligyVidet: vidno(".atlas-box-rozbor [data-detail-section=ligy]"),
+        evoluceVidet: vidno(".atlas-box-rozbor .atlas-evolution-column"),
+        vyuzitiVidet: vidno(".atlas-box-rozbor .atlas-vyuziti"),
+        vyuziti: b.querySelectorAll(".atlas-vyuziti .d-role").length };
+    };
+    const out = { sbalene: [], rozbalene: [],
+      schovane: ["#bmBody > .bm-head", "#bmBody > .bm-verdikt", "#bmBody > .bm-why", "#bmBody > .bm-roles", "#bmBody > .bm-ligy", "#bmVic"].filter((s) => vidno(s)),
+      hraPruh: !!document.querySelector("#boxMode .bm-top .hra-pruh"),
+      pozice: (document.getElementById("bmPos") || {}).textContent || "" };
+    for (let i = 0; i < 3; i++) {
+      out.sbalene.push({ r: rozbor(), prebytek: prebytek() });
+      document.getElementById("bmKeep").click();
+      await cekej(650);
+    }
+    out.prvni = out.sbalene[0].r;
+    out.druhy = out.sbalene[1].r;
+    out.pozice2 = (document.getElementById("bmPos") || {}).textContent || "";
+    P.boxZavritNatvrdo();
+    await cekej(250);
+    document.getElementById("boxModeBtn").click();
+    await cekej(800);
+    document.getElementById("bmVicBtn").click();
+    await cekej(800);
+    for (let i = 0; i < 3; i++) {
+      out.rozbalene.push({ r: rozbor(), prebytek: prebytek() });
+      document.getElementById("bmKeep").click();
+      await cekej(650);
+    }
+    P.boxZavritNatvrdo();
+    return out;
+  });
+}
+const p10 = await otevri(1500, ROSTER10);
+const d10 = await boxKontrola(p10);
 await p10.close();
-check("čištění boxu vykreslí rozbor jako v detailu (hlavička, staty, útoky, verdikt, značky, Ligy, využití, evoluce)",
+check("čištění boxu vykreslí rozbor jako v detailu (hlavička, staty, útoky, verdikt, značky, využití)",
   !!d10.prvni && d10.prvni.staty === 3 && d10.prvni.utoky && d10.prvni.verdikt && d10.prvni.krok
-    && d10.prvni.znacky >= 4 && d10.prvni.vyhoda && d10.prvni.ligy === "SECTION"
-    && d10.prvni.vyuziti === 4 && d10.prvni.evoluce, JSON.stringify(d10.prvni));
+    && d10.prvni.znacky >= 4 && d10.prvni.vyhoda && d10.prvni.vyuziti === 4, JSON.stringify(d10.prvni));
 check("…a nic z toho nezůstane ve staré podobě (zjednodušené bloky enginu jsou schované)",
   d10.schovane.length === 0, d10.schovane.join(", "));
 check("…lišta „ve hře jsem s ním něco udělal“ je nahoře u postupu", d10.hraPruh, String(d10.hraPruh));
 check("…a po rozhodnutí se přepne na další kus se stejným rozborem",
   !!d10.druhy && d10.druhy.jmeno !== d10.prvni.jmeno && d10.druhy.staty === 3 && d10.druhy.utoky
-    && d10.pozice2 !== d10.pozice, JSON.stringify({ prvni: d10.prvni.jmeno, druhy: d10.druhy && d10.druhy.jmeno, pozice: d10.pozice, pozice2: d10.pozice2 }));
+    && d10.pozice2 !== d10.pozice,
+  JSON.stringify({ prvni: d10.prvni.jmeno, druhy: d10.druhy && d10.druhy.jmeno }));
+check("hned vidět je rozhodování (bez Lig a evoluce), Ligy a evoluce až po rozbalení",
+  d10.sbalene.every((x) => x.r && x.r.vyuzitiVidet && !x.r.ligyVidet && !x.r.evoluceVidet)
+    && d10.rozbalene.every((x) => x.r && x.r.ligyVidet && x.r.evoluceVidet && !x.r.vyuzitiVidet
+      && x.r.ligyTag === "SECTION"),
+  JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet]),
+    rozbalene: d10.rozbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet]) }));
+check("v čištění boxu se neobjeví posuvník (ani rozbalené, 1500×1000)",
+  d10.sbalene.every((x) => x.prebytek === 0) && d10.rozbalene.every((x) => x.prebytek === 0),
+  JSON.stringify({ sbalene: d10.sbalene.map((x) => x.prebytek), rozbalene: d10.rozbalene.map((x) => x.prebytek) }));
+const p10b = await otevri(1400, ROSTER10);
+await p10b.setViewportSize({ width: 1400, height: 900 });
+const d10b = await boxKontrola(p10b);
+await p10b.close();
+check("…ani na nižším okně (1400×900)",
+  d10b.sbalene.every((x) => x.prebytek === 0) && d10b.rozbalene.every((x) => x.prebytek === 0),
+  JSON.stringify({ sbalene: d10b.sbalene.map((x) => x.prebytek), rozbalene: d10b.rozbalene.map((x) => x.prebytek) }));
 
 // ----------------------------------------------------------------- telefon
 console.log("\n5) Telefon (390 px)");

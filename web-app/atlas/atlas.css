@@ -168,10 +168,64 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 @media(max-width:650px){.atlas-test .atlas-detail-modern .atlas-sekce-nadpis{padding:15px;font-size:14px}}
 /* Claude 17. 9. (10): čištění boxu ukazuje stejný rozbor jako detail kusu */
 .atlas-test .box-mode .bm-panel{width:min(1720px,100%)}
-.atlas-test .bm-body>.bm-head,.atlas-test .bm-body>.bm-verdikt,.atlas-test .bm-body>.bm-why,.atlas-test .bm-body>.bm-roles,.atlas-test .bm-body>.bm-ligy,.atlas-test #bmVic,.atlas-test #bmVicBtn{display:none!important}
+.atlas-test .bm-body>.bm-head,.atlas-test .bm-body>.bm-verdikt,.atlas-test .bm-body>.bm-why,.atlas-test .bm-body>.bm-roles,.atlas-test .bm-body>.bm-ligy,.atlas-test #bmVic{display:none!important}
 .atlas-test .atlas-box-rozbor{margin:0 0 6px}
 .atlas-test .atlas-box-rozbor .atlas-detail-identity{border-radius:13px;margin-bottom:12px}
 .atlas-test .atlas-box-rozbor .atlas-detail-content,.atlas-test .atlas-box-obsah{display:block}
 .atlas-test .atlas-box-rozbor .detail-close{display:none!important}
 .atlas-test #boxMode .bm-top .hra-pruh{margin-left:auto;font-size:12px}
 .atlas-test #boxMode .bm-top .hra-btn{padding:4px 10px}
+/* Claude 17. 9. (11): čištění boxu bez posuvníku — část hned, zbytek po rozbalení (⛶) */
+.atlas-test .box-mode .bm-panel{height:auto;max-height:100%}
+.atlas-test .bm-scroll{scrollbar-width:none;scrollbar-gutter:auto}
+.atlas-test .bm-scroll::-webkit-scrollbar{display:none}
+.atlas-test .box-mode:not(.siroky) .atlas-box-rozbor [data-detail-section=ligy],
+.atlas-test .box-mode:not(.siroky) .atlas-box-rozbor .atlas-evolution-column{display:none}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{display:none}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column{min-height:0}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:52px;height:52px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{font-size:11px}
+.atlas-test .atlas-box-rozbor .atlas-detail-columns{align-items:start}
+/* Čištění boxu je menší plocha než plachta detailu — všechno o kus kompaktnější, ať se vejde bez posuvníku */
+.atlas-test .atlas-box-rozbor .atlas-detail-identity{height:auto;padding:12px 14px;gap:14px;margin-bottom:10px}
+.atlas-test .atlas-box-rozbor .atlas-ident-obr{flex:0 0 104px;width:104px;height:104px}
+.atlas-test .atlas-box-rozbor .atlas-ident-text{flex:0 0 220px}
+.atlas-test .atlas-box-rozbor .atlas-ident-text h2{font-size:22px;margin:2px 0 6px}
+.atlas-test .atlas-box-rozbor .atlas-ident-text p{margin:2px 0;font-size:12px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats,.atlas-test .atlas-box-rozbor .atlas-ident-utoky{height:auto}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-box,.atlas-test .atlas-box-rozbor .atlas-ident-utoky{padding:8px 10px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-big{font-size:18px}
+.atlas-test .atlas-box-rozbor .atlas-verdict-radek{min-height:0;margin-bottom:10px}
+.atlas-test .atlas-box-rozbor .detail-title{min-height:0;padding:8px 0}
+.atlas-test .atlas-box-rozbor .atlas-vyuziti .d-role{min-height:0;padding:8px 12px}
+.atlas-test .atlas-box-rozbor .atlas-sekce-nadpis{padding:10px 14px;font-size:13px}
+.atlas-test .atlas-box-rozbor .d-ligy-tab th,.atlas-test .atlas-box-rozbor .d-ligy-tab td{padding:5px 8px}
+.atlas-test .atlas-box-rozbor .atlas-detail-section{margin:8px 0}
+.atlas-test .atlas-box-rozbor .atlas-krok .d-role{padding:8px 12px}
+/* Evoluční řada v boxu jen obrázky a jména (podrobnosti jsou v bublině), ať se rozbalený rozbor vejde bez posuvníku */
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:40px;height:40px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus i,
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u:not(:last-child),
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-note{display:none}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-stupen{gap:4px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-sip{margin:2px 0;font-size:11px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{padding:4px 6px}
+/* Rozbalený rozbor v boxu = druhá stránka: hlavička jen se jménem, verdikt a pod tím Ligy s evoluční řadou */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-stats,
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-utoky,
+.atlas-test .box-mode.siroky .atlas-box-rozbor .detail-title,
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{display:none}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text{flex:1 1 auto}
+/* Větvená řada (Eevee) v boxu: menší dlaždice, ať se rozbalený rozbor vejde i s osmi konci */
+.atlas-test .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:30px;height:30px}
+.atlas-test .atlas-box-rozbor .d-evo.husty .d-evo-kus{padding:2px 4px;font-size:10px}
+.atlas-test .atlas-box-rozbor .d-evo.husty .d-evo-kus b{font-size:10px}
+/* Na druhé stránce boxu stačí malá hlavička — místo patří Ligám a evoluci */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-identity{padding:8px 12px;margin-bottom:8px;gap:12px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-obr{flex:0 0 72px;width:72px;height:72px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text h2{font-size:18px;margin:0 0 2px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section{margin:6px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-sekce-nadpis{padding:8px 12px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab th,.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td{padding:4px 8px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:34px;height:34px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:26px;height:26px}

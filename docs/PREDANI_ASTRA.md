@@ -107,6 +107,16 @@
 > `.bm-ligy`, `#bmVic`, `#bmVicBtn`) jsou schované a panel je široký jako
 > „Celý rozbor". Lišta „ve hře jsem s ním něco udělal" jde nad 650 px nahoru
 > k postupu, na telefonu zůstává v rozboru. CSS blok „Claude 17. 9. (10)".
+>
+> **Jedenácté kolo 17. 9. (Claude)** — v čištění boxu nesmí být posuvník.
+> Panel má `height:auto;max-height:100%`, `.bm-scroll` schovaný scrollbar
+> a obsah je rozdělený na dvě stránky (třída `siroky` na `#boxMode`, přepíná
+> ji `#bmVicBtn`): sbalené = hlavička se staty a útoky, verdikt s krokem,
+> značky, Herní využití; rozbalené = malá hlavička + Ligy a evoluční řada.
+> Všechno v boxu je kompaktnější (menší hlavička, řádky tabulky, dlaždice
+> evoluce) — CSS blok „Claude 17. 9. (11)". Kdyby se do boxu něco přidávalo,
+> test v sekci 10 měří přetečení `.bm-scroll` na 1500×1000 i 1400×900
+> u tří kusů včetně Eevee (větvená řada je nejvyšší).
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
