@@ -125,6 +125,13 @@
 > Pod otevřeným boxem se zamyká rolování stránky (`body.atlas-box-otevreno`),
 > takže vpravo nesvítí posuvník celé stránky. Test měří přetečení na
 > 1500×1000 (obě stránky) a 1400×900 (sbalený stav).
+>
+> **Třinácté kolo 17. 9. (Claude)** — proporce rozbaleného boxu: obrázek
+> 120 px, jméno 26 px, staty/IV/strop a útoky hned vedle jména (menší
+> odsazení), evoluční řada výrazně větší (dlaždice 60 px, u větvené 34 px)
+> a širší sloupec (`minmax(300px,0.62fr)`). Sbalení/rozbalení je plynulé:
+> Ligy a evoluce se skrývají přes `max-height`+`opacity` s přechodem, ne
+> `display:none` — pozor v testech, „vidět" se musí měřit výškou a průhledností.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

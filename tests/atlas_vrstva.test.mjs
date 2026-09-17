@@ -681,7 +681,9 @@ async function boxKontrola(page) {
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
     document.getElementById("boxModeBtn").click();
     await cekej(900);
-    const vidno = (s) => { const e = document.querySelector(s); return !!(e && e.offsetParent !== null); };
+    // „vidět" = má výšku a není průhledné (sbalené bloky se schovávají přes max-height)
+    const vidno = (s) => { const e = document.querySelector(s); if (!e || e.offsetParent === null) return false;
+      return e.getBoundingClientRect().height > 2 && getComputedStyle(e).opacity !== "0"; };
     const prebytek = () => { const s = document.querySelector(".bm-scroll"); return Math.max(0, s.scrollHeight - s.clientHeight); };
     const rozbor = () => {
       const b = document.querySelector("#bmBody .atlas-box-rozbor");
