@@ -132,6 +132,9 @@
 > a širší sloupec (`minmax(300px,0.62fr)`). Sbalení/rozbalení je plynulé:
 > Ligy a evoluce se skrývají přes `max-height`+`opacity` s přechodem, ne
 > `display:none` — pozor v testech, „vidět" se musí měřit výškou a průhledností.
+> Velikosti hlavičky (obrázek 120, jméno 26 px, staty a útoky hned vedle jména)
+> platí v obou stavech, ať při rozbalení nic neposkočí — jen `siroky` navíc
+> ubírá odsazení, aby se vešly Ligy a evoluce.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

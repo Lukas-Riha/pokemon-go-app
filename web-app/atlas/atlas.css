@@ -259,12 +259,12 @@ body.atlas-box-otevreno{overflow:hidden}
 .atlas-test .box-mode.siroky .atlas-box-rozbor [data-detail-section=ligy],
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column{max-height:460px;opacity:1}
 .atlas-test .box-mode .bm-panel{transition:width .16s ease}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-obr{flex:0 0 120px;width:120px;height:120px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text{flex:0 0 210px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text h2{font-size:26px;margin:2px 0 6px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text p{font-size:13px;margin:3px 0}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-stats{margin-left:14px;grid-template-columns:repeat(3,minmax(130px,170px))}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-utoky{margin-left:10px;flex:0 1 230px}
+.atlas-test .atlas-box-rozbor .atlas-ident-obr{flex:0 0 120px;width:120px;height:120px}
+.atlas-test .atlas-box-rozbor .atlas-ident-text{flex:0 0 210px}
+.atlas-test .atlas-box-rozbor .atlas-ident-text h2{font-size:26px;margin:2px 0 6px}
+.atlas-test .atlas-box-rozbor .atlas-ident-text p{font-size:13px;margin:3px 0}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats{margin-left:14px;grid-template-columns:repeat(3,minmax(130px,170px))}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky{margin-left:10px;flex:0 1 230px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-columns{grid-template-columns:minmax(0,1fr) minmax(300px,0.62fr)}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:60px;height:60px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{font-size:12px;padding:4px 8px}
