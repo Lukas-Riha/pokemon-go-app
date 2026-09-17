@@ -2431,6 +2431,7 @@
   .dv-chip.dv-rezerva { border-color: var(--status-warning); }
   .dv-vic { background: var(--surface-2, transparent); border-color: var(--grid); }
   .dv-chip[hidden] { display: none; }
+  .tip-oddel { border: 0; border-top: 1px solid var(--grid); margin: 8px 0; }
   .filtr-duvody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 10px; max-height: 45vh; overflow-y: auto; }
   .lg-chip { font-size: 12px; font-weight: 700; padding: 1px 6px; border-radius: 5px;
@@ -3625,7 +3626,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 07:55";
+  var BUILD = "2026-09-17 08:26";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -10597,8 +10598,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (col.key === "raid") { td.innerHTML = badge(c.raid, c.raid !== "Ne" ? "good" : "muted"); return; }
     if (col.key === "gym") { td.innerHTML = badge(c.gym, c.gym === "Ano" ? "good" : "muted"); return; }
     if (col.key === "evolve") { td.innerHTML = badgeSub(c.evolve, c.evolveTone, c.evolveSub); td.title = c.evolveTitle || ""; return; }
-    if (col.key === "gymRec") { td.innerHTML = badge(c.gymRec, c.gymRec === "Ano" ? "good" : c.gymRec === "Záloha" ? "warning" : c.gymRec === "Po vývinu" ? "warning" : "muted"); td.title = c.gymTitle || ""; return; }
-    if (col.key === "raidRec") { td.innerHTML = badge(c.raidRec, c.raidRec === "Ne" || c.raidRec === "Slabý útok" ? "muted" : c.raidRec.indexOf("záloha") !== -1 ? "warning" : "good"); td.title = c.raidTitle || ""; return; }
+    if (col.key === "gymRec") { td.innerHTML = badge(c.gymRec, c.gymRec === "Ano" ? "good" : c.gymRec === "Záloha" ? "warning" : c.gymRec === "Po vývinu" ? "warning" : "muted");
+      // Kus, který gym slot drží, ukáže po najetí i pořadí obránců.
+      var tipGym = bublinaRole(c.duvody, "gym");
+      if (tipGym) td.setAttribute("data-tip", tipGym + '<div class="tip-radek tip-pozn">'
+        + escHtml(c.gymTitle || "") + "</div>");
+      else td.title = c.gymTitle || "";
+      return; }
+    if (col.key === "raidRec") { td.innerHTML = badge(c.raidRec, c.raidRec === "Ne" || c.raidRec === "Slabý útok" ? "muted" : c.raidRec.indexOf("záloha") !== -1 ? "warning" : "good");
+      // U raidu totéž pro každý typ, který kus drží.
+      var tipRaid = bublinaRole(c.duvody, "raid");
+      if (tipRaid) td.setAttribute("data-tip", tipRaid + '<div class="tip-radek tip-pozn">'
+        + escHtml(c.raidTitle || "") + "</div>");
+      else td.title = c.raidTitle || "";
+      return; }
     if (col.key === "pvpRec") {
       var pvpTone = c.pvpTone || "muted";
       var ligy = c.pvpLigy || [];
@@ -10915,7 +10928,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + '<span class="d-bar-v">' + hodnota + "</span></div>";
   }
 
-  function roleCardHtml(nadpis, stav, tone, popis, pruh) {
+  function roleCardHtml(nadpis, stav, tone, popis, pruh, tip) {
     // `pruh` je podíl 0-1 (třeba raidPct). Procento u role bylo dosud jen
     // text a při čtyřech kartách vedle sebe se nedalo porovnat okem.
     var pruhHtml = "";
@@ -10923,7 +10936,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       pruhHtml = '<div class="d-role-bar"><i style="width:'
         + Math.max(3, Math.min(100, Math.round(pruh * 100))) + '%"></i></div>';
     }
-    return '<div class="d-role ' + (tone || "") + '">'
+    return '<div class="d-role ' + (tone || "") + '"'
+      + (tip ? ' data-tip="' + escHtml(tip) + '"' : "") + ">"
       + '<div class="d-role-h">' + nadpis + "</div>"
       + '<div class="d-role-v">' + stav + "</div>"
       + pruhHtml
@@ -11946,6 +11960,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             + "</li>";
         }).join("") + "</ul>");
     });
+  }
+
+  /** Bublina role (Raid / Gym) z důvodů kusu: pro každý slot té role „proč"
+   *  a pořadí držitelů. Kus bez slotu té role dostane prázdný řetězec. */
+  function bublinaRole(duvody, druh) {
+    var ds = (duvody || []).filter(function (d) { return d.druh === druh; });
+    if (!ds.length) return "";
+    return ds.map(bublinaDuvodu).join('<hr class="tip-oddel">');
   }
 
   /** Klíče pro filtr „Důvod": štítky + „Rezerva" a „Náplast". */
@@ -13112,12 +13134,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     };
     role.push(roleCardHtml("Raid", c.raidRec + rolePct(c.raidPct),
       c.raidRec === "Ne" || c.raidRec === "Slabý" ? "muted" : "good", c.raidTitle || "",
-      c.raidPct));
+      c.raidPct, bublinaRole(c.duvody, "raid")));
     // „Gym" tu vždycky znamenalo OBRÁNCE. Útok na gym je to samé co raid
     // (vysoké DPS), takže se řídí raidovým sloupcem — ať to není záhada.
     role.push(roleCardHtml("Gym — obránce", c.gymRec + rolePct(c.gymPct), c.gymRec === "Ano" ? "good" : c.gymRec === "Záloha" ? "warning" : c.gymRec === "Po vývinu" ? "warning" : "muted",
       (c.gymTitle || "") + " Na dobývání cizích gymů se posílají útočníci"
-      + " — to se řídí sloupcem Raid, ne tímhle.", c.gymPct));
+      + " — to se řídí sloupcem Raid, ne tímhle.", c.gymPct, bublinaRole(c.duvody, "gym")));
     // Barva musí sedět s odznáčky v tabulce: modrá = hraje až po evoluci,
     // zelená = hotový, žlutá = ještě něco chce, šedá = nehraje.
     var pvpKartaTone = c.pvpRec.indexOf("Po evoluci") === 0 ? "evo"
@@ -23880,8 +23902,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return (v === null || v === undefined || isNaN(v)) ? "" : " · " + Math.round(v * 100) + " %";
     };
     var role = ""
-      + '<div class="bm-role"><b>Raid</b><span>' + (c.raidRec || "–") + rolePct(c.raidPct) + "</span></div>"
-      + '<div class="bm-role"><b>Gym</b><span>' + (c.gymRec || "–") + rolePct(c.gymPct) + "</span></div>"
+      // Raid a Gym po najetí ukážou pořadí držitelů, stejně jako liga.
+      + '<div class="bm-role"' + (bublinaRole(c.duvody, "raid")
+          ? ' data-tip="' + escHtml(bublinaRole(c.duvody, "raid")) + '"' : "")
+        + '><b>Raid</b><span>' + (c.raidRec || "–") + rolePct(c.raidPct) + "</span></div>"
+      + '<div class="bm-role"' + (bublinaRole(c.duvody, "gym")
+          ? ' data-tip="' + escHtml(bublinaRole(c.duvody, "gym")) + '"' : "")
+        + '><b>Gym</b><span>' + (c.gymRec || "–") + rolePct(c.gymPct) + "</span></div>"
       + '<div class="bm-role"><b>PvP</b><span>' + (c.pvpRec || "–") + "</span></div>"
       // Mega je čtvrtá role a v rozbalném rozboru dávno je — v kartě chyběla,
       // takže se kvůli ní muselo rozbalovat.

@@ -16007,6 +16007,60 @@ try {
   check("zruseni filtru vrati vsechny kusy", stitky.poResetu === stitky.kusy.length,
     String(stitky.poResetu));
 
+  // Poradi drzitelu i tam, kde role uz byla: sloupce RAID a GYM, karta role
+  // v detailu a v cisteni boxu. Driv bylo jen u lig.
+  const rolePoradi = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const comp = P.getComputed();
+    const rows = P.getRows();
+    const drziRaid = rows.filter((r) => (comp[r.id].duvody || []).some((d) => d.druh === "raid"))[0];
+    const drziGym = rows.filter((r) => (comp[r.id].duvody || []).some((d) => d.druh === "gym"))[0];
+    const nedrziGym = rows.filter((r) => !(comp[r.id].duvody || []).some((d) => d.druh === "gym"))[0];
+    const tip = (id, col) => {
+      const td = document.querySelector('#tbody tr[data-row-id="' + id + '"] td[data-col="' + col + '"]');
+      return td ? td.getAttribute("data-tip") || "" : null;
+    };
+    const out = {
+      raidJmeno: drziRaid && drziRaid.pokemon, gymJmeno: drziGym && drziGym.pokemon,
+      raidSloupec: drziRaid ? tip(drziRaid.id, "raidRec") : null,
+      gymSloupec: drziGym ? tip(drziGym.id, "gymRec") : null,
+      gymBezSlotu: nedrziGym ? tip(nedrziGym.id, "gymRec") : null
+    };
+    if (drziGym) {
+      P.zamerKus(drziGym.id);
+      await cekej(900);
+      out.detailGym = [...document.querySelectorAll(".d-role[data-tip]")]
+        .map((e) => e.getAttribute("data-tip")).filter((t) => /Obránce gymu drží/.test(t))[0] || "";
+      P.boxOtevrit();
+      await cekej(400);
+      for (let i = 0; i < rows.length; i++) {
+        if (P.boxStav().aktualni === drziGym.pokemon) break;
+        P.boxRozhodnout("keep");
+        await cekej(120);
+      }
+      out.boxGym = [...document.querySelectorAll(".bm-role[data-tip]")]
+        .map((e) => e.getAttribute("data-tip")).filter((t) => /Obránce gymu drží/.test(t))[0] || "";
+      P.boxZavritNatvrdo();
+    }
+    return out;
+  });
+  check("sloupec RAID u drzitele ukaze poradi drzitelu toho typu",
+    !!rolePoradi.raidSloupec && /do raidu drží/.test(rolePoradi.raidSloupec)
+      && /tenhle kus/.test(rolePoradi.raidSloupec),
+    rolePoradi.raidJmeno + ": " + String(rolePoradi.raidSloupec).slice(0, 200));
+  check("sloupec GYM u drzitele ukaze poradi obrancu",
+    !!rolePoradi.gymSloupec && /Obránce gymu drží/.test(rolePoradi.gymSloupec)
+      && /tenhle kus/.test(rolePoradi.gymSloupec),
+    rolePoradi.gymJmeno + ": " + String(rolePoradi.gymSloupec).slice(0, 200));
+  check("kus bez gym slotu poradi obrancu nema",
+    !rolePoradi.gymBezSlotu || !/Obránce gymu drží/.test(rolePoradi.gymBezSlotu),
+    String(rolePoradi.gymBezSlotu).slice(0, 120));
+  check("karta Gym v detailu kusu ma bublinu s poradim",
+    /tenhle kus/.test(rolePoradi.detailGym || ""), String(rolePoradi.detailGym).slice(0, 160));
+  check("karta Gym v cisteni boxu ma bublinu s poradim",
+    /tenhle kus/.test(rolePoradi.boxGym || ""), String(rolePoradi.boxGym).slice(0, 160));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

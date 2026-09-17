@@ -833,4 +833,11 @@ Lukáš chtěl místo podtitulku „gym 3/8 +1" štítek na každý důvod. V en
 méně — pokémoni jako plovoucí bubliny se základním infem (jméno, CP/IV,
 verdikt a štítky důvodů), podrobnosti až po najetí nebo otevření. Štítky
 jsou na to připravené: data jsou v `duvody`, bubliny v `data-tip`.
+- **Pořadí držitelů i u rolí, kde už byly** (Lukáš: „pořadí v tooltipu tam
+  zatím vůbec není"): buňky `td[data-col="raidRec"]` a `td[data-col="gymRec"]`,
+  karta `.d-role` (Raid, Gym — obránce) v detailu a `.bm-role` (Raid, Gym)
+  v čištění boxu mají u kusu, který slot drží, `data-tip` s HTML bublinou:
+  „proč" + `ol.tip-seznam` s pořadím, víc typů oddělených `hr.tip-oddel`.
+  Kus bez slotu má dál původní textový popisek. API `bublinaRole` není —
+  je to vnitřní funkce, data jsou v `duvody`.
 
