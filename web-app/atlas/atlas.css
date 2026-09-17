@@ -72,3 +72,8 @@ body[data-atlas-current-route=prohlidkaCard] #atlasHeading{justify-content:space
 .atlas-event-art{display:flex;gap:10px}.atlas-event-art:empty{display:none}.atlas-event-art img{width:68px;height:68px;object-fit:contain}.atlas-plan-card>div{min-width:0;overflow-wrap:anywhere}
 /* Keep the event sheet above the page without scrolling its background. */
 body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:linear-gradient(135deg,color-mix(in srgb,var(--series-1) 8%,var(--surface-1)),var(--surface-1));transition:border-color .15s ease}.atlas-event-card h3{overflow-wrap:anywhere}.atlas-battle-columns{align-items:start}.atlas-event-dialog .atlas-event-species img{flex-shrink:0}.atlas-feed-note{max-width:260px;line-height:1.6}
+/* Claude 17. 9. (Lukas): stitky duvodu v kartach, lista zmen ve hre vedle Upravit, jeden nadpis evolucni rady. */
+.atlas-row .atlas-decision{min-width:0}.atlas-row .atlas-decision .dv-radek{margin-top:4px}
+.atlas-drawer-header{grid-template-columns:1fr auto auto auto}.atlas-drawer-header .hra-pruh{grid-column:auto;justify-content:flex-end}
+@media(max-width:650px){.atlas-drawer-header{grid-template-columns:1fr auto auto}.atlas-drawer-header .hra-pruh{grid-column:1/-1;justify-content:flex-start}}
+.atlas-evolution-column .d-evo>.d-box-h{display:none}

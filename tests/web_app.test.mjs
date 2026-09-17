@@ -129,7 +129,9 @@ page.on("console", (m) => {
 });
 page.on("pageerror", (e) => consoleErrors.push(String(e)));
 
-const URL = `http://localhost:${PORT}/pokemon_tracker_app.html`;
+// PGO_APP musí měnit i tuhle adresu — testy chodí sem, ne na „/". Dokud
+// se měnil jen kořen, běžel „TEST" běh ve skutečnosti proti produkci.
+const URL = `http://localhost:${PORT}/${process.env.PGO_APP || "pokemon_tracker_app.html"}`;
 
 try {
   console.log("\n1) načtení stránky");
@@ -16125,6 +16127,10 @@ try {
     atlasStitky.uzkaVic >= 1 && atlasStitky.uzkaVidet + atlasStitky.uzkaVic === atlasStitky.duvodu
       && /Další důvody/.test(atlasStitky.uzkaVicTip),
     JSON.stringify([atlasStitky.uzkaVidet, atlasStitky.uzkaVic, atlasStitky.duvodu]));
+
+  // 251) Vrstva Atlas (karty se štítky, detail, hlavička, evoluční řada) se
+  // testuje v tests/atlas_vrstva.test.mjs proti TEST verzi. Tahle sada je
+  // pro vzhled enginu a na TEST verzi neprojde (vrstva přestavuje stránku).
 
   await page.goto(URL);
   await page.waitForTimeout(700);

@@ -1,25 +1,23 @@
 # Předání: jak přesunout GO Atlas do vlastních souborů
 
-> **Otevřené na tvé straně (stav 16. 9.)** — podrobnosti v sekcích níž:
+> **Nové rozdělení práce (17. 9., Lukáš):** ty děláš **grafiku** (hlavně
+> `atlas.css`, rozvržení, návrhy obrazovek), Claude dělá **funkční věci
+> v `atlas.js`** (napojení na engine, chyby, testy). Nikdy nepracujete
+> současně. Podmínka: **vždycky začni z aktuálního gitu a hotovou práci hned
+> commitni** — jinak si změny v `atlas.js` přepíšete. `atlas.js` se
+> nepřeformátovává.
 >
-> 1. Do produkce brání tři věci v `atlas.js`: klíč `pgo_test_atlas_theme`
->    (6×), text „LOKÁLNÍ TEST" a „TESTOVACÍ VERZE" (2×) — viz
->    „Do produkce pořád zbývají ty tři věci z minule".
-> 2. „Vylepšil jsem ho" patří vedle „Upravit tohoto Pokémona", ne pod něj.
-> 3. Bublina evoluční řady zasahuje do posuvníku stránky.
-> 4. V detailu se dubluje verdikt („Ponechat · Max Electric 1/3", „Dynamax 1/2").
-> 5. Sticky panel evoluční řady ukazuje nadpis dvakrát pod sebou.
-> 6. **Klik na stupeň evoluční řady v `#atlasModal` neotevře dialog evoluce**
->    — capture listener v `atlas.js` volá `stopPropagation()`. Viz sekce
->    „Evoluce rovnou na poslední stupeň".
-> 7. **Štítky důvodů verdiktu i ve tvé verzi** (Lukáš: „všechny tyto štítky
->    ať jsou hlavně i v Astra verzi"). V detailu už jsou samy (kreslí ho
->    engine). Do karet rosteru a všude, kde ukazuješ `keepSub`, dej
->    `P.atlasDuvody(c)` a po vložení `P.srovnejDuvody(kontejner)` — viz
->    sekce „Štítky ve tvé verzi (17. 9.)".
+> **Otevřené na tvé straně (stav 17. 9.):**
 >
-> Body 2–5 rozepisuje sekce „Co je na vzhledové vrstvě (16. 9., ze
-> screenshotů TEST verze)".
+> 1. Do produkce brání `atlas.js`: klíče `pgo_test_atlas_*` (6×), text
+>    „LOKÁLNÍ TEST" a „TESTOVACÍ VERZE" (2×). Řeší se, až Lukáš řekne
+>    „do produkce" — do té doby nesahat.
+>
+> **Hotovo Claudem v tvých souborech (17. 9.)** — viz sekce „Co Claude
+> změnil ve vrstvě (17. 9.)": štítky důvodů v kartách rosteru, zdvojený
+> text verdiktu v detailu pryč, „Vylepšil jsem ho" vedle „Upravit", bublina
+> evoluční řady mimo posuvník, jeden nadpis evoluční řady. Klik na evoluční
+> řadu (dřívější bod 6) jsi opravila sama.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
@@ -867,3 +865,33 @@ Lukáš chce štítky důvodů hlavně ve tvé verzi. Co je hotové v enginu:
   nahraď ho u ponechaného kusu štítky. Styly `.dv-*` si klidně přestyluj,
   jen nech třídy `dv-liga / dv-raid / dv-role / dv-znacka`, `dv-rezerva`,
   `dv-naplast` a `dv-vic` — podle nich se to testuje.
+
+## Co Claude změnil ve vrstvě (17. 9.)
+
+Cílené náhrady, soubor jsem nepřeformátovával:
+
+- **`atlas.js`, karta rosteru (`rowHTML`):** v `.atlas-decision` je místo
+  `<small>` se souhrnem rolí `P.atlasDuvody(c)`. Pouštěný kus má `<small>`
+  dál. Po vykreslení seznamu `renderRoster` volá `P.srovnejDuvody(list)`.
+- **`atlas.js`, detail (`AtlasEnhanceDetail`):** už nepřidává
+  `p.atlas-role-summary` s `keepSub` — verdikt má štítky a text je zdvojoval.
+- **`atlas.js`, hlavička detailu:** `.hra-pruh` se vkládá před
+  `#atlasEditPokemon` (dřív na konec hlavičky, pod tlačítka).
+- **`atlas.js`, bublina evoluční řady (`show`):** pravý okraj se omezí na
+  obsah posouvaného rodiče (bez posuvníku), ne na šířku okna.
+- **`atlas.css`, na konci souboru** (blok s komentářem „Claude 17. 9."):
+  `.atlas-decision{min-width:0}`, hlavička `1fr auto auto auto` a
+  `.hra-pruh{grid-column:auto}` (na telefonu do 650 px dál na vlastním
+  řádku), `.atlas-evolution-column .d-evo>.d-box-h{display:none}` (nadpis
+  nese `<summary>`).
+
+Hlídá to **`tests/atlas_vrstva.test.mjs`** (19 kontrol, běží proti TEST
+verzi, i na 390 px). Když to budeš graficky předělávat, nech třídy `dv-*`,
+`hra-pruh` před `#atlasEditPokemon` a `atlasEvoTooltip`, ať test sedí.
+
+**Pozor na testy:** hlavní sada `web_app.test.mjs` je pro vzhled enginu a na
+TEST verzi **neprojde** (Export je u tebe v menu „Správa rosteru" a sada na
+něm spadne). Přepínač `PGO_APP` dřív navíc měnil jen kořen `/`, ne adresu,
+kterou testy otevírají — takže dřívější „web_app na TEST verzi" běžel ve
+skutečnosti proti produkci. Opraveno; vrstvu ověřuj `atlas_vrstva.test.mjs`
+a `audit_app.test.mjs` s `PGO_APP`.
