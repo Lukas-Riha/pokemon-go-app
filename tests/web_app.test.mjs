@@ -16592,6 +16592,52 @@ try {
     JSON.stringify({ typ: s256.typ, znacky: s256.znacky }));
   await page.setViewportSize({ width: 1920, height: 1000 });
 
+  // ---------------------------------------------------------------- 257
+  // Kus vyřazený stropem kopií nesmí dostat číslo, které drží jiný kus:
+  // třetí Mewtwo ukazoval „Psychic 3/3", zatímco třetí místo držela Lunala.
+  console.log("\n257) Pod carou: cislo kusu vyrazeneho stropem kopii");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s257 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Mewtwo", cp: 3999, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15 },
+      { pokemon: "Mewtwo", cp: 3969, level: 40, ivAtk: 15, ivDef: 14, ivSta: 14 },
+      { pokemon: "Mewtwo", cp: 3900, level: 40, ivAtk: 13, ivDef: 13, ivSta: 12 },
+      { pokemon: "Lunala", cp: 3163, level: 30, ivAtk: 12, ivDef: 12, ivSta: 12 },
+      { pokemon: "Alakazam", cp: 2500, level: 30, ivAtk: 10, ivDef: 10, ivSta: 10 }
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const comp = P.getComputed();
+    const out = { kopie: [], vsechny: [] };
+    P.getRows().forEach((r) => {
+      (comp[r.id].podCarou || []).forEach((x) => {
+        if (x.druh !== "raid" && x.druh !== "gym") return;
+        const drzi = P.drziteleSlotu(x.druh === "gym" ? "gym" : "raid:" + x.typ);
+        const d = document.createElement("div");
+        d.innerHTML = P.atlasDuvody(comp[r.id]);
+        const chip = [...d.querySelectorAll(".dv-pod")].find((e) => e.textContent.indexOf(x.druh === "gym" ? "Gym " : x.typ + " ") === 0);
+        const zaznam = { kus: r.pokemon + " " + r.cp, typ: x.typ, poradi: x.poradi, silou: x.silou, celkem: x.celkem,
+          drzi: drzi.length, duvod: x.duvod, text: chip ? chip.textContent : "", tip: chip ? chip.getAttribute("data-tip") : "" };
+        out.vsechny.push(zaznam);
+        if (x.duvod === "kopie") out.kopie.push(zaznam);
+      });
+    });
+    return out;
+  });
+  const kolize = s257.vsechny.filter((x) => x.poradi <= x.drzi);
+  check("štítek pod čarou nikdy nemá číslo, které drží kus ze seznamu", s257.vsechny.length > 0 && kolize.length === 0,
+    JSON.stringify(kolize.length ? kolize : s257.vsechny.map((x) => x.kus + " " + x.text)));
+  const mewtwoKopie = s257.kopie.find((x) => /^Mewtwo 3900/.test(x.kus) && x.typ === "Psychic");
+  check("třetí Mewtwo (strop kopií) stojí v Psychic až za čarou", !!mewtwoKopie && mewtwoKopie.poradi > mewtwoKopie.celkem
+      && mewtwoKopie.text === "Psychic " + mewtwoKopie.poradi + "/" + mewtwoKopie.celkem,
+    JSON.stringify(mewtwoKopie || s257.kopie));
+  check("…bublina ukáže tenhle kus pod seznamem s jeho číslem a proč tam není",
+    !!mewtwoKopie && new RegExp('value="' + mewtwoKopie.poradi + '" class="tip-ten"').test(mewtwoKopie.tip)
+      && new RegExp("Silou by patřil na " + mewtwoKopie.silou + "\\. místo").test(mewtwoKopie.tip) && /lepší kopie/.test(mewtwoKopie.tip),
+    mewtwoKopie ? mewtwoKopie.tip.replace(/<[^>]+>/g, " ").slice(0, 300) : "");
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

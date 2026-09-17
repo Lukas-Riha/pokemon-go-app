@@ -389,13 +389,19 @@ const d7 = await vzhled.evaluate(async () => {
     karet: krok.querySelectorAll(".d-role").length } : null;
   const naco = m.querySelector("[data-detail-section=naco]");
   out.karty = naco ? [...naco.querySelectorAll(".d-role-h")].map((e) => e.textContent) : [];
-  const mega = naco && [...naco.querySelectorAll(".d-role")].find((k) => /Mega/.test(k.textContent));
-  out.megaVyska = mega ? Math.round(mega.getBoundingClientRect().height) : null;
-  const stats = m.querySelector("[data-detail-section=stats]");
-  if (stats) stats.open = true;
-  await cekej(50);
-  const boxy = stats ? [...stats.querySelectorAll(".d-grid > .d-box")].map((b) => Math.round(b.getBoundingClientRect().top)) : [];
-  out.statsVedle = boxy.length >= 2 && boxy.every((t) => Math.abs(t - boxy[0]) < 4);
+  // karty rolí vedle sebe v jednom řádku, stejně široké, bez textu
+  const karty7 = naco ? [...naco.querySelectorAll(".d-role")].map((k) => k.getBoundingClientRect()) : [];
+  out.kartyRadek = karty7.length === 4 && karty7.every((r) => Math.abs(r.top - karty7[0].top) < 2
+    && Math.abs(r.width - karty7[0].width) < 2 && Math.abs(r.height - karty7[0].height) < 2);
+  out.kartyText = naco ? naco.querySelectorAll(".d-role-p").length : -1;
+  // statistiky, IV a strop CP v hlavičce vedle jména
+  const identita7 = m.querySelector(".atlas-detail-identity");
+  const boxy = [...m.querySelectorAll(".atlas-detail-identity .atlas-ident-stats > .d-box")].map((b) => b.getBoundingClientRect());
+  const jmeno7 = m.querySelector("#atlasDetailTitle").getBoundingClientRect();
+  out.statsVedle = boxy.length >= 2 && boxy.every((r) => Math.abs(r.top - boxy[0].top) < 4);
+  out.statsVHlavicce = boxy.length === 3 && boxy.every((r) => r.left > jmeno7.right && r.top < jmeno7.bottom
+    && r.bottom <= identita7.getBoundingClientRect().bottom + 1);
+  out.statsSekce = !!m.querySelector("[data-detail-section=stats]");
   out.statsBoxu = boxy.length;
   out.detailTagy = [...m.querySelectorAll(".detail-title .rarity-chip, .detail-title .atlas-lucky-tag")].map((e) => e.textContent.trim());
   A.closeDetail();
@@ -419,8 +425,11 @@ check("doporučený krok stojí vedle verdiktu, ne v sekci dole",
 check("…a verdikt je užší (méně než 60 % sloupce)", d7.krok && d7.krok.uzsi, JSON.stringify(d7.krok));
 check("herní využití: PvP, Raid, Gym, Mega",
   JSON.stringify(d7.karty) === JSON.stringify(["PvP", "Raid", "Gym — obránce", "Mega"]), JSON.stringify(d7.karty));
-check("…Mega je jednořádková karta", d7.megaVyska !== null && d7.megaVyska <= 60, String(d7.megaVyska));
+check("…vedle sebe v jednom řádku, stejně široké a vysoké, bez textu", d7.kartyRadek && d7.kartyText === 0,
+  JSON.stringify({ radek: d7.kartyRadek, text: d7.kartyText }));
 check("statistiky, IV a strop CP stojí vedle sebe", d7.statsVedle && d7.statsBoxu === 3, JSON.stringify(d7));
+check("…nahoře v hlavičce vedle jména a obrázku, sekce dole není", d7.statsVHlavicce && !d7.statsSekce,
+  JSON.stringify({ hlavicka: d7.statsVHlavicce, sekce: d7.statsSekce }));
 await vzhled.reload();
 await vzhled.waitForFunction(() => window.__pgo && window.__atlasTest, null, { timeout: 60000 });
 const temaPoReloadu = await vzhled.evaluate(() => document.documentElement.dataset.theme);
@@ -436,7 +445,8 @@ const S8 = [
   { pokemon: "Garchomp", cp: 2000, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10, dynamax: "Ano" },
   { pokemon: "Garchomp", cp: 1900, level: 20, ivAtk: 8, ivDef: 10, ivSta: 10, dynamax: "Ano" },
   { pokemon: "Heracross", cp: 2800, level: 35, ivAtk: 12, ivDef: 13, ivSta: 14 },
-  { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
+  { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
+  { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15 }
 ];
 const p8 = await otevri(1400, S8);
 const d8 = await p8.evaluate(async () => {
@@ -456,13 +466,14 @@ const d8 = await p8.evaluate(async () => {
   await cekej(1200);
   const m = document.getElementById("atlasModal");
   out.identita = [...m.querySelectorAll(".atlas-detail-identity p")].map((p) => p.textContent.trim());
-  const stats = m.querySelector("[data-detail-section=stats]");
+  const stats = m.querySelector(".atlas-ident-stats");
   const box = (re) => [...stats.querySelectorAll(".d-box")].find((b) => re.test((b.querySelector(".d-box-h") || {}).textContent || ""));
   out.ivPoznamka = !!box(/^IV/).querySelector(".d-note");
   out.stropText = !!box(/^Strop/).querySelector(".d-proc");
   out.detailTyp = st(m.querySelector(".detail-title .d-type"));
   out.detailZnacky = [...m.querySelectorAll(".detail-title .rarity-chip, .detail-title .atlas-lucky-tag")].map(st);
   out.karty = [...m.querySelectorAll("[data-detail-section=naco] .d-role")].map((k) => Math.round(k.getBoundingClientRect().height));
+  out.kartyTop = [...m.querySelectorAll("[data-detail-section=naco] .d-role")].map((k) => Math.round(k.getBoundingClientRect().top));
   out.tipDmax = ([...m.querySelectorAll(".atlas-verdict-first .dv-chip")].find((e) => e.textContent === "Dynamax") || { getAttribute: () => "" })
     .getAttribute("data-tip");
   A.closeDetail();
@@ -471,6 +482,16 @@ const d8 = await p8.evaluate(async () => {
   out.zahodit = { pod: m.querySelectorAll(".atlas-verdict-first .dv-pod").length,
     why: !!m.querySelector(".atlas-verdict-first .d-why"),
     hlavaTip: !!m.querySelector(".atlas-verdict-first .d-verdict>b[data-tip]") };
+  A.closeDetail();
+  A.openDetail(rows.find((r) => r.pokemon === "Rhydon").id);
+  await cekej(1200);
+  const krok8 = [...m.querySelectorAll(".atlas-krok .d-role")].map((k) => ({ h: k.querySelector(".d-role-h").textContent,
+    r: k.getBoundingClientRect() }));
+  const verd8 = m.querySelector(".atlas-verdict-first").getBoundingClientRect();
+  out.krok = { karty: krok8.map((k) => k.h), vedle: krok8.length >= 2 && krok8.every((k, i) => !i || (Math.abs(k.r.top - krok8[0].r.top) < 2
+      && k.r.left >= krok8[i - 1].r.right)),
+    stejnaVyska: krok8.every((k) => Math.abs(k.r.height - krok8[0].r.height) < 2),
+    vpravoOdVerdiktu: krok8.every((k) => k.r.left >= verd8.right) };
   A.closeDetail();
   A.openDetail(rows.find((r) => r.pokemon === "Heracross").id);
   await cekej(1200);
@@ -505,7 +526,12 @@ check("značky v kartě mají výšku, písmo a zaoblení typového štítku",
 check("…i v detailu",
   d8.detailZnacky.length >= 4 && d8.detailZnacky.every((z) => z.h === d8.detailTyp.h && z.fs === d8.detailTyp.fs && z.r === d8.detailTyp.r),
   JSON.stringify({ typ: d8.detailTyp, znacky: d8.detailZnacky }));
-check("herní využití: každá karta na jeden řádek", d8.karty.length === 4 && d8.karty.every((h) => h <= 60), JSON.stringify(d8.karty));
+check("herní využití: čtyři karty v jednom řádku, stejně vysoké", d8.karty.length === 4
+  && d8.karty.every((h) => h === d8.karty[0]) && d8.kartyTop.every((t) => t === d8.kartyTop[0]),
+  JSON.stringify({ vysky: d8.karty, top: d8.kartyTop }));
+check("Vylepšit a Evolvovat stojí vedle sebe vedle verdiktu, stejně vysoké",
+  d8.krok.karty.join() === "Vylepšit,Evolvovat" && d8.krok.vedle && d8.krok.stejnaVyska && d8.krok.vpravoOdVerdiktu,
+  JSON.stringify(d8.krok));
 check("štítek Dynamax má v bublině pořadí v Max Battle", /Max Dragon/.test(d8.tipDmax) && /tenhle kus/.test(d8.tipDmax),
   d8.tipDmax.replace(/<[^>]+>/g, " ").slice(0, 200));
 check("pouštěný kus: v kartě štítky pod čarou místo textu", d8.karta3.pod >= 1 && !d8.karta3.small, JSON.stringify(d8.karta3));

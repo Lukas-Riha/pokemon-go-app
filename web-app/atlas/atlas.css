@@ -96,7 +96,7 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-verdict-radek>.atlas-verdict-first .d-verdict{height:100%;box-sizing:border-box}
 .atlas-krok .d-roles-akce{display:grid;grid-template-columns:1fr;gap:8px;margin:0;height:100%}
 .atlas-krok .d-role{padding:12px 14px}
-.atlas-detail-modern .d-role.d-role-radek{grid-column:1/-1;padding:10px 16px}
+.atlas-detail-modern .d-role.d-role-radek{padding:10px 16px}
 .atlas-detail-modern [data-detail-section=stats] .d-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 @media(max-width:650px){.atlas-verdict-radek{grid-template-columns:1fr}}
 .atlas-verdict-radek:not(:has(.atlas-krok)){grid-template-columns:1fr}
@@ -104,3 +104,17 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .atlas-row .atlas-roster-tag{font-size:10px;line-height:normal;padding:2px 6px;border-radius:11px}
 .atlas-test .atlas-row .atlas-roster-type{font-size:10px}
 .atlas-test .atlas-detail-modern .detail-title .rarity-chip,.atlas-test .atlas-detail-modern .detail-title .atlas-lucky-tag{min-height:0;font-size:12px;font-weight:700;line-height:18px;padding:2px 10px;border-radius:11px;letter-spacing:.02em}
+/* Claude 17. 9. (4): staty/IV/strop v hlavičce vedle jména, kroky vedle sebe, herní využití v jednom řádku */
+.atlas-detail-identity .atlas-ident-stats{margin:0 0 0 auto;display:grid;grid-template-columns:repeat(3,minmax(160px,210px));gap:10px;align-self:stretch;align-items:stretch}
+.atlas-ident-stats .d-box{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface-1);margin:0;min-width:0}
+.atlas-ident-stats .d-box-h{font-size:10px;margin:0 0 6px}
+.atlas-ident-stats .d-bar{margin:3px 0}
+.atlas-ident-stats .d-big{font-size:22px;line-height:1.2}
+.atlas-ident-stats .d-note{font-size:11px;margin:2px 0 0}
+@media(max-width:1100px){.atlas-detail-identity{flex-wrap:wrap}.atlas-detail-identity .atlas-ident-stats{margin:0;width:100%;grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){.atlas-detail-identity .atlas-ident-stats{grid-template-columns:1fr}}
+.atlas-krok .d-roles-akce{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);align-items:stretch}
+@media(max-width:650px){.atlas-krok .d-roles-akce{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}
+.atlas-test .atlas-detail-modern [data-detail-section=naco] .d-roles{grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch}
+@media(max-width:900px){.atlas-test .atlas-detail-modern [data-detail-section=naco] .d-roles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.atlas-test .atlas-detail-modern [data-detail-section=naco] .d-role.d-role-radek{flex-direction:column;align-items:flex-start;gap:4px}

@@ -1344,8 +1344,8 @@
   .d-role-h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
     color: var(--text-primary); }
   .d-role-v { font-size: 15px; font-weight: 700; margin: 3px 0 4px; color: var(--status-good); }
-  /* Karta na jeden řádek (Mega): nadpis a verdikt vedle sebe, přes celou šířku. */
-  .d-role.d-role-radek { grid-column: 1 / -1; display: flex; align-items: baseline;
+  /* Karta na jeden řádek: nadpis a verdikt vedle sebe; karty stojí vedle sebe. */
+  .d-role.d-role-radek { display: flex; align-items: baseline;
     flex-wrap: wrap; gap: 4px 10px; }
   .d-role.d-role-radek .d-role-v { margin: 0; }
   .d-role.warning .d-role-v { color: var(--status-warning); }
@@ -3662,7 +3662,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 13:56";
+  var BUILD = "2026-09-17 19:42";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -7466,11 +7466,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // Kdo slot nedostal, dostane aspoň své místo v pořadí — štítek „pod
       // čarou" u verdiktu Zahodit. Kus vyřazený stropem kopií stojí tam,
       // kam by ho síla zařadila.
+      // Kus vyřazený stropem kopií nesmí dostat číslo, které drží jiný kus
+      // („Psychic 3/3" u Mewtwa, zatímco třetí je Lunala) — stojí pod čarou,
+      // silou by byl na místě `silou`.
       var poziceRaid = 0;
       vsichniRaid.forEach(function (k) {
         var poradi = k.prijat ? ++poziceRaid : poziceRaid + 1;
         if (k.prijat && poradi <= slotu) return;
-        k.b.podCarou.push({ druh: "raid", typ: typ, poradi: poradi, celkem: slotu, pct: k.pct,
+        k.b.podCarou.push({ druh: "raid", typ: typ, silou: poradi,
+          poradi: k.prijat ? poradi : Math.max(poradi, slotu + 1), celkem: slotu, pct: k.pct,
+          jmeno: k.b.row.pokemon, cp: k.b.row.cp || "",
           poEvoluci: !!k.poEvoluci, duvod: k.prijat ? "plno" : "kopie" });
       });
       kand.slice(0, slotu).forEach(function (k, i) {
@@ -7697,7 +7702,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var prijat = !!prijatGym[b.row.id];
       var poradi = prijat ? ++poziceGym : poziceGym + 1;
       if (prijat && poradi <= SLOTU_GYM) return;
-      b.podCarou.push({ druh: "gym", typ: "Gym", poradi: poradi, celkem: SLOTU_GYM,
+      b.podCarou.push({ druh: "gym", typ: "Gym", silou: poradi,
+        poradi: prijat ? poradi : Math.max(poradi, SLOTU_GYM + 1), celkem: SLOTU_GYM,
+        jmeno: b.row.pokemon, cp: b.row.cp || "",
         pct: b.gymPct || 0, duvod: prijat ? "plno" : "kopie" });
     });
     gymKand.slice(0, SLOTU_GYM).forEach(function (b, i) {
@@ -12129,9 +12136,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
                 + (y.pct !== null ? " <em>" + Math.round(y.pct * 100) + "\u00a0%</em>" : "") + "</li>";
             }).join("") + "</ol>";
         }
-        tip += '<div class="tip-radek">' + (x.duvod === "kopie"
-          ? "Za tenhle druh drží místo lepší kopie."
-          : "Tenhle kus by byl " + x.poradi + ". — " + Math.round(x.pct * 100) + "\u00a0% špičky.") + "</div>";
+        // Tenhle kus pod čarou jako další řádek seznamu, se svým číslem.
+        tip += '<ol class="tip-seznam tip-pod"><li value="' + x.poradi + '" class="tip-ten"><b>'
+          + escHtml(x.jmeno || "") + "</b>" + (x.cp ? " " + escHtml(String(x.cp)) + " CP" : "")
+          + " <em>" + Math.round(x.pct * 100) + "\u00a0%</em>"
+          + ' <span class="tip-znak">← tenhle kus</span></li></ol>';
+        if (x.duvod === "kopie") {
+          var strop = Math.max(1, getSettings().keepCopies || 1);
+          tip += '<div class="tip-radek">Silou by patřil na ' + x.silou + ". místo, ale od druhu drží místo nejvýš "
+            + strop + (strop === 1 ? " kus" : (strop < 5 ? " kusy" : " kusů")) + " — tady lepší kopie.</div>";
+        }
       } else {
         text = "Dynamax " + x.dmaxIndex + "/" + x.dmaxKeep;
         trida += " dv-role";

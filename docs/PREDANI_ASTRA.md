@@ -48,6 +48,14 @@
 > „.0"), pod pruhy IV a ve stropu bez textu, šipky ←/→ a A/D listují detailem.
 > Evoluční řada je i u druhu bez evoluce (jeden stupeň + „Tenhle druh se
 > nevyvíjí.") — engine ji kreslí vždy.
+>
+> **Čtvrté kolo 17. 9. (Claude)** — `atlas.js` přesouvá mřížku Staty / IV /
+> Strop (`.d-grid` → `.atlas-ident-stats`) do hlavičky `.atlas-detail-identity`
+> vedle jména a obrázku, sekce `stats` dole zmizí; nadpis IV zkrácen na „IV".
+> Karty doporučeného kroku (`.atlas-krok .d-roles-akce`) stojí vedle sebe ve
+> sloupcích stejné výšky, „Herní využití" jsou čtyři stejně široké karty
+> v řádku (nadpis nad hodnotou). CSS v bloku „Claude 17. 9. (4)" — pod
+> 1100 px jdou staty pod jméno, pod 650 px pod sebe.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
