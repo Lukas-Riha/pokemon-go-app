@@ -2431,6 +2431,9 @@
   .dv-chip.dv-rezerva { border-color: var(--status-warning); }
   .dv-vic { background: var(--surface-2, transparent); border-color: var(--grid); }
   .dv-chip[hidden] { display: none; }
+  /* V detailu se štítky zalamují — místa je dost a „+N" by jen schovávalo. */
+  .d-duvody .dv-radek { flex-wrap: wrap; overflow: visible; margin-top: 6px; }
+  .d-duvody .dv-chip { font-size: 12px; line-height: 1.6; }
   .tip-oddel { border: 0; border-top: 1px solid var(--grid); margin: 8px 0; }
   .filtr-duvody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 10px; max-height: 45vh; overflow-y: auto; }
@@ -3626,7 +3629,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 08:36";
+  var BUILD = "2026-09-17 08:52";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -12896,7 +12899,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // --- verdikt jako pruh přes celou šířku, vedle něj obrázek druhu ---
     h += '<div class="d-verdict-row">' + spriteHtml(b)
       + '<div class="d-verdict ' + (c.keepTone || "") + '">'
-      + "<b>" + c.keep + "</b>" + (c.keepSub ? ' <span class="d-sub">' + c.keepSub + "</span>" : "")
+      + "<b>" + c.keep + "</b>"
+      // Ponechaný kus: důvody jako štítky (stejné jako v tabulce, tady se
+      // zalomí, místa je dost). Detail kreslí engine i pro vrstvu Atlas,
+      // takže se tam štítky objeví samy.
+      + (c.keepGood && c.duvody && c.duvody.length
+        ? '<div class="d-duvody">' + duvodyHtml(c.duvody) + "</div>"
+        : (c.keepSub ? ' <span class="d-sub">' + c.keepSub + "</span>" : ""))
       + (c.keepTitle ? '<div class="d-why">' + c.keepTitle + "</div>" : "") + "</div></div>";
 
     // --- čísla: staty a IV vedle sebe ---
@@ -24718,6 +24727,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      */
     atlasImage: function (jmeno, trida) {
       return obrazekHtml(jmeno, dexEntry(jmeno), trida || "");
+    },
+
+    /**
+     * Štítky důvodů verdiktu jako hotové HTML — pro vlastní karty vrstvy.
+     *
+     * Stejné štítky i bubliny jako v tabulce (liga s pořadím držitelů, raid
+     * typ, gym, Max, mega, značky), ať se vrstva a engine nerozejdou. Bere
+     * id kusu nebo rovnou objekt z getComputed(). Pouštěný kus vrátí "".
+     * Po vložení do stránky zavolej srovnejDuvody(kontejner) — schová, co
+     * se do šířky nevejde, do „+N".
+     */
+    atlasDuvody: function (x) {
+      var c = typeof x === "string" ? analyze()[x] : x;
+      return c && c.keepGood ? duvodyHtml(c.duvody) : "";
+    },
+    srovnejDuvody: function (kontejner) {
+      srovnejDuvody(kontejner || document);
     },
 
     getRows: function () { return rows; },

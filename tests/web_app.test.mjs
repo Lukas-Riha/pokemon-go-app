@@ -13247,7 +13247,14 @@ try {
   //    cup taky ne. Dřív stačilo, že se v názvu vyskytl text „Great League".
   const formaty = await page.evaluate(() => {
     const okna = (window.__pgo.eventsData().ligy || []);
-    const megaOkno = okna.filter((l) => /Mega Edition/.test(l[0]))[0] || null;
+    // Okno, kde jsou JEN omezené formáty. „Great League, Ultra League: Mega
+    // Edition" má Great League otevřenou doopravdy — na tom, které okno je
+    // v datech zrovna první, test viset nesmí.
+    const ciste = { "Great League": 1, "Ultra League": 1, "Master League": 1, "Little Cup": 1 };
+    const casti = (nazev) => String(nazev).split(" | ")[0].split(/,\s*/)
+      .map((s) => s.replace(/^and\s+/, "").trim()).filter(Boolean);
+    const megaOkno = okna.filter((l) => /Mega Edition/.test(l[0])
+      && casti(l[0]).every((c) => !ciste[c]))[0] || null;
     const cupOkno = okna.filter((l) => /Cup/.test(l[0]))[0] || null;
     return {
       megaOtevrene: megaOkno ? megaOkno[3] : null,
@@ -16060,6 +16067,64 @@ try {
     /tenhle kus/.test(rolePoradi.detailGym || ""), String(rolePoradi.detailGym).slice(0, 160));
   check("karta Gym v cisteni boxu ma bublinu s poradim",
     /tenhle kus/.test(rolePoradi.boxGym || ""), String(rolePoradi.boxGym).slice(0, 160));
+
+  // ---------------------------------------------------------------- 250
+  // Stitky i ve vrstve Atlas: detail (kresli ho engine i pro vrstvu) ma
+  // stitky ve verdiktu a vrstva dostane hotove stitky pro sve karty.
+  console.log("\n250) Stitky pro detail a pro vrstvu Atlas");
+  const atlasStitky = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const comp = P.getComputed();
+    const rows = P.getRows();
+    const mnoho = rows.slice().sort((a, z) => (comp[z.id].duvody || []).length - (comp[a.id].duvody || []).length)[0];
+    const pryc = rows.filter((r) => !comp[r.id].keepGood)[0];
+    const pocet = (html) => (String(html).match(/class="dv-chip dv-(liga|raid|role|znacka)/g) || []).length;
+    const box = document.createElement("div");
+    document.body.appendChild(box);
+    const out = {
+      jmeno: mnoho.pokemon, duvodu: (comp[mnoho.id].duvody || []).length,
+      apiId: pocet(P.atlasDuvody(mnoho.id)), apiObjekt: pocet(P.atlasDuvody(comp[mnoho.id])),
+      apiPryc: pryc ? P.atlasDuvody(pryc.id) : "x"
+    };
+    // detail pres atlasDetail do ciziho kontejneru
+    P.atlasDetail(mnoho.id, box, () => {});
+    out.detailStitku = box.querySelectorAll(".d-verdict .d-duvody .dv-chip:not(.dv-vic)").length;
+    out.detailSub = !!box.querySelector(".d-verdict .d-sub");
+    if (pryc) {
+      P.atlasDetail(pryc.id, box, () => {});
+      out.prycStitky = box.querySelectorAll(".d-verdict .dv-chip").length;
+      out.prycSub = !!box.querySelector(".d-verdict .d-sub");
+      out.prycKeepSub = comp[pryc.id].keepSub || "";
+    }
+    // uzka karta vrstvy: co se nevejde, jde do +N
+    box.innerHTML = '<div style="width:110px">' + P.atlasDuvody(mnoho.id) + "</div>";
+    await cekej(50);
+    P.srovnejDuvody(box);
+    const radek = box.querySelector(".dv-radek");
+    const videt = [...radek.querySelectorAll(".dv-chip:not(.dv-vic)")].filter((e) => !e.hidden).length;
+    const vic = radek.querySelector(".dv-vic");
+    out.uzkaVidet = videt;
+    out.uzkaVic = vic && !vic.hidden ? Number(vic.textContent.replace("+", "")) : 0;
+    out.uzkaVicTip = vic ? vic.getAttribute("data-tip") || "" : "";
+    box.remove();
+    return out;
+  });
+  check("atlasDuvody vrati stitek na kazdy duvod (podle id i podle objektu)",
+    atlasStitky.duvodu >= 2 && atlasStitky.apiId === atlasStitky.duvodu
+      && atlasStitky.apiObjekt === atlasStitky.duvodu, JSON.stringify(atlasStitky));
+  check("…a u pousteneho kusu nic", atlasStitky.apiPryc === "", String(atlasStitky.apiPryc).slice(0, 80));
+  check("detail kusu (i pres atlasDetail) ma ve verdiktu vsechny stitky",
+    atlasStitky.detailStitku === atlasStitky.duvodu && !atlasStitky.detailSub,
+    JSON.stringify(atlasStitky));
+  // Veta se ukaze, jen kdyz nejaka je — pousteny kus bez podtitulku nema co.
+  check("detail pousteneho kusu nema stitky a vetu ma, kdyz nejaka je",
+    atlasStitky.prycStitky === 0 && atlasStitky.prycSub === !!atlasStitky.prycKeepSub,
+    JSON.stringify(atlasStitky));
+  check("v uzke karte vrstvy srovnejDuvody schova zbytek do +N a nic neztrati",
+    atlasStitky.uzkaVic >= 1 && atlasStitky.uzkaVidet + atlasStitky.uzkaVic === atlasStitky.duvodu
+      && /Další důvody/.test(atlasStitky.uzkaVicTip),
+    JSON.stringify([atlasStitky.uzkaVidet, atlasStitky.uzkaVic, atlasStitky.duvodu]));
 
   await page.goto(URL);
   await page.waitForTimeout(700);

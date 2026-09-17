@@ -69,6 +69,8 @@ je obojí jeho veřejnou součástí.
 | `atlasSort(klic, smer)` | seřadí roster; `smer` 1 vzestupně, −1 sestupně |
 | `atlasDetail(id, kontejner, zavrit)` | vykreslí detail kusu do cizího prvku a napojí jeho ovládání |
 | `atlasImage(jmeno, trida)` | obrázek druhu jako hotová značka `<img>` i se záložním zdrojem |
+| `atlasDuvody(id nebo computed)` | štítky důvodů verdiktu jako hotové HTML (`.dv-radek` se štítky a bublinami `data-tip`); pouštěný kus vrátí `""` |
+| `srovnejDuvody(kontejner)` | po vložení štítků schová, co se do šířky nevejde, do „+N" s bublinou |
 
 `atlasSort` bere jen ty klíče, které umí řadit i hlavička tabulky. Kdyby si
 vrstva držela vlastní seznam, rozešel by se s enginem při prvním novém

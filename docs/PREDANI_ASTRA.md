@@ -12,6 +12,11 @@
 > 6. **Klik na stupeň evoluční řady v `#atlasModal` neotevře dialog evoluce**
 >    — capture listener v `atlas.js` volá `stopPropagation()`. Viz sekce
 >    „Evoluce rovnou na poslední stupeň".
+> 7. **Štítky důvodů verdiktu i ve tvé verzi** (Lukáš: „všechny tyto štítky
+>    ať jsou hlavně i v Astra verzi"). V detailu už jsou samy (kreslí ho
+>    engine). Do karet rosteru a všude, kde ukazuješ `keepSub`, dej
+>    `P.atlasDuvody(c)` a po vložení `P.srovnejDuvody(kontejner)` — viz
+>    sekce „Štítky ve tvé verzi (17. 9.)".
 >
 > Body 2–5 rozepisuje sekce „Co je na vzhledové vrstvě (16. 9., ze
 > screenshotů TEST verze)".
@@ -841,3 +846,24 @@ jsou na to připravené: data jsou v `duvody`, bubliny v `data-tip`.
   Kus bez slotu má dál původní textový popisek. API `bublinaRole` není —
   je to vnitřní funkce, data jsou v `duvody`.
 
+## Štítky ve tvé verzi (17. 9.)
+
+Lukáš chce štítky důvodů hlavně ve tvé verzi. Co je hotové v enginu:
+
+- **Detail kusu** (`atlasDetail`) má v `.d-verdict` místo `.d-sub` blok
+  `.d-duvody` se všemi štítky (zalamují se). Nic dělat nemusíš, jen
+  zkontroluj, že je nepřebíjí tvůj styl detailu — a že se verdikt v detailu
+  nezdvojuje (bod 4 v přehledu).
+- **Pro tvoje karty** je v API `atlasDuvody(id nebo objekt z getComputed)`:
+  vrátí hotové HTML (`span.dv-radek` se štítky `.dv-chip`), každý štítek
+  má `data-tip` s bublinou (u lig držitelé a „pod čarou", u raid typů a gymu
+  pořadí držitelů). Pouštěný kus vrátí `""` — tam nech `keepSub`.
+- Po vložení do stránky zavolej `srovnejDuvody(kontejner)`: změří šířku a co
+  se nevejde, schová do „+N" s bublinou. Při změně šířky karty ho zavolej
+  znovu (engine to dělá pro tabulku přes ResizeObserver).
+- Bubliny zobrazuje engine (`.tip-bublina`) přes `data-tip`, tvůj styl
+  `.atlas-test .tip-bublina` se na ně použije.
+- Kde teď v `atlas.js` čteš `c.keepSub` (souhrn role v kartě a přehled),
+  nahraď ho u ponechaného kusu štítky. Styly `.dv-*` si klidně přestyluj,
+  jen nech třídy `dv-liga / dv-raid / dv-role / dv-znacka`, `dv-rezerva`,
+  `dv-naplast` a `dv-vic` — podle nich se to testuje.
