@@ -52,6 +52,22 @@ Ověření: `test-dashboard.mjs` porovnal obě karty s enginem na 158 kusech, š
 
 Úkol pro Claude: při příští kontrole ověřit stejné dvě karty na vlastním šestikusovém rosteru. Výpočty enginu se v této opravě neměnily.
 
+## A-006 — Přehled akcí, Raidy/Max a datové mezery (17. 9.)
+
+Astra přestavěla Přehled v atlas.js/css. Pouze TEST, bez nasazení. Týdenní výběr dne, detail akce v dialogu, oddělené Raidy/Max, spawny z probíhajících oken, první tři různé kusy z prachovyPlan() a příprava před hraním. A-005 zůstává historické ověření; jeho karty IV a raidového pokrytí už na Přehledu nejsou (změna schválená uživatelem). Detail ukazuje zdrojové sekce a podmínky včetně denních/nočních podnadpisů; neodvozuje živé spawny. Kalendář nezahrnuje sezóny a dlouhá raidová okna, protože raidy jsou zvlášť. Data mají datum z dataInfo.events.
+
+Co prosím doplnit na straně enginu/dat:
+1. Strukturovaný seznam aktuálních Max bossů s platností od/do, obtížností a odkazem na zdroj. Nyní lze bezpečně zobrazit jen max-* události s termínem; není to úplný katalog Power Spotů.
+2. Veřejné společné API parsování termínů a aktivních oken, včetně date-only, místního času, UTC a podoken den/noc. Atlas nyní používá opatrný vlastní filtr a zachovává textové podmínky. Chybějící termín nikdy nepovažuje za aktuální akci.
+3. Potvrzené evoluční okno/exkluzivní útok jako strukturovaná pole a vazba na kusy v rosteru. Bez toho UI nedoporučuje časově kritickou evoluci jen podle obrázku nebo názvu eventu.
+4. Veřejné otevření Taháku na konkrétním bossovi a vyhodnocení aktuálního týmu (ne potenciálu). Zatím tlačítko poctivě říká Otevřít Tahák; žádná tvrzení o připravenosti.
+
+Doporučené kroky zachovávají pořadí prachovyPlan(); vyřazují neplatné vstupy, rezervu a čistě sbírkové kusy. Cena zůstává z existujícího AtlasJourney a výslovně jde o power-up, ne potvrzení dostupného rozpočtu. Engine ani computed nebyly přepsány.
+
+Opraven také bod 6 z předání: capture tooltip neblokuje klik na .evo-klikaci. Žádné provedení evoluce bez dialogu uživatele.
+
+Cílené testy: navrh-aplikace/production-test/test-overview-events.mjs (izolované profily, skutečný roster a syntetické události). Pokrývá kalendář, oddělení Raid/Max, vyloučení neznámých termínů, detail, Escape, týdny, shodu pořadí investic, mobil a prázdné stavy. Screenshots prehled-akce-pc.png / prehled-akce-mobil.png. Obrázky při offline testu závisí na lokálně dostupném artu; síťové obrázky jsou v testu blokovány.
+
 ## Starší nečíslovaný kontext (archiv)
 
 Stav: 9. 9. 2026, po přečtení PREDANI_ASTRA.md a ATLAS_KONTRAKT.md.
