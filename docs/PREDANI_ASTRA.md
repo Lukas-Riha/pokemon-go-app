@@ -117,6 +117,14 @@
 > evoluce) — CSS blok „Claude 17. 9. (11)". Kdyby se do boxu něco přidávalo,
 > test v sekci 10 měří přetečení `.bm-scroll` na 1500×1000 i 1400×900
 > u tří kusů včetně Eevee (větvená řada je nejvyšší).
+>
+> **Dvanácté kolo 17. 9. (Claude)** — rozbalený stav boxu ukazuje VŠECHNO
+> (hlavička se staty a útoky, verdikt, značky, Ligy, Herní využití, evoluce),
+> jen menší: v `siroky` se zmenšují dlaždice evoluce (u větvené řady jen
+> obrázky, jména a podmínky jsou v bublině), řádky tabulky lig a odsazení.
+> Pod otevřeným boxem se zamyká rolování stránky (`body.atlas-box-otevreno`),
+> takže vpravo nesvítí posuvník celé stránky. Test měří přetečení na
+> 1500×1000 (obě stránky) a 1400×900 (sbalený stav).
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

@@ -211,11 +211,8 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-sip{margin:2px 0;font-size:11px}
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{padding:4px 6px}
 /* Rozbalený rozbor v boxu = druhá stránka: hlavička jen se jménem, verdikt a pod tím Ligy s evoluční řadou */
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-stats,
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-utoky,
-.atlas-test .box-mode.siroky .atlas-box-rozbor .detail-title,
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{display:none}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text{flex:1 1 auto}
+/* Rozbalený stav ukazuje VŠECHNO (Lukáš) — jen o kus menší, ať se vejde bez posuvníku. */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{display:grid}
 /* Větvená řada (Eevee) v boxu: menší dlaždice, ať se rozbalený rozbor vejde i s osmi konci */
 .atlas-test .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:30px;height:30px}
 .atlas-test .atlas-box-rozbor .d-evo.husty .d-evo-kus{padding:2px 4px;font-size:10px}
@@ -229,3 +226,36 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab th,.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td{padding:4px 8px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:34px;height:34px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:26px;height:26px}
+body.atlas-box-otevreno{overflow:hidden}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:28px;height:28px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:22px;height:22px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-identity{padding:8px 12px;margin-bottom:8px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-obr{flex:0 0 84px;width:84px;height:84px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-stats .d-box,.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-utoky{padding:6px 9px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti .d-role{padding:6px 10px;min-height:0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:8px}
+.atlas-test .box-mode.siroky .bm-actions .bm-btn{padding:10px}
+.atlas-test .box-mode.siroky #bmHint{font-size:10px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:24px;height:24px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:18px;height:18px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-sekce-nadpis{padding:6px 12px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab th,.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td{padding:3px 8px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-columns{gap:10px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section>div,.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section>table{margin:8px}
+/* U větvené řady (Eevee) v rozbaleném boxu stačí obrázky — jména jsou v bublině */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus b{display:none}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus{padding:1px 2px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:6px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .detail-title{padding:4px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section{margin:4px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{margin:6px 0 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-identity{margin-bottom:6px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text h2{font-size:19px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-ident-text p{font-size:11px;margin:1px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-bar{margin:2px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti .d-role{padding:5px 10px}
+.atlas-test .box-mode.siroky .bm-actions{padding-top:6px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus u{display:none}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-identity{margin-bottom:4px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:4px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{margin-top:4px}

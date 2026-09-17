@@ -700,6 +700,7 @@ async function boxKontrola(page) {
         vyuziti: b.querySelectorAll(".atlas-vyuziti .d-role").length };
     };
     const out = { sbalene: [], rozbalene: [],
+      zamek: getComputedStyle(document.body).overflow === "hidden",
       schovane: ["#bmBody > .bm-head", "#bmBody > .bm-verdikt", "#bmBody > .bm-why", "#bmBody > .bm-roles", "#bmBody > .bm-ligy", "#bmVic"].filter((s) => vidno(s)),
       hraPruh: !!document.querySelector("#boxMode .bm-top .hra-pruh"),
       pozice: (document.getElementById("bmPos") || {}).textContent || "" };
@@ -727,6 +728,7 @@ async function boxKontrola(page) {
   });
 }
 const p10 = await otevri(1500, ROSTER10);
+await p10.setViewportSize({ width: 1500, height: 1000 });
 const d10 = await boxKontrola(p10);
 await p10.close();
 check("čištění boxu vykreslí rozbor jako v detailu (hlavička, staty, útoky, verdikt, značky, využití)",
@@ -739,12 +741,12 @@ check("…a po rozhodnutí se přepne na další kus se stejným rozborem",
   !!d10.druhy && d10.druhy.jmeno !== d10.prvni.jmeno && d10.druhy.staty === 3 && d10.druhy.utoky
     && d10.pozice2 !== d10.pozice,
   JSON.stringify({ prvni: d10.prvni.jmeno, druhy: d10.druhy && d10.druhy.jmeno }));
-check("hned vidět je rozhodování (bez Lig a evoluce), Ligy a evoluce až po rozbalení",
-  d10.sbalene.every((x) => x.r && x.r.vyuzitiVidet && !x.r.ligyVidet && !x.r.evoluceVidet)
-    && d10.rozbalene.every((x) => x.r && x.r.ligyVidet && x.r.evoluceVidet && !x.r.vyuzitiVidet
-      && x.r.ligyTag === "SECTION"),
+check("hned vidět je rozhodování (bez Lig a evoluce), po rozbalení je vidět všechno",
+  d10.sbalene.every((x) => x.r && x.r.vyuzitiVidet && x.r.verdikt && !x.r.ligyVidet && !x.r.evoluceVidet)
+    && d10.rozbalene.every((x) => x.r && x.r.ligyVidet && x.r.evoluceVidet && x.r.vyuzitiVidet
+      && x.r.verdikt && x.r.utoky && x.r.staty === 3 && x.r.ligyTag === "SECTION"),
   JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet]),
-    rozbalene: d10.rozbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet]) }));
+    rozbalene: d10.rozbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet, x.r.utoky]) }));
 check("v čištění boxu se neobjeví posuvník (ani rozbalené, 1500×1000)",
   d10.sbalene.every((x) => x.prebytek === 0) && d10.rozbalene.every((x) => x.prebytek === 0),
   JSON.stringify({ sbalene: d10.sbalene.map((x) => x.prebytek), rozbalene: d10.rozbalene.map((x) => x.prebytek) }));
@@ -752,9 +754,11 @@ const p10b = await otevri(1400, ROSTER10);
 await p10b.setViewportSize({ width: 1400, height: 900 });
 const d10b = await boxKontrola(p10b);
 await p10b.close();
-check("…ani na nižším okně (1400×900)",
-  d10b.sbalene.every((x) => x.prebytek === 0) && d10b.rozbalene.every((x) => x.prebytek === 0),
+check("…a rozhodovací část se vejde i na nižší okno (1400×900)",
+  d10b.sbalene.every((x) => x.prebytek === 0),
   JSON.stringify({ sbalene: d10b.sbalene.map((x) => x.prebytek), rozbalene: d10b.rozbalene.map((x) => x.prebytek) }));
+check("pod otevřeným čištěním boxu se stránka neroluje (žádný posuvník vpravo)",
+  d10.zamek === true, String(d10.zamek));
 
 // ----------------------------------------------------------------- telefon
 console.log("\n5) Telefon (390 px)");

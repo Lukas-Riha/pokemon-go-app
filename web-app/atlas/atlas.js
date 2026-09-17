@@ -461,6 +461,14 @@ globalThis.AtlasBudget = (() => {
    }).observe(bmBody,{childList:true});
    window.addEventListener('atlas:refresh-detail',()=>{if(!document.getElementById('boxMode')?.hidden)boxRozbor()});
  }
+ // Dokud je čištění boxu otevřené, stránka pod ním se nesmí rolovat —
+ // vpravo svítil posuvník celé stránky.
+ const boxPrepinac=document.getElementById('boxMode');
+ if(boxPrepinac){
+   const zamek=()=>{const otevreno=!boxPrepinac.hidden&&getComputedStyle(boxPrepinac).display!=='none';document.body.classList.toggle('atlas-box-otevreno',otevreno)};
+   new MutationObserver(zamek).observe(boxPrepinac,{attributes:true,attributeFilter:['hidden','style','class']});
+   zamek();
+ }
  window.AtlasFocusRow=id=>{if(!P.getRows().some(r=>r.id===id))return false;__atlasTest.go('roster');__atlasTest.refresh();__atlasTest.openDetail(id);return true};
  const bulk=$('#doplnitBtn');if(bulk)$('.atlas-roster-commandbar').insertBefore(bulk,$('.atlas-roster-commands'));
  for(const id of ['hraBox','rucniBox','doplnitBox']){
