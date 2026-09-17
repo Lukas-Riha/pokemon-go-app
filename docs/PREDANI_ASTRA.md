@@ -885,7 +885,25 @@ Cílené náhrady, soubor jsem nepřeformátovával:
   řádku), `.atlas-evolution-column .d-evo>.d-box-h{display:none}` (nadpis
   nese `<summary>`).
 
-Hlídá to **`tests/atlas_vrstva.test.mjs`** (19 kontrol, běží proti TEST
+Druhé kolo téhož dne (Lukášovy screenshoty):
+
+- **Menu „Správa rosteru":** `#clearUnstarredBtn` („Smazat neoznačené") je
+  v seznamu hned před `#clearBtn` („Vymazat vše"), z lišty zmizel.
+- **Věta o uložení pryč:** `atlas.css` schová `#saveState` a `#backupState`
+  bez třídy `warn` — zůstává jen žluté varování, že záloha chybí.
+- **Úprava kusu (`AtlasEditRow`):** rychlý a oba nabité útoky mají
+  `<datalist>` s útoky druhu z nového API `P.utokyDruhu(jmeno)`; při změně
+  druhu se nabídka přepočítá.
+- **Detail:** vysvětlení verdiktu `.d-why` opakovalo bubliny štítků — když
+  štítky jsou, přesune se do `data-tip` nadpisu verdiktu (`.d-verdict>b`).
+- **Řazení (`#atlasSort`):** oba směry pro jméno, CP, IV a level, řazení
+  všech lig dohromady a zvlášť Little/Great/Ultra/Master League (nejlepší
+  i nejhorší první, klíče `liga:GL` atd. v enginu). „Původní řazení"
+  řazení opravdu zruší. Hodnota se dělí podle poslední dvojtečky.
+- **Přehled:** počty akcí česky („1–4 akce", „0 a 5+ akcí"), stejně
+  „Další 2 akce / Dalších 7 akcí najdeš…".
+
+Hlídá to **`tests/atlas_vrstva.test.mjs`** (32 kontrol, běží proti TEST
 verzi, i na 390 px). Když to budeš graficky předělávat, nech třídy `dv-*`,
 `hra-pruh` před `#atlasEditPokemon` a `atlasEvoTooltip`, ať test sedí.
 

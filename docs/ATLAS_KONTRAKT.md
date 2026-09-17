@@ -71,6 +71,8 @@ je obojí jeho veřejnou součástí.
 | `atlasImage(jmeno, trida)` | obrázek druhu jako hotová značka `<img>` i se záložním zdrojem |
 | `atlasDuvody(id nebo computed)` | štítky důvodů verdiktu jako hotové HTML (`.dv-radek` se štítky a bublinami `data-tip`); pouštěný kus vrátí `""` |
 | `srovnejDuvody(kontejner)` | po vložení štítků schová, co se do šířky nevejde, do „+N" s bublinou |
+| `utokyDruhu(jmeno)` | útoky, které se druh může naučit: `{fast: [jména], charged: [jména], znamy}`; neznámý druh vrátí všechny |
+| `atlasSort("liga:LC"/"liga:GL"/"liga:UL"/"liga:ML", 1/-1)` | řazení podle pořadí druhu v jedné lize; kdo ji nehraje, je na konci v obou směrech |
 
 `atlasSort` bere jen ty klíče, které umí řadit i hlavička tabulky. Kdyby si
 vrstva držela vlastní seznam, rozešel by se s enginem při prvním novém

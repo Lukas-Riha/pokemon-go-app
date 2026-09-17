@@ -196,6 +196,123 @@ check("klik na další stupeň otevře dialog evoluce", dialog.otevreny && /Meta
   JSON.stringify(dialog));
 await pc.close();
 
+// ------------------------------------------------ menu, uložení, editor, řazení
+console.log("\n6) Menu rosteru, věta o uložení, úprava kusu, řazení, akce");
+const ui = await browser.newPage({ viewport: { width: 1400, height: 950 } });
+ui.on("pageerror", (e) => chyby.push("ui: " + String(e)));
+await ui.goto(`http://localhost:${PORT}/`);
+await ui.waitForFunction(() => window.__pgo && window.__atlasTest, null, { timeout: 60000 });
+const stav = await ui.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  P.setRows([
+    { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15, star: true },
+    { pokemon: "Azumarill", cp: 1482, level: 24.5, ivAtk: 0, ivDef: 15, ivSta: 15 },
+    { pokemon: "Registeel", cp: 2480, level: 26, ivAtk: 1, ivDef: 15, ivSta: 14 },
+    { pokemon: "Medicham", cp: 1450, level: 40, ivAtk: 5, ivDef: 15, ivSta: 14 },
+    { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
+  ]);
+  await cekej(1200);
+  A.go("roster");
+  A.refresh();
+  await cekej(800);
+  const out = {};
+  const menu = document.querySelector(".atlas-roster-commands");
+  const smazat = document.getElementById("clearUnstarredBtn");
+  const vse = document.getElementById("clearBtn");
+  out.smazatVMenu = !!(menu && smazat && menu.contains(smazat));
+  out.smazatPredVse = !!(smazat && vse && smazat.nextElementSibling === vse);
+  const disp = (id) => { const e = document.getElementById(id); return e ? getComputedStyle(e).display : "chybi"; };
+  out.saveState = disp("saveState");
+  out.backupWarn = (document.getElementById("backupState") || {}).className || "";
+  out.backupState = disp("backupState");
+  // úprava kusu: nabídka útoků druhu
+  const garchomp = P.getRows().filter((r) => r.pokemon === "Garchomp")[0];
+  A.openDetail(garchomp.id);
+  await cekej(1000);
+  out.why = !!document.querySelector(".atlas-verdict-first .d-why");
+  out.duvody = !!document.querySelector(".atlas-verdict-first .d-duvody");
+  out.hlavaTip = (document.querySelector(".atlas-verdict-first .d-verdict>b") || { getAttribute: () => "" }).getAttribute("data-tip") || "";
+  window.AtlasEditRow(garchomp.id);
+  await cekej(300);
+  const form = document.getElementById("atlasRowEditor");
+  const moznosti = (id) => [...(document.getElementById(id) || { options: [] }).options].map((o) => o.value);
+  out.fastList = form ? form.elements.fastMove.getAttribute("list") : null;
+  out.chargedList = form ? form.elements.charged2.getAttribute("list") : null;
+  out.fast = moznosti("atlasFastList");
+  out.charged = moznosti("atlasChargedList");
+  if (form) {
+    form.elements.pokemon.value = "Machamp";
+    form.elements.pokemon.dispatchEvent(new Event("change", { bubbles: true }));
+    await cekej(100);
+    out.fastMachamp = moznosti("atlasFastList");
+    form.remove();
+  }
+  A.closeDetail();
+  await cekej(300);
+  // řazení
+  const sel = document.getElementById("atlasSort");
+  out.volby = [...sel.options].map((o) => o.value);
+  const vyber = async (v) => {
+    sel.value = v;
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    await cekej(700);
+    const comp = P.getComputed(), rows = P.getRows();
+    return [...document.querySelectorAll(".atlas-row")].map((k) => {
+      const r = rows.filter((x) => x.id === k.dataset.atlasDetail)[0];
+      const gl = (comp[r.id].pvpLigy || []).filter((l) => l.liga === "GL")[0];
+      return { jmeno: r.pokemon, gl: gl && gl.rank ? gl.rank : null };
+    });
+  };
+  out.glVzestupne = await vyber("liga:GL:1");
+  out.sortKey = P.snapshot().sortKey;
+  out.glSestupne = await vyber("liga:GL:-1");
+  out.jmenoZA = (await vyber("pokemon:-1")).map((x) => x.jmeno);
+  out.puvodni = await vyber("");
+  out.sortKeyPo = P.snapshot().sortKey;
+  // akce: správný tvar
+  A.go("home");
+  await cekej(900);
+  out.akce = [...document.querySelectorAll("#atlasHome small")].map((e) => e.textContent.trim())
+    .filter((t) => /^\d+ akc/.test(t));
+  return out;
+});
+check("„Smazat neoznačené“ je v menu Správa rosteru hned nad „Vymazat vše“",
+  stav.smazatVMenu && stav.smazatPredVse, JSON.stringify([stav.smazatVMenu, stav.smazatPredVse]));
+check("věta o uložení není vidět", stav.saveState === "none", stav.saveState);
+check("stav zálohy je vidět jen jako varování",
+  /warn/.test(stav.backupWarn) ? stav.backupState !== "none" : stav.backupState === "none",
+  stav.backupWarn + " / " + stav.backupState);
+check("vysvětlení verdiktu se neopakuje pod štítky (je v bublině nadpisu)",
+  stav.duvody && !stav.why && stav.hlavaTip.length > 10, JSON.stringify([stav.duvody, stav.why, stav.hlavaTip.slice(0, 60)]));
+check("úprava kusu nabízí rychlé útoky druhu",
+  stav.fastList === "atlasFastList" && stav.fast.indexOf("Mud Shot") > -1 && stav.fast.indexOf("Counter") === -1,
+  JSON.stringify(stav.fast));
+check("…i nabité útoky (pro oba nabité)", stav.chargedList === "atlasChargedList"
+  && stav.charged.indexOf("Earthquake") > -1, JSON.stringify(stav.charged));
+check("…a po změně druhu se nabídka přepočítá", (stav.fastMachamp || []).indexOf("Counter") > -1,
+  JSON.stringify(stav.fastMachamp));
+check("řazení nabízí obě směry i jednotlivé ligy",
+  ["pokemon:1", "pokemon:-1", "cp:1", "cp:-1", "ivPct:1", "ivPct:-1", "level:1", "level:-1",
+    "liga:LC:1", "liga:GL:1", "liga:GL:-1", "liga:UL:1", "liga:ML:-1"].every((v) => stav.volby.indexOf(v) > -1),
+  JSON.stringify(stav.volby));
+const sGl = stav.glVzestupne.filter((x) => x.gl !== null).map((x) => x.gl);
+check("Great League: nejlepší první — pořadí roste a kusy bez GL jsou na konci",
+  stav.sortKey === "liga:GL" && sGl.length >= 2 && sGl.every((v, i) => !i || v >= sGl[i - 1])
+    && stav.glVzestupne.findIndex((x) => x.gl === null) >= sGl.length - 0,
+  JSON.stringify(stav.glVzestupne));
+const sGlD = stav.glSestupne.filter((x) => x.gl !== null).map((x) => x.gl);
+check("Great League: nejhorší první — pořadí klesá", sGlD.every((v, i) => !i || v <= sGlD[i - 1]),
+  JSON.stringify(stav.glSestupne));
+check("jméno Z–A", stav.jmenoZA.every((j, i) => !i || j.localeCompare(stav.jmenoZA[i - 1], "cs") <= 0),
+  JSON.stringify(stav.jmenoZA));
+check("„Původní řazení“ řazení opravdu zruší", !stav.sortKeyPo, String(stav.sortKeyPo));
+const tvar = (n) => n >= 1 && n <= 4 ? "akce" : "akcí";
+check("počet akcí je česky správně (1–4 akce, 0 a 5+ akcí)",
+  stav.akce.length >= 1 && stav.akce.every((t) => { const n = parseInt(t, 10); return t === n + " " + tvar(n); }),
+  JSON.stringify(stav.akce));
+await ui.close();
+
 // ----------------------------------------------------------------- telefon
 console.log("\n5) Telefon (390 px)");
 const tel = await otevri(390);

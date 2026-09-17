@@ -77,3 +77,5 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-drawer-header{grid-template-columns:1fr auto auto auto}.atlas-drawer-header .hra-pruh{grid-column:auto;justify-content:flex-end}
 @media(max-width:650px){.atlas-drawer-header{grid-template-columns:1fr auto auto}.atlas-drawer-header .hra-pruh{grid-column:1/-1;justify-content:flex-start}}
 .atlas-evolution-column .d-evo>.d-box-h{display:none}
+/* Claude 17. 9. (Lukas): veta o ulozeni pryc - zustava jen varovani, ze zaloha chybi. */
+#saveState{display:none!important}#backupState:not(.warn){display:none!important}

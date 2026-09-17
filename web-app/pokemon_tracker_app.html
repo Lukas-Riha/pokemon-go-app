@@ -3629,7 +3629,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 09:21";
+  var BUILD = "2026-09-17 10:31";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -5492,6 +5492,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   var SORTABLE = {};
   COLS.forEach(function (c) { SORTABLE[c.key] = true; });
   delete SORTABLE.obrazek;   // podle obrázku není co řadit
+  // Řazení podle pořadí v jedné konkrétní lize — sloupec k tomu není, ale
+  // vrstva Atlas ho nabízí v rozbalovátku („Great League: nejlepší první").
+  ["liga:LC", "liga:GL", "liga:UL", "liga:ML"].forEach(function (k) { SORTABLE[k] = true; });
   var INPUT_KEYS = COLS.filter(function (c) { return !c.readonly; }).map(function (c) { return c.key; });
 
   // ---------- stav ----------
@@ -13787,6 +13790,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         return roleHodnota(item.c[key]);
       }
       if (key === "pokemon") return (item.row.pokemon || "").toLowerCase();
+      // Pořadí druhu v jedné lize (u kusu, který ji hraje až po evoluci, pořadí
+      // vyvinuté formy). Kdo tu ligu nehraje, jde na konec v obou směrech.
+      if (key.indexOf("liga:") === 0) {
+        var ligaR = key.slice(5);
+        if (ligaR === "ML") return item.b && item.b.metaML ? item.b.metaML[0] : null;
+        var zazR = (item.c.pvpLigy || []).filter(function (x) { return x.liga === ligaR; })[0];
+        return zazR && zazR.rank ? zazR.rank : null;
+      }
       if (key === "ivPct") return item.c.ivPct;
       if (key === "cpMax") return item.c.cpMax ? (item.c.cpMax.evolved || item.c.cpMax.cp) : null;
       if (key === "copies") return item.row.pokemon ? speciesKey(item.row.pokemon) : "";
@@ -24852,6 +24863,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     },
     renderPrach: renderPrach,
     learnsetOf: learnset,
+    /** Útoky, které se druh může naučit, jako jména — do nabídky při ruční
+     *  úpravě kusu. Neznámý druh vrátí všechny útoky. */
+    utokyDruhu: function (jmeno) {
+      var klic = jmeno ? dexKey(jmeno) : "";
+      var l = klic ? learnset(klic) : null;
+      var jmena = function (indexy, zdroj) {
+        return indexy.map(function (i) { return zdroj[i]; }).filter(function (x) { return !!x; });
+      };
+      if (!l) return { fast: MOVES.fastNames.slice(), charged: MOVES.chargedNames.slice(), znamy: false };
+      return { fast: jmena(l.fast, MOVES.fastNames), charged: jmena(l.charged, MOVES.chargedNames), znamy: true };
+    },
     omezUtokyNaDruh: function () {
       if (window.__pgoOmezUtoky) window.__pgoOmezUtoky();
     },

@@ -16132,6 +16132,63 @@ try {
   // testuje v tests/atlas_vrstva.test.mjs proti TEST verzi. Tahle sada je
   // pro vzhled enginu a na TEST verzi neprojde (vrstva přestavuje stránku).
 
+  // ---------------------------------------------------------------- 252
+  // Řazení podle jedné ligy („liga:GL") a útoky druhu do nabídky úpravy.
+  console.log("\n252) Razeni podle ligy a utoky druhu");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const razeniLiga = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
+      { pokemon: "Azumarill", cp: 1482, level: 24.5, ivAtk: 0, ivDef: 15, ivSta: 15 },
+      { pokemon: "Registeel", cp: 2480, level: 26, ivAtk: 1, ivDef: 15, ivSta: 14 },
+      { pokemon: "Medicham", cp: 1450, level: 40, ivAtk: 5, ivDef: 15, ivSta: 14 },
+      { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15 }
+    ]);
+    await cekej(1200);
+    const poradi = () => {
+      const comp = P.getComputed(), rows = P.getRows();
+      return [...document.querySelectorAll("#tbody tr[data-row-id]")].map((tr) => {
+        const r = rows.filter((x) => x.id === tr.dataset.rowId)[0];
+        const gl = (comp[r.id].pvpLigy || []).filter((l) => l.liga === "GL")[0];
+        return { jmeno: r.pokemon, gl: gl && gl.rank ? gl.rank : null };
+      });
+    };
+    const rosterZal = document.querySelector('.zal-btn[data-klic="roster"]');
+    if (rosterZal) rosterZal.click();
+    const out = { jde: P.atlasSort("liga:GL", 1) };
+    await cekej(300);
+    out.vzestupne = poradi();
+    P.atlasSort("liga:GL", -1);
+    await cekej(300);
+    out.sestupne = poradi();
+    out.neznama = P.atlasSort("liga:XX", 1);
+    P.atlasSort("", 1);
+    const g = P.utokyDruhu("Garchomp"), nic = P.utokyDruhu("Neexistujemon");
+    out.utoky = { fast: g.fast, charged: g.charged, znamy: g.znamy, nicZnamy: nic.znamy, nicFast: nic.fast.length };
+    return out;
+  });
+  const glV = razeniLiga.vzestupne.filter((x) => x.gl !== null);
+  check("atlasSort umi liga:GL", razeniLiga.jde === true && razeniLiga.neznama === false,
+    JSON.stringify([razeniLiga.jde, razeniLiga.neznama]));
+  check("liga:GL vzestupne: nejlepsi poradi prvni, kdo GL nehraje, na konci",
+    glV.length >= 2 && glV.every((x, i) => !i || x.gl >= glV[i - 1].gl)
+      && razeniLiga.vzestupne.slice(0, glV.length).every((x) => x.gl !== null),
+    JSON.stringify(razeniLiga.vzestupne));
+  const glS = razeniLiga.sestupne.filter((x) => x.gl !== null);
+  check("liga:GL sestupne: poradi klesa a kdo GL nehraje, je dal na konci",
+    glS.every((x, i) => !i || x.gl <= glS[i - 1].gl)
+      && razeniLiga.sestupne.slice(0, glS.length).every((x) => x.gl !== null),
+    JSON.stringify(razeniLiga.sestupne));
+  check("utokyDruhu vrati rychle a nabite utoky druhu",
+    razeniLiga.utoky.znamy && razeniLiga.utoky.fast.indexOf("Mud Shot") > -1
+      && razeniLiga.utoky.charged.indexOf("Earthquake") > -1 && razeniLiga.utoky.fast.indexOf("Counter") === -1,
+    JSON.stringify(razeniLiga.utoky));
+  check("…a u neznameho druhu nabidne vsechny", !razeniLiga.utoky.nicZnamy && razeniLiga.utoky.nicFast > 50,
+    JSON.stringify([razeniLiga.utoky.nicZnamy, razeniLiga.utoky.nicFast]));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 
