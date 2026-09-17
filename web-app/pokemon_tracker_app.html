@@ -3663,7 +3663,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 20:22";
+  var BUILD = "2026-09-17 20:57";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -9968,6 +9968,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         cost: b.cost,
         costText: b.cost ? (formatDust(b.cost.dust) + " prachu + " + b.cost.candy + " bonbónů do L40"
           + (b.cost.xl ? " (+" + b.cost.xl + " XL)" : "")) : "",
+        // Krátká verze do kartičky „Vylepšit": musí se vejít na jeden řádek,
+        // jinak kartička roste a detail při listování skáče.
+        costKratce: b.cost ? ("L40 · " + formatDust(b.cost.dust) + " + " + b.cost.candy + " candy"
+          + (b.cost.xl ? " + " + b.cost.xl + " XL" : "")) : "",
         evolve: evolve, evolveTone: evolveTone, evolveTitle: evolveTitle, evolveSub: evolveSub,
         gymTitle: gymTitle, raidTitle: raidTitle, copiesTitle: copiesTitle, megaTitle: megaTitle, finalEvoAuto: b.finalEvoAuto,
         mega: mega, megaTone: megaTone, megaSub: megaSub, isMega: !!b.megaEntry,
@@ -13435,7 +13439,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // --- akce ---
     var akce = [];
     if (c.powerup !== "Ne") akce.push(roleCardHtml("Vylepšit", c.powerup,
-      c.powerupTone, c.costText || c.powerupSub || ""));
+      c.powerupTone, c.costKratce || c.powerupSub || "", null, c.costText || ""));
     // Jen výsledek; na co, za kolik a proč je v bublině.
     if (c.evolve === "Ano") akce.push(roleCardHtml("Evolvovat", "Ano",
       c.evolveTone, "", null, (c.evolveSub ? c.evolveSub + ". " : "") + (c.evolveTitle || "")));

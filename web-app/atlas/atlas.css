@@ -125,3 +125,12 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda small{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
 .atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda .pk-typ{font-size:12px;font-weight:700;line-height:18px;padding:2px 10px;border-radius:11px;color:#fff;letter-spacing:.02em}
 @media(max-width:650px){.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda{margin-left:0;width:100%}}
+/* Claude 17. 9. (6): pevná výška bloků, ať detail při listování neskáče; menší „silný proti" */
+.atlas-verdict-radek{min-height:104px}
+.atlas-krok .d-role,.atlas-verdict-radek>.atlas-verdict-first .d-verdict{min-height:100%;box-sizing:border-box}
+.atlas-test .atlas-detail-modern [data-detail-section=naco] .d-role{min-height:90px;justify-content:center}
+.atlas-test .atlas-detail-modern .detail-title{min-height:52px;align-items:center}
+.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda{gap:3px}
+.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda small{margin-right:3px}
+.atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda .pk-typ{font-size:11px;line-height:16px;padding:1px 8px}
+@media(min-width:901px){.atlas-evolution-column{min-height:520px}}

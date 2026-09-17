@@ -563,14 +563,62 @@ check("…v detailu taky, a vysvětlující věta je v bublině nadpisu",
   d8.zahodit.pod >= 1 && !d8.zahodit.why && d8.zahodit.hlavaTip, JSON.stringify(d8.zahodit));
 check("„silný proti“ stojí vpravo na řádku značek a má bublinu",
   d8.vyhoda.je && d8.vyhoda.typu >= 2 && d8.vyhoda.tip && d8.vyhoda.vpravo, JSON.stringify(d8.vyhoda));
-check("…a v typovém pokrytí zbylo jen „Výhoda se vyruší“",
-  d8.pokrytiVyhoda === 0 && d8.pokrytiVyrusi >= 0, JSON.stringify({ vyhoda: d8.pokrytiVyhoda, vyrusi: d8.pokrytiVyrusi }));
+check("…a sekce typového pokrytí v detailu není vůbec",
+  d8.pokrytiVyhoda === 0 && d8.pokrytiVyrusi === 0, JSON.stringify({ vyhoda: d8.pokrytiVyhoda, vyrusi: d8.pokrytiVyrusi }));
 check("LUCKY vypadá jako ostatní vypnuté značky", !!d8.lucky && d8.lucky.l === d8.lucky.z, JSON.stringify(d8.lucky));
 check("detail drží místo pro posuvník, takže šířka neskáče",
   d8.gutter === "stable" && d8.sirkaDlouhy === d8.sirkaKratky,
   JSON.stringify({ gutter: d8.gutter, dlouhy: d8.sirkaDlouhy, kratky: d8.sirkaKratky }));
 check("druh bez evoluce má sloupec evoluční řady se sebou samým",
   d8.heracross.sloupec && d8.heracross.kusu === 1, JSON.stringify(d8.heracross));
+
+// ------------------------------------- detail nesmí při listování skákat
+console.log("\n9) Pevné rozložení detailu (nic neskáče mezi kusy)");
+const S9 = [
+  { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15, fastMove: "Mud Slap", charged1: "Earthquake" },
+  { pokemon: "Blissey", cp: 3161, level: 35, ivAtk: 14, ivDef: 13, ivSta: 10, fastMove: "Pound", charged1: "Hyper Beam" },
+  { pokemon: "Thundurus Incarnate", cp: 1860, level: 20, ivAtk: 13, ivDef: 15, ivSta: 7, forma: "Shadow" },
+  { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15, fastMove: "Dragon Tail", charged1: "Earth Power", dynamax: "Ano" },
+  { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
+  { pokemon: "Heracross", cp: 2800, level: 35, ivAtk: 12, ivDef: 13, ivSta: 14 }
+];
+const p9 = await otevri(1500, S9);
+const d9 = await p9.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const mer = (el) => { if (!el) return null; const r = el.getBoundingClientRect();
+    return Math.round(r.top) + "/" + Math.round(r.height) + "/" + Math.round(r.width); };
+  const bloky = { identita: ".atlas-detail-identity", staty: ".atlas-ident-stats", verdikt: ".atlas-verdict-radek",
+    znacky: ".detail-title", evoluce: ".atlas-evolution-column", prvniSekce: "[data-detail-section]",
+    vyuziti: "[data-detail-section=naco]", utoky: "[data-detail-section=utoky]" };
+  const out = { kusy: [], pokryti: 0, cena: [] };
+  for (const r of P.getRows()) {
+    A.openDetail(r.id);
+    await cekej(700);
+    const m = document.getElementById("atlasModal");
+    const zaznam = { jm: r.pokemon };
+    Object.keys(bloky).forEach((k) => { zaznam[k] = mer(m.querySelector(bloky[k])); });
+    if (m.querySelector(".d-pokryti")) out.pokryti++;
+    const vylepsit = [...m.querySelectorAll(".atlas-krok .d-role")].find((k) => /Vylepšit/.test(k.textContent));
+    const popis = vylepsit ? vylepsit.querySelector(".d-role-p") : null;
+    if (popis) out.cena.push({ jm: r.pokemon, text: popis.textContent.trim(),
+      radku: Math.round(popis.getBoundingClientRect().height / parseFloat(getComputedStyle(popis).lineHeight)) });
+    out.kusy.push(zaznam);
+    A.closeDetail();
+    await cekej(120);
+  }
+  return out;
+});
+await p9.close();
+const nestabilni = Object.keys(d9.kusy[0]).filter((k) => k !== "jm"
+  && new Set(d9.kusy.map((x) => x[k])).size > 1);
+check("při listování detailem nic nemění pozici ani velikost",
+  nestabilni.length === 0,
+  JSON.stringify(nestabilni.map((k) => k + ": " + d9.kusy.map((x) => x.jm.slice(0, 8) + " " + x[k]).join(" | "))));
+check("sekce „Typové pokrytí“ v detailu není", d9.pokryti === 0, String(d9.pokryti));
+check("cena vylepšení je krátká a na jednom řádku",
+  d9.cena.length > 0 && d9.cena.every((c) => /^L\d+ · .+ \+ \d+ candy( \+ \d+ XL)?$/.test(c.text) && c.radku === 1),
+  JSON.stringify(d9.cena));
 
 // ----------------------------------------------------------------- telefon
 console.log("\n5) Telefon (390 px)");

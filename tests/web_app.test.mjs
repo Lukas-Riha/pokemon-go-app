@@ -16550,6 +16550,9 @@ try {
     out.znacky = zn.map((e) => Object.assign({ t: e.textContent.trim() }, st(e)));
     bG.remove();
     const bR = detail(kus("Rhydon").id);
+    const vylepsit = [...bR.querySelectorAll(".d-roles-akce .d-role")].find((k) => /Vylepšit/.test(k.textContent));
+    out.cena = vylepsit ? { kratce: (vylepsit.querySelector(".d-role-p") || {}).textContent || "",
+      tip: vylepsit.getAttribute("data-tip") || "" } : null;
     const evo = [...bR.querySelectorAll(".d-roles-akce .d-role")].find((k) => /Evolvovat/.test(k.textContent));
     out.evolvovat = evo ? { popis: !!evo.querySelector(".d-role-p"), tip: evo.getAttribute("data-tip") || "",
       text: evo.textContent.replace(/\s+/g, " ").trim() } : null;
@@ -16596,6 +16599,9 @@ try {
   check("Evolvovat ukazuje jen výsledek, text je v bublině",
     !!s256.evolvovat && !s256.evolvovat.popis && s256.evolvovat.tip.length > 20 && /^Evolvovat\s*Ano$/.test(s256.evolvovat.text),
     JSON.stringify(s256.evolvovat));
+  check("cena vylepšení je krátká („L40 · 475 tis. + 248 candy + 296 XL“), celá je v bublině",
+    !!s256.cena && /^L\d+ · .+ \+ \d+ candy( \+ \d+ XL)?$/.test(s256.cena.kratce)
+      && /prachu/.test(s256.cena.tip), JSON.stringify(s256.cena));
   check("druh bez evoluce má evoluční řadu se sebou samým",
     s256.heracross.evo && s256.heracross.kusu === 1 && s256.heracross.tady === 1 && /nevyvíjí/.test(s256.heracross.text),
     JSON.stringify(s256.heracross));

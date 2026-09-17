@@ -64,6 +64,17 @@
 > zůstává jen „Výhoda se vyruší" (a když ani ta není, sekce se odstraní).
 > Vypnutý `.atlas-lucky-tag` je průhledný jako ostatní vypnuté značky (dřív
 > měl tmavou výplň). CSS v bloku „Claude 17. 9. (5)".
+>
+> **Šesté kolo 17. 9. (Claude)** — detail nesmí při listování skákat, proto
+> mají bloky pevné rozměry (blok „Claude 17. 9. (6)"): `.atlas-verdict-radek`
+> min-height 104 px, karty „Herní využití" 90 px, `.detail-title` 52 px,
+> evoluční sloupec 520 px nad 900 px šířky. Test (sekce 9 v atlas_vrstva)
+> projde šest různých kusů a porovná pozici i rozměry hlavičky, statů,
+> verdiktu, značek, evoluce a sekcí — když něco změní výšku, spadne.
+> Sekce „Typové pokrytí" se v detailu už nekreslí vůbec (zůstal jen štítek
+> „silný proti"), cena vylepšení je krátká na jeden řádek („L40 · 475 tis.
+> + 248 candy + 296 XL", celá věta je v bublině) a „silný proti" má menší
+> bubliny s menšími mezerami.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
