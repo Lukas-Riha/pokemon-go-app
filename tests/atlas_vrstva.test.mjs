@@ -501,6 +501,20 @@ const d8 = await p8.evaluate(async () => {
     prepad: Math.max(0, utokyBox.scrollHeight - utokyBox.clientHeight),
     vHlavicce: utokyBox.getBoundingClientRect().bottom <= m.querySelector(".atlas-detail-identity").getBoundingClientRect().bottom + 1 } : null;
   out.sekceDole = [...m.querySelectorAll("[data-detail-section]")].map((x) => x.dataset.detailSection);
+  // pořadí v hlavičce: staty, IV, strop a až za nimi útoky
+  const statyBox = m.querySelector(".atlas-ident-stats");
+  out.poradiHlavicky = !!(utokyBox && statyBox
+    && utokyBox.getBoundingClientRect().left >= statyBox.getBoundingClientRect().right - 1);
+  // obrázek se po změření zvětšuje — musí zůstat ve svém okénku a nehnout hlavičkou
+  const obal = m.querySelector(".atlas-detail-identity .atlas-ident-obr");
+  const hlavicka = m.querySelector(".atlas-detail-identity");
+  const img = obal ? obal.querySelector("img") : null;
+  const predVyska = Math.round(hlavicka.getBoundingClientRect().height);
+  if (img) img.style.transform = "translate(25%, -30%) scale(1.55)";
+  out.obrazek = obal ? { overflow: getComputedStyle(obal).overflow,
+    w: Math.round(obal.getBoundingClientRect().width), h: Math.round(obal.getBoundingClientRect().height),
+    vyskaPred: predVyska, vyskaPo: Math.round(hlavicka.getBoundingClientRect().height) } : null;
+  if (img) img.style.transform = "";
   out.tipDmax = ([...m.querySelectorAll(".atlas-verdict-first .dv-chip")].find((e) => e.textContent === "Dynamax") || { getAttribute: () => "" })
     .getAttribute("data-tip");
   A.closeDetail();
@@ -573,6 +587,10 @@ check("…u kusu s evolucí jsou v nich obě nejlepší sestavy (teď i po evolu
 check("…a sekce Útoky, Nejlepší sestava a Herní využití dole nejsou",
   ["utoky", "sestavy", "naco", "stats", "proti", "coted"].every((k) => d8.sekceDole.indexOf(k) === -1),
   JSON.stringify(d8.sekceDole));
+check("v hlavičce jsou útoky až za statistikami (vpravo)", d8.poradiHlavicky, String(d8.poradiHlavicky));
+check("obrázek kusu je v pevném okénku a ani zvětšený nehne hlavičkou",
+  !!d8.obrazek && d8.obrazek.overflow === "hidden" && d8.obrazek.w === 150 && d8.obrazek.h === 150
+    && d8.obrazek.vyskaPred === d8.obrazek.vyskaPo, JSON.stringify(d8.obrazek));
 check("herní využití: čtyři karty v jednom řádku, stejně vysoké", d8.karty.length === 4
   && d8.karty.every((h) => h === d8.karty[0]) && d8.kartyTop.every((t) => t === d8.kartyTop[0]),
   JSON.stringify({ vysky: d8.karty, top: d8.kartyTop }));

@@ -135,7 +135,7 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .atlas-detail-modern .detail-title .atlas-vyhoda .pk-typ{font-size:11px;line-height:16px;padding:1px 8px}
 @media(min-width:901px){.atlas-evolution-column{min-height:520px}}
 /* Claude 17. 9. (7): útoky a nejlepší sestava v hlavičce, evoluční sloupec bez prázdného místa */
-.atlas-detail-identity .atlas-ident-utoky{margin-left:auto;flex:0 1 260px;min-width:190px;align-self:stretch;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface-1);display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.atlas-detail-identity .atlas-ident-utoky{flex:0 1 260px;min-width:190px;align-self:stretch;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface-1);display:flex;flex-direction:column;gap:4px;overflow:hidden}
 .atlas-ident-utoky .d-box-h{font-size:10px;margin:0}
 .atlas-ident-utoky .d-moves{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin:0}
 .atlas-ident-utoky .d-move{margin:0;font-size:11px;gap:5px}
@@ -143,7 +143,7 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-ident-utoky .atlas-sestava{display:flex;align-items:baseline;gap:6px;font-size:11px;cursor:help}
 .atlas-ident-utoky .atlas-sestava small{color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;flex:0 0 auto}
 .atlas-ident-utoky .atlas-sestava b{color:var(--text-secondary);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.atlas-detail-identity .atlas-ident-stats{margin-left:12px}
+.atlas-detail-identity .atlas-ident-stats{margin-left:auto}
 @media(max-width:1100px){.atlas-detail-identity .atlas-ident-utoky{margin-left:0;flex:1 1 100%}.atlas-detail-identity .atlas-ident-stats{margin-left:0}}
 .atlas-evolution-column{display:flex;flex-direction:column}
 .atlas-evolution-column>.d-evo-side{flex:1;display:flex;flex-direction:column}
@@ -156,3 +156,10 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .atlas-detail-identity .atlas-ident-stats{height:150px;align-self:center}
 .atlas-test .atlas-ident-stats .d-box{overflow:hidden}
 @media(max-width:1100px){.atlas-test .atlas-detail-identity{height:auto}.atlas-test .atlas-detail-identity .atlas-ident-text{flex:1 1 240px}.atlas-test .atlas-detail-identity .atlas-ident-utoky{flex:1 1 100%;height:auto}.atlas-test .atlas-detail-identity .atlas-ident-stats{height:auto}}
+/* Claude 17. 9. (8): obrázek v pevném okénku (engine ho po změření zvětšuje, jinak leze z hlavičky), útoky vpravo za statistikami */
+.atlas-test .atlas-detail-identity .atlas-ident-obr{flex:0 0 150px;width:150px;height:150px;display:block;overflow:hidden;position:relative}
+.atlas-test .atlas-detail-identity .atlas-ident-obr img{width:100%;height:100%;object-fit:contain}
+.atlas-test .atlas-detail-identity .atlas-ident-utoky{margin-left:12px}
+@media(max-width:1100px){.atlas-test .atlas-detail-identity .atlas-ident-utoky{margin-left:0}}
+@media(max-width:900px){.atlas-test .atlas-detail-identity .atlas-ident-obr{flex:0 0 115px;width:115px;height:125px}}
+@media(max-width:650px){.atlas-test .atlas-detail-identity .atlas-ident-obr{flex:0 0 88px;width:88px;height:95px}}

@@ -84,6 +84,13 @@
 > (žádný prázdný rám pod řadou). Hlavička má pevnou geometrii: výška 200 px,
 > jméno `.atlas-ident-text` 300 px, útoky 260 px, staty 150 px — dlouhé jméno
 > ani poznámka u shadow statů s ní nehnou. Pod 1100 px se to rozpadá do řádků.
+>
+> **Osmé kolo 17. 9. (Claude)** — pořadí v hlavičce je Staty / IV / Strop
+> a až za nimi Útoky (vpravo). Obrázek kusu je v okénku `.atlas-ident-obr`
+> (150×150, `overflow:hidden`): engine sprity po změření zvětšuje až 1,55×
+> a posouvá, takže bez ořezu vyskakovaly z hlavičky ven — to bylo to
+> „poskakování mimo rámečky". Kdyby se okénko stylovalo jinak, ořez musí
+> zůstat. Test to hlídá (zvětší sprite a měří výšku hlavičky).
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).
