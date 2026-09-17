@@ -16205,12 +16205,15 @@ try {
     P.setRows([]); P.setDiscarded([]);
     await cekej(300);
     const mapa = P.automatickeMapovani(csv) || {};
-    P.importText(csv); P.finishImport(true);
+    P.importText(csv);
+    await cekej(300);
+    const importNote = ((document.getElementById("scanWindowNote") || {}).textContent || "").replace(/\s+/g, " ");
+    P.finishImport(true);
     await cekej(1000);
     const podle = () => { const o = {}; P.getRows().forEach((r) => { o[r.pokemon] = r; }); return o; };
     let p1 = podle();
     const out = { mapa: mapa["Datum chycení"], combee: p1.Combee.catchDate, mewtwo: p1.Mewtwo.catchDate,
-      ampharos: p1.Ampharos.catchDate };
+      ampharos: p1.Ampharos.catchDate, importNote: importNote };
     const casy = async (id) => {
       P.zamerKus(id);
       await cekej(800);
@@ -16257,6 +16260,14 @@ try {
       && ["Ampharos", "Gyarados"].every((j) => chyceni.chyceniNovejsi.indexOf(j) >= chyceni.chyceniNovejsi.length - 2),
     JSON.stringify(chyceni.chyceniNovejsi));
   check("…a nejstarší první", chyceni.chyceniStarsi[0] === "Combee", JSON.stringify(chyceni.chyceniStarsi));
+  // Stejné nebo neznámé datum chycení se dořadí podle skenu (nejnovější
+  // první): rok 2026 bez dne, pak Combee 2022, pak „?".
+  check("…kusy se stejným nebo neznámým datem chycení se dořadí podle skenu",
+    JSON.stringify(chyceni.chyceniNovejsi) === JSON.stringify(
+      ["Mewtwo", "Litten", "Nickit", "Clamperl", "Combee", "Ampharos", "Gyarados"]),
+    JSON.stringify(chyceni.chyceniNovejsi));
+  check("import hned řekne, kolik kusů má datum chycení",
+    /datum chycení má 1 z 7 řádků \(další 4 jen rok nebo měsíc\)/.test(chyceni.importNote), chyceni.importNote);
   check("řazení podle skenu: naposledy naskenovaný první",
     chyceni.skenNovejsi[0] === "Ampharos" && chyceni.skenNovejsi[chyceni.skenNovejsi.length - 1] === "Clamperl",
     JSON.stringify(chyceni.skenNovejsi));
@@ -16302,6 +16313,19 @@ try {
       && proh1400[6].top > proh1400[0].top, JSON.stringify(proh1400.map((x) => x.top)));
   check("na širokém monitoru je všech devět v jednom řádku", stejnyRadekProh(proh1800),
     JSON.stringify(proh1800.map((x) => x.top)));
+  // Ligy podrobně: nadpis s obrázkem jen tam, kde je víc forem nebo evolucí.
+  await page.setViewportSize({ width: 1400, height: 1000 });
+  const jedenDruhProh = await page.evaluate(async () => {
+    const pole = document.getElementById("prohName");
+    pole.value = "Chimecho";
+    pole.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 700));
+    return { nadpisu: document.querySelectorAll("#prohlidkaCard .d-liga-forma").length,
+      tabulek: document.querySelectorAll("#prohlidkaCard .d-ligy-tab").length };
+  });
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  check("u jednoho druhu nemá „Ligy podrobně“ zbytečný nadpis s obrázkem",
+    jedenDruhProh.tabulek >= 1 && jedenDruhProh.nadpisu === 0, JSON.stringify(jedenDruhProh));
   check("na telefonu jsou pole po dvou",
     Math.abs(proh400[0].top - proh400[1].top) <= 4 && proh400[2].top > proh400[1].top,
     JSON.stringify(proh400.map((x) => x.top)));

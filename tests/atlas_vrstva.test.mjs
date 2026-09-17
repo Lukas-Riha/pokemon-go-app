@@ -228,6 +228,14 @@ const stav = await ui.evaluate(async () => {
   out.backupState = disp("backupState");
   const radek = document.getElementById("backupState") && document.getElementById("backupState").parentElement;
   out.radekHledani = radek ? getComputedStyle(radek).display : "chybi";
+  const lista = document.querySelector(".card.roster > .toolbar");
+  const profil = lista && lista.querySelector(".profile-box");
+  out.listaSkryta = lista ? getComputedStyle(lista).display : "chybi";
+  if (profil) {
+    profil.hidden = false;
+    out.listaSProfilem = getComputedStyle(lista).display;
+    profil.hidden = true;
+  }
   // úprava kusu: nabídka útoků druhu
   const garchomp = P.getRows().filter((r) => r.pokemon === "Garchomp")[0];
   A.openDetail(garchomp.id);
@@ -308,6 +316,9 @@ const stav = await ui.evaluate(async () => {
 check("„Smazat neoznačené“ je v menu Správa rosteru hned nad „Vymazat vše“",
   stav.smazatVMenu && stav.smazatPredVse, JSON.stringify([stav.smazatVMenu, stav.smazatPredVse]));
 check("věta o uložení není vidět", stav.saveState === "none", stav.saveState);
+check("prázdná lišta pod rosterem není vidět, dokud se neotevře profil",
+  stav.listaSkryta === "none" && stav.listaSProfilem && stav.listaSProfilem !== "none",
+  JSON.stringify([stav.listaSkryta, stav.listaSProfilem]));
 check("oranžový řádek „Bez zálohy“ není vidět (varování dělá žlutý box)", stav.backupState === "none" && stav.radekHledani === "none",
   stav.backupState + " / " + stav.radekHledani);
 check("vysvětlení verdiktu se neopakuje pod štítky (je v bublině nadpisu)",

@@ -921,7 +921,17 @@ Třetí kolo (17. 9. odpoledne):
   dva), od 1700 px všech 9 v řádku, do 900 px 3, do 520 px 2. Tvoje pravidla
   `label:nth-child(-n+6)` sedí dál — prvních šest jsou pořád čísla.
 
-Hlídá to **`tests/atlas_vrstva.test.mjs`** (36 kontrol, běží proti TEST
+Čtvrté kolo (17. 9. večer):
+
+- **Prázdná lišta pod rosterem:** `.card.roster > .toolbar` obsahovala už jen
+  skrytý `.profile-box`, takže se kreslila jako prázdný rámeček. Ve vrstvě je
+  schovaná, dokud se profil neotevře (`:has(.profile-box:not([hidden]))`).
+- **Vyhledávání, Ligy podrobně:** nadpis `.d-liga-forma` (malý obrázek + jméno)
+  se kreslí jen u víc forem nebo evolucí; u jednoho druhu jen opakoval jméno.
+- **Řazení podle chycení** dořazuje stejné a neznámé datum podle skenu.
+- **Import** v poznámce u výběru skenu řekne, kolik řádků má datum chycení.
+
+Hlídá to **`tests/atlas_vrstva.test.mjs`** (37 kontrol, běží proti TEST
 verzi, i na 390 px). Když to budeš graficky předělávat, nech třídy `dv-*`,
 `hra-pruh` před `#atlasEditPokemon` a `atlasEvoTooltip`, ať test sedí.
 

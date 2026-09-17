@@ -3646,7 +3646,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 11:03";
+  var BUILD = "2026-09-17 11:32";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -12165,13 +12165,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       });
       skupiny.forEach(function (sk) {
         var dsk = dexEntry(sk.jmeno);
-        h += '<div class="d-liga-forma">'
-          + (dsk ? obrazekHtml(sk.jmeno, dsk, "d-liga-obr") : "")
-          + "<b>" + escHtml(sk.jmeno) + "</b>"
-          + (sk.sam ? ""
-              : '<span class="d-liga-az">'
-                + (sk.forma ? "jiná forma" : "až po evoluci") + "</span>")
-          + "</div>";
+        // Nadpis s obrázkem rozlišuje formy a evoluce. U jediné skupiny
+        // (druh sám za sebe) jen opakoval jméno z hlavičky karty.
+        if (skupiny.length > 1 || !sk.sam) {
+          h += '<div class="d-liga-forma">'
+            + (dsk ? obrazekHtml(sk.jmeno, dsk, "d-liga-obr") : "")
+            + "<b>" + escHtml(sk.jmeno) + "</b>"
+            + (sk.sam ? ""
+                : '<span class="d-liga-az">'
+                  + (sk.forma ? "jiná forma" : "až po evoluci") + "</span>")
+            + "</div>";
+        }
         h += '<table class="d-ligy-tab"><tr><th>Liga</th><th>Pořadí druhu</th>'
           + "<th>Doporučená sestava</th></tr>";
         sk.radky.forEach(function (l) {
@@ -21057,6 +21061,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + " — s „Nahradit roster“ bude roster přesně tohle";
       }
       if (onlyExactWanted()) note.textContent += " · jen přesné IV";
+      // Kolik kusů má datum chycení — Calcy ho dá jen někdy, ať je hned vidět,
+      // jestli má smysl podle něj řadit.
+      if (pending.mapping.catchDate !== undefined) {
+        var cele = 0, rok = 0;
+        vsechny.forEach(function (r) {
+          var pr = presnostChyceni(r.catchDate);
+          if (pr === 3) cele++; else if (pr > 0) rok++;
+        });
+        note.textContent += " · datum chycení má " + cele + " z " + vsechny.length + " řádků"
+          + (rok ? " (" + (rok >= 5 ? "dalších " : "další ") + rok + " jen rok nebo měsíc)" : "");
+      }
 
       // sken proti počtu z boxu
       var miss = document.getElementById("scanMissWarn");
@@ -24748,6 +24763,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         sortKey = klic;
         sortDir = smer === -1 ? -1 : 1;
         sortKey2 = null; sortDir2 = 1;
+        // Datum chycení Calcy často nezná — kusy se stejným nebo neznámým
+        // datem se pak seřadí podle data skenu, ne náhodně.
+        if (klic === "catchDate") { sortKey2 = "scanDate"; sortDir2 = sortDir; }
       }
       renderHeader();   // jinak zůstane v hlavičce stará šipka
       renderBody();
