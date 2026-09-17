@@ -806,3 +806,31 @@ kvalita 94,2 %, potřeba 95,3 %" lámal a procento zůstalo samo na dalším
 přebije. 430 px zatím stačí (test chce aspoň 400), ale kdybys bublinu
 zužovala, nech u `:has(.tip-seznam)` aspoň 440 px.
 
+## Důvody verdiktu jako štítky (17. 9.)
+
+Lukáš chtěl místo podtitulku „gym 3/8 +1" štítek na každý důvod. V enginu:
+
+- **Data:** `getComputed()[id].duvody` (popis v kontraktu). Sloty rozpočtu
+  (liga, raid typ, gym, Max, mega) + značky, které kus drží samy (CUTE,
+  100 %, Lucky, Elitní útok, Nejde pustit, Dynamax, Shiny, Trade,
+  Doskenovat, Duplikát?). Hlavní slot je první.
+- **Buňka Verdikt:** u ponechaného kusu `.badge` + `<span class="dv-radek">`
+  se štítky `.dv-chip.dv-liga|dv-raid|dv-role|dv-znacka`, náplast
+  `.dv-naplast`, rezerva `.dv-rezerva` (přerušovaný okraj), raid typ má
+  barvu typu inline. Pouštěný kus má dál `.cell-sub` s větou.
+- **„+N":** po vykreslení `srovnejDuvody()` změří šířku buňky, štítky, které
+  se nevejdou, dostanou `hidden` a `.dv-vic` ukáže „+N" s bublinou. Když
+  buňku přestyluješ (jiná šířka, karty), zavolá se znovu přes
+  ResizeObserver na `.card.roster` — nic dalšího netřeba.
+- **Bubliny:** každý štítek má `data-tip` (HTML). Ligy = bublina ligy
+  (držitelé, pod čarou), raid typ a gym = krátké „proč" + `ol.tip-seznam`
+  s pořadím držitelů a `li.tip-ten`, ostatní jen „proč".
+- **Filtr:** šipka ve sloupci Verdikt má pod hodnotami sekci „Důvod
+  (štítky)" (`input[data-duvod]`, `.filtr-duvody`). API `drziteleSlotu(klic)`.
+- Ostatní sloupce (RAID, GYM, PVP TÝM) zůstávají, jak jsou.
+
+**Směr pro tvoji verzi (Lukášovo přání):** v tabulce má být info mnohem
+méně — pokémoni jako plovoucí bubliny se základním infem (jméno, CP/IV,
+verdikt a štítky důvodů), podrobnosti až po najetí nebo otevření. Štítky
+jsou na to připravené: data jsou v `duvody`, bubliny v `data-tip`.
+

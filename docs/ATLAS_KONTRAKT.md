@@ -131,6 +131,7 @@ ne funkce — datumy zdrojů),
 | `jenZnamka` | drží ho jen CUTE nebo 100 %, žádnou roli nezastává |
 | `jeMezera` | drží roli jen jako náplast |
 | `jeRezerva` | drží jen rezervu ligy nebo ho drží jen paměť pořadí: `keep` je „Nechat – rezerva" (`keepTone: warning`), `powerup` je „Ne", do plánu prachu nejde; vyvinout smí |
+| `duvody` | důvody verdiktu jako seznam: `[{kat: "liga"/"raid"/"role"/"znacka", druh, klic, filtr, stitek, proc, mezera, rezerva, poEvoluci, kusId}]`. `filtr` je klíč pro filtr („GL", „Fire", „Gym", „Max", „Mega", „CUTE", „Lucky", „100 %"…), `stitek` text štítku („GL #7", „Fire 2/6"), `proc` krátká věta, proč zrovna tenhle kus. U pouštěného kusu jen značky. |
 | `stoProcent`, `cute`, `shiny`, `lucky`, `dynamax` | značky |
 | `strong`, `strongAll`, `strongTypes` | proti čemu je silný |
 | `utoky` | posudek KAŽDÉHO útoku zvlášť (viz níž) |

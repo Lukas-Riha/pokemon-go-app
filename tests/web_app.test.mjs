@@ -2228,7 +2228,9 @@ try {
   // formou slévat nedá — 86 druhů ukazovalo cizí číslo.
   // 1,75 MB: posudek každého útoku, kontrola vstupu, nejlepší sestava druhu,
   // spočítaný žebříček mega forem a posuny v PvPoke od minulé obnovy dat.
-  check("appka se drží pod 1,75 MB", velikostSouboru < 1750000, String(velikostSouboru));
+  // 1,80 MB: rezerva v lize, paměť pořadí za 30 dní (data rostou s historií),
+  // „pod čarou" a štítky důvodů u verdiktu s bublinami a filtrem.
+  check("appka se drží pod 1,80 MB", velikostSouboru < 1800000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {
@@ -15866,6 +15868,144 @@ try {
     check("LC data maji sest druhu z testu (jinak se pod carou neda overit)", false,
       podCarou.drzi.join(", "));
   }
+
+  // ---------------------------------------------------------------- 249
+  // Duvody verdiktu jako stitky. Misto „gym 3/8 +1" jeden stitek na kazdy
+  // duvod (liga, raid typ, gym, Max, mega, znacka), co se nevejde, je v „+N".
+  // Bublina rekne, proc zrovna tenhle kus, u raidu, gymu a lig i s poradim.
+  console.log("\n249) Duvody verdiktu jako stitky");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const stitky = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rosterZal = document.querySelector('.zal-btn[data-klic="roster"]');
+    if (rosterZal) rosterZal.click();
+    const vs = document.getElementById("viewSelect");
+    if (vs && vs.value !== "verdict") { vs.value = "verdict"; vs.dispatchEvent(new Event("change")); }
+    P.setRows([
+      { pokemon: "Swampert", cp: 2900, level: 40, ivAtk: 15, ivDef: 14, ivSta: 14, fastMove: "Mud Shot", charged1: "Hydro Cannon" },
+      { pokemon: "Snorlax", cp: 3000, level: 35, ivAtk: 12, ivDef: 15, ivSta: 15, forma: "Lucky", fastMove: "Lick", charged1: "Body Slam" },
+      { pokemon: "Azumarill", cp: 1482, level: 24.5, ivAtk: 0, ivDef: 15, ivSta: 15 },
+      { pokemon: "Pikachu", cp: 300, level: 10, ivAtk: 5, ivDef: 5, ivSta: 5, cute: "Ano" },
+      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
+      { pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15, fastMove: "Counter", charged1: "Dynamic Punch" },
+      { pokemon: "Blissey", cp: 2700, level: 40, ivAtk: 10, ivDef: 15, ivSta: 15 },
+      { pokemon: "Metagross", cp: 3700, level: 40, ivAtk: 15, ivDef: 15, ivSta: 14, fastMove: "Bullet Punch", charged1: "Meteor Mash" }
+    ]);
+    await cekej(1500);
+    const comp = P.getComputed();
+    const rows = P.getRows();
+    const out = { kusy: [] };
+    rows.forEach((r) => {
+      const c = comp[r.id];
+      const td = document.querySelector('#tbody tr[data-row-id="' + r.id + '"] td[data-col="keep"]');
+      const radek = td ? td.querySelector(".dv-radek") : null;
+      const chipy = radek ? [...radek.querySelectorAll(".dv-chip:not(.dv-vic)")] : [];
+      const videt = chipy.filter((e) => !e.hidden);
+      const vic = radek ? radek.querySelector(".dv-vic") : null;
+      const pravy = radek ? radek.getBoundingClientRect().right : 0;
+      out.kusy.push({
+        jmeno: r.pokemon, id: r.id, keep: c.keep, keepGood: !!c.keepGood,
+        duvody: (c.duvody || []).map((d) => ({ druh: d.druh, klic: d.klic, filtr: d.filtr, stitek: d.stitek })),
+        maRadek: !!radek, sub: td && td.querySelector(".cell-sub") ? td.querySelector(".cell-sub").textContent : "",
+        chipu: chipy.length, videt: videt.length,
+        vic: vic && !vic.hidden ? Number(vic.textContent.replace("+", "")) : 0,
+        vicTip: vic && !vic.hidden ? vic.getAttribute("data-tip") || "" : "",
+        pretece: videt.length > 1 && videt.some((e) => e.getBoundingClientRect().right > pravy + 1),
+        tipy: chipy.map((e) => ({ duvod: e.getAttribute("data-duvod"), tip: e.getAttribute("data-tip") || "" }))
+      });
+    });
+    // konzistence se sloty: kazdy slotovy duvod ma kus mezi drziteli
+    out.nesedi = [];
+    out.kusy.forEach((k) => k.duvody.forEach((d) => {
+      if (d.druh === "znacka") return;
+      if (!P.drziteleSlotu(d.klic).some((x) => x.id === k.id)) out.nesedi.push(k.jmeno + " " + d.klic);
+    }));
+    // filtr podle duvodu z hlavicky Verdiktu
+    const th = [...document.querySelectorAll("#rosterTable thead th")]
+      .filter((e) => e.querySelector(".pvp-filtr-ikona") && /Verdikt|Ponechat/.test(e.textContent))[0];
+    const radkyVidet = () => [...document.querySelectorAll("#tbody tr[data-row-id]")]
+      .map((tr) => (rows.filter((r) => r.id === tr.dataset.rowId)[0] || {}).pokemon);
+    out.filtrIkona = !!th;
+    if (th) {
+      th.querySelector(".pvp-filtr-ikona").click();
+      await cekej(300);
+      const panel = document.getElementById("hodnotaFiltrPanel");
+      const zaskrtni = (k, v) => {
+        const i = panel.querySelector('input[data-duvod="' + k + '"]');
+        if (!i) return false;
+        i.checked = v;
+        i.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+      };
+      out.nabidka = [...panel.querySelectorAll("input[data-duvod]")].map((i) => i.dataset.duvod);
+      out.cuteJde = zaskrtni("CUTE", true);
+      await cekej(500);
+      out.poCute = radkyVidet();
+      zaskrtni("CUTE", false);
+      out.gymJde = zaskrtni("Gym", true);
+      await cekej(500);
+      out.poGym = radkyVidet();
+      document.getElementById("hodnotaFiltrReset").click();
+      await cekej(500);
+      out.poResetu = radkyVidet().length;
+      panel.hidden = true;
+    }
+    return out;
+  });
+  const kus = (j) => stitky.kusy.filter((k) => k.jmeno === j)[0] || {};
+  check("kazdy ponechany kus ma aspon jeden duvod",
+    stitky.kusy.filter((k) => k.keepGood).every((k) => k.duvody.length >= 1),
+    JSON.stringify(stitky.kusy.filter((k) => k.keepGood && !k.duvody.length).map((k) => k.jmeno)));
+  check("slotove duvody sedi s tim, kdo slot drzi", stitky.nesedi.length === 0,
+    stitky.nesedi.join(", "));
+  check("ponechany kus ma ve verdiktu stitky misto vety",
+    stitky.kusy.filter((k) => k.keepGood).every((k) => k.maRadek && !k.sub),
+    JSON.stringify(stitky.kusy.map((k) => [k.jmeno, k.maRadek, k.sub])));
+  check("pousteny kus ma dal vetu, proc jde pryc, a zadne stitky",
+    !kus("Rattata").maRadek && /Zahodit/.test(kus("Rattata").keep), JSON.stringify(kus("Rattata")));
+  check("vsechny duvody jsou videt nebo v „+N\" (nic se neztrati)",
+    stitky.kusy.filter((k) => k.maRadek).every((k) => k.videt + k.vic === k.duvody.length),
+    JSON.stringify(stitky.kusy.map((k) => [k.jmeno, k.videt, k.vic, k.duvody.length])));
+  check("zadny viditelny stitek nepretece bunku",
+    stitky.kusy.every((k) => !k.pretece), JSON.stringify(stitky.kusy.filter((k) => k.pretece).map((k) => k.jmeno)));
+  const sVic = stitky.kusy.filter((k) => k.vic > 0)[0];
+  check("„+N\" ma bublinu se schovanymi duvody a jejich vysvetlenim",
+    !!sVic && /Další důvody/.test(sVic.vicTip) && (sVic.vicTip.match(/<li>/g) || []).length === sVic.vic,
+    sVic ? sVic.vicTip.slice(0, 200) : "zadny kus s +N");
+  check("CUTE, Lucky a 100 % jsou stitky",
+    kus("Pikachu").duvody.some((d) => d.filtr === "CUTE")
+      && kus("Snorlax").duvody.some((d) => d.filtr === "Lucky")
+      && kus("Machamp").duvody.some((d) => d.filtr === "100 %"),
+    JSON.stringify([kus("Pikachu").duvody, kus("Snorlax").duvody, kus("Machamp").duvody]));
+  const vsechnyTipy = [].concat(...stitky.kusy.map((k) => k.tipy.map((t) => Object.assign({ jmeno: k.jmeno }, t))));
+  const raidTip = vsechnyTipy.filter((t) => /do raidu drží/.test(t.tip))[0];
+  check("bublina raid stitku ma poradi drzitelu a oznaci tenhle kus",
+    !!raidTip && /tip-seznam/.test(raidTip.tip) && /tenhle kus/.test(raidTip.tip) && /% špičky/.test(raidTip.tip),
+    raidTip ? raidTip.tip.slice(0, 300) : JSON.stringify(vsechnyTipy.map((t) => t.duvod)));
+  const gymTip = vsechnyTipy.filter((t) => t.duvod === "Gym")[0];
+  check("bublina gym stitku ma poradi obrancu",
+    !!gymTip && /Obránce gymu drží/.test(gymTip.tip) && /tenhle kus/.test(gymTip.tip),
+    gymTip ? gymTip.tip.slice(0, 300) : "zadny gym stitek");
+  const ligaTip = vsechnyTipy.filter((t) => ["LC", "GL", "UL", "ML"].indexOf(t.duvod) > -1)[0];
+  check("bublina liga stitku je bublina ligy (drzitele slotu)",
+    !!ligaTip && /Sloty téhle ligy drží/.test(ligaTip.tip), ligaTip ? ligaTip.tip.slice(0, 200) : "zadny liga stitek");
+  const znTip = vsechnyTipy.filter((t) => t.duvod === "CUTE")[0];
+  check("bublina znacky rekne, proc ho drzi",
+    !!znTip && /CUTE/.test(znTip.tip) && !/tip-seznam/.test(znTip.tip), znTip ? znTip.tip : "");
+  check("filtr Verdiktu nabizi duvody",
+    stitky.filtrIkona && ["CUTE", "Gym", "Lucky"].every((k) => (stitky.nabidka || []).indexOf(k) > -1),
+    JSON.stringify(stitky.nabidka));
+  check("filtr CUTE ukaze jen kusy se stitkem CUTE",
+    stitky.cuteJde && JSON.stringify(stitky.poCute) === JSON.stringify(["Pikachu"]),
+    JSON.stringify(stitky.poCute));
+  check("filtr Gym ukaze jen kusy, ktere drzi gym",
+    stitky.gymJde && stitky.poGym.length >= 1
+      && stitky.poGym.every((j) => kus(j).duvody.some((d) => d.filtr === "Gym")),
+    JSON.stringify(stitky.poGym));
+  check("zruseni filtru vrati vsechny kusy", stitky.poResetu === stitky.kusy.length,
+    String(stitky.poResetu));
 
   await page.goto(URL);
   await page.waitForTimeout(700);
