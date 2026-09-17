@@ -699,7 +699,11 @@ async function boxKontrola(page) {
         ligyVidet: vidno(".atlas-box-rozbor [data-detail-section=ligy]"),
         evoluceVidet: vidno(".atlas-box-rozbor .atlas-evolution-column"),
         vyuzitiVidet: vidno(".atlas-box-rozbor .atlas-vyuziti"),
-        vyuziti: b.querySelectorAll(".atlas-vyuziti .d-role").length };
+        vyuziti: b.querySelectorAll(".atlas-vyuziti .d-role").length,
+        // hlavička musí stát v obou stavech stejně (obrázek, jméno, staty)
+        hlavicka: [".atlas-ident-obr", ".atlas-ident-text h2", ".atlas-ident-stats", ".atlas-ident-utoky"]
+          .map((s) => { const e = b.querySelector(s); if (!e) return [-1, -1]; const r = e.getBoundingClientRect();
+            return [Math.round(r.left), Math.round(r.width)]; }) };
     };
     const out = { sbalene: [], rozbalene: [],
       zamek: getComputedStyle(document.body).overflow === "hidden",
@@ -743,12 +747,17 @@ check("…a po rozhodnutí se přepne na další kus se stejným rozborem",
   !!d10.druhy && d10.druhy.jmeno !== d10.prvni.jmeno && d10.druhy.staty === 3 && d10.druhy.utoky
     && d10.pozice2 !== d10.pozice,
   JSON.stringify({ prvni: d10.prvni.jmeno, druhy: d10.druhy && d10.druhy.jmeno }));
-check("hned vidět je rozhodování (bez Lig a evoluce), po rozbalení je vidět všechno",
-  d10.sbalene.every((x) => x.r && x.r.vyuzitiVidet && x.r.verdikt && !x.r.ligyVidet && !x.r.evoluceVidet)
+check("hned vidět je rozhodování i evoluční řada, rozbaluje se jen tabulka Lig",
+  d10.sbalene.every((x) => x.r && x.r.vyuzitiVidet && x.r.verdikt && x.r.evoluceVidet && !x.r.ligyVidet)
     && d10.rozbalene.every((x) => x.r && x.r.ligyVidet && x.r.evoluceVidet && x.r.vyuzitiVidet
       && x.r.verdikt && x.r.utoky && x.r.staty === 3 && x.r.ligyTag === "SECTION"),
-  JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet]),
+  JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet]),
     rozbalene: d10.rozbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet, x.r.utoky]) }));
+// Hlavička se rozbalením nesmí hnout ani zmenšit (pár pixelů z centrování panelu tolerujeme).
+check("…a hlavička zůstane v obou stavech na stejném místě a ve stejné velikosti",
+  d10.sbalene.every((x, i) => x.r.hlavicka.every((v, k) =>
+    Math.abs(v[0] - d10.rozbalene[i].r.hlavicka[k][0]) <= 4 && Math.abs(v[1] - d10.rozbalene[i].r.hlavicka[k][1]) <= 4)),
+  JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r.hlavicka), rozbalene: d10.rozbalene.map((x) => x.r.hlavicka) }));
 check("v čištění boxu se neobjeví posuvník (ani rozbalené, 1500×1000)",
   d10.sbalene.every((x) => x.prebytek === 0) && d10.rozbalene.every((x) => x.prebytek === 0),
   JSON.stringify({ sbalene: d10.sbalene.map((x) => x.prebytek), rozbalene: d10.rozbalene.map((x) => x.prebytek) }));

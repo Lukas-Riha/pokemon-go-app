@@ -133,8 +133,17 @@
 > Ligy a evoluce se skrývají přes `max-height`+`opacity` s přechodem, ne
 > `display:none` — pozor v testech, „vidět" se musí měřit výškou a průhledností.
 > Velikosti hlavičky (obrázek 120, jméno 26 px, staty a útoky hned vedle jména)
-> platí v obou stavech, ať při rozbalení nic neposkočí — jen `siroky` navíc
-> ubírá odsazení, aby se vešly Ligy a evoluce.
+> platí v obou stavech, ať při rozbalení nic neposkočí.
+>
+> **Čtrnácté kolo 18. 9. (Claude)** — box má napevno dva sloupce: vlevo
+> hlavička + rozbor, vpravo evoluční řada (`grid-template-areas`
+> „hlavicka evoluce" / „obsah evoluce", `.atlas-box-rozbor`). Evoluce je
+> vidět v obou stavech, je velká (dlaždice 76 px) a táhne se od hlavičky až
+> dolů (`display:grid;grid-template-rows:auto 1fr` na sloupci — u `<details>`
+> je grid spolehlivější než flex). Rozbaluje se jen tabulka Lig, takže se
+> hlavička ani karty nikam nehnou; test to hlídá porovnáním pozic a šířek
+> hlavičky v obou stavech (tolerance 4 px). Staty/IV/strop jsou užší
+> (`minmax(150px,190px)`) a pruhy mají `min-width`, ať nezmizí.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

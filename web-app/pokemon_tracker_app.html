@@ -3663,7 +3663,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-17 20:57";
+  var BUILD = "2026-09-18 00:04";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -8984,7 +8984,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
              : (b.megaEntry.kind === "Primal" ? b.megaEntry.raidPriority.toLowerCase()
                 // Mega se veze na kusu, který si necháváš kvůli jiné roli.
                 // Bez téhle věty vypadá slot u horší kopie jako chyba.
-                : (b.megaDrzi && b.dupIndex > 1 ? "veze se na roli" : "priorita")));
+                : (b.megaDrzi && b.dupIndex > 1 ? "veze se na roli"
+                   // „Nízká priorita" je jasné i bez slova priorita a karta se
+                   // pak vejde na jeden řádek.
+                   : (b.megaDrzi ? "" : "priorita"))));
         megaTone = b.megaEntry.raidPriority === "Vysoká" ? "good"
           : b.megaEntry.raidPriority === "Střední" ? "warning" : "muted";
         if (b.megaEntry.raidPriority === "Neznámá") megaSub = "seznam ji ještě nezná";

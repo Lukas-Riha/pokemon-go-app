@@ -450,6 +450,9 @@ globalThis.AtlasBudget = (() => {
      const obsah=document.createElement('div');obsah.className='atlas-box-obsah';host.append(obsah);
      body.append(host);
      P.atlasDetail(polozka.row.id,obsah);
+     // Evoluční řada je v boxu vlastní sloupec panelu — vedle hlavičky
+     // i obsahu, aby mohla být velká a šla odshora až dolů.
+     const evo=obsah.querySelector('.atlas-evolution-column');if(evo)host.append(evo);
    }finally{boxPrestavba=false}
  }
  const bmBody=$('#bmBody');
