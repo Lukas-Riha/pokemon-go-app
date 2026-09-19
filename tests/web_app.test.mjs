@@ -16657,6 +16657,90 @@ try {
       && new RegExp("Silou by patřil na " + mewtwoKopie.silou + "\\. místo").test(mewtwoKopie.tip) && /lepší kopie/.test(mewtwoKopie.tip),
     mewtwoKopie ? mewtwoKopie.tip.replace(/<[^>]+>/g, " ").slice(0, 300) : "");
 
+  // ---------------------------------------------------------------- 258
+  // „Vyvinul jsem ho" je jedno tlačítko a cíl se vybírá v okně z evoluční
+  // řady (Eevee měl osm tlačítek vedle sebe). V bublinách držitelů i u kusu
+  // pod čarou stojí u procenta, že platí až po evoluci.
+  console.log("\n258) Jedno tlacitko evoluce s vyberem, po-evoluci u procent");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s258 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { id: "e1", pokemon: "Eevee", cp: 589, level: 20, ivAtk: 12, ivDef: 15, ivSta: 11 },
+      { id: "r1", pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15 },
+      { id: "r2", pokemon: "Rhydon", cp: 1500, level: 18, ivAtk: 10, ivDef: 10, ivSta: 10 },
+      { id: "r3", pokemon: "Rhydon", cp: 1400, level: 17, ivAtk: 8, ivDef: 9, ivSta: 9 },
+      { id: "r4", pokemon: "Rhydon", cp: 1300, level: 16, ivAtk: 6, ivDef: 7, ivSta: 8 },
+      { id: "m1", pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15 }
+    ]);
+    await new Promise((r) => setTimeout(r, 900));
+    const comp = P.getComputed(), rows = P.getRows();
+    // setRows si přiděluje vlastní id, takže se kusy hledají podle jména a CP.
+    const idKusu = (jm, cp) => (rows.find((r) => r.pokemon === jm && (!cp || r.cp === cp)) || {}).id;
+    const box = document.createElement("div");
+    document.body.append(box);
+    P.atlasDetail(idKusu("Eevee"), box);
+    // Vrstva lištu „ve hře" přesouvá jinam, takže se hledá v celé stránce.
+    const tlacitka = [...document.querySelectorAll(".hra-pruh .hra-btn")].map((b) => b.textContent.trim());
+    const evoBtn = [...document.querySelectorAll(".hra-pruh .hra-btn")].find((b) => /Vyvinul/.test(b.textContent));
+    if (evoBtn) evoBtn.click();
+    await new Promise((r) => setTimeout(r, 300));
+    const out = { tlacitka,
+      vyberNadpis: (document.getElementById("hraNadpis") || {}).textContent || "",
+      vyber: [...document.querySelectorAll("#hraBox .hra-vyber-kus")].map((b) => b.textContent.trim()),
+      vyberObrazku: document.querySelectorAll("#hraBox .hra-vyber-kus img").length,
+      ulozitSkryte: !!(document.getElementById("hraUlozit") || {}).hidden };
+    const prvni = document.querySelector("#hraBox .hra-vyber-kus");
+    if (prvni) prvni.click();
+    await new Promise((r) => setTimeout(r, 300));
+    out.poVyberu = { nadpis: (document.getElementById("hraNadpis") || {}).textContent || "",
+      ulozit: !(document.getElementById("hraUlozit") || {}).hidden,
+      maCp: !!document.getElementById("hraCp") };
+    P.hraZavri();
+    box.remove();
+    // kus pod čarou, který by roli držel až po evoluci: v bublině to musí stát u procenta
+    out.podCarou = ""; out.podCarouKus = "";
+    rows.forEach((r) => {
+      const c = comp[r.id];
+      if (out.podCarou) return;
+      const pod = (c.podCarou || []).find((x) => (x.druh === "raid" || x.druh === "gym") && x.poEvoluci);
+      if (!pod) return;
+      const d = document.createElement("div");
+      d.innerHTML = P.atlasDuvody(c) || "";
+      const chip = [...d.querySelectorAll(".dv-pod")].find((e) => e.textContent.indexOf(pod.druh === "gym" ? "Gym " : pod.typ + " ") === 0);
+      if (chip) { out.podCarou = chip.getAttribute("data-tip") || ""; out.podCarouKus = r.pokemon + " " + r.cp; }
+    });
+    // a u držitele slotu, který ho drží až po evoluci, to stojí v seznamu
+    out.drzitel = "";
+    rows.forEach((r) => {
+      if (out.drzitel) return;
+      const d2 = document.createElement("div");
+      d2.innerHTML = P.atlasDuvody(comp[r.id]) || "";
+      const chip2 = [...d2.querySelectorAll(".dv-chip")].find((e) => /po evo/.test(e.textContent)
+        && /(až jako|po evoluci na)/.test(e.getAttribute("data-tip") || ""));
+      if (chip2) out.drzitel = chip2.getAttribute("data-tip");
+    });
+    return out;
+  });
+  check("„Vyvinul jsem ho“ je jedno tlačítko i u Eevee s osmi cíli",
+    s258.tlacitka.filter((t) => /Vyvinul/.test(t)).length === 1
+      && s258.tlacitka.some((t) => t === "Vyvinul jsem ho"),
+    JSON.stringify(s258.tlacitka));
+  check("…po kliknutí se vybírá z evoluční řady v okně (s obrázky)",
+    /Na co jsi ho vyvinul/.test(s258.vyberNadpis) && s258.vyber.length === 8
+      && s258.vyberObrazku === 8 && s258.ulozitSkryte,
+    JSON.stringify({ nadpis: s258.vyberNadpis, vyber: s258.vyber, obrazku: s258.vyberObrazku }));
+  check("…a po výběru se pokračuje běžným oknem s CP",
+    /Vyvinul jsi ho na /.test(s258.poVyberu.nadpis) && s258.poVyberu.ulozit && s258.poVyberu.maCp,
+    JSON.stringify(s258.poVyberu));
+  check("u kusu pod čarou stojí u procenta, že platí až po evoluci",
+    /po evoluci na /.test(s258.podCarou),
+    s258.podCarouKus + " " + s258.podCarou.replace(/<[^>]+>/g, " ").slice(0, 200));
+  check("…a u držitele slotu je to v seznamu taky",
+    /(až jako|po evoluci na) \w/.test(s258.drzitel), s258.drzitel.replace(/<[^>]+>/g, " ").slice(0, 200));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

@@ -540,9 +540,13 @@ const d8 = await p8.evaluate(async () => {
     r: k.getBoundingClientRect() }));
   const verd8 = m.querySelector(".atlas-verdict-first").getBoundingClientRect();
   const utokyRhydon = m.querySelector(".atlas-ident-utoky");
-  out.sestavy = { radku: utokyRhydon ? utokyRhydon.querySelectorAll(".atlas-sestava").length : 0,
-    text: utokyRhydon ? [...utokyRhydon.querySelectorAll(".atlas-sestava")].map((x) => x.textContent.trim()) : [],
-    tipy: utokyRhydon ? [...utokyRhydon.querySelectorAll(".atlas-sestava")].every((x) => !!x.getAttribute("data-tip")) : false,
+  const sestavy = utokyRhydon ? [...utokyRhydon.querySelectorAll(".atlas-sestava")] : [];
+  out.sestavy = { radku: sestavy.length,
+    chipu: sestavy.map((x) => x.querySelectorAll(".d-move").length),
+    barevne: sestavy.every((x) => [...x.querySelectorAll(".d-type")].every((t) => !!t.style.background)),
+    predpony: sestavy.some((x) => /Teď|Po evo/.test(x.textContent)),
+    klice: sestavy.map((x) => x.dataset.sestava),
+    tipy: sestavy.every((x) => !!x.getAttribute("data-tip")),
     prepad: utokyRhydon ? Math.max(0, utokyRhydon.scrollHeight - utokyRhydon.clientHeight) : -1 };
   out.krok = { karty: krok8.map((k) => k.h), vedle: krok8.length >= 2 && krok8.every((k, i) => !i || (Math.abs(k.r.top - krok8[0].r.top) < 2
       && k.r.left >= krok8[i - 1].r.right)),
@@ -570,8 +574,10 @@ await p8.keyboard.press("d");
 await p8.waitForTimeout(600);
 klavesy.push(await pozice());
 await p8.close();
-check("nahoře IV s procentem za tečkou a čísla bez „.0“",
-  d8.identita.some((t) => t === "IV 14 / 15 / 15 · 98 %") && d8.identita.some((t) => /L48$/.test(t)), JSON.stringify(d8.identita));
+// Hodnoty IV jsou v pruzích vedle, v hlavičce je jeden výrazný řádek (Lukáš 19. 9.).
+check("nahoře jeden řádek CP · level · IV procento, čísla bez „.0“",
+  d8.identita.some((t) => /^4\s357 CP · L48 · 98 %$/.test(t)) && !d8.identita.some((t) => /^IV \d/.test(t)),
+  JSON.stringify(d8.identita));
 check("pod pruhy IV už není procento a ve stropu není vysvětlující text", !d8.ivPoznamka && !d8.stropText, JSON.stringify(d8));
 check("šipky a A/D listují detailem (1 → 2 → 3 → 2 → 1)",
   JSON.stringify(klavesy.slice(0, 5).map((t) => t.split(" / ")[0])) === JSON.stringify(["1", "2", "3", "2", "1"]), JSON.stringify(klavesy));
@@ -585,9 +591,10 @@ check("…i v detailu",
 check("útoky a nejlepší sestava jsou v hlavičce a nepřetečou",
   !!d8.utoky && d8.utoky.utoku >= 1 && d8.utoky.tip
     && d8.utoky.prepad === 0 && d8.utoky.vHlavicce, JSON.stringify(d8.utoky));
-check("…u kusu s evolucí jsou v nich obě nejlepší sestavy (teď i po evoluci) a vejdou se",
-  d8.sestavy.radku === 2 && d8.sestavy.tipy && d8.sestavy.prepad === 0
-    && /^Teď/.test(d8.sestavy.text[0]) && /^Po evo/.test(d8.sestavy.text[1]),
+check("…sestavy jsou barevné chipy bez předpony, nic se neopakuje a vejde se to",
+  d8.sestavy.radku >= 1 && d8.sestavy.chipu.every((n) => n >= 2) && d8.sestavy.barevne
+    && !d8.sestavy.predpony && new Set(d8.sestavy.klice).size === d8.sestavy.klice.length
+    && d8.sestavy.tipy && d8.sestavy.prepad === 0,
   JSON.stringify(d8.sestavy));
 check("…a sekce Útoky, Nejlepší sestava a Herní využití dole nejsou",
   ["utoky", "sestavy", "naco", "stats", "proti", "coted"].every((k) => d8.sekceDole.indexOf(k) === -1),
@@ -702,6 +709,11 @@ async function boxKontrola(page) {
         vyuzitiVidet: vidno(".atlas-box-rozbor .atlas-vyuziti"),
         vyuziti: b.querySelectorAll(".atlas-vyuziti .d-role").length,
         // hlavička musí stát v obou stavech stejně (obrázek, jméno, staty)
+        panel: (() => { const e = document.querySelector(".bm-panel"); const r = e.getBoundingClientRect();
+          return [Math.round(r.width), Math.round(r.height)]; })(),
+        // značky musí začínat na stejném místě i u kusu s jedním typem
+        znackaX: (() => { const e = b.querySelector(".detail-title .rarity-chip"); return e ? Math.round(e.getBoundingClientRect().left) : -1; })(),
+        typu: b.querySelectorAll(".detail-title .d-type:not(.atlas-typ-mezera)").length,
         hlavicka: [".atlas-ident-obr", ".atlas-ident-text h2", ".atlas-ident-stats", ".atlas-ident-utoky"]
           .map((s) => { const e = b.querySelector(s); if (!e) return [-1, -1]; const r = e.getBoundingClientRect();
             return [Math.round(r.left), Math.round(r.width)]; }) };
@@ -759,6 +771,14 @@ check("…a hlavička zůstane v obou stavech na stejném místě a ve stejné v
   d10.sbalene.every((x, i) => x.r.hlavicka.every((v, k) =>
     Math.abs(v[0] - d10.rozbalene[i].r.hlavicka[k][0]) <= 4 && Math.abs(v[1] - d10.rozbalene[i].r.hlavicka[k][1]) <= 4)),
   JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r.hlavicka), rozbalene: d10.rozbalene.map((x) => x.r.hlavicka) }));
+check("panel čištění boxu má v každém stavu pevnou velikost",
+  new Set(d10.sbalene.map((x) => x.r.panel.join("x"))).size === 1
+    && new Set(d10.rozbalene.map((x) => x.r.panel.join("x"))).size === 1,
+  JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r.panel), rozbalene: d10.rozbalene.map((x) => x.r.panel) }));
+check("…a značky začínají na stejném místě i u kusu s jedním typem",
+  new Set(d10.sbalene.map((x) => x.r.znackaX)).size === 1
+    && d10.sbalene.some((x) => x.r.typu === 1) && d10.sbalene.some((x) => x.r.typu === 2),
+  JSON.stringify(d10.sbalene.map((x) => [x.r.jmeno, x.r.typu, x.r.znackaX])));
 check("v čištění boxu se neobjeví posuvník (ani rozbalené, 1500×1000)",
   d10.sbalene.every((x) => x.prebytek === 0) && d10.rozbalene.every((x) => x.prebytek === 0),
   JSON.stringify({ sbalene: d10.sbalene.map((x) => x.prebytek), rozbalene: d10.rozbalene.map((x) => x.prebytek) }));

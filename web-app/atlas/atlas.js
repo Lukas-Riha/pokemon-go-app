@@ -99,7 +99,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const cisloKusu=v=>v===''||v==null?'?':(isNaN(Number(v))?String(v):String(Number(v)));
   const ivKusu=id=>{const c=(P.getComputed()||{})[id]||{};const t=c.ivUncertain&&c.ivRange?c.ivRange:(c.ivPct==null?'':Math.round(c.ivPct*100)+' %');return t?' · '+esc(t):''};
   // Hlavička kusu (obrázek, jméno, CP, IV) — stejná v detailu i v čištění boxu.
-  window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}${r.star?' · OZNAČENO ★':''}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}>${esc(r.pokemon)}</h2><p>${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}</p><p>IV ${esc(cisloKusu(r.ivAtk))} / ${esc(cisloKusu(r.ivDef))} / ${esc(cisloKusu(r.ivSta))}${ivKusu(r.id)}</p></div></div>`;
+  window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}${r.star?' · OZNAČENO ★':''}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}>${esc(r.pokemon)}</h2><p class="atlas-ident-radek">${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}${ivKusu(r.id)}</p></div></div>`;
   function openDetail(id,retain=false){const r=P.getRows().find(r=>r.id===id);if(!r)return;if(!retain)previousFocus=document.activeElement;dialogId=id;$('#atlasIdentity').innerHTML=window.AtlasIdentitaHTML(r);$('#atlasModal').hidden=false;P.atlasDetail(id,$('#atlasDetailContent'),closeDetail);document.body.style.overflow='hidden';if(!retain)$('.atlas-drawer-header button').focus();}
   function closeDetail(){if(!dialogId)return;dialogId=null;$('#atlasModal').hidden=true;$('#atlasDetailContent').innerHTML='';document.body.style.overflow='';previousFocus?.focus({preventScroll:true});}
   window.addEventListener('atlas:refresh-detail',()=>{refresh();if(dialogId)openDetail(dialogId,true)});
@@ -400,15 +400,31 @@ globalThis.AtlasBudget = (() => {
     const why=moves?moves.querySelector('.d-why'):null;
     const veta=[stav?stav.textContent.trim():'',why?why.textContent.trim():''].filter(Boolean).join(' ');
     if(why)why.remove();
-    if(moves)box.append(moves);
+    if(moves&&row.fastMove&&row.charged1)box.append(moves);
     if(sestavySekce){
+      // Sestavy jako barevné chipy útoků (stejně jako útoky kusu), bez předpony
+      // „Teď / Po evo" — co je co, řekne bublina. Řádek, který jen opakuje
+      // útoky kusu, se vynechá.
+      const cisteJmeno=s=>String(s).replace(/\s*\(Elite TM\)\s*/i,'').trim();
+      const chip=(jmeno,rychly)=>{const cist=cisteJmeno(jmeno);const m=rychly?(P.fastByNameOf?P.fastByNameOf(cist):null):(P.chargedByNameOf?P.chargedByNameOf(cist):null);
+        const el=document.createElement('span');el.className='d-move';
+        const typ=document.createElement('span');typ.className='d-type';
+        if(m){const barva=(P.typeColors()||{})[m.type];if(barva)typ.style.background=barva;typ.innerHTML=(P.typIkona?P.typIkona(m.type):'')+m.type}else typ.textContent='?';
+        const jm=document.createElement('span');jm.className='d-move-jm';jm.textContent=jmeno;
+        el.append(typ,jm);return el};
+      const utokyKusu=[row.fastMove,row.charged1].filter(Boolean).map(cisteJmeno).join(' + ').toLowerCase().trim();
+      const uz=new Set(utokyKusu?[utokyKusu]:[]);
       [...sestavySekce.querySelectorAll('.d-sestavy > div')].forEach(d=>{
         const h=(d.querySelector('.d-role-h')||{}).textContent||'',v=(d.querySelector('.d-role-v')||{}).textContent||'',pop=(d.querySelector('.d-role-p')||{}).textContent||'';
+        if(!v)return;
+        const klic=v.split(' + ').map(cisteJmeno).join(' + ').toLowerCase().trim();
+        if(uz.has(klic))return;
+        uz.add(klic);
         const radek=document.createElement('div');radek.className='atlas-sestava';
-        radek.setAttribute('data-tip',(h?h+' — ':'')+pop);
-        const kdy=document.createElement('small');kdy.textContent=/^Po evoluci/.test(h)?'Po evo':'Teď';
-        const kus=document.createElement('b');kus.textContent=v;
-        radek.append(kdy,kus);box.append(radek);
+        radek.setAttribute('data-tip',(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
+        radek.dataset.sestava=klic;
+        v.split(' + ').forEach((jm,i)=>radek.append(chip(jm.trim(),i===0)));
+        box.append(radek);
       });
     }
     if(veta)box.setAttribute('data-tip',veta);
@@ -453,9 +469,14 @@ globalThis.AtlasBudget = (() => {
      const obsah=document.createElement('div');obsah.className='atlas-box-obsah';host.append(obsah);
      body.append(host);
      P.atlasDetail(polozka.row.id,obsah);
+     if(P.srovnejDuvody)requestAnimationFrame(()=>P.srovnejDuvody(host));
      // Evoluční řada je v boxu vlastní sloupec panelu — vedle hlavičky
      // i obsahu, aby mohla být velká a šla odshora až dolů.
      const evo=obsah.querySelector('.atlas-evolution-column');if(evo)host.append(evo);
+     // Místo pro dva typy je vždycky stejné, jinak značky poskakují podle toho,
+     // jestli má kus jeden typ nebo dva.
+     const titulek=obsah.querySelector('.detail-title');
+     if(titulek){const typu=titulek.querySelectorAll('.d-type').length;for(let i=typu;i<2;i++){const mezera=document.createElement('span');mezera.className='d-type atlas-typ-mezera';mezera.setAttribute('aria-hidden','true');mezera.textContent='—';titulek.insertBefore(mezera,titulek.children[typu]||null)}}
    }finally{boxPrestavba=false}
  }
  const bmBody=$('#bmBody');

@@ -157,6 +157,19 @@
 > takže mají v dlaždici obě 20 px. Tvoje rozložení dlaždic zůstalo.
 > V čištění boxu obsah (verdikt, značky, karty, Ligy) teď sahá až k evoluční
 > řadě a jméno v hlavičce se smí zúžit, ať se útoky vejdou celé.
+>
+> **Patnácté kolo 19. 9. (Claude)** — box má pevnou velikost: panel 780 px
+> sbalený a 980 px rozbalený (`min(…,100%)`), hlavička 190 px, řádek značek
+> 40 px, verdikt 104 px, karty využití 58 px; evoluce se dotahuje do zbytku.
+> Štítky verdiktu se v boxu neskládají do víc řádků — `srovnejDuvody` je
+> schová do „+N". Engine měl na rozboru `max-width:1180px`, proto obsah
+> nesahal k evoluční řadě (v boxu je přebitý). Značky mají pevné místo:
+> chybějící typ doplní `.atlas-typ-mezera`. Sestavy útoků jsou barevné chipy
+> (bez předpony „Teď/Po evo", duplicity se nevypisují). V hlavičce je jeden
+> výrazný řádek `CP · L · IV %` (hodnoty IV zůstaly v pruzích).
+> V enginu: „Vyvinul jsem ho" je jedno tlačítko a cíl se vybírá v okně
+> (dlaždice z evoluční řady), u procent platných až po evoluci stojí
+> „po evoluci na X", a přibylo API `fastByNameOf`.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

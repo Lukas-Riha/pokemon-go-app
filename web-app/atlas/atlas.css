@@ -219,28 +219,22 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section{margin:6px 0}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-sekce-nadpis{padding:8px 12px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab th,.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td{padding:4px 8px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:34px;height:34px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:26px;height:26px}
 body.atlas-box-otevreno{overflow:hidden}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-identity{padding:8px 12px;margin-bottom:8px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti .d-role{padding:6px 10px;min-height:0}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:8px}
 .atlas-test .box-mode.siroky .bm-actions .bm-btn{padding:10px}
-.atlas-test .box-mode.siroky #bmHint{font-size:10px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-sekce-nadpis{padding:6px 12px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab th,.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td{padding:3px 8px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-columns{gap:10px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section>div,.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section>table{margin:8px}
 /* U větvené řady (Eevee) v rozbaleném boxu stačí obrázky — jména jsou v bublině */
-.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus b{display:none}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus{padding:1px 2px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:6px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .detail-title{padding:4px 0}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section{margin:4px 0}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{margin:6px 0 0}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti .d-role{padding:5px 10px}
 .atlas-test .box-mode.siroky .bm-actions{padding-top:6px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus u{display:none}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:4px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{margin-top:4px}
 /* Claude 17. 9. (12): v rozbaleném boxu větší obrázek, staty blíž ke jménu a pořádně velká evoluční řada; přechod plynule */
@@ -256,10 +250,6 @@ body.atlas-box-otevreno{overflow:hidden}
 .atlas-test .atlas-box-rozbor .atlas-ident-text p{font-size:13px;margin:3px 0}
 .atlas-test .atlas-box-rozbor .atlas-ident-stats{margin-left:14px;grid-template-columns:repeat(3,minmax(130px,170px))}
 .atlas-test .atlas-box-rozbor .atlas-ident-utoky{margin-left:10px;flex:0 1 230px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus img{width:60px;height:60px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{font-size:12px;padding:4px 8px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-kus b{display:block;font-size:12px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus img{width:34px;height:34px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus b{font-size:10px}
 .atlas-test .atlas-box-rozbor .atlas-krok .d-role-p{font-size:11px;white-space:normal}
 /* Claude 17. 9. (13): evoluční řada jako vlastní sloupec panelu odshora dolů; hlavička se při rozbalení nemění */
@@ -345,3 +335,38 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
    (selektor výš je teď potomkový, .toolbar je v enginu jen jedna). Značky v dlaždici mají stejnou výšku, písmo
    a zaoblení jako typové štítky — Lukášovo pravidlo „vlastní štítky vypadají jako typy, jen jinou barvou". */
 .atlas-test #atlasRoster .atlas-tile-tags .atlas-roster-type,.atlas-test #atlasRoster .atlas-tile-tags .atlas-roster-tag{box-sizing:border-box;display:inline-flex;align-items:center;height:20px;line-height:16px;padding:2px 7px;font-size:10px;border-radius:11px}
+/* Claude 19. 9. (2): obsah boxu až k evoluční řadě, větší evoluce (a při rozbalení ještě větší),
+   tabulka lig na střed, pevné místo pro dva typy, výraznější řádek CP · L · IV. */
+.atlas-test .atlas-box-rozbor .detail-main{max-width:none;width:100%}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:84px;height:84px}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:46px;height:46px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:104px;height:104px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:58px;height:58px}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus b{font-size:13px}
+.atlas-test .atlas-box-rozbor .d-ligy-tab td,.atlas-test .atlas-box-rozbor .d-ligy-tab th{text-align:center;vertical-align:middle}
+.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{justify-content:center;align-items:center;text-align:center}
+.atlas-test .atlas-box-rozbor .d-ligy-tab td:first-child{text-align:center}
+.atlas-test .atlas-box-rozbor .detail-title .atlas-typ-mezera{visibility:hidden}
+.atlas-test .atlas-box-rozbor .detail-title .d-type{min-width:92px;justify-content:center}
+.atlas-ident-text .atlas-ident-radek{font-size:17px;font-weight:650;color:var(--text-primary);letter-spacing:.01em}
+.atlas-test .atlas-box-rozbor .atlas-ident-text .atlas-ident-radek{font-size:18px}
+/* Sestavy v útocích jsou chipy jako útoky kusu; boxy v hlavičce jsou stejně vysoké */
+.atlas-ident-utoky .atlas-sestava{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.atlas-ident-utoky .atlas-sestava .d-move{margin:0;font-size:11px;gap:5px}
+.atlas-ident-utoky .atlas-sestava .d-move .d-type{font-size:10px;padding:1px 7px}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity{align-items:stretch}
+.atlas-test .atlas-box-rozbor .atlas-ident-obr{align-self:center}
+/* Řádek CP · L · IV se nesmí lámat */
+.atlas-test .atlas-box-rozbor .atlas-ident-text{flex:1 1 220px;min-width:200px}
+.atlas-ident-text .atlas-ident-radek{white-space:nowrap}
+/* Claude 19. 9. (3): štítky verdiktu v boxu na jeden řádek („+N"), ať má panel pořád stejnou výšku */
+.atlas-test .atlas-box-rozbor .d-duvody .dv-radek{flex-wrap:nowrap;overflow:hidden}
+/* Claude 19. 9. (4): pevná velikost panelu i bloků — mezi kusy se nesmí nic hýbat */
+.atlas-test .box-mode:not(.siroky) .bm-panel{height:min(780px,100%)}
+.atlas-test .box-mode.siroky .bm-panel{height:min(980px,100%)}
+.atlas-test .atlas-box-rozbor>.atlas-detail-identity{height:190px}
+.atlas-test .atlas-box-rozbor .detail-title{height:40px;min-height:0;overflow:hidden}
+.atlas-test .atlas-box-rozbor .atlas-verdict-radek{height:104px;min-height:0}
+.atlas-test .atlas-box-rozbor .atlas-vyuziti .d-role{height:58px;min-height:0;overflow:hidden}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column{overflow:hidden}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky{overflow:hidden}

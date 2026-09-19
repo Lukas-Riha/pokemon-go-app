@@ -1473,6 +1473,15 @@
     border: 1px solid var(--border); background: var(--input-bg);
     color: var(--text-secondary); }
   .hra-btn:hover { border-color: var(--status-good); color: var(--text-primary); }
+  /* Výběr cíle evoluce: dlaždice s obrázkem, stejné jako v evoluční řadě. */
+  .hra-vyber { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px; }
+  .hra-vyber-kus { display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 10px 8px; border: 1px solid var(--grid); border-radius: 10px; cursor: pointer;
+    background: var(--surface-1); color: var(--text-primary); font: inherit; }
+  .hra-vyber-kus:hover { border-color: var(--status-good); }
+  .hra-vyber-kus img { width: 64px; height: 64px; object-fit: contain; }
+  .hra-vyber-kus b { font-size: 13px; }
   .d-evo-kus.evo-klikaci { cursor: pointer; }
   .d-evo-kus.evo-klikaci:hover { outline: 2px solid var(--status-good); }
   .dmax-prepinac, .cute-prepinac, .shiny-prepinac, .shadow-prepinac { cursor: pointer; font: inherit;
@@ -3663,7 +3672,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-19 19:12";
+  var BUILD = "2026-09-19 23:29";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -7477,7 +7486,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         k.b.podCarou.push({ druh: "raid", typ: typ, silou: poradi,
           poradi: k.prijat ? poradi : Math.max(poradi, slotu + 1), celkem: slotu, pct: k.pct,
           jmeno: k.b.row.pokemon, cp: k.b.row.cp || "",
-          poEvoluci: !!k.poEvoluci, duvod: k.prijat ? "plno" : "kopie" });
+          poEvoluci: !!k.poEvoluci, jako: k.jako || "", duvod: k.prijat ? "plno" : "kopie" });
       });
       kand.slice(0, slotu).forEach(function (k, i) {
         k.b.sloty.push({
@@ -7703,9 +7712,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var prijat = !!prijatGym[b.row.id];
       var poradi = prijat ? ++poziceGym : poziceGym + 1;
       if (prijat && poradi <= SLOTU_GYM) return;
+      var gymPoEvo = !!(b.gymRole && b.gymRole.poEvoluci);
       b.podCarou.push({ druh: "gym", typ: "Gym", silou: poradi,
         poradi: prijat ? poradi : Math.max(poradi, SLOTU_GYM + 1), celkem: SLOTU_GYM,
         jmeno: b.row.pokemon, cp: b.row.cp || "",
+        poEvoluci: gymPoEvo,
+        jako: gymPoEvo && b.dex && b.dex.finalKey ? ((dexByKey(b.dex.finalKey) || {}).name || "") : "",
         pct: b.gymPct || 0, duvod: prijat ? "plno" : "kopie" });
     });
     gymKand.slice(0, SLOTU_GYM).forEach(function (b, i) {
@@ -12161,6 +12173,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         tip += '<ol class="tip-seznam tip-pod"><li value="' + x.poradi + '" class="tip-ten"><b>'
           + escHtml(x.jmeno || "") + "</b>" + (x.cp ? " " + escHtml(String(x.cp)) + " CP" : "")
           + " <em>" + Math.round(x.pct * 100) + "\u00a0%</em>"
+          // Procento platí až pro vyvinutou formu — bez téhle poznámky to
+          // vypadá, že tolik umí kus, jak je teď.
+          + (x.poEvoluci ? ' <span class="tip-znak">po evoluci na '
+              + escHtml(x.jako || "vyvinutou formu") + "</span>" : "")
           + ' <span class="tip-znak">← tenhle kus</span></li></ol>';
         if (x.duvod === "kopie") {
           var strop = Math.max(1, getSettings().keepCopies || 1);
@@ -13894,10 +13910,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    */
   function hraPruhHtml(r) {
     var tl = [];
-    evoKroky(r).forEach(function (e) {
-      tl.push('<button type="button" class="hra-btn" data-hra="evoluce" data-cil="'
-        + escHtml(e.jmeno) + '">Vyvinul jsem ho na ' + escHtml(e.jmeno) + "</button>");
-    });
+    // Jedno tlačítko bez ohledu na počet cílů. U Eevee jich bylo osm vedle
+    // sebe a lišta se roztáhla přes celou hlavičku — na co se vyvinul,
+    // se vybere až v okně z evoluční řady.
+    var kroky = evoKroky(r);
+    if (kroky.length) {
+      tl.push('<button type="button" class="hra-btn" data-hra="evoluce"'
+        + (kroky.length === 1 ? ' data-cil="' + escHtml(kroky[0].jmeno) + '"' : "")
+        + ">Vyvinul jsem ho</button>");
+    }
     tl.push('<button type="button" class="hra-btn" data-hra="vylepseni">'
       + "Vylepšil jsem ho</button>");
     if (r.forma === "Shadow") {
@@ -13938,6 +13959,32 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var jmeno = r.pokemon || "tenhle kus";
     hraStav("");
 
+    if (akce === "evoluce" && !cil) {
+      // Výběr z evoluční řady: dlaždice se stejnými obrázky jako v rozboru.
+      var moznosti = evoKroky(r);
+      if (!moznosti.length) { hraKus = null; hraAkce = null; return false; }
+      if (moznosti.length === 1) { cil = moznosti[0].jmeno; }
+      else {
+        nadpis.textContent = "Na co jsi ho vyvinul?";
+        popis.textContent = "Vyber, co z něj ve hře vzniklo — CP se pak dopočítá.";
+        telo.innerHTML = '<div class="hra-vyber">' + moznosti.map(function (e) {
+          var d = dexByKey(e.klic) || dexEntry(e.jmeno);
+          return '<button type="button" class="hra-vyber-kus" data-evo-cil="'
+            + escHtml(e.jmeno) + '">' + obrazekHtml(e.jmeno, d, "")
+            + "<b>" + escHtml(e.jmeno) + "</b></button>";
+        }).join("") + "</div>";
+        document.getElementById("hraUlozit").hidden = true;
+        document.getElementById("hraBox").hidden = false;
+        hraKus = id; hraAkce = akce;
+        Array.prototype.forEach.call(telo.querySelectorAll("[data-evo-cil]"), function (b) {
+          b.addEventListener("click", function () {
+            hraOtevri(id, "evoluce", b.getAttribute("data-evo-cil"));
+          });
+        });
+        return true;
+      }
+    }
+    document.getElementById("hraUlozit").hidden = false;
     if (akce === "evoluce") {
       if (!cil || !dexEntry(cil)) { hraKus = null; hraAkce = null; return false; }
       var pres = (evoCile(r).filter(function (e) { return e.jmeno === cil; })[0] || {}).pres || [];
@@ -25277,6 +25324,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     },
     fastMoveAt: fastMove,
     chargedMoveAt: chargedMove,
+    fastByNameOf: fastByName,
     chargedByNameOf: chargedByName,
     movesData: function () { return MOVES; },
     movesetRatingOf: movesetRating,
