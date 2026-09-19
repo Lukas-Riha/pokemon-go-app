@@ -291,3 +291,48 @@ body.atlas-box-otevreno{overflow:hidden}
 .atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar-track{min-width:44px}
 .atlas-test .atlas-box-rozbor .atlas-ident-stats{grid-template-columns:repeat(3,minmax(150px,190px))}
 @media(max-width:900px){.atlas-test .atlas-box-rozbor{grid-template-columns:minmax(0,1fr);grid-template-areas:"hlavicka" "obsah" "evoluce"}}
+/* Astra: compact responsive roster tiles, detail remains the shared drawer. */
+.atlas-test #atlasRoster{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:12px;border:0;overflow:visible;background:transparent;padding:3px;margin-top:16px}
+.atlas-test:not(.atlas-compact) #atlasRoster{display:none}
+#atlasRoster>.atlas-pagination,#atlasRoster>.atlas-empty,#atlasRoster>.atlas-small-note{grid-column:1/-1}
+.atlas-test #atlasRoster .atlas-roster-tile{position:relative;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:12px;min-width:0;width:100%;min-height:218px;height:auto;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--surface-1);box-shadow:0 3px 10px #00000010;text-align:left;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.atlas-test #atlasRoster .atlas-roster-tile:hover{transform:translateY(-2px);border-color:var(--series-1);box-shadow:0 8px 18px #00000024}
+.atlas-test #atlasRoster .atlas-roster-tile:focus-visible{outline:3px solid var(--series-1);outline-offset:2px}
+#atlasRoster .atlas-tile-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;min-height:35px}
+#atlasRoster .atlas-tile-heading>b{font-size:14px;line-height:1.25;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#atlasRoster .atlas-num{display:flex;align-items:baseline;gap:4px;flex-shrink:0;font-size:17px;white-space:nowrap}
+#atlasRoster .atlas-num small{display:inline;margin:0;font-size:10px}
+#atlasRoster .atlas-tile-star{color:#edbc41;font-size:12px}
+.atlas-test #atlasRoster .atlas-poke{display:flex;gap:10px;align-items:center;min-height:76px}
+.atlas-test #atlasRoster .atlas-poke img{width:70px;height:70px;flex:0 0 70px;background:transparent;object-fit:contain;border-radius:0}
+#atlasRoster .atlas-tile-info{min-width:0;display:flex;flex-direction:column;gap:9px}
+#atlasRoster .atlas-tile-tags{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+#atlasRoster .atlas-tile-tags .atlas-roster-type,#atlasRoster .atlas-tile-tags .atlas-roster-tag{margin:0!important}
+#atlasRoster .atlas-tile-stats{display:flex;gap:12px;align-items:baseline;font-size:12px;font-variant-numeric:tabular-nums;color:var(--text-secondary)}
+#atlasRoster .atlas-tile-stats b{font-size:14px;color:var(--text-primary)}
+.atlas-test #atlasRoster .atlas-decision{margin-top:auto;display:block;min-width:0;padding-right:16px}
+#atlasRoster .atlas-decision>.atlas-pill{margin-bottom:5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#atlasRoster .atlas-decision .dv-radek{width:100%;max-width:100%;min-width:0}
+#atlasRoster .atlas-decision>small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+#atlasRoster .atlas-arrow{position:absolute;right:12px;bottom:17px}
+#atlasRoster .atlas-pagination{padding:12px 0}
+@media(max-width:600px){.atlas-test #atlasRoster{grid-template-columns:1fr;gap:10px}.atlas-test #atlasRoster .atlas-roster-tile{min-height:204px;height:auto}.atlas-test #atlasRoster .atlas-poke img{width:64px;height:64px;flex-basis:64px}}
+@keyframes atlas-tile-drawer-in{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes atlas-tile-backdrop-in{from{opacity:0}to{opacity:1}}
+#atlasModal:not([hidden])>.atlas-drawer{animation:atlas-tile-drawer-in .22s ease-out}
+#atlasModal:not([hidden])>.atlas-backdrop{animation:atlas-tile-backdrop-in .18s ease-out}
+@media(prefers-reduced-motion:reduce){.atlas-test #atlasRoster .atlas-roster-tile{transition:none}.atlas-test #atlasRoster .atlas-roster-tile:hover{transform:none}#atlasModal:not([hidden])>.atlas-drawer,#atlasModal:not([hidden])>.atlas-backdrop{animation:none}}
+/* Stable metadata positions and a continuous roster viewport. */
+#atlasRoster .atlas-tile-heading{align-items:baseline;min-height:24px}
+#atlasRoster .atlas-tile-heading>b{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;line-height:1.4}
+.atlas-test #atlasRoster .atlas-poke{align-items:flex-start;min-height:92px}
+#atlasRoster .atlas-tile-info{gap:8px;align-self:stretch;justify-content:flex-start;padding-top:4px}
+#atlasRoster .atlas-tile-stats{flex-shrink:0;height:20px;white-space:nowrap}
+#atlasRoster .atlas-tile-tags{align-content:flex-start;align-items:flex-start;min-height:39px;line-height:18px}
+body.atlas-compact[data-atlas-view=roster]{overflow:hidden}
+body.atlas-compact[data-atlas-view=roster] .card.roster{height:var(--atlas-roster-height,65dvh);min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.atlas-roster-fixed-controls{display:contents}
+body.atlas-compact[data-atlas-view=roster] .atlas-roster-fixed-controls{display:block;flex:0 1 auto;min-height:0;max-height:52%;overflow:auto;scrollbar-width:thin}
+body.atlas-compact[data-atlas-view=roster] #atlasRoster{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;align-content:start;scrollbar-gutter:stable;overscroll-behavior:contain;padding:4px 7px 12px 3px;scroll-padding:5px}
+body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-height:220px}
+@media(prefers-reduced-motion:reduce){#atlasRoster{scroll-behavior:auto}}

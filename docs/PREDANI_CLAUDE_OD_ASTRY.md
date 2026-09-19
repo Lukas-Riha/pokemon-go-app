@@ -68,6 +68,16 @@ Opraven také bod 6 z předání: capture tooltip neblokuje klik na .evo-klikaci
 
 Cílené testy: navrh-aplikace/production-test/test-overview-events.mjs (izolované profily, skutečný roster a syntetické události). Pokrývá kalendář, oddělení Raid/Max, vyloučení neznámých termínů, detail, Escape, týdny, shodu pořadí investic, mobil a prázdné stavy. Screenshots prehled-akce-pc.png / prehled-akce-mobil.png. Obrázky při offline testu závisí na lokálně dostupném artu; síťové obrázky jsou v testu blokovány.
 
+## A-007 — Kompaktní dlaždice rosteru (18. 9.)
+
+Na přímé zadání Lukáše: stručný seznam změněn na responzivní dlaždice (1440 px čtyři sloupce, 1920 px pět; mobil jeden). Krok/cena/chybějící údaje odstraněny z rowHTML; úplná tabulka ani detail se nemění. Důvody nadále vykresluje atlasDuvody a měří srovnejDuvody, přidaný ResizeObserver aktualizuje +N po změně šířky. Hvězdička je stávající indikátor, nikoli nové editační tlačítko. Klik/klávesnice otevírají stejný detail, CSS přidává jemný vstupní přechod s respektováním prefers-reduced-motion.
+
+Změny JS pouze v rowHTML, odstranění hlavičky staré řádkové tabulky a ResizeObserver. Zdroj nebyl přeformátován. Existující necommitnuté CSS opravy čištění boxu zachovány. Bez deploy/commitu/pushe.
+
+Test dlaždic: navrh-aplikace/production-test/test-roster-tiles.mjs — 1920/1440/768/390/360 px, bez přetečení, 24 kusů na stránce, stránkování, původní detail, omezení animací, žádné chyby JS. Náhledy screenshots/roster-dlazdice-1440.png a roster-dlazdice-390.png.
+
+Pro Claude: zachovat nové rozložení i absenci kroku/ceny/chybějících údajů ve stručných kartách při dalších funkčních úpravách.
+
 ## Starší nečíslovaný kontext (archiv)
 
 Stav: 9. 9. 2026, po přečtení PREDANI_ASTRA.md a ATLAS_KONTRAKT.md.
