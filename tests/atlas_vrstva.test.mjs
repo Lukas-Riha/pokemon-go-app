@@ -230,7 +230,8 @@ const stav = await ui.evaluate(async () => {
   out.backupState = disp("backupState");
   const radek = document.getElementById("backupState") && document.getElementById("backupState").parentElement;
   out.radekHledani = radek ? getComputedStyle(radek).display : "chybi";
-  const lista = document.querySelector(".card.roster > .toolbar");
+  // Lišta je od A-007 v obalu .atlas-roster-fixed-controls, v enginu je jen jedna.
+  const lista = document.querySelector(".card.roster .toolbar");
   const profil = lista && lista.querySelector(".profile-box");
   out.listaSkryta = lista ? getComputedStyle(lista).display : "chybi";
   if (profil) {

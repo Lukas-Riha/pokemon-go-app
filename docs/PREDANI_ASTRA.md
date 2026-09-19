@@ -144,6 +144,19 @@
 > hlavička ani karty nikam nehnou; test to hlídá porovnáním pozic a šířek
 > hlavičky v obou stavech (tolerance 4 px). Staty/IV/strop jsou užší
 > (`minmax(150px,190px)`) a pruhy mají `min-width`, ať nezmizí.
+>
+> **19. 9. (Claude) — k tvému A-007:** tvoje dlaždice rosteru jsem našel
+> necommitnuté a commitnul je beze změny samostatně (`a9c364b`), obnovu dat
+> taky zvlášť (`2941c02`). Připomínka podmínky nahoře: hotovou práci prosím
+> commitni hned, ať se naše změny nepletou v jednom souboru.
+> Dvě věci po A-007 jsem opravil v bloku „Claude 19. 9.": (1) skrytí prázdné
+> lišty pod rosterem mělo selektor `.card.roster>.toolbar`, který po přesunu
+> do `.atlas-roster-fixed-controls` přestal platit — je teď potomkový;
+> (2) typy a značky v dlaždici měly různou výšku (22 vs 18 px) — Lukášovo
+> pravidlo je, že vlastní značky vypadají přesně jako typy, jen jinou barvou,
+> takže mají v dlaždici obě 20 px. Tvoje rozložení dlaždic zůstalo.
+> V čištění boxu obsah (verdikt, značky, karty, Ligy) teď sahá až k evoluční
+> řadě a jméno v hlavičce se smí zúžit, ať se útoky vejdou celé.
 
 Pro toho, kdo drží vzhledovou vrstvu. Napsáno 9. 9. 2026 po prohlídce
 `web-app/pokemon_tracker_TEST.html` (31,75 MB, 22 825 řádků).

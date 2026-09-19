@@ -88,7 +88,7 @@ body:has(#atlasEventDialog[open]){overflow:hidden}.atlas-event-card{background:l
 /* Claude 17. 9.: seznam utoku (uv-seznam) musi byt nad oknem detailu (#atlasModal ma 1500). */
 .uv-seznam{z-index:1600!important}
 /* Claude 17. 9.: prazdna lista pod rosterem - zbyl v ni jen skryty vyber profilu; ukaze se, az se profil otevre. */
-.atlas-test .card.roster>.toolbar:not(:has(.profile-box:not([hidden]))){display:none!important}
+.atlas-test .card.roster .toolbar:not(:has(.profile-box:not([hidden]))){display:none!important}
 /* Claude 17. 9. (2): detail — verdikt užší, vedle něj doporučený krok; staty vedle sebe; bez popisku řazení */
 .atlas-mode{justify-content:flex-end}
 .atlas-verdict-radek{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:stretch;margin:0 0 16px}
@@ -291,6 +291,11 @@ body.atlas-box-otevreno{overflow:hidden}
 .atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar-track{min-width:44px}
 .atlas-test .atlas-box-rozbor .atlas-ident-stats{grid-template-columns:repeat(3,minmax(150px,190px))}
 @media(max-width:900px){.atlas-test .atlas-box-rozbor{grid-template-columns:minmax(0,1fr);grid-template-areas:"hlavicka" "obsah" "evoluce"}}
+/* Evoluce je v boxu vlastní sloupec panelu, takže obsah nesmí držet místo po ní */
+.atlas-test .atlas-box-rozbor .atlas-detail-columns{grid-template-columns:minmax(0,1fr)}
+/* Jméno v boxu se smí zúžit, ať se útoky vejdou celé (jinak je pravý okraj uříznutý) */
+.atlas-test .atlas-box-rozbor .atlas-ident-text{flex:1 1 180px;min-width:150px}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity{flex-wrap:nowrap}
 /* Astra: compact responsive roster tiles, detail remains the shared drawer. */
 .atlas-test #atlasRoster{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:12px;border:0;overflow:visible;background:transparent;padding:3px;margin-top:16px}
 .atlas-test:not(.atlas-compact) #atlasRoster{display:none}
@@ -336,3 +341,7 @@ body.atlas-compact[data-atlas-view=roster] .atlas-roster-fixed-controls{display:
 body.atlas-compact[data-atlas-view=roster] #atlasRoster{flex:1 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;align-content:start;scrollbar-gutter:stable;overscroll-behavior:contain;padding:4px 7px 12px 3px;scroll-padding:5px}
 body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-height:220px}
 @media(prefers-reduced-motion:reduce){#atlasRoster{scroll-behavior:auto}}
+/* Claude 19. 9.: po přesunu ovládání rosteru do .atlas-roster-fixed-controls (A-007) platí skrytí prázdné lišty dál
+   (selektor výš je teď potomkový, .toolbar je v enginu jen jedna). Značky v dlaždici mají stejnou výšku, písmo
+   a zaoblení jako typové štítky — Lukášovo pravidlo „vlastní štítky vypadají jako typy, jen jinou barvou". */
+.atlas-test #atlasRoster .atlas-tile-tags .atlas-roster-type,.atlas-test #atlasRoster .atlas-tile-tags .atlas-roster-tag{box-sizing:border-box;display:inline-flex;align-items:center;height:20px;line-height:16px;padding:2px 7px;font-size:10px;border-radius:11px}
