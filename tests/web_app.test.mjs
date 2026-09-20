@@ -16871,6 +16871,88 @@ try {
       && s260.pvp.text.length <= 46,
     JSON.stringify(s260.pvp));
 
+  // ---------------------------------------------------------------- 261
+  // Vylepšený je jen kus, kterému se změnilo CP nebo level. Shoda podle IV
+  // hlásila jako vylepšení i opakovaný sken téhož kusu („41 → 41 CP").
+  // A nabídka vrácení puštěných kusů musí platit jako celek — dva kusy se
+  // nesmí nabídnout na jedno volné místo.
+  console.log("\n261) Import: vylepseni jen pri zmene, vraceni jako celek");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s261 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    // Blok běží po ostatních, takže roster ještě drží jejich kusy.
+    P.setRows([]);
+    await new Promise((r) => setTimeout(r, 300));
+    const NL = String.fromCharCode(10);
+    const hlava = "Scan date,Name,Level,CP,HP,ØATT IV,ØDEF IV,ØHP IV,min IV%,ØIV%,max IV%,"
+      + "Fast move,Special move,Height (cm),Weight (g),Form,Dynamax";
+    const radek = (jm, lvl, cp, v, w) => ["8/20/26 7:28:29", jm, lvl, cp, 100, 10, 10, 10, 100, 100, 100,
+      "Tackle", "Body Slam", v, w, "", 0].join(",");
+    const csv = (r) => hlava + NL + r.join(NL);
+    const kusy = [radek("Excadrill", 5, 41, 70, 4000), radek("Rookidee", 6, 59, 20, 800),
+      radek("Cubone", 9, 143, 40, 6500)];
+    const hlaseni = [];
+    const puvodniAlert = window.alert;
+    window.alert = (t) => hlaseni.push(String(t));
+    P.importText(csv(kusy));
+    P.finishImport("merge");
+    await new Promise((r) => setTimeout(r, 400));
+    // tentýž sken podruhé — nic se nezměnilo
+    P.importText(csv(kusy));
+    P.finishImport("merge");
+    await new Promise((r) => setTimeout(r, 400));
+    // a teď jeden kus opravdu vylepšený
+    const zmena = [radek("Excadrill", 5, 41, 70, 4000), radek("Rookidee", 6, 59, 20, 800),
+      radek("Cubone", 15, 260, 40, 6500)];
+    P.importText(csv(zmena));
+    P.finishImport("merge");
+    await new Promise((r) => setTimeout(r, 400));
+    window.alert = puvodniAlert;
+    const cislo = (t) => {
+      const m = /Z toho (\d+) poznáno jako vylepšených/.exec(t || "");
+      return m ? Number(m[1]) : 0;
+    };
+    return { stejny: cislo(hlaseni[1]), vylepseny: cislo(hlaseni[2]),
+      pocet: P.getRows().length, hlaseni: hlaseni.length };
+  });
+  check("opakovaný sken téhož kusu se nehlásí jako vylepšení",
+    s261.hlaseni === 3 && s261.stejny === 0 && s261.pocet === 3, JSON.stringify(s261));
+  check("…a skutečná změna CP se jako vylepšení pozná",
+    s261.vylepseny >= 1, JSON.stringify(s261));
+
+  const s261b = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    // Osm kusů téhož druhu: do rozpočtu se jich vejde jen část, takže se po
+    // puštění nabízí vrácení — ale jen tolik, kolik se jich vejde najednou.
+    const rows = [];
+    for (let i = 0; i < 8; i++) {
+      rows.push({ pokemon: "Nickit", cp: 100 - i * 5, level: 10, ivAtk: 15 - i, ivDef: 14, ivSta: 14 });
+    }
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 900));
+    P.boxOtevrit();
+    await new Promise((r) => setTimeout(r, 500));
+    for (let i = 0; i < 6; i++) {
+      document.getElementById("bmDrop").click();
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    const ids = P.boxVraceni ? P.boxVraceni() : [];
+    const out = { nabidnuto: ids.length };
+    Array.prototype.forEach.call(document.querySelectorAll("#bmVraceni [data-vratit]"),
+      (b) => b.click());
+    await new Promise((r) => setTimeout(r, 600));
+    const comp = P.getComputed();
+    out.poVraceni = ids.map((id) => (comp[id] || {}).keep || "?");
+    P.boxZavritNatvrdo();
+    return out;
+  });
+  check("nabídnuté vrácení platí jako celek — po vrácení nikdo z nich zase nevypadne",
+    s261b.nabidnuto === 0 || s261b.poVraceni.every((v) => !/Zahodit/i.test(v)),
+    JSON.stringify(s261b));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

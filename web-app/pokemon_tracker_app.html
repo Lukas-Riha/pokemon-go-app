@@ -4235,6 +4235,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // Kdo se do ligy nevešel, ač druh v limitu pořadí je — po lize, nejlepší
   // druh první. Bublina z toho odpoví na „proč mám v LC jen šest kusů".
   var ligaPodCarou = {};
+  var ligaPoradiVse = {};
   // Pořadí Dmax kusů v Max Battle — všichni kandidáti po typech a tank, ne
   // jen ti se slotem. Bublina štítku „Dynamax" z toho ukáže pořadí ve všech
   // typech, kde kus figuruje.
@@ -7519,6 +7520,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var LIGY_VSE = LEAGUES.map(function (l) { return { label: l.label, nazev: l.nazev }; })
       .concat([{ label: "ML", nazev: "Master League" }]);
     ligaPodCarou = {};
+    ligaPoradiVse = {};
     LIGY_VSE.forEach(function (lg) {
       var podleDruhu = {};
       base.forEach(function (b) {
@@ -7646,6 +7648,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // by rezerva box zaplnila průměrem.
       var celkemLiga = SLOTU_NA_LIGU + (s.ligaRezerva || 0);
       var obsazeno = 0;
+      // Pořadí mezi všemi kusy, co o tu ligu soupeří — do bubliny na konec,
+      // aby bylo vidět, jak daleko kus je, i když není ani pod čarou.
+      ligaPoradiVse[lg.label] = ligaPoradiVse[lg.label] || {};
+      kand.forEach(function (kp, ip) {
+        ligaPoradiVse[lg.label][kp.b.row.id] = { poradi: ip + 1, celkem: kand.length };
+      });
       kand.forEach(function (k) {
         var vRezerve = obsazeno >= SLOTU_NA_LIGU;
         if (obsazeno >= celkemLiga || (vRezerve && !k.prahOK)) {
@@ -11912,6 +11920,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (kusId !== undefined && kusId !== null && !jeMezi && !tenPod) {
       h += '<div class="tip-radek">Tenhle kus mezi nimi není.</div>';
     }
+    // Úplně poslední řádek: kolikátý ten kus v téhle lize doopravdy je.
+    // Bez toho se nedalo poznat, jestli je těsně pod čarou, nebo daleko.
+    if (kusId !== undefined && kusId !== null) {
+      var vse = (ligaPoradiVse[zkr] || {})[kusId];
+      if (vse) {
+        h += '<div class="tip-pozn">V celém rosteru je v téhle lize '
+          + vse.poradi + ". z " + vse.celkem + ".</div>";
+      }
+    }
     return h;
   }
 
@@ -12288,6 +12305,31 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     plan.forEach(function (x) {
       if (!x) return;
+      var radku = Math.max(1, parseInt(x.radek.getAttribute("data-radku") || "1", 10) || 1);
+      if (radku > 1) {
+        // Víceřádkový režim: řádek se zalamuje a schová se až to, co by
+        // bylo pod povoleným počtem řádků. Měří se podle svislé pozice —
+        // šířky by u zalomeného řádku neřekly nic.
+        var r0 = x.radek.getBoundingClientRect().top;
+        var vyskaChipu = x.chipy.length ? x.chipy[0].getBoundingClientRect().height : 18;
+        var naRadku = x.chipy.map(function (e) {
+          return Math.round((e.getBoundingClientRect().top - r0) / Math.max(1, vyskaChipu));
+        });
+        var vejdeV = 0;
+        while (vejdeV < naRadku.length && naRadku[vejdeV] < radku) vejdeV++;
+        // Když se něco skrývá, musí se na poslední řádek vejít i „+N".
+        if (vejdeV < x.chipy.length) {
+          while (vejdeV > 1 && naRadku[vejdeV - 1] === radku - 1) {
+            var kandidat = vejdeV - 1;
+            var pravy = x.chipy[kandidat].getBoundingClientRect().right
+              - x.radek.getBoundingClientRect().left;
+            if (pravy <= x.sirka - 34) break;
+            vejdeV = kandidat;
+          }
+        }
+        x.vejde = Math.max(1, vejdeV);
+        return;
+      }
       var zacatek = x.radek.getBoundingClientRect().left;
       var konce = x.chipy.map(function (e) { return e.getBoundingClientRect().right - zacatek; });
       var vejde = x.chipy.length;
@@ -20839,6 +20881,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // 54 „vylepšených" u člověka, který vylepšil jednoho, a 54 skutečných
       // kusů se tím přepsalo a zmizelo. Dvojznačnost je proto důvod NEslučovat:
       // duplicitní řádek se dá smazat, ztracený pokémon ne.
+      /** Změnila se kusu síla? Jen tehdy je to vylepšení, ne pouhý přepis. */
+      function bylVylepsen(stary, novy) {
+        var cpS = num(stary.cp), cpN = num(novy.cp);
+        if (cpS !== null && cpN !== null && cpS !== cpN) return true;
+        var lvS = num(stary.level), lvN = num(novy.level);
+        return lvS !== null && lvN !== null && lvS !== lvN;
+      }
+
       function jedinyKandidat(test) {
         var nalez = null;
         for (var q = 0; q < rows.length; q++) {
@@ -20855,7 +20905,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         target = jedinyKandidat(function (cand) {
           return speciesKey(cand.pokemon) === impSpecies && stejnyKusPoUprave(cand, imp);
         });
-        if (target) poweredUp++;
+        // Shoda podle IV najde i kus, se kterým se nic nestalo (pouhý
+        // opakovaný sken). Vylepšení je až změna CP nebo levelu — bez téhle
+        // podmínky hlásil import „41 → 41 CP" u stovky kusů.
+        if (target && bylVylepsen(target, imp)) poweredUp++;
         else nejasnych += pocetMoznych(function (cand) {
           return speciesKey(cand.pokemon) === impSpecies && stejnyKusPoUprave(cand, imp);
         });
@@ -24630,13 +24683,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     }
     if (!kandidati.length) return;
     kandidati.sort(function (a, b2) { return b2.sila - a.sila; });
+    // Kandidáti se přidávají POSTUPNĚ: každý další se zkouší proti rosteru,
+    // ve kterém už jsou ti nabídnutí před ním. Jinak si dva kusy nárokují
+    // totéž volné místo a nabídka slibuje víc, než kolik se jich vejde.
+    var nabidnute = [];
     kandidati.slice(0, 3).forEach(function (k) {
       var id = k.x.row.id;
-      var pokus = analyze(zbyle.concat([k.x.row]));
+      var pokus = analyze(zbyle.concat(nabidnute, [k.x.row]));
       var nc = pokus[id];
       if (!nc || bmJeZahodit(nc.keep)) return;
+      // A nesmí tím vypadnout nikdo, kdo už v nabídce je.
+      var kolize = nabidnute.some(function (r3) {
+        return bmJeZahodit((pokus[r3.id] || {}).keep);
+      });
+      if (kolize) return;
       var nb = null;
       pomocnyBase.forEach(function (b3) { if (b3.row.id === id) nb = b3; });
+      nabidnute.push(k.x.row);
       bmVratitSe[id] = { row: k.x.row, c: nc, b: nb || k.x.b, drive: k.x.c.keep };
     });
   }

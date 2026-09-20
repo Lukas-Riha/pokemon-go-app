@@ -361,7 +361,7 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .box-mode.siroky .bm-panel{height:min(980px,100%)}
 .atlas-test .atlas-box-rozbor>.atlas-detail-identity{height:190px}
 .atlas-test .atlas-box-rozbor .detail-title{height:40px;min-height:0;overflow:hidden}
-.atlas-test .atlas-box-rozbor .atlas-verdict-radek{height:104px;min-height:0}
+.atlas-test .atlas-box-rozbor .atlas-verdict-radek{height:120px;min-height:0}
 .atlas-test .atlas-box-rozbor .atlas-vyuziti .d-role{height:58px;min-height:0;overflow:hidden}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column{overflow:hidden}
 .atlas-test .atlas-box-rozbor .atlas-ident-utoky{overflow:hidden}
@@ -417,10 +417,10 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 /* Výška zůstává pevná (jinak blok mezi kusy poskakuje), obsah je uvnitř
    svisle na střed — tím sedí v jedné ose se jménem vlevo. */
 .atlas-test .atlas-detail-identity .atlas-ident-stats{height:150px;align-self:center;gap:20px}
-.atlas-test .atlas-ident-stats .d-box{border:0;background:none;padding:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.atlas-test .atlas-ident-stats .d-box{border:0;background:none;padding:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start}
 .atlas-test .atlas-ident-stats .d-box-h{margin:0 0 5px}
 .atlas-test .atlas-detail-identity .atlas-ident-utoky{flex:0 0 330px;min-width:300px;height:150px;align-self:center}
-.atlas-ident-utoky .atlas-sestava{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;gap:0 8px;font-size:11px;cursor:help}
+.atlas-ident-utoky .atlas-sestava{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:start;gap:0 6px;font-size:11px;cursor:help}
 .atlas-ident-utoky .atlas-sestava-kdy{flex:0 0 auto;align-self:start;padding-top:3px;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
 .atlas-ident-utoky .atlas-sestava-utoky{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;max-width:100%}
 .atlas-ident-utoky .d-move{display:inline-flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;max-width:100%;margin:0;gap:5px}
@@ -436,7 +436,7 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-kus{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:100%;overflow:hidden}
 /* Řádek ligy má pevnou výšku i se třemi řádky textu — dřív se o pár pixelů
    natáhl a celá tabulka se posunula. */
-.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:54px;justify-content:center}
+.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:52px;justify-content:center}
 .atlas-test .atlas-box-rozbor .d-ligy-tab td b{font-size:16px;line-height:1.1}
 .atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-cena,.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-strop{font-size:9.5px;line-height:1.3}
 .atlas-test .atlas-box-rozbor .d-ligy-tab tr:last-child td,.atlas-test .atlas-box-rozbor .d-ligy-tab tr:last-child th{border-bottom:0!important}
@@ -468,3 +468,64 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar-v{flex:0 0 auto;width:24px}
 .atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar-track{flex:1 1 30px;min-width:24px}
 .atlas-test .atlas-box-rozbor .atlas-ident-stats .d-box-h{white-space:nowrap}
+/* Claude 20. 9. (6): hlavička zarovnaná nadpisy, útoky bez rámečku,
+   evoluční řada s rámečkem jen kolem ikony a štítky verdiktu na dva řádky. */
+/* Nadpisy všech čtyř sloupců stojí na jedné výšce; když má kus řádek navíc
+   (shadow bonus), přiroste dolů, nadpis se nehne. */
+.atlas-test .atlas-detail-identity .atlas-ident-stats,
+.atlas-test .atlas-detail-identity .atlas-ident-utoky{padding:18px 0 0;box-sizing:border-box;height:150px;align-self:center}
+.atlas-test .atlas-detail-identity .atlas-ident-utoky{border:0;background:none;justify-content:flex-start}
+.atlas-test .atlas-ident-utoky .d-box-h{margin:0 0 5px}
+.atlas-test .atlas-ident-utoky .atlas-sestava{border-top:0;padding-top:0;margin-top:2px}
+/* Dlouhé jméno se zmenší, místo aby se zlomilo na dva řádky. */
+.atlas-test .atlas-ident-text h2.atlas-jmeno-dlouhe{font-size:22px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Zvýraznění „tady jsi" patří k obrázku, ne k celému pruhu stupně. */
+.atlas-test .atlas-evolution-column .d-evo-kus.tady{background:none;outline:0}
+.atlas-test .atlas-evolution-column .d-evo-kus.tady .atlas-evo-ram{outline:2px solid var(--status-good);border-radius:12px;background:var(--page)}
+/* Větvená řada: osamocený stupeň (Eevee) patří na střed nad své potomky. */
+.atlas-test .d-evo.husty .d-evo-stupen>.d-evo-kus:only-child{grid-column:1/-1;justify-self:center}
+/* Štítky verdiktu se smí zalomit na druhý řádek a rostou dolů. */
+.atlas-test .atlas-box-rozbor .d-duvody .dv-radek[data-radku],
+.atlas-test .d-duvody .dv-radek[data-radku],
+.atlas-test .dv-radek[data-radku]{flex-wrap:wrap;overflow:visible;row-gap:4px}
+.atlas-test .atlas-verdict-first .d-verdict{justify-content:flex-start}
+/* Čtyři buňky dole: text se vždycky vejde, celý je v bublině. */
+.atlas-test .atlas-vyuziti .d-role-radek .d-role-v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* Poslední řádek tabulky lig nemá spodní linku ani v detailu. */
+.atlas-test [data-detail-section=ligy] .d-ligy-tab tr:last-child>*{border-bottom:0!important}
+/* Hláška o přepočtu: pevné místo nad tlačítky, obsah se kvůli ní nehne. */
+/* Hlášky panelu stojí nad tlačítky mimo tok: nezaberou výšku, takže se kvůli
+   nim nikdy nehne rozbor ani evoluční řada. Skládají se pod sebe, aby se
+   přepočet a nabídka vrácení nikdy nepřekryly. */
+.atlas-box-hlasky{position:absolute;left:0;right:0;bottom:calc(100% + 10px);display:flex;flex-direction:column;gap:8px;z-index:5}
+.atlas-box-hlasky .bm-vraceni{position:static;bottom:auto;left:auto;right:auto}
+.atlas-box-prepocet:empty{display:none}
+.atlas-box-prepocet .bm-prepocet{margin:0;box-sizing:border-box;padding:6px 9px}
+/* Claude 20. 9. (7): ikony v řadě o kus menší, aby se pod ně vešel i popisek
+   („TADY JSI", podmínka evoluce) — pruh stupně je pevný a ořezával je. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus{gap:2px}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus b{line-height:1.1}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus u,
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus i{font-size:9px;line-height:1.25;padding:1px 4px}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-ram{width:68px;height:68px}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:68px;height:68px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-ram{width:92px;height:92px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:92px;height:92px}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .atlas-evo-ram{width:46px;height:46px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .atlas-evo-ram{width:58px;height:58px}
+/* Nadpisy čtyř sloupců musí začínat na jedné výšce — staty měly navíc
+   vlastní horní odsazení z doby, kdy byly v bublině. */
+.atlas-test .atlas-box-rozbor .atlas-ident-stats>.d-box{padding:0}
+/* Popisek řádku útoků nese jméno vyvinuté formy — delší se ořízne, celé je
+   v bublině. */
+.atlas-ident-utoky .atlas-sestava-kdy{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Verdikt musí pojmout dva řádky štítků, aniž by přerostl do značek pod ním. */
+.atlas-test .atlas-box-rozbor .atlas-verdict-first .d-verdict{overflow:hidden}
+/* Claude 20. 9. (8): „Import dokončen" ukazuje kusy jako dlaždice s obrázkem
+   místo holého seznamu — je to stejný pohled jako v rosteru. */
+.atlas-import-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;padding:10px 0 4px;max-height:320px;overflow-y:auto}
+.atlas-import-tile{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-1);min-width:0}
+.atlas-import-tile img{width:42px;height:42px;object-fit:contain;flex:0 0 auto}
+.atlas-import-tile-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.atlas-import-tile-txt strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atlas-import-tile-txt span{font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -1172,3 +1172,37 @@ vyvinuté formy — nevešlo se to na jeden řádek, obojí zůstává v bublin�
 
 Hlídá to `tests/atlas_vrstva.test.mjs` (98 kontrol) a `tests/web_app.test.mjs`
 (2342, bloky 259–260).
+
+Kolo 20. 9. (3) — hlavička bez rámečků, hlášky mimo tok, import s obrázky
+-------------------------------------------------------------------------
+
+Bloky `Claude 20. 9. (6)`–`(8)` na konci `atlas.css`.
+
+- **Nadpisy čtyř sloupců hlavičky stojí na jedné výšce** (`padding:18px 0 0`
+  na `.atlas-ident-stats` i `.atlas-ident-utoky`, `justify-content:flex-start`).
+  Když má kus řádek navíc (shadow bonus), přiroste dolů — nadpis se nehne.
+  Útoky už nemají rámeček ani pozadí, jsou to čtyři stejné sloupce textu.
+- **Hlášky panelu čištění boxu** (přepočet verdiktu, nabídka vrácení, vypadlí)
+  se skládají do `.atlas-box-hlasky` — absolutně nad tlačítky, mimo tok.
+  Dřív hláška o přepočtu seděla nahoře v obsahu a posunula všechno pod sebou.
+  Když budeš s panelem hýbat, nech ten stoh absolutní.
+- **Evoluční řada:** rámeček „tady jsi" je jen kolem obrázku
+  (`.d-evo-kus.tady .atlas-evo-ram`), ne kolem celého pruhu stupně — u kusu bez
+  evoluce vypadal jako velký prázdný box. Osamocený stupeň větvené řady (Eevee)
+  je přes celou šířku na střed.
+- **Dlouhé jméno** dostane třídu `atlas-jmeno-dlouhe` (nad 13 znaků) a zmenší
+  se, místo aby se zlomilo na dva řádky.
+- **Štítky verdiktu se smí zalomit na dva řádky** — řádek má `data-radku="2"`
+  a engine podle toho schová až to, co by bylo pod druhým řádkem. Verdikt je
+  proto o 16 px vyšší (120 px).
+- **Import dokončen** ukazuje kusy jako dlaždice s obrázkem
+  (`.atlas-import-tiles`) místo holého seznamu; sprity bere přes
+  `window.AtlasMonImage`.
+
+V enginu (mimo vrstvu): import hlásí jako „vylepšené" jen kusy, kterým se
+opravdu změnilo CP nebo level; nabídka vrácení puštěných kusů se skládá
+postupně, takže se dva kusy nenabídnou na jedno volné místo; bublina ligy má
+na konci pořadí kusu mezi všemi, co o tu ligu soupeří.
+
+Hlídá to `tests/atlas_vrstva.test.mjs` (98) a `tests/web_app.test.mjs`
+(2345, bloky 259–261).

@@ -6,7 +6,7 @@ def prepare_atlas_import(html):
         html=html.replace(a,b,1)
     replace('var updated = 0, added = 0, poweredUp = 0, evolved = 0, nejasnych = 0, taken = [];','var updated = 0, added = 0, poweredUp = 0, evolved = 0, nejasnych = 0, taken = [];var atlasAudit={updated:[],added:[],powered:[],evolved:[]};')
     replace('if (cpN !== cpO) poweredUp++;','if (cpN !== cpO) {poweredUp++;atlasAudit.powered.push({before:Object.assign({},target),after:Object.assign({},imp)});}')
-    replace('if (target) poweredUp++;','if (target) {poweredUp++;atlasAudit.powered.push({before:Object.assign({},target),after:Object.assign({},imp)});}')
+    replace('if (target && bylVylepsen(target, imp)) poweredUp++;','if (target && bylVylepsen(target, imp)) {poweredUp++;atlasAudit.powered.push({before:Object.assign({},target),after:Object.assign({},imp)});}')
     replace('target.pokemon = imp.pokemon;   //','atlasAudit.evolved.push({before:Object.assign({},target),after:Object.assign({},imp)});target.pokemon = imp.pokemon;   //')
     replace('if (!target) { rows.push(imp); added++;','if (!target) {atlasAudit.added.push({after:Object.assign({},imp)});rows.push(imp); added++;')
     replace('      updated++;','      updated++;atlasAudit.updated.push({before:Object.assign({},target),after:Object.assign({},imp)});')

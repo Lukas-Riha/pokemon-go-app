@@ -65,6 +65,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const art=r=>{const key=P.dexKeyOf(r.pokemon);if(/^(shellos|gastrodon)/i.test(key)){const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')||fallback}return window.ATLAS_ART[key]||(/^pumpkaboo/i.test(r.pokemon)?window.ATLAS_ART['pumpkaboo-average']:null)||(/^shellos east sea/i.test(r.pokemon)?window.ATLAS_ART['shellos-eastsea']:null)||(()=>{const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')})()||fallback;};
   document.addEventListener('error',e=>{const img=e.target;if(!img.matches?.('img[data-atlas-pokemon]'))return;const t=document.createElement('template');t.innerHTML=P.atlasImage(img.dataset.atlasPokemon);const native=t.content.querySelector('img'),urls=[native?.getAttribute('src'),native?.dataset.zaloha,fallback].filter(Boolean);const tried=JSON.parse(img.dataset.atlasTried||'[]');tried.push(img.src);img.dataset.atlasTried=JSON.stringify(tried);const next=urls.find(url=>!tried.includes(url));if(next)img.src=next;},true);
   const monImage=(r,extra='')=>`<img src="${art(r)}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy" ${extra}>`;
+  window.AtlasMonImage=monImage;
   const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář'],['catchCard','Co chytat']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
   const nav=[['home','home','Přehled'],['roster','box','Pokémoni'],['teams','team','Týmy'],['invest','invest','Investice'],['events','calendar','Události']];
   const headings={home:['Tvůj box. Jasný plán.','Co ponechat, připravit a použít při příštím hraní.'],roster:['Moji Pokémoni','Doporučení a další krok. Podrobnosti otevřeš u konkrétního kusu.'],teams:['Připraveni do boje','Týmy, role a pokrytí z tvého současného rosteru.'],invest:['Každý prach má svůj cíl','Naplánuj vylepšení podle svého rozpočtu.'],events:['Příležitosti pro tvůj box','Události, rotace a tipy na chytání.'],settings:['Data a pravidla','Profily, prahy a vysvětlení výpočtů.']};
@@ -99,7 +100,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const cisloKusu=v=>v===''||v==null?'?':(isNaN(Number(v))?String(v):String(Number(v)));
   const ivKusu=id=>{const c=(P.getComputed()||{})[id]||{};const t=c.ivUncertain&&c.ivRange?c.ivRange:(c.ivPct==null?'':Math.round(c.ivPct*100)+' %');return t?' · '+esc(t):''};
   // Hlavička kusu (obrázek, jméno, CP, IV) — stejná v detailu i v čištění boxu.
-  window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}${r.star?' · OZNAČENO ★':''}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}>${esc(r.pokemon)}</h2><p class="atlas-ident-radek">${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}${ivKusu(r.id)}</p></div></div>`;
+  window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}${r.star?' · OZNAČENO ★':''}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}${String(r.pokemon||'').length>13?' class="atlas-jmeno-dlouhe"':''}>${esc(r.pokemon)}</h2><p class="atlas-ident-radek">${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}${ivKusu(r.id)}</p></div></div>`;
   function openDetail(id,retain=false){const r=P.getRows().find(r=>r.id===id);if(!r)return;if(!retain)previousFocus=document.activeElement;dialogId=id;$('#atlasIdentity').innerHTML=window.AtlasIdentitaHTML(r);$('#atlasModal').hidden=false;P.atlasDetail(id,$('#atlasDetailContent'),closeDetail);document.body.style.overflow='hidden';if(!retain)$('.atlas-drawer-header button').focus();}
   function closeDetail(){if(!dialogId)return;dialogId=null;$('#atlasModal').hidden=true;$('#atlasDetailContent').innerHTML='';document.body.style.overflow='';previousFocus?.focus({preventScroll:true});}
   window.addEventListener('atlas:refresh-detail',()=>{refresh();if(dialogId)openDetail(dialogId,true)});
@@ -359,8 +360,8 @@ globalThis.AtlasBudget = (() => {
   $('#atlasImportTitle').textContent='Import dokončen';dialog.querySelector('header p').textContent='Změny jsou uložené. Rozbal kategorii a zkontroluj konkrétní kusy.';
   const m=data.merge,a=m?.atlasAudit||{},result=document.createElement('section');result.className='atlas-import-result';
   const groups=m?[['Aktualizované',a.updated||[]],['Nově přidané',a.added||[]],['Vylepšené',a.powered||[]],['Vyvinuté',a.evolved||[]],['Sken je nezachytil',(m.mimoSken||[]).map(after=>({after}))],['Odebrané',(data.removed||[]).map(after=>({after}))]]:[['Načtené ze souboru',data.imported.map(after=>({after}))],['Zachované vzácné kusy',data.retained.map(after=>({after}))]];
-  result.innerHTML='<div class="atlas-import-stats">'+(m?[['Aktualizováno',m.updated],['Nových',m.added],['Vylepšených',m.poweredUp],['Vyvinutých',m.evolved]]:[['Načteno',data.imported.length],['Zachováno',data.retained.length]]).map(([label,n])=>'<div><strong>'+n+'</strong><span>'+label+'</span></div>').join('')+'</div><p class="atlas-result-note">Vylepšené a vyvinuté kusy jsou součástí aktualizovaných. Nezachycené kusy se samy nemažou; rozhoduje volba celého boxu.</p>'+groups.map(([label,items])=>'<details class="atlas-import-group"><summary>'+esc(label)+'<span>'+items.length+'</span></summary><ul>'+items.map(({before,after:r})=>'<li><strong>'+esc(r.pokemon)+'</strong><span>'+(before?esc(before.pokemon!==r.pokemon?before.pokemon+' → ':'')+esc(before.cp||'?')+' → ':'')+esc(r.cp||'?')+' CP</span></li>').join('')+'</ul>'+(items.length?'':'<p>Žádný kus v této kategorii.</p>')+'</details>').join('')+'<details class="atlas-import-group"><summary>Podrobné hlášení importu</summary><p class="atlas-import-message">'+esc(message)+'</p></details><div class="atlas-result-actions"><button data-result-done>Přejít do rosteru</button></div>';
-  dialog.append(result);result.querySelector('[data-result-done]').onclick=()=>{dialog.close();__atlasTest.go('roster')};dialog.scrollTop=0;dialog.querySelector('header button').focus({preventScroll:true});
+  result.innerHTML='<div class="atlas-import-stats">'+(m?[['Aktualizováno',m.updated],['Nových',m.added],['Vylepšených',m.poweredUp],['Vyvinutých',m.evolved]]:[['Načteno',data.imported.length],['Zachováno',data.retained.length]]).map(([label,n])=>'<div><strong>'+n+'</strong><span>'+label+'</span></div>').join('')+'</div><p class="atlas-result-note">Vylepšené a vyvinuté kusy jsou součástí aktualizovaných. Nezachycené kusy se samy nemažou; rozhoduje volba celého boxu.</p>'+groups.map(([label,items])=>'<details class="atlas-import-group"><summary>'+esc(label)+'<span>'+items.length+'</span></summary>'+(items.length?'<div class="atlas-import-tiles">'+items.map(({before,after:r})=>'<div class="atlas-import-tile">'+(window.AtlasMonImage?window.AtlasMonImage(r):'')+'<div class="atlas-import-tile-txt"><strong>'+esc(r.pokemon)+'</strong><span>'+(before&&before.pokemon!==r.pokemon?esc(before.pokemon)+' → '+esc(r.pokemon)+' · ':'')+(before&&String(before.cp||'')!==String(r.cp||'')?esc(String(before.cp||'?'))+' → ':'')+esc(String(r.cp||'?'))+' CP'+(r.level?' · L'+esc(String(r.level)):'')+'</span></div></div>').join('')+'</div>':'<p>Žádný kus v této kategorii.</p>')+'</details>').join('')+'<details class="atlas-import-group"><summary>Podrobné hlášení importu</summary><p class="atlas-import-message">'+esc(message)+'</p></details><div class="atlas-result-actions"><button data-result-done>Přejít do rosteru</button></div>';
+  dialog.querySelectorAll('.atlas-import-result').forEach(e=>e.remove());dialog.append(result);result.querySelector('[data-result-done]').onclick=()=>{dialog.close();__atlasTest.go('roster')};dialog.scrollTop=0;dialog.querySelector('header button').focus({preventScroll:true});
  };
  dialog.addEventListener('close',()=>{dialog.querySelector('.atlas-import-result')?.remove();dialog.querySelector('.atlas-replace-confirm')?.remove();box.hidden=false;dialog.classList.remove('atlas-import-complete');$('#atlasImportTitle').textContent='Import rosteru';dialog.querySelector('header p').textContent='Vyber soubor, zkontroluj náhled a rozhodni, jak data přidat.'});
 })();
@@ -430,7 +431,9 @@ globalThis.AtlasBudget = (() => {
       [...sestavySekce.querySelectorAll('.d-sestavy > div')].forEach(d=>{
         const h=(d.querySelector('.d-role-h')||{}).textContent||'',v=(d.querySelector('.d-role-v')||{}).textContent||'',pop=(d.querySelector('.d-role-p')||{}).textContent||'';
         if(!v)return;
-        pridej(/^Po evoluci/.test(h)?'po evo':'teď',v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
+        // U větvené řady (Eevee) „po evo" neřeklo, o kterou formu jde.
+        const cil=/^Po evoluci na\s+(.+?)\s*$/.exec(h);
+        pridej(/^Po evoluci/.test(h)?(cil?cil[1]:'po evo'):'teď',v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
       });
     }
     if(!box.querySelector('.d-move')&&moves){
@@ -470,6 +473,20 @@ globalThis.AtlasBudget = (() => {
  // ligy) — ty se schovají a místo nich se vloží hlavička + rozbor z enginu.
  let boxPrestavba=false;
  let boxEvoKlic=null,boxEvoUzel=null;
+ function boxPrepocetPruh(){
+   // Hlášky panelu (přepočet, vrácení, vypadlí) stojí nad tlačítky mimo tok,
+   // takže se kvůli nim nikdy nehne rozbor ani evoluční řada.
+   const akce=document.getElementById('bmActions');if(!akce)return null;
+   let stoh=akce.querySelector('.atlas-box-hlasky');
+   if(!stoh){
+     stoh=document.createElement('div');stoh.className='atlas-box-hlasky';
+     akce.insertBefore(stoh,akce.firstChild);
+     ['bmVypadli','bmVraceni'].forEach(id=>{const e=document.getElementById(id);if(e)stoh.append(e)});
+   }
+   let pruh=stoh.querySelector('.atlas-box-prepocet');
+   if(!pruh){pruh=document.createElement('div');pruh.className='atlas-box-prepocet';stoh.insertBefore(pruh,stoh.firstChild)}
+   return pruh;
+ }
  function boxRozbor(){
    const body=$('#bmBody');if(!body||boxPrestavba)return;
    const stav=P.boxStav?P.boxStav():null,seznam=P.bmSeznam?P.bmSeznam():[];
@@ -483,7 +500,10 @@ globalThis.AtlasBudget = (() => {
      const obsah=document.createElement('div');obsah.className='atlas-box-obsah';host.append(obsah);
      body.append(host);
      P.atlasDetail(polozka.row.id,obsah);
-     if(P.srovnejDuvody)requestAnimationFrame(()=>P.srovnejDuvody(host));
+     // Ve verdiktu je místo na dva řádky štítků — schovávat je do „+N" bylo
+    // zbytečné a první řádek se navíc posouval nahoru.
+    host.querySelectorAll('.atlas-verdict-first .dv-radek,.d-verdict .dv-radek').forEach(r2=>r2.setAttribute('data-radku','2'));
+    if(P.srovnejDuvody)requestAnimationFrame(()=>P.srovnejDuvody(host));
      // Evoluční řada je v boxu vlastní sloupec panelu — vedle hlavičky
      // i obsahu, aby mohla být velká a šla odshora až dolů.
      // Obrázky v evoluční řadě při přechodu mezi kusy problikávaly: nové
@@ -495,6 +515,10 @@ globalThis.AtlasBudget = (() => {
        else{boxEvoKlic=klic;boxEvoUzel=evo;host.append(evo)}}
      // Místo pro dva typy je vždycky stejné, jinak značky poskakují podle toho,
      // jestli má kus jeden typ nebo dva.
+     // Hláška o přepočtu seděla nahoře v obsahu a posunula všechno pod sebou.
+     // Patří nad tlačítka, kde je na ni vyhrazené místo pořád stejně velké.
+     const pruh=boxPrepocetPruh();
+     if(pruh){const zprava=document.querySelector('#bmBody .bm-prepocet');pruh.innerHTML='';if(zprava)pruh.append(zprava)}
      const titulek=obsah.querySelector('.detail-title');
      if(titulek){const typu=titulek.querySelectorAll('.d-type').length;for(let i=typu;i<2;i++){const mezera=document.createElement('span');mezera.className='d-type atlas-typ-mezera';mezera.setAttribute('aria-hidden','true');mezera.textContent='—';titulek.insertBefore(mezera,titulek.children[typu]||null)}}
    }finally{boxPrestavba=false}

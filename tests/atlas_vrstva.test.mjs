@@ -851,9 +851,12 @@ check("všechny čtyři boxy v hlavičce jsou stejně vysoké a nemění se podl
     && new Set(x.r.boxy).size === 1)
     && new Set([...d10.sbalene, ...d10.rozbalene].map((x) => x.r.boxy[0])).size === 1,
   JSON.stringify([...d10.sbalene, ...d10.rozbalene].map((x) => [x.r.jmeno, x.r.boxy])));
-check("…box útoků má vždycky obsah, nepřetéká a rozlišuje „teď“ a „po evo“",
+// Popisek řádku po evoluci nese jméno vyvinuté formy (u Eevee je to jediné,
+// co řekne, o kterou z osmi jde); „teď“ a „má“ jsou řádky současného kusu.
+check("…box útoků má vždycky obsah, nepřetéká a rozlišuje současné útoky od těch po evoluci",
   [...d10.sbalene, ...d10.rozbalene].every((x) => x.r.utokuChipu >= 2 && x.r.utokyPretek === 0)
-    && [...d10.sbalene, ...d10.rozbalene].some((x) => x.r.utokyKdy.indexOf("po evo") > -1),
+    && [...d10.sbalene, ...d10.rozbalene].some((x) =>
+      x.r.utokyKdy.some((k) => k !== "teď" && k !== "má")),
   JSON.stringify([...d10.sbalene, ...d10.rozbalene].map((x) => [x.r.jmeno, x.r.utokuChipu, x.r.utokyPretek, x.r.utokyKdy])));
 check("evoluční řada je vystředěná a po rozbalení má větší šipky",
   d10.sbalene.every((x) => x.r.evoStred <= 2) && d10.rozbalene.every((x) => x.r.evoStred <= 2)

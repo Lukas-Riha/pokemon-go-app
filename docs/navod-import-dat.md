@@ -880,6 +880,8 @@ nerozhoduje.
 
 - **„Z toho N poznáno jako vylepšených (jiné CP, sedící IV)"** — kusy, které jsi
   vylepšil, přeučil nebo vyvinul. Appka je přepsala místo přidání duplikátu.
+  Počítají se jen kusy, kterým se opravdu **změnilo CP nebo level** — opakovaný
+  sken téhož kusu se jako vylepšení nehlásí.
   **Když je to číslo výrazně vyšší, než kolik jsi jich doopravdy vylepšil, něco
   je špatně** — nahlas to. Přesně na tomhle se v srpnu 2026 našla chyba, která
   mazala kusy (viz níž).
