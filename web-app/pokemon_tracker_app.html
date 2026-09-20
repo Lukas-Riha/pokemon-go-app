@@ -3672,7 +3672,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-19 23:29";
+  var BUILD = "2026-09-20 08:00";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -9861,7 +9861,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         } else if (b.listedCapped) {
           purify = "Ano";
           purifySub = "do PvP";
-          purifyTone = "warning";
+          // „Ano" je zelené jako u ostatních akcí; oranžová patří „Zvážit".
+          purifyTone = "good";
         } else {
           purify = "Ano";
           // Dřív tu stálo „do raidů nepatří" — to říká, proč shadow bonus
@@ -9869,7 +9870,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           // Delší text se do sloupce nevešel a ustřihl se v půlce slova.
           // Celé vysvětlení je v bublině.
           purifySub = "bonus nevyužiješ";
-          purifyTone = "warning";
+          // Zelená patří ke každému „Ano" — oranžová je vyhrazená pro
+          // „Zvážit". Že shadow bonus nevyužiješ je důvod, PROČ purifikovat,
+          // ne varování.
+          purifyTone = "good";
         }
         // keepSub se tu SCHVÁLNĚ nepřepisuje. Dřív se sem kopíroval popisek
         // o purifikaci a u shadow kusu pak pod verdiktem „Ponechat" stálo
@@ -10046,6 +10050,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // do seznamu „nechat".
         tradeFree: tradeFree,
         purify: purify, purifyTone: purifyTone, purifySub: purifySub,
+        // Jen u tohohle kusu purifikace rozhoduje o ponechání — řadí se první.
+        purifyRozhoduje: !!(r.forma === "Shadow" && b.highIVAzPoPurifikaci),
         rescan: rescan, rescanTone: rescanTone, rescanTitle: rescanTitle,
         pvpPot: potText,
         pvpPotBest: b.bestPot ? b.bestPot.pct : null,
@@ -13463,13 +13469,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (c.evolve === "Ano") akce.push(roleCardHtml("Evolvovat", "Ano",
       c.evolveTone, "", null, (c.evolveSub ? c.evolveSub + ". " : "") + (c.evolveTitle || "")));
     if (c.purify === "Ano") {
-      akce.push(roleCardHtml("Purifikovat", "Ano", c.purifyTone || "good",
+      // Jen verdikt; co purifikace udělá, je v bublině.
+      akce.push(roleCardHtml("Purifikovat", "Ano", c.purifyTone || "good", "", null,
         (c.purifySub ? c.purifySub + ". " : "")
         + "Purifikace ze shadow kusu udělá normální: přidá +2 ke každému IV,"
         + " zlevní vylepšování i evoluci, ale sebere shadow bonus +20 % útoku."
         + " Je nevratná."));
     }
-    if (c.trade !== "Ne") akce.push(roleCardHtml("Tradovat", c.trade, c.tradeTone, c.tradeSub || ""));
+    // Čtvrtá kartička už se vedle verdiktu nevejde a rozbila by řádek.
+    // Trade je z nich nejmíň naléhavý — u kusu, který má tři akce, se vynechá.
+    if (c.trade !== "Ne" && akce.length < 3) {
+      akce.push(roleCardHtml("Tradovat", c.trade, c.tradeTone, c.tradeSub || ""));
+    }
     // Kartička dřív hlásila natvrdo „Ano — bez přesných IV je zbytek jen
     // odhad", i u kusu, který přesná IV má. Ručně přidaný kus se doskenovává
     // z úplně jiného důvodu (nezná útoky, CP mohlo být z gymu podstřelené),
@@ -14269,7 +14280,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var poradiP = PORADI_PURIFY[p];
         if (poradiP === undefined) return 5;
         // Uvnitř „Ano" jde napřed to, co rozhoduje o ponechání kusu.
-        if (p === "Ano" && item.c.purifyTone !== "good") poradiP = 1;
+        if (p === "Ano" && !item.c.purifyRozhoduje) poradiP = 1;
         return poradiP;
       }
 
@@ -25048,7 +25059,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (k === "f") {
       e.preventDefault();
       var vicEl = document.getElementById("bmVic");
-      if (vicEl) vicEl.open = !vicEl.open;
+      if (vicEl) {
+        vicEl.open = !vicEl.open;
+        // Ikona se dřív měnila jen při kliku na tlačítko — po F zůstávala
+        // v předchozím stavu a vypadalo to, že se nic nestalo.
+        var vicBtnF = document.getElementById("bmVicBtn");
+        if (vicBtnF) {
+          vicBtnF.innerHTML = vicEl.open ? "&#10696;" : "&#9974;";
+          vicBtnF.classList.toggle("otevreno", vicEl.open);
+        }
+      }
       return;
     }
     var vlevo = e.key === "ArrowLeft" || e.key === "Backspace" || k === "a";

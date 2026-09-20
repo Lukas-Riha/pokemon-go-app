@@ -1093,3 +1093,42 @@ něm spadne). Přepínač `PGO_APP` dřív navíc měnil jen kořen `/`, ne adre
 kterou testy otevírají — takže dřívější „web_app na TEST verzi" běžel ve
 skutečnosti proti produkci. Opraveno; vrstvu ověřuj `atlas_vrstva.test.mjs`
 a `audit_app.test.mjs` s `PGO_APP`.
+
+---
+
+Kolo 20. 9. — čištění boxu, hlavička a tabulka lig
+--------------------------------------------------
+
+Všechno je v očíslovaných blocích na konci `atlas.css` („Claude 20. 9.",
+„Claude 20. 9. (2)") a v `atlas.js`. Tvoje bloky jsem nesahal.
+
+- **Panel čištění boxu má pevnou velikost.** Mřížka `.atlas-box-rozbor` má
+  `grid-template-rows:190px minmax(0,1fr)` — evoluční sloupec dřív táhl výšku
+  řádku, takže verdikt a značky poskakovaly až o 33 px podle toho, jak dlouhá
+  byla evoluční řada. Když s tím budeš hýbat, výšku hlavičky nech pevnou.
+- **Čtyři boxy hlavičky** (staty, IV, strop, útoky) mají `height:150px`
+  a `align-self:center`. Útoky jsou širší (`flex:0 1 310px`), ale stejně
+  vysoké; chipy mají `flex-wrap:nowrap`, jinak dvojice útoků zalomila řádek
+  a box přetekl.
+- **Box útoků není nikdy prázdný.** U kusu bez ligových sestav (Lucario)
+  se sestava poskládá z nejlepší možné sestavy z enginu. Řádky mají popisek
+  „teď" / „po evo".
+- **Evoluční řada:** šipky 20 px, po rozbalení 26 px, stupně vystředěné
+  (`justify-content:center` — Eevee s osmi větvemi stál mimo osu). Obrázkům
+  je vypnutá animace `opacity`, jinak při přechodu mezi kusy problikávaly.
+- **Tabulka lig v boxu:** slabé pořadí (`td.d-lg-slaby`) dostalo červený tón
+  jako ostatní stavy — v enginu ho schválně nemá, v úzkém sloupci se ale
+  stav jinak nepozná. Pruh kvality `.d-lg-bar` je v boxu **skrytý**: ukusoval
+  šířku a text se nevešel na tři řádky. Procento zůstává číslem vedle pořadí.
+  Poslední řádek tabulky nemá spodní linku.
+- **Stejná animace v obou směrech:** `.bm-panel{transition:height .22s ease,
+  width .22s ease}` a stejných `.22s` mají i bloky uvnitř, aby sbalení
+  nepředbíhalo obsah.
+
+V enginu (mimo vrstvu): verdikt **Purifikovat** je vždycky zelený — oranžová
+je vyhrazená pro „Zvážit" — a text se přesunul do bubliny. Když má kus tři
+akce (Vylepšit + Evolvovat + Purifikovat), **Tradovat** se už nekreslí,
+čtvrtá kartička rozbíjela řádek.
+
+Hlídá to `tests/atlas_vrstva.test.mjs` (91 kontrol) a `tests/web_app.test.mjs`
+(2339 kontrol, blok 259).

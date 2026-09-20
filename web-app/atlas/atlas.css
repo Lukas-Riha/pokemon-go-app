@@ -229,14 +229,9 @@ body.atlas-box-otevreno{overflow:hidden}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-columns{gap:10px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section>div,.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section>table{margin:8px}
 /* U větvené řady (Eevee) v rozbaleném boxu stačí obrázky — jména jsou v bublině */
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:6px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .detail-title{padding:4px 0}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section{margin:4px 0}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{margin:6px 0 0}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti .d-role{padding:5px 10px}
 .atlas-test .box-mode.siroky .bm-actions{padding-top:6px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:4px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{margin-top:4px}
 /* Claude 17. 9. (12): v rozbaleném boxu větší obrázek, staty blíž ke jménu a pořádně velká evoluční řada; přechod plynule */
 .atlas-test .atlas-box-rozbor [data-detail-section=ligy],
 .atlas-test .atlas-box-rozbor .atlas-evolution-column{transition:max-height .22s ease,opacity .18s ease}
@@ -253,7 +248,7 @@ body.atlas-box-otevreno{overflow:hidden}
 .atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo.husty .d-evo-kus b{font-size:10px}
 .atlas-test .atlas-box-rozbor .atlas-krok .d-role-p{font-size:11px;white-space:normal}
 /* Claude 17. 9. (13): evoluční řada jako vlastní sloupec panelu odshora dolů; hlavička se při rozbalení nemění */
-.atlas-test .atlas-box-rozbor{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);grid-template-areas:"hlavicka evoluce" "obsah evoluce";gap:0 12px}
+.atlas-test .atlas-box-rozbor{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);grid-template-rows:190px minmax(0,1fr);grid-template-areas:"hlavicka evoluce" "obsah evoluce";gap:0 12px}
 .atlas-test .atlas-box-rozbor>.atlas-detail-identity{grid-area:hlavicka}
 .atlas-test .atlas-box-rozbor>.atlas-box-obsah{grid-area:obsah;min-width:0}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column{grid-area:evoluce;align-self:stretch;margin:0}
@@ -370,3 +365,45 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-box-rozbor .atlas-vyuziti .d-role{height:58px;min-height:0;overflow:hidden}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column{overflow:hidden}
 .atlas-test .atlas-box-rozbor .atlas-ident-utoky{overflow:hidden}
+/* Claude 20. 9.: box — větší šipky evoluce, vystředěné stupně, stejně vysoké boxy v hlavičce,
+   stejná animace při rozbalení i sbalení a žádné poskakování mezi kusy. */
+.atlas-test .atlas-box-rozbor .d-evo-sip{font-size:20px;line-height:1;margin:4px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-evo-sip{font-size:26px;margin:6px 0}
+.atlas-test .atlas-box-rozbor .d-evo-stupen{justify-content:center}
+.atlas-test .atlas-box-rozbor .d-evo-kus img{opacity:1!important;transition:none!important}
+.atlas-test .atlas-box-rozbor .atlas-ident-text{align-self:center;padding-top:6px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats,.atlas-test .atlas-box-rozbor .atlas-ident-utoky{align-self:center;height:150px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-box{height:150px;box-sizing:border-box}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky{box-sizing:border-box;overflow:hidden}
+.atlas-ident-utoky .atlas-sestava-kdy{flex:0 0 34px;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
+.atlas-ident-utoky .atlas-sestava{border-top:1px solid var(--border);padding-top:3px;margin-top:1px}
+.atlas-ident-utoky .atlas-sestava:first-of-type{border-top:0;padding-top:0}
+/* stejná animace v obou směrech */
+.atlas-test .box-mode .bm-panel{transition:height .22s ease,width .22s ease}
+.atlas-test .atlas-box-rozbor [data-detail-section=ligy],.atlas-test .atlas-box-rozbor .atlas-evolution-column{transition:max-height .22s ease,opacity .22s ease}
+/* tabulka lig: i „slabý" stav má podbarvení a text se vejde na tři řádky */
+.atlas-test .atlas-box-rozbor .d-ligy-tab td.d-lg-slaby{background:color-mix(in srgb,var(--status-critical) 15%,transparent)!important}
+.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:auto;min-height:54px}
+.atlas-test .atlas-box-rozbor .d-ligy-tab tr:last-child td{border-bottom:0!important}
+/* Evoluční řada nesmí určovat výšku řádků mřížky (jinak se obsah posouval podle počtu stupňů) */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column{min-height:0}
+/* Útoky: čtyři řádky se musí vejít do stejně vysokého boxu jako staty */
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .d-move{font-size:10px;gap:4px}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .d-move .d-type{font-size:9px;padding:0 6px}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .d-moves{gap:2px}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .atlas-sestava{gap:3px;padding-top:2px;margin-top:0}
+/* Sestava se musí vejít na jeden řádek (dva chipy vedle sebe), jinak box přeteče */
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky{flex:0 1 310px;min-width:280px}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .atlas-sestava{flex-wrap:nowrap}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .d-move-jm{white-space:nowrap}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .d-moves{gap:1px}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .d-move{padding:1px 2px;line-height:1.25}
+.atlas-test .atlas-box-rozbor .atlas-ident-utoky .atlas-sestava{padding-top:1px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti{margin-top:2px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor [data-detail-section=ligy]{margin:2px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-detail-identity{margin-bottom:2px}
+/* Claude 20. 9. (2): tabulka lig v čištění boxu — pryč s pruhem kvality.
+   V širokém detailu se vedle pořadí vejde, v úzkém sloupci boxu ukusoval
+   místo a text se pak nevešel na tři řádky. Procento je hned vedle číslem. */
+.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-bar{display:none!important}
+.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-hlava{flex-wrap:nowrap;gap:6px}

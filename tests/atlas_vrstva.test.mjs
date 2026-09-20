@@ -681,7 +681,9 @@ console.log("\n10) Čištění boxu má stejný rozbor jako detail kusu");
 const ROSTER10 = [
   { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15, fastMove: "Mud Slap", charged1: "Earthquake" },
   { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15, fastMove: "Dragon Tail", charged1: "Earth Power", dynamax: "Ano" },
-  { pokemon: "Eevee", cp: 800, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 }
+  { pokemon: "Eevee", cp: 800, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 },
+  // Umbreon má ligu, kterou hraje se slabým pořadím — jediný „červený" stav.
+  { pokemon: "Umbreon", cp: 1504, level: 24, ivAtk: 10, ivDef: 12, ivSta: 12 }
 ];
 async function boxKontrola(page) {
   return page.evaluate(async () => {
@@ -714,6 +716,32 @@ async function boxKontrola(page) {
         // značky musí začínat na stejném místě i u kusu s jedním typem
         znackaX: (() => { const e = b.querySelector(".detail-title .rarity-chip"); return e ? Math.round(e.getBoundingClientRect().left) : -1; })(),
         typu: b.querySelectorAll(".detail-title .d-type:not(.atlas-typ-mezera)").length,
+        // čtyři boxy hlavičky musí být vždycky stejně vysoké
+        boxy: [...b.querySelectorAll(".atlas-ident-stats > .d-box"), b.querySelector(".atlas-ident-utoky")]
+          .filter(Boolean).map((e) => Math.round(e.getBoundingClientRect().height)),
+        // útoky nesmí být prázdné ani přetékat — každý kus má doporučené útoky
+        utokuChipu: b.querySelectorAll(".atlas-ident-utoky .d-move").length,
+        utokyPretek: (() => { const e = b.querySelector(".atlas-ident-utoky");
+          return e ? Math.max(0, e.scrollHeight - e.clientHeight) : -1; })(),
+        utokyKdy: [...b.querySelectorAll(".atlas-ident-utoky .atlas-sestava-kdy")].map((e) => e.textContent),
+        // evoluční řada: šipky a vystředěné stupně
+        sipka: (() => { const e = b.querySelector(".d-evo-sip");
+          return e ? Math.round(parseFloat(getComputedStyle(e).fontSize)) : -1; })(),
+        evoStred: (() => { const st = [...b.querySelectorAll(".d-evo-stupen")];
+          const sl = b.querySelector(".atlas-evolution-column .d-evo");
+          if (!st.length || !sl) return -1;
+          const s = sl.getBoundingClientRect();
+          return Math.max(...st.map((e) => { const r = e.getBoundingClientRect();
+            return Math.abs((r.left + r.width / 2) - (s.left + s.width / 2)); })); })(),
+        // pruh kvality patří do širokého detailu, v boxu ukusuje místo
+        ligyPruh: b.querySelectorAll(".d-ligy-tab .d-lg-bar").length > 0
+          && [...b.querySelectorAll(".d-ligy-tab .d-lg-bar")].some((e) => e.getBoundingClientRect().width > 0),
+        // tabulka lig: slabé buňky mají podbarvení a poslední řádek nemá linku
+        ligySlaby: (() => { const e = b.querySelector(".d-ligy-tab td.d-lg-slaby");
+          return e ? getComputedStyle(e).backgroundColor : ""; })(),
+        ligyPosledni: (() => { const r = [...b.querySelectorAll(".d-ligy-tab tr")].pop();
+          const c = r && r.querySelector("td");
+          return c ? Math.round(parseFloat(getComputedStyle(c).borderBottomWidth)) : -1; })(),
         hlavicka: [".atlas-ident-obr", ".atlas-ident-text h2", ".atlas-ident-stats", ".atlas-ident-utoky"]
           .map((s) => { const e = b.querySelector(s); if (!e) return [-1, -1]; const r = e.getBoundingClientRect();
             return [Math.round(r.left), Math.round(r.width)]; }) };
@@ -723,7 +751,7 @@ async function boxKontrola(page) {
       schovane: ["#bmBody > .bm-head", "#bmBody > .bm-verdikt", "#bmBody > .bm-why", "#bmBody > .bm-roles", "#bmBody > .bm-ligy", "#bmVic"].filter((s) => vidno(s)),
       hraPruh: !!document.querySelector("#boxMode .bm-top .hra-pruh"),
       pozice: (document.getElementById("bmPos") || {}).textContent || "" };
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       out.sbalene.push({ r: rozbor(), prebytek: prebytek() });
       document.getElementById("bmKeep").click();
       await cekej(650);
@@ -737,7 +765,7 @@ async function boxKontrola(page) {
     await cekej(800);
     document.getElementById("bmVicBtn").click();
     await cekej(800);
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       out.rozbalene.push({ r: rozbor(), prebytek: prebytek() });
       document.getElementById("bmKeep").click();
       await cekej(650);
@@ -789,6 +817,29 @@ await p10b.close();
 check("…a rozhodovací část se vejde i na nižší okno (1400×900)",
   d10b.sbalene.every((x) => x.prebytek === 0),
   JSON.stringify({ sbalene: d10b.sbalene.map((x) => x.prebytek), rozbalene: d10b.rozbalene.map((x) => x.prebytek) }));
+// Čtyři boxy hlavičky (staty, IV, strop, útoky) musí mít pořád stejnou výšku
+// a útoky nesmí být nikdy prázdné — doporučené útoky má každý kus.
+check("všechny čtyři boxy v hlavičce jsou stejně vysoké a nemění se podle kusu",
+  [...d10.sbalene, ...d10.rozbalene].every((x) => x.r.boxy.length === 4
+    && new Set(x.r.boxy).size === 1)
+    && new Set([...d10.sbalene, ...d10.rozbalene].map((x) => x.r.boxy[0])).size === 1,
+  JSON.stringify([...d10.sbalene, ...d10.rozbalene].map((x) => [x.r.jmeno, x.r.boxy])));
+check("…box útoků má vždycky obsah, nepřetéká a rozlišuje „teď“ a „po evo“",
+  [...d10.sbalene, ...d10.rozbalene].every((x) => x.r.utokuChipu >= 2 && x.r.utokyPretek === 0)
+    && [...d10.sbalene, ...d10.rozbalene].some((x) => x.r.utokyKdy.indexOf("po evo") > -1),
+  JSON.stringify([...d10.sbalene, ...d10.rozbalene].map((x) => [x.r.jmeno, x.r.utokuChipu, x.r.utokyPretek, x.r.utokyKdy])));
+check("evoluční řada je vystředěná a po rozbalení má větší šipky",
+  d10.sbalene.every((x) => x.r.evoStred <= 2) && d10.rozbalene.every((x) => x.r.evoStred <= 2)
+    && d10.rozbalene[0].r.sipka > d10.sbalene[0].r.sipka,
+  JSON.stringify({ sbalene: d10.sbalene.map((x) => [x.r.jmeno, x.r.evoStred, x.r.sipka]),
+    rozbalene: d10.rozbalene.map((x) => [x.r.jmeno, x.r.evoStred, x.r.sipka]) }));
+check("v rozbalené tabulce lig má slabá liga podbarvení a poslední řádek nemá linku",
+  d10.rozbalene.some((x) => x.r.ligySlaby && !/^rgba\(0, 0, 0, 0\)$/.test(x.r.ligySlaby))
+    && d10.rozbalene.every((x) => x.r.ligyPosledni === 0),
+  JSON.stringify(d10.rozbalene.map((x) => [x.r.jmeno, x.r.ligySlaby, x.r.ligyPosledni])));
+check("…a pruh kvality v úzkém sloupci boxu nezabírá místo",
+  d10.rozbalene.every((x) => x.r.ligyPruh === false),
+  JSON.stringify(d10.rozbalene.map((x) => [x.r.jmeno, x.r.ligyPruh])));
 check("pod otevřeným čištěním boxu se stránka neroluje (žádný posuvník vpravo)",
   d10.zamek === true, String(d10.zamek));
 

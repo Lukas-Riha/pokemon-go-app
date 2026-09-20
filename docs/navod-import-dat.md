@@ -1375,12 +1375,14 @@ Tracker na to má vlastní sloupec **„Purifikovat?"** a filtr „Jen purifikov
 | co uvidíš | co to znamená |
 |---|---|
 | **Nechat** · +20 % útok | raidový druh — shadow bonus je cennější než +2 IV |
-| **Ano** · PvP: obrana −20 % | PvP kus, kde shadow spíš škodí |
-| **Ano** · do raidů nepatří | druh, kterého do raidu stejně nedáš |
+| **Ano** · 87 % → 100 % IV | purifikace ho posune přes práh vysokých IV |
+| **Ano** · do PvP | PvP kus, kde shadow spíš škodí |
+| **Ano** · bonus nevyužiješ | druh, kterého do raidu stejně nedáš |
 | ✕ | není shadow, netýká se ho to |
 | Hotovo | už purifikovaný |
 
-Hranice je 60 % špičky svého typu.
+Hranice je 60 % špičky svého typu. Každé **Ano** je zelené — oranžová
+patří jen verdiktům „Zvážit".
 
 ## Filtry: souhrn a typy
 

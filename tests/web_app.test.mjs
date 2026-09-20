@@ -16741,6 +16741,57 @@ try {
   check("…a u držitele slotu je to v seznamu taky",
     /(až jako|po evoluci na) \w/.test(s258.drzitel), s258.drzitel.replace(/<[^>]+>/g, " ").slice(0, 200));
 
+  // ---------------------------------------------------------------- 259
+  // Purifikovat je jen verdikt (zeleně, text v bublině), čtvrtá akce
+  // „Tradovat" se u kusu se třemi akcemi nekreslí a klávesa F přepíná
+  // i ikonu rozbalení v čištění boxu.
+  console.log("\n259) Purifikovat, ctvrta akce a klavesa F");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s259 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Rhyhorn", cp: 800, level: 20, ivAtk: 14, ivDef: 14, ivSta: 14, forma: "Shadow" },
+      { pokemon: "Machop", cp: 700, level: 18, ivAtk: 13, ivDef: 13, ivSta: 13, forma: "Shadow" },
+      { pokemon: "Blissey", cp: 2700, level: 40, ivAtk: 10, ivDef: 15, ivSta: 15 }
+    ]);
+    await new Promise((r) => setTimeout(r, 900));
+    const comp = P.getComputed(), rows = P.getRows();
+    const out = { karty: [], purify: null, tone: "" };
+    rows.forEach((r) => {
+      const box = document.createElement("div");
+      document.body.append(box);
+      P.atlasDetail(r.id, box);
+      const akce = [...box.querySelectorAll(".d-roles-akce .d-role")];
+      out.karty.push({ jm: r.pokemon, akce: akce.map((k) => k.querySelector(".d-role-h").textContent),
+        purifyText: (() => { const k = akce.find((x) => /Purifikovat/.test(x.textContent));
+          return k ? { popis: !!k.querySelector(".d-role-p"), tone: k.className, tip: (k.getAttribute("data-tip") || "").slice(0, 40) } : null; })() });
+      box.remove();
+    });
+    // klávesa F v čištění boxu přepne rozbalení i ikonu
+    P.boxOtevrit();
+    await new Promise((r) => setTimeout(r, 400));
+    const btn = document.getElementById("bmVicBtn");
+    const pred = btn ? btn.innerHTML : "";
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "f", bubbles: true }));
+    await new Promise((r) => setTimeout(r, 400));
+    out.ikona = { pred, po: btn ? btn.innerHTML : "", otevreno: !!(btn && btn.classList.contains("otevreno")),
+      vic: !!(document.getElementById("bmVic") || {}).open };
+    P.boxZavritNatvrdo();
+    return out;
+  });
+  const purifyKarty = s259.karty.map((k) => k.purifyText).filter(Boolean);
+  check("Purifikovat ukazuje jen verdikt, zeleně a s vysvětlením v bublině",
+    purifyKarty.length > 1 && purifyKarty.every((k) => !k.popis && / good/.test(k.tone) && k.tip.length > 10),
+    JSON.stringify(s259.karty));
+  check("…a čtvrtá akce (Tradovat) se u kusu se třemi akcemi nekreslí",
+    s259.karty.every((k) => k.akce.length <= 3 && !(k.akce.length === 3 && k.akce.indexOf("Tradovat") > -1)),
+    JSON.stringify(s259.karty.map((k) => k.jm + ": " + k.akce.join(", "))));
+  check("klávesa F přepne rozbalení i ikonu",
+    s259.ikona.pred !== s259.ikona.po && s259.ikona.vic && s259.ikona.otevreno,
+    JSON.stringify(s259.ikona));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

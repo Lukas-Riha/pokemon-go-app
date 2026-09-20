@@ -397,16 +397,25 @@ globalThis.AtlasBudget = (() => {
     const box=document.createElement('section');box.className='atlas-ident-utoky';
     const nadpis=document.createElement('div');nadpis.className='d-box-h';nadpis.textContent='Útoky';box.append(nadpis);
     const stav=utokySekce.querySelector('.atlas-move-status'),moves=utokySekce.querySelector('.d-moves');
+    const cisteJmeno=s=>String(s).replace(/\s*\(Elite TM\)\s*/i,'').trim();
+    const chipUtoku=(jmeno,rychly)=>{const cist=cisteJmeno(jmeno);const m=rychly?(P.fastByNameOf?P.fastByNameOf(cist):null):(P.chargedByNameOf?P.chargedByNameOf(cist):null);
+      const el=document.createElement('span');el.className='d-move';
+      const typ=document.createElement('span');typ.className='d-type';
+      if(m){const barva=(P.typeColors()||{})[m.type];if(barva)typ.style.background=barva;typ.innerHTML=(P.typIkona?P.typIkona(m.type):'')+m.type}else typ.textContent='?';
+      const jm=document.createElement('span');jm.className='d-move-jm';jm.textContent=jmeno;
+      el.append(typ,jm);return el};
     const why=moves?moves.querySelector('.d-why'):null;
     const veta=[stav?stav.textContent.trim():'',why?why.textContent.trim():''].filter(Boolean).join(' ');
     if(why)why.remove();
+    // Útoky kusu; když je nemá, zůstane aspoň nejlepší možná sestava z enginu.
     if(moves&&row.fastMove&&row.charged1)box.append(moves);
     if(sestavySekce){
       // Sestavy jako barevné chipy útoků (stejně jako útoky kusu), bez předpony
       // „Teď / Po evo" — co je co, řekne bublina. Řádek, který jen opakuje
       // útoky kusu, se vynechá.
       const cisteJmeno=s=>String(s).replace(/\s*\(Elite TM\)\s*/i,'').trim();
-      const chip=(jmeno,rychly)=>{const cist=cisteJmeno(jmeno);const m=rychly?(P.fastByNameOf?P.fastByNameOf(cist):null):(P.chargedByNameOf?P.chargedByNameOf(cist):null);
+      const chip=chipUtoku;
+      const _nepouzito=(jmeno,rychly)=>{const cist=cisteJmeno(jmeno);const m=rychly?(P.fastByNameOf?P.fastByNameOf(cist):null):(P.chargedByNameOf?P.chargedByNameOf(cist):null);
         const el=document.createElement('span');el.className='d-move';
         const typ=document.createElement('span');typ.className='d-type';
         if(m){const barva=(P.typeColors()||{})[m.type];if(barva)typ.style.background=barva;typ.innerHTML=(P.typIkona?P.typIkona(m.type):'')+m.type}else typ.textContent='?';
@@ -423,9 +432,23 @@ globalThis.AtlasBudget = (() => {
         const radek=document.createElement('div');radek.className='atlas-sestava';
         radek.setAttribute('data-tip',(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
         radek.dataset.sestava=klic;
+        const kdy=document.createElement('small');kdy.className='atlas-sestava-kdy';
+        kdy.textContent=/^Po evoluci/.test(h)?'po evo':'teď';radek.append(kdy);
         v.split(' + ').forEach((jm,i)=>radek.append(chip(jm.trim(),i===0)));
         box.append(radek);
       });
+    }
+    if(!box.querySelector('.d-move')&&moves){
+      // Kus bez útoků a bez ligové sestavy: engine nabízí nejlepší možnou
+      // sestavu jedním chipem („Force Palm + Aura Sphere (Elite TM)").
+      const text=[...moves.querySelectorAll('.d-move-jm')].map(e=>e.textContent).find(x=>/\s\+\s/.test(x));
+      if(text){const radek=document.createElement('div');radek.className='atlas-sestava';
+        radek.setAttribute('data-tip','Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
+        radek.dataset.sestava=text.toLowerCase();
+        const kdy=document.createElement('small');kdy.className='atlas-sestava-kdy';kdy.textContent='teď';radek.append(kdy);
+        text.split(' + ').forEach((jm,i)=>radek.append(chipUtoku(jm.trim(),i===0)));
+        box.append(radek);
+      } else box.append(moves);
     }
     if(veta)box.setAttribute('data-tip',veta);
     utokyBox=box;
