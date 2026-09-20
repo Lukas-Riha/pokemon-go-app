@@ -896,11 +896,14 @@ check("v herním využití se hodnota vejde na jeden řádek",
   JSON.stringify(vse10.map((x) => [x.r.jmeno, x.r.vyuzitiRadku])));
 check("ikony evoluční řady mají pevný rámeček a při stejném počtu stupňů stejné místo",
   vse10.every((x) => x.r.evoRamu > 0)
+    // Zaokrouhlení při dělení pruhů dá občas rozdíl 1 px; skoky, které se
+    // hlídají, byly desítky pixelů.
     && (() => { const skupiny = {};
       d10.sbalene.filter((x) => !x.r.evoHusty).forEach((x) => {
-        (skupiny[x.r.evoY.length] = skupiny[x.r.evoY.length] || []).push(x.r.evoY.join(",")); });
+        (skupiny[x.r.evoY.length] = skupiny[x.r.evoY.length] || []).push(x.r.evoY); });
       return Object.keys(skupiny).some((k) => skupiny[k].length > 1)
-        && Object.keys(skupiny).every((k) => new Set(skupiny[k]).size === 1); })(),
+        && Object.keys(skupiny).every((k) => skupiny[k].every((y) =>
+          y.every((v, i) => Math.abs(v - skupiny[k][0][i]) <= 2))); })(),
   JSON.stringify(d10.sbalene.map((x) => [x.r.jmeno, x.r.evoHusty, x.r.evoY])));
 check("…a pruh kvality v úzkém sloupci boxu nezabírá místo",
   d10.rozbalene.every((x) => x.r.ligyPruh === false),

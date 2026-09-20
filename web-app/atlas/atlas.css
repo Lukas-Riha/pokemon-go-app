@@ -554,3 +554,13 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-verdict-first[data-verdict=good]{--verdict-fg:var(--status-good);--verdict-bg:color-mix(in srgb,var(--status-good) 13%,var(--surface-1))}
 .atlas-test .atlas-verdict-first[data-verdict=warning]{--verdict-fg:var(--status-warning);--verdict-bg:color-mix(in srgb,var(--status-warning) 13%,var(--surface-1))}
 .atlas-test .atlas-verdict-first[data-verdict=critical]{--verdict-fg:var(--status-critical);--verdict-bg:color-mix(in srgb,var(--status-critical) 13%,var(--surface-1))}
+/* Claude 20. 9. (10): jméno s CP na střed obrázku, větší šipky, útoky celé. */
+/* Popisek formy drží horní řádek s nadpisy sloupců, jméno a CP jsou na střed
+   vedle obrázku — obojí najednou jde jen tak, že popisek stojí mimo tok. */
+.atlas-test .atlas-detail-identity .atlas-ident-text{align-self:stretch;position:relative;display:flex;flex-direction:column;justify-content:center;padding-top:0;height:auto}
+.atlas-test .atlas-ident-text .atlas-eyebrow{position:absolute;top:20px;left:0;right:0;margin:0}
+/* Šipka mezi stupni: starší pravidlo bylo specifičtější a drželo 11 px. */
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-sip{font-size:28px;line-height:1;margin:4px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-sip{font-size:34px;margin:6px 0}
+/* Šestý řádek útoků se o pixel nevešel. */
+.atlas-test .atlas-detail-identity .atlas-ident-utoky{max-height:162px}

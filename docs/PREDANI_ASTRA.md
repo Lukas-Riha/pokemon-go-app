@@ -1236,3 +1236,25 @@ verdikt, síla v procentech a poznámka o evoluci; zbytek je v bublině.
 
 Hlídá to `tests/atlas_vrstva.test.mjs` (98) a `tests/web_app.test.mjs`
 (2348, bloky 259–262).
+
+Kolo 20. 9. (5) — jméno na střed obrázku, větší šipky
+------------------------------------------------------
+
+Blok `Claude 20. 9. (10)` na konci `atlas.css`.
+
+- **Popisek formy drží horní řádek s nadpisy sloupců, jméno a CP jsou na
+  střed vedle obrázku.** Obojí najednou jde jen tak, že `.atlas-eyebrow` stojí
+  `position:absolute; top:20px` mimo tok a zbytek textu se centruje. Kdybys
+  s hlavičkou hýbala, tohle je ten trik — bez něj buď nesedí nadpisy, nebo
+  obrázek se jménem.
+- **Šipka v evoluční řadě je 28 px (34 px rozbaleně).** Starší pravidlo
+  `.atlas-box-rozbor .atlas-evolution-column .d-evo-sip{font-size:11px}` bylo
+  specifičtější a přebíjelo novější blok — proto se dvě kola tvářila, že se
+  šipka nemění. Nové pravidlo má stejnou specifičnost a je níž.
+- **Útoky mají `max-height:162px`**, aby se šestý řádek vešel celý.
+
+V enginu (mimo vrstvu): pořadí v lize se počítá zvláštním průchodem přes
+**všechny** kusy, ne z kandidátů rozpočtu — ti jsou jen druhy do limitu pořadí
+a od druhu jeden kus, takže druh mimo limit (#59 při limitu #50) ani druhá
+kopie žádné pořadí neměli. Stejně tak se Dmax pořadí počítá podle útočných
+typů kusu, ne jen podle typů, ve kterých druh stačí na raid.
