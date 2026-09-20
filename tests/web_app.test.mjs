@@ -16792,6 +16792,85 @@ try {
     s259.ikona.pred !== s259.ikona.po && s259.ikona.vic && s259.ikona.otevreno,
     JSON.stringify(s259.ikona));
 
+  // ---------------------------------------------------------------- 260
+  // Štítky důvodů mají neprůhledný podklad a vlastní barvu, takže je zelený
+  // verdikt „Ponechat" nepřebarví. „Vyvinul jsem ho" nabízí i finální stupeň
+  // (Frigibax jde ve hře vyvinout dvakrát za sebou) a řádek PvP se vejde
+  // na jeden řádek i po evoluci.
+  console.log("\n260) Neprůhledné štítky, evoluce až na finální stupeň");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s260 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Frigibax", cp: 900, level: 20, ivAtk: 14, ivDef: 14, ivSta: 14 },
+      { pokemon: "Onix", cp: 620, level: 22, ivAtk: 7, ivDef: 6, ivSta: 13 },
+      { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15 },
+      { pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15 }
+    ]);
+    await new Promise((r) => setTimeout(r, 900));
+    const comp = P.getComputed(), rows = P.getRows();
+    const idKusu = (jm) => (rows.find((r) => r.pokemon === jm) || {}).id;
+    const out = {};
+    // 1) štítky: podklad i barva textu musí být vlastní, ne zděděné
+    const hnizdo = document.createElement("div");
+    hnizdo.style.background = "rgb(20, 90, 60)";
+    hnizdo.style.color = "rgb(40, 200, 120)";
+    document.body.append(hnizdo);
+    let chips = [];
+    rows.forEach((r) => {
+      if (chips.length) return;
+      const d = document.createElement("div");
+      d.innerHTML = P.atlasDuvody(comp[r.id]) || "";
+      hnizdo.append(d);
+      const nalez = [...d.querySelectorAll(".dv-chip")];
+      if (nalez.length) chips = nalez.map((e) => ({
+        t: e.textContent.slice(0, 14),
+        bg: getComputedStyle(e).backgroundColor,
+        fg: getComputedStyle(e).color
+      }));
+    });
+    out.chips = chips;
+    hnizdo.remove();
+    // 2) „Vyvinul jsem ho" u Frigibaxe nabídne i Baxcalibura (přes Arctibaxe)
+    const box = document.createElement("div");
+    document.body.append(box);
+    P.atlasDetail(idKusu("Frigibax"), box);
+    const btn = [...document.querySelectorAll(".hra-pruh .hra-btn")].find((b) => /Vyvinul/.test(b.textContent));
+    if (btn) btn.click();
+    await new Promise((r) => setTimeout(r, 300));
+    out.vyber = [...document.querySelectorAll("#hraBox .hra-vyber-kus")].map((b) => b.textContent.trim());
+    P.hraZavri();
+    box.remove();
+    // 3) u Onixe se PvP řádek nesmí rozpadnout na dva — jméno a pořadí
+    //    vyvinuté formy zůstávají v bublině
+    const b2 = document.createElement("div");
+    document.body.append(b2);
+    P.atlasDetail(idKusu("Onix"), b2);
+    const pvp = [...b2.querySelectorAll(".atlas-vyuziti .d-role, .d-roles .d-role")]
+      .find((e) => /PvP/i.test((e.querySelector(".d-role-h") || {}).textContent || ""));
+    out.pvp = pvp ? { text: (pvp.querySelector(".d-role-v") || {}).textContent || "",
+      tip: (pvp.getAttribute("data-tip") || "").slice(0, 120) } : null;
+    b2.remove();
+    return out;
+  });
+  // Neprůhledný = v zápisu barvy není alfa (ani „rgba(…, .24)", ani
+  // „color(srgb … / .24)") — průhlednou výplní prosvítá podbarvení verdiktu.
+  const pruhledny = (b) => /rgba\(/.test(b) || /\/\s*0?\.\d/.test(b) || /,\s*0?\.\d\s*\)/.test(b);
+  check("štítky důvodů mají neprůhledný podklad a vlastní barvu textu",
+    s260.chips.length > 0 && s260.chips.every((c) => !pruhledny(c.bg)
+      && !pruhledny(c.fg) && c.fg !== "rgb(40, 200, 120)"),
+    JSON.stringify(s260.chips));
+  check("„Vyvinul jsem ho“ nabídne i finální stupeň přes mezikrok",
+    s260.vyber.length === 2 && s260.vyber.some((t) => /^Arctibax/.test(t))
+      && s260.vyber.some((t) => /Baxcalibur/.test(t) && /přes Arctibax/.test(t)),
+    JSON.stringify(s260.vyber));
+  check("PvP po evoluci drží jedno krátké sdělení, jméno a pořadí jsou v bublině",
+    !!s260.pvp && /Po evoluci/.test(s260.pvp.text) && !/#\d/.test(s260.pvp.text)
+      && s260.pvp.text.length <= 46,
+    JSON.stringify(s260.pvp));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

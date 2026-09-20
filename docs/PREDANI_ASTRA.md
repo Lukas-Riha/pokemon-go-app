@@ -1132,3 +1132,43 @@ akce (Vylepšit + Evolvovat + Purifikovat), **Tradovat** se už nekreslí,
 
 Hlídá to `tests/atlas_vrstva.test.mjs` (91 kontrol) a `tests/web_app.test.mjs`
 (2339 kontrol, blok 259).
+
+Kolo 20. 9. (2) — hlavička bez rámečků, útoky pod sebou, stabilní řada
+----------------------------------------------------------------------
+
+Nové bloky `Claude 20. 9. (3)`–`(5)` na konci `atlas.css`.
+
+- **Staty, IV a strop nemají rámeček.** Jsou to plovoucí texty vedle jména,
+  svisle na střed. Výška bloku zůstala pevná (150 px), obsah je uvnitř
+  vycentrovaný — bez toho blok mezi kusy poskakoval. V úzkém sloupci se
+  smršťoval popisek i číslo („68" vycházelo jako „6"), proto se zužuje jen
+  proužek: `.d-bar-l` a `.d-bar-v` mají `flex:0 0 auto`.
+- **Útoky jsou pod sebou.** Řádek je mřížka `44px | 1fr`: vlevo popisek
+  (`má` / `teď` / `po evo`), vpravo útoky ve sloupci, všechny na stejné
+  svislici. Ikona typu s názvem je `flex-wrap:nowrap` — nikdy se nezalomí.
+  Skládá se to v `atlas.js` (funkce `pridej`), ne z enginu.
+- **Rozbor v boxu se roztáhne na celou výšku panelu**
+  (`.bm-body{flex:1}` → `.atlas-box-rozbor{flex:1}`). Dřív končil tam, kde
+  skončil text, a evoluční sloupec s ním: pruhy stupňů byly nízké, jména se
+  ořezávala a výška se měnila kus od kusu.
+- **Evoluční řada:** stupně se dělí o místo rovným dílem
+  (`.d-evo-stupen{flex:1 1 0}`) a obrázek se drží **horního** okraje pruhu.
+  Vystředěný obsah ho posouval podle toho, kolik měl stupeň řádků textu
+  („tady jsi", podmínka evoluce). Větvené řady (`.d-evo.husty`, Eevee) jsou
+  z toho vyjmuté.
+- **`.atlas-evo-ram`** je nový obal kolem každého obrázku v řadě. Engine
+  sprity dorovnává vlastním `translate+scale`, velký sprite pak přetékal
+  svoje místo a mezi kusy to vypadalo, že ikony poskakují. Obal to ořízne —
+  kdybys měnila velikosti ikon, měň je na obalu, ne jen na `img`.
+- **Ikony se nepřekreslují**, když jdou za sebou dva kusy téhož druhu:
+  `boxRozbor` si pamatuje poslední evoluční sloupec a použije ho znovu.
+
+V enginu (mimo vrstvu): štítky důvodů (`.dv-*`) mají **neprůhledný podklad**
+přes `var(--dv-podklad, var(--surface-1))` a vlastní `color`, takže je zelené
+podbarvení verdiktu „Ponechat" nepřebarví. Na kontejneru se dá `--dv-podklad`
+přepsat, kdyby pod štítky byla jiná plocha. „Vyvinul jsem ho" nabízí i finální
+stupeň (přes mezikrok) a PvP řádek „po evoluci" už neobsahuje jméno a pořadí
+vyvinuté formy — nevešlo se to na jeden řádek, obojí zůstává v bublině.
+
+Hlídá to `tests/atlas_vrstva.test.mjs` (98 kontrol) a `tests/web_app.test.mjs`
+(2342, bloky 259–260).

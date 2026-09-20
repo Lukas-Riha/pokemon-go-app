@@ -383,7 +383,6 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-box-rozbor [data-detail-section=ligy],.atlas-test .atlas-box-rozbor .atlas-evolution-column{transition:max-height .22s ease,opacity .22s ease}
 /* tabulka lig: i „slabý" stav má podbarvení a text se vejde na tři řádky */
 .atlas-test .atlas-box-rozbor .d-ligy-tab td.d-lg-slaby{background:color-mix(in srgb,var(--status-critical) 15%,transparent)!important}
-.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:auto;min-height:54px}
 .atlas-test .atlas-box-rozbor .d-ligy-tab tr:last-child td{border-bottom:0!important}
 /* Evoluční řada nesmí určovat výšku řádků mřížky (jinak se obsah posouval podle počtu stupňů) */
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column{min-height:0}
@@ -407,3 +406,65 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
    místo a text se pak nevešel na tři řádky. Procento je hned vedle číslem. */
 .atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-bar{display:none!important}
 .atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-hlava{flex-wrap:nowrap;gap:6px}
+/* Claude 20. 9. (3): hlavička rozboru a evoluční řada.
+   - Staty, IV a strop jsou plovoucí texty, ne bubliny: tři rámečky vedle sebe
+     dělaly z hlavičky mřížku a braly místo útokům. Blok stojí na střed vedle
+     jména, takže je s ním v jedné ose.
+   - Útoky: popisek vlevo, útoky pod sebou a všechny zarovnané na stejnou
+     svislici. Ikona typu s názvem drží pohromadě a nikdy se nezalomí.
+   - Evoluční stupeň má pevnou výšku, aby obrázky stály u každého kusu se
+     stejným počtem stupňů na stejném místě. Větvené řady (Eevee) jsou mimo. */
+/* Výška zůstává pevná (jinak blok mezi kusy poskakuje), obsah je uvnitř
+   svisle na střed — tím sedí v jedné ose se jménem vlevo. */
+.atlas-test .atlas-detail-identity .atlas-ident-stats{height:150px;align-self:center;gap:20px}
+.atlas-test .atlas-ident-stats .d-box{border:0;background:none;padding:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.atlas-test .atlas-ident-stats .d-box-h{margin:0 0 5px}
+.atlas-test .atlas-detail-identity .atlas-ident-utoky{flex:0 0 330px;min-width:300px;height:150px;align-self:center}
+.atlas-ident-utoky .atlas-sestava{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;gap:0 8px;font-size:11px;cursor:help}
+.atlas-ident-utoky .atlas-sestava-kdy{flex:0 0 auto;align-self:start;padding-top:3px;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
+.atlas-ident-utoky .atlas-sestava-utoky{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;max-width:100%}
+.atlas-ident-utoky .d-move{display:inline-flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;max-width:100%;margin:0;gap:5px}
+.atlas-ident-utoky .d-move .d-type{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-size:10px;padding:1px 7px}
+.atlas-ident-utoky .d-move-jm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* Stupně se dělí o místo rovným dílem a obsah je v pruhu na střed. Pevná
+   výška v pixelech se na nižším okně nevešla; takhle jsou pruhy vždycky
+   stejné a obrázky stojí u každého kusu se stejným počtem stupňů stejně. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-stupen{flex:1 1 0;min-height:0;overflow:hidden}
+/* Obrázek se drží horního okraje pruhu, ne středu obsahu: stupeň s
+   podmínkou navíc (nebo s „tady jsi") je vyšší a vystředěný obsah by
+   ikonu posunul výš než u kusu vedle. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-kus{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:100%;overflow:hidden}
+/* Řádek ligy má pevnou výšku i se třemi řádky textu — dřív se o pár pixelů
+   natáhl a celá tabulka se posunula. */
+.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:54px;justify-content:center}
+.atlas-test .atlas-box-rozbor .d-ligy-tab td b{font-size:16px;line-height:1.1}
+.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-cena,.atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-strop{font-size:9.5px;line-height:1.3}
+.atlas-test .atlas-box-rozbor .d-ligy-tab tr:last-child td,.atlas-test .atlas-box-rozbor .d-ligy-tab tr:last-child th{border-bottom:0!important}
+/* Herní využití: hodnota se nikdy nezalomí na druhý řádek. */
+.atlas-test .atlas-box-rozbor .atlas-vyuziti .d-role-radek .d-role-v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* Claude 20. 9. (4): rámeček kolem ikon v evoluční řadě.
+   Engine každý sprite dorovnává vlastním scale, takže velký sprite přetekl
+   svoje místo a mezi kusy to vypadalo, že ikony poskakují. */
+.atlas-evo-ram{display:block;overflow:hidden;line-height:0;flex:0 0 auto}
+.atlas-evo-ram img{display:block}
+/* Claude 20. 9. (5): rozbor v boxu vyplní panel a hlavička se vejde.
+   - Rozbor dřív končil tam, kde skončil text, a evoluční sloupec s ním:
+     pruhy stupňů pak byly nízké, jména se ořezávala a výška se měnila kus
+     od kusu. Teď se rozbor roztáhne na celou výšku panelu, takže je sloupec
+     vždycky stejně vysoký.
+   - Hlavička: jméno a staty jsou užší, aby se box útoků vešel vedle nich
+     a nepodlézal evoluční sloupec. */
+.atlas-test .box-mode .bm-scroll{display:flex;flex-direction:column}
+.atlas-test .box-mode .bm-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.atlas-test .box-mode .bm-body>.atlas-box-rozbor{flex:1 1 auto;min-height:0}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity{overflow:hidden}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-text{flex:0 0 172px}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-stats{flex:1 1 auto;min-width:0;margin-left:auto;grid-template-columns:minmax(0,1.15fr) minmax(0,1.15fr) minmax(0,.9fr);gap:12px}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-utoky{flex:0 0 268px;min-width:0;margin-left:12px}
+/* Ve třetině šířky se musí zúžit proužek, ne číslo — popisek i hodnota
+   se smršťovaly a „68" se ořízlo na „6". */
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar{gap:6px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar-l{flex:0 0 auto;width:46px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar-v{flex:0 0 auto;width:24px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-bar-track{flex:1 1 30px;min-width:24px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-box-h{white-space:nowrap}

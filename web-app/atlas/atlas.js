@@ -239,7 +239,7 @@ globalThis.AtlasBudget = (() => {
     const verdict=main.querySelector('.d-verdict-row');if(verdict){verdict.classList.add('atlas-verdict-first');container.prepend(verdict);}
     if(verdict){const v=window.AtlasVerdict(computed);verdict.dataset.verdict=v.tone;const label=verdict.querySelector('.d-verdict>b');if(label)label.textContent=v.label;}
     const evo=container.querySelector(':scope > :not(.atlas-plan-summary):not(.detail-main):not(.atlas-verdict-first)');
-    if(evo){const group=document.createElement('details');group.className='atlas-detail-section atlas-evolution-column';group.open=true;group.innerHTML='<summary>Evoluční řada</summary>';evo.before(group);group.append(evo);const grid=document.createElement('div');grid.className='atlas-detail-columns';const column=document.createElement('div');column.className='atlas-detail-column';const children=[...container.children];container.prepend(grid);grid.append(column,group);children.filter(el=>el!==group).forEach(el=>column.append(el));}
+    if(evo){const group=document.createElement('details');group.className='atlas-detail-section atlas-evolution-column';group.open=true;group.innerHTML='<summary>Evoluční řada</summary>';evo.before(group);group.append(evo);evo.querySelectorAll('.d-evo-kus img').forEach(im=>{if(im.parentElement&&im.parentElement.classList.contains('atlas-evo-ram'))return;const ram=document.createElement('span');ram.className='atlas-evo-ram';im.replaceWith(ram);ram.append(im)});const grid=document.createElement('div');grid.className='atlas-detail-columns';const column=document.createElement('div');column.className='atlas-detail-column';const children=[...container.children];container.prepend(grid);grid.append(column,group);children.filter(el=>el!==group).forEach(el=>column.append(el));}
     container.querySelectorAll('.d-evo-kus[data-tip]').forEach(el=>{el.tabIndex=0;const image=el.querySelector('img'),art=window.ATLAS_ART[window.__pgo.dexKeyOf(el.dataset.druh)];if(image&&art&&!/^(shellos|gastrodon)/i.test(el.dataset.druh)){image.removeAttribute('onerror');image.src=art;image.style.display=''};});
   };
 })();
@@ -404,51 +404,41 @@ globalThis.AtlasBudget = (() => {
       if(m){const barva=(P.typeColors()||{})[m.type];if(barva)typ.style.background=barva;typ.innerHTML=(P.typIkona?P.typIkona(m.type):'')+m.type}else typ.textContent='?';
       const jm=document.createElement('span');jm.className='d-move-jm';jm.textContent=jmeno;
       el.append(typ,jm);return el};
+    // Jeden řádek = popisek („má" / „teď" / „po evo") a pod ním jednotlivé
+    // útoky pod sebou. Dvojice vedle sebe se do sloupce nevešla a ustřihávala
+    // se; takhle je popisek i začátek útoků vždycky na stejné svislici.
+    const uz=new Set();
+    const pridej=(kdy,jmena,tip)=>{
+      const cista=jmena.map(cisteJmeno).filter(Boolean);
+      if(!cista.length)return;
+      const klic=cista.join(' + ').toLowerCase();
+      if(uz.has(klic))return;
+      uz.add(klic);
+      const radek=document.createElement('div');radek.className='atlas-sestava';radek.dataset.sestava=klic;
+      if(tip)radek.setAttribute('data-tip',tip);
+      const popisek=document.createElement('small');popisek.className='atlas-sestava-kdy';popisek.textContent=kdy;radek.append(popisek);
+      const sloupec=document.createElement('div');sloupec.className='atlas-sestava-utoky';
+      jmena.forEach((jm,i)=>sloupec.append(chipUtoku(String(jm).trim(),i===0)));
+      radek.append(sloupec);box.append(radek);
+    };
     const why=moves?moves.querySelector('.d-why'):null;
     const veta=[stav?stav.textContent.trim():'',why?why.textContent.trim():''].filter(Boolean).join(' ');
     if(why)why.remove();
-    // Útoky kusu; když je nemá, zůstane aspoň nejlepší možná sestava z enginu.
-    if(moves&&row.fastMove&&row.charged1)box.append(moves);
+    // Nejdřív co kus doopravdy má, pak co by mít měl.
+    if(row.fastMove&&row.charged1)pridej('má',[row.fastMove,row.charged1,row.charged2].filter(Boolean),'Útoky, které kus má ve hře.');
     if(sestavySekce){
-      // Sestavy jako barevné chipy útoků (stejně jako útoky kusu), bez předpony
-      // „Teď / Po evo" — co je co, řekne bublina. Řádek, který jen opakuje
-      // útoky kusu, se vynechá.
-      const cisteJmeno=s=>String(s).replace(/\s*\(Elite TM\)\s*/i,'').trim();
-      const chip=chipUtoku;
-      const _nepouzito=(jmeno,rychly)=>{const cist=cisteJmeno(jmeno);const m=rychly?(P.fastByNameOf?P.fastByNameOf(cist):null):(P.chargedByNameOf?P.chargedByNameOf(cist):null);
-        const el=document.createElement('span');el.className='d-move';
-        const typ=document.createElement('span');typ.className='d-type';
-        if(m){const barva=(P.typeColors()||{})[m.type];if(barva)typ.style.background=barva;typ.innerHTML=(P.typIkona?P.typIkona(m.type):'')+m.type}else typ.textContent='?';
-        const jm=document.createElement('span');jm.className='d-move-jm';jm.textContent=jmeno;
-        el.append(typ,jm);return el};
-      const utokyKusu=[row.fastMove,row.charged1].filter(Boolean).map(cisteJmeno).join(' + ').toLowerCase().trim();
-      const uz=new Set(utokyKusu?[utokyKusu]:[]);
       [...sestavySekce.querySelectorAll('.d-sestavy > div')].forEach(d=>{
         const h=(d.querySelector('.d-role-h')||{}).textContent||'',v=(d.querySelector('.d-role-v')||{}).textContent||'',pop=(d.querySelector('.d-role-p')||{}).textContent||'';
         if(!v)return;
-        const klic=v.split(' + ').map(cisteJmeno).join(' + ').toLowerCase().trim();
-        if(uz.has(klic))return;
-        uz.add(klic);
-        const radek=document.createElement('div');radek.className='atlas-sestava';
-        radek.setAttribute('data-tip',(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
-        radek.dataset.sestava=klic;
-        const kdy=document.createElement('small');kdy.className='atlas-sestava-kdy';
-        kdy.textContent=/^Po evoluci/.test(h)?'po evo':'teď';radek.append(kdy);
-        v.split(' + ').forEach((jm,i)=>radek.append(chip(jm.trim(),i===0)));
-        box.append(radek);
+        pridej(/^Po evoluci/.test(h)?'po evo':'teď',v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
       });
     }
     if(!box.querySelector('.d-move')&&moves){
       // Kus bez útoků a bez ligové sestavy: engine nabízí nejlepší možnou
       // sestavu jedním chipem („Force Palm + Aura Sphere (Elite TM)").
       const text=[...moves.querySelectorAll('.d-move-jm')].map(e=>e.textContent).find(x=>/\s\+\s/.test(x));
-      if(text){const radek=document.createElement('div');radek.className='atlas-sestava';
-        radek.setAttribute('data-tip','Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
-        radek.dataset.sestava=text.toLowerCase();
-        const kdy=document.createElement('small');kdy.className='atlas-sestava-kdy';kdy.textContent='teď';radek.append(kdy);
-        text.split(' + ').forEach((jm,i)=>radek.append(chipUtoku(jm.trim(),i===0)));
-        box.append(radek);
-      } else box.append(moves);
+      if(text)pridej('teď',text.split(' + '),'Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
+      else box.append(moves);
     }
     if(veta)box.setAttribute('data-tip',veta);
     utokyBox=box;
@@ -466,7 +456,7 @@ globalThis.AtlasBudget = (() => {
   const nacoSekce=container.querySelector('[data-detail-section=naco]');
   if(nacoSekce){const role=nacoSekce.querySelector('.d-roles');if(role){role.classList.add('atlas-vyuziti');nacoSekce.before(role)}nacoSekce.remove()}
   // Statistiky, IV a strop CP do hlavičky vedle jména a obrázku; sekce dole odpadá.
-  const statsSekce=container.querySelector('[data-detail-section=stats]');if(statsSekce&&identita){identita.querySelector('.atlas-ident-stats')?.remove();const mrizka=statsSekce.querySelector('.d-grid');if(mrizka){mrizka.classList.add('atlas-ident-stats');mrizka.querySelectorAll('.d-box-h').forEach(h=>{if(/^IV/.test(h.textContent))h.textContent='IV'});identita.append(mrizka)}statsSekce.remove()}
+  const statsSekce=container.querySelector('[data-detail-section=stats]');if(statsSekce&&identita){identita.querySelector('.atlas-ident-stats')?.remove();const mrizka=statsSekce.querySelector('.d-grid');if(mrizka){mrizka.classList.add('atlas-ident-stats');mrizka.querySelectorAll('.d-box-h').forEach(h=>{if(/^IV/.test(h.textContent))h.textContent='IV';else{const m=/^Staty na levelu\s+([\d.]+)/i.exec(h.textContent);if(m)h.textContent='Staty L'+m[1]}});identita.append(mrizka)}statsSekce.remove()}
   if(utokyBox&&identita)identita.append(utokyBox);
   if(vPlachte)document.querySelectorAll('.atlas-detail-paging [data-detail-step]').forEach(b=>{b.title=b.dataset.detailStep==='1'?'Další kus (→ nebo D)':'Předchozí kus (← nebo A)'});
   // Doporučený krok vedle verdiktu místo vlastní sekce dole.
@@ -479,6 +469,7 @@ globalThis.AtlasBudget = (() => {
  // do panelu kreslí svoje zjednodušené bloky (jméno, verdikt, věta, role,
  // ligy) — ty se schovají a místo nich se vloží hlavička + rozbor z enginu.
  let boxPrestavba=false;
+ let boxEvoKlic=null,boxEvoUzel=null;
  function boxRozbor(){
    const body=$('#bmBody');if(!body||boxPrestavba)return;
    const stav=P.boxStav?P.boxStav():null,seznam=P.bmSeznam?P.bmSeznam():[];
@@ -495,7 +486,13 @@ globalThis.AtlasBudget = (() => {
      if(P.srovnejDuvody)requestAnimationFrame(()=>P.srovnejDuvody(host));
      // Evoluční řada je v boxu vlastní sloupec panelu — vedle hlavičky
      // i obsahu, aby mohla být velká a šla odshora až dolů.
-     const evo=obsah.querySelector('.atlas-evolution-column');if(evo)host.append(evo);
+     // Obrázky v evoluční řadě při přechodu mezi kusy problikávaly: nové
+     // <img> se načítá znovu. Když je řada úplně stejná (dva kusy téhož
+     // druhu), použije se znovu původní uzel s už načtenými obrázky.
+     const evo=obsah.querySelector('.atlas-evolution-column');
+     if(evo){const klic=evo.innerHTML;
+       if(boxEvoKlic===klic&&boxEvoUzel){evo.remove();host.append(boxEvoUzel)}
+       else{boxEvoKlic=klic;boxEvoUzel=evo;host.append(evo)}}
      // Místo pro dva typy je vždycky stejné, jinak značky poskakují podle toho,
      // jestli má kus jeden typ nebo dva.
      const titulek=obsah.querySelector('.detail-title');

@@ -733,6 +733,33 @@ async function boxKontrola(page) {
           const s = sl.getBoundingClientRect();
           return Math.max(...st.map((e) => { const r = e.getBoundingClientRect();
             return Math.abs((r.left + r.width / 2) - (s.left + s.width / 2)); })); })(),
+        // útoky: popisek vlevo, útoky pod sebou a všechny na stejné svislici
+        utokySloupcu: b.querySelectorAll(".atlas-ident-utoky .atlas-sestava-utoky").length,
+        utokyX: [...new Set([...b.querySelectorAll(".atlas-ident-utoky .d-move")]
+          .map((e) => Math.round(e.getBoundingClientRect().left)))],
+        typRadku: [...new Set([...b.querySelectorAll(".atlas-ident-utoky .d-type")]
+          .map((e) => Math.round(e.getBoundingClientRect().height)))],
+        // staty, IV a strop jsou plovoucí text bez rámečku
+        statyRam: [...new Set([...b.querySelectorAll(".atlas-ident-stats > .d-box")]
+          .map((e) => getComputedStyle(e).borderTopWidth + "|" + getComputedStyle(e).backgroundColor))],
+        // ligy: řádky stejně vysoké a text se do nich vejde
+        ligyVysky: [...new Set([...b.querySelectorAll(".d-ligy-tab .d-lg-in")]
+          .map((e) => Math.round(e.getBoundingClientRect().height)))],
+        ligyPretek: Math.max(0, ...[...b.querySelectorAll(".d-ligy-tab .d-lg-in")]
+          .map((e) => e.scrollHeight - e.clientHeight), 0),
+        ligyLinka: [...new Set([...(([...b.querySelectorAll(".d-ligy-tab tr")].pop() || { children: [] }).children)]
+          .map((e) => Math.round(parseFloat(getComputedStyle(e).borderBottomWidth))))],
+        // herní využití: hodnota nikdy nezalomená na druhý řádek
+        vyuzitiRadku: [...new Set([...b.querySelectorAll(".atlas-vyuziti .d-role-v")]
+          .map((e) => Math.round(e.getBoundingClientRect().height)))],
+        // evoluce: obrázky mají pevný rámeček a stejný počet stupňů =
+        // stejné pozice (větvené řady se tím řídit nemusí)
+        evoRamu: b.querySelectorAll(".atlas-evolution-column .atlas-evo-ram").length,
+        evoHusty: !!b.querySelector(".atlas-evolution-column .d-evo.husty"),
+        evoY: (() => { const pan = document.querySelector(".bm-panel");
+          if (!pan) return []; const pr = pan.getBoundingClientRect();
+          return [...b.querySelectorAll(".atlas-evolution-column .atlas-evo-ram")]
+            .map((e) => Math.round(e.getBoundingClientRect().top - pr.top)); })(),
         // pruh kvality patří do širokého detailu, v boxu ukusuje místo
         ligyPruh: b.querySelectorAll(".d-ligy-tab .d-lg-bar").length > 0
           && [...b.querySelectorAll(".d-ligy-tab .d-lg-bar")].some((e) => e.getBoundingClientRect().width > 0),
@@ -837,9 +864,64 @@ check("v rozbalené tabulce lig má slabá liga podbarvení a poslední řádek 
   d10.rozbalene.some((x) => x.r.ligySlaby && !/^rgba\(0, 0, 0, 0\)$/.test(x.r.ligySlaby))
     && d10.rozbalene.every((x) => x.r.ligyPosledni === 0),
   JSON.stringify(d10.rozbalene.map((x) => [x.r.jmeno, x.r.ligySlaby, x.r.ligyPosledni])));
+const vse10 = [...d10.sbalene, ...d10.rozbalene];
+check("útoky stojí pod sebou, popisek vlevo a typ se nikdy nezalomí",
+  vse10.every((x) => x.r.utokySloupcu >= 1 && x.r.utokyX.length === 1 && x.r.typRadku.length === 1),
+  JSON.stringify(vse10.map((x) => [x.r.jmeno, x.r.utokySloupcu, x.r.utokyX, x.r.typRadku])));
+check("staty, IV a strop jsou plovoucí text bez rámečku",
+  vse10.every((x) => x.r.statyRam.length === 1 && /^0px\|rgba\(0, 0, 0, 0\)$/.test(x.r.statyRam[0])),
+  JSON.stringify(vse10.map((x) => [x.r.jmeno, x.r.statyRam])));
+check("řádky tabulky lig jsou stejně vysoké i se třemi řádky textu",
+  d10.rozbalene.every((x) => x.r.ligyVysky.length === 1 && x.r.ligyPretek === 0)
+    && new Set(d10.rozbalene.map((x) => x.r.ligyVysky[0])).size === 1,
+  JSON.stringify(d10.rozbalene.map((x) => [x.r.jmeno, x.r.ligyVysky, x.r.ligyPretek])));
+check("…a pod posledním řádkem tabulky lig nezůstane kus linky",
+  d10.rozbalene.every((x) => x.r.ligyLinka.every((v) => v === 0)),
+  JSON.stringify(d10.rozbalene.map((x) => [x.r.jmeno, x.r.ligyLinka])));
+check("v herním využití se hodnota vejde na jeden řádek",
+  vse10.every((x) => x.r.vyuzitiRadku.length === 1),
+  JSON.stringify(vse10.map((x) => [x.r.jmeno, x.r.vyuzitiRadku])));
+check("ikony evoluční řady mají pevný rámeček a při stejném počtu stupňů stejné místo",
+  vse10.every((x) => x.r.evoRamu > 0)
+    && (() => { const skupiny = {};
+      d10.sbalene.filter((x) => !x.r.evoHusty).forEach((x) => {
+        (skupiny[x.r.evoY.length] = skupiny[x.r.evoY.length] || []).push(x.r.evoY.join(",")); });
+      return Object.keys(skupiny).some((k) => skupiny[k].length > 1)
+        && Object.keys(skupiny).every((k) => new Set(skupiny[k]).size === 1); })(),
+  JSON.stringify(d10.sbalene.map((x) => [x.r.jmeno, x.r.evoHusty, x.r.evoY])));
 check("…a pruh kvality v úzkém sloupci boxu nezabírá místo",
   d10.rozbalene.every((x) => x.r.ligyPruh === false),
   JSON.stringify(d10.rozbalene.map((x) => [x.r.jmeno, x.r.ligyPruh])));
+// Dva kusy téhož druhu za sebou: evoluční řada se nesmí skládat znovu,
+// jinak se obrázky načítají a v přechodu problikávají.
+const pBlik = await otevri(1500, [
+  { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15 },
+  { pokemon: "Rhydon", cp: 1500, level: 18, ivAtk: 10, ivDef: 10, ivSta: 10 },
+  { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15 }
+]);
+const dBlik = await pBlik.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("boxModeBtn").click();
+  await cekej(900);
+  const znacka = () => document.querySelector("#bmBody .atlas-evolution-column");
+  const prvni = znacka();
+  if (!prvni) return { chyba: "bez evoluční řady" };
+  prvni.dataset.blikTest = "1";
+  const jm = () => (document.querySelector("#bmBody .atlas-ident-text h2") || {}).textContent || "";
+  const a = jm();
+  document.getElementById("bmKeep").click();
+  await cekej(700);
+  const stejny = { jmeno: [a, jm()], drzi: !!(znacka() && znacka().dataset.blikTest) };
+  document.getElementById("bmKeep").click();
+  await cekej(700);
+  const jiny = { jmeno: jm(), drzi: !!(znacka() && znacka().dataset.blikTest) };
+  window.__pgo.boxZavritNatvrdo();
+  return { stejny, jiny };
+});
+await pBlik.close();
+check("u dvou kusů téhož druhu se evoluční řada nepřekresluje (ikony neproblikávají)",
+  !dBlik.chyba && dBlik.stejny.drzi === true && dBlik.jiny.drzi === false,
+  JSON.stringify(dBlik));
 check("pod otevřeným čištěním boxu se stránka neroluje (žádný posuvník vpravo)",
   d10.zamek === true, String(d10.zamek));
 

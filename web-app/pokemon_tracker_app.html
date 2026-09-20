@@ -1482,6 +1482,7 @@
   .hra-vyber-kus:hover { border-color: var(--status-good); }
   .hra-vyber-kus img { width: 64px; height: 64px; object-fit: contain; }
   .hra-vyber-kus b { font-size: 13px; }
+  .hra-vyber-kus i { font-size: 10.5px; font-style: normal; color: var(--text-muted); }
   .d-evo-kus.evo-klikaci { cursor: pointer; }
   .d-evo-kus.evo-klikaci:hover { outline: 2px solid var(--status-good); }
   .dmax-prepinac, .cute-prepinac, .shiny-prepinac, .shadow-prepinac { cursor: pointer; font: inherit;
@@ -2457,19 +2458,25 @@
     overflow: hidden; max-width: 100%; }
   .dv-chip { font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 5px;
     border: 1px solid transparent; white-space: nowrap; line-height: 1.4; cursor: help;
-    flex: 0 0 auto; }
-  .dv-liga { background: color-mix(in srgb, var(--series-1) 22%, transparent);
-    border-color: var(--series-1); }
-  .dv-role { background: color-mix(in srgb, var(--status-good) 18%, transparent);
-    border-color: var(--status-good); }
-  .dv-znacka { background: color-mix(in srgb, var(--status-warning) 18%, transparent);
-    border-color: var(--status-warning); }
+    flex: 0 0 auto;
+    /* Podklad štítku je neprůhledný, aby vypadal stejně na kartě, ve verdiktu
+       i v bublině. `--dv-podklad` se dá přepsat na kontejneru, kdyby někde
+       byla jiná plocha. Vlastní barva textu brání dědění barvy verdiktu. */
+    color: var(--text-primary); }
+  .dv-liga { background: color-mix(in srgb, var(--series-1) 22%, var(--dv-podklad, var(--surface-1)));
+    border-color: var(--series-1); color: var(--text-primary); }
+  .dv-role { background: color-mix(in srgb, var(--status-good) 18%, var(--dv-podklad, var(--surface-1)));
+    border-color: var(--status-good); color: var(--text-primary); }
+  .dv-znacka { background: color-mix(in srgb, var(--status-warning) 18%, var(--dv-podklad, var(--surface-1)));
+    border-color: var(--status-warning); color: var(--text-primary); }
   .dv-chip.dv-rezerva, .dv-chip.dv-naplast { border-style: dashed; }
   .dv-chip.dv-rezerva { border-color: var(--status-warning); }
-  .dv-vic { background: var(--surface-2, transparent); border-color: var(--grid); }
+  .dv-vic { background: var(--surface-2, var(--dv-podklad, var(--surface-1)));
+    border-color: var(--grid); color: var(--text-primary); }
   .dv-chip[hidden] { display: none; }
   /* Pouštěný kus: kde se nevešel. Čárkovaný rámeček, tlumená výplň. */
-  .dv-chip.dv-pod { border-style: dashed; background: transparent; color: var(--text-secondary); }
+  .dv-chip.dv-pod { border-style: dashed;
+    background: var(--dv-podklad, var(--surface-1)); color: var(--text-secondary); }
   .dv-chip.dv-kvalita { border-color: var(--status-critical); }
   /* V detailu se štítky zalamují — místa je dost a „+N" by jen schovávalo. */
   .d-duvody .dv-radek { flex-wrap: wrap; overflow: visible; margin-top: 6px; }
@@ -9299,8 +9306,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var cEvo = b.cesty[b.evoMeta.league];
         pvpLiga = b.evoMeta.league;
         pvpRec = "Po evoluci – " + b.evoMeta.league;
-        pvpSub = (Math.round(cEvo.pct * 1000) / 10) + " % · " + b.evoMeta.name
-          + " #" + b.evoMeta.rank + " · " + coChybi(cEvo);
+        pvpSub = (Math.round(cEvo.pct * 1000) / 10) + " % · " + coChybi(cEvo);
         pvpCesta = popisCesty(cEvo);
       }
       else if (b.listedCapped && b.pvpPot) {
@@ -12248,7 +12254,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var styl = "";
       if (d.kat === "raid" && TYPE_COLORS[d.filtr]) {
         styl = ' style="border-color:' + TYPE_COLORS[d.filtr]
-          + ";background:color-mix(in srgb, " + TYPE_COLORS[d.filtr] + " 24%, transparent)\"";
+          // Neprůhledný podklad: přes průhlednou výplň prosvítalo zelené
+          // podbarvení verdiktu „Ponechat" a typová barva vycházela jinak.
+          + ";background:color-mix(in srgb, " + TYPE_COLORS[d.filtr]
+          + " 24%, var(--dv-podklad, var(--surface-1)))\"";
       }
       return '<span class="dv-chip dv-' + d.kat + (d.mezera ? " dv-naplast" : "")
         + (d.rezerva ? " dv-rezerva" : "") + '" data-duvod="' + escHtml(d.filtr) + '"'
@@ -13924,7 +13933,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // Jedno tlačítko bez ohledu na počet cílů. U Eevee jich bylo osm vedle
     // sebe a lišta se roztáhla přes celou hlavičku — na co se vyvinul,
     // se vybere až v okně z evoluční řady.
-    var kroky = evoKroky(r);
+    var kroky = evoCile(r);
     if (kroky.length) {
       tl.push('<button type="button" class="hra-btn" data-hra="evoluce"'
         + (kroky.length === 1 ? ' data-cil="' + escHtml(kroky[0].jmeno) + '"' : "")
@@ -13972,7 +13981,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
     if (akce === "evoluce" && !cil) {
       // Výběr z evoluční řady: dlaždice se stejnými obrázky jako v rozboru.
-      var moznosti = evoKroky(r);
+      var moznosti = evoCile(r);
       if (!moznosti.length) { hraKus = null; hraAkce = null; return false; }
       if (moznosti.length === 1) { cil = moznosti[0].jmeno; }
       else {
@@ -13982,7 +13991,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           var d = dexByKey(e.klic) || dexEntry(e.jmeno);
           return '<button type="button" class="hra-vyber-kus" data-evo-cil="'
             + escHtml(e.jmeno) + '">' + obrazekHtml(e.jmeno, d, "")
-            + "<b>" + escHtml(e.jmeno) + "</b></button>";
+            + "<b>" + escHtml(e.jmeno) + "</b>"
+            // Cíl přes mezistupeň musí být poznat, ať je jasné, že se
+            // přeskakuje celý krok.
+            + (e.pres && e.pres.length
+                ? '<i>přes ' + escHtml(e.pres.join(", ")) + "</i>" : "")
+            + "</button>";
         }).join("") + "</div>";
         document.getElementById("hraUlozit").hidden = true;
         document.getElementById("hraBox").hidden = false;
