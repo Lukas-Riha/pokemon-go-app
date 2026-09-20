@@ -644,9 +644,14 @@ const d9 = await p9.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
   const mer = (el) => { if (!el) return null; const r = el.getBoundingClientRect();
     return Math.round(r.top) + "/" + Math.round(r.height) + "/" + Math.round(r.width); };
-  const bloky = { identita: ".atlas-detail-identity", staty: ".atlas-ident-stats", verdikt: ".atlas-verdict-radek",
+  // Sloupce hlavičky si výšku řídí obsahem (shadow kus má řádek navíc, útoků
+  // může být šest) — hlídá se u nich jen pozice a šířka.
+  const merPozice = (el) => { if (!el) return null; const r = el.getBoundingClientRect();
+    return Math.round(r.top) + "/" + Math.round(r.width); };
+  const bloky = { identita: ".atlas-detail-identity", verdikt: ".atlas-verdict-radek",
     znacky: ".detail-title", evoluce: ".atlas-evolution-column", prvniSekce: "[data-detail-section]",
-    vyuziti: ".atlas-vyuziti", utoky: ".atlas-ident-utoky" };
+    vyuziti: ".atlas-vyuziti" };
+  const blokyPozice = { staty: ".atlas-ident-stats", utoky: ".atlas-ident-utoky" };
   const out = { kusy: [], pokryti: 0, cena: [] };
   for (const r of P.getRows()) {
     A.openDetail(r.id);
@@ -654,6 +659,7 @@ const d9 = await p9.evaluate(async () => {
     const m = document.getElementById("atlasModal");
     const zaznam = { jm: r.pokemon };
     Object.keys(bloky).forEach((k) => { zaznam[k] = mer(m.querySelector(bloky[k])); });
+    Object.keys(blokyPozice).forEach((k) => { zaznam[k] = merPozice(m.querySelector(blokyPozice[k])); });
     if (m.querySelector(".d-pokryti")) out.pokryti++;
     const vylepsit = [...m.querySelectorAll(".atlas-krok .d-role")].find((k) => /Vylepšit/.test(k.textContent));
     const popis = vylepsit ? vylepsit.querySelector(".d-role-p") : null;
@@ -716,9 +722,11 @@ async function boxKontrola(page) {
         // značky musí začínat na stejném místě i u kusu s jedním typem
         znackaX: (() => { const e = b.querySelector(".detail-title .rarity-chip"); return e ? Math.round(e.getBoundingClientRect().left) : -1; })(),
         typu: b.querySelectorAll(".detail-title .d-type:not(.atlas-typ-mezera)").length,
-        // čtyři boxy hlavičky musí být vždycky stejně vysoké
-        boxy: [...b.querySelectorAll(".atlas-ident-stats > .d-box"), b.querySelector(".atlas-ident-utoky")]
-          .filter(Boolean).map((e) => Math.round(e.getBoundingClientRect().height)),
+        // nadpisy všech čtyř sloupců (i popisek formy) začínají na stejné výšce
+        nadpisyY: [...new Set([...b.querySelectorAll(".atlas-ident-stats .d-box-h, .atlas-ident-utoky .d-box-h")]
+          .map((e) => Math.round(e.getBoundingClientRect().top)))],
+        formaY: (() => { const e = b.querySelector(".atlas-ident-text .atlas-eyebrow");
+          return e ? Math.round(e.getBoundingClientRect().top) : -1; })(),
         // útoky nesmí být prázdné ani přetékat — každý kus má doporučené útoky
         utokuChipu: b.querySelectorAll(".atlas-ident-utoky .d-move").length,
         utokyPretek: (() => { const e = b.querySelector(".atlas-ident-utoky");
@@ -846,11 +854,13 @@ check("…a rozhodovací část se vejde i na nižší okno (1400×900)",
   JSON.stringify({ sbalene: d10b.sbalene.map((x) => x.prebytek), rozbalene: d10b.rozbalene.map((x) => x.prebytek) }));
 // Čtyři boxy hlavičky (staty, IV, strop, útoky) musí mít pořád stejnou výšku
 // a útoky nesmí být nikdy prázdné — doporučené útoky má každý kus.
-check("všechny čtyři boxy v hlavičce jsou stejně vysoké a nemění se podle kusu",
-  [...d10.sbalene, ...d10.rozbalene].every((x) => x.r.boxy.length === 4
-    && new Set(x.r.boxy).size === 1)
-    && new Set([...d10.sbalene, ...d10.rozbalene].map((x) => x.r.boxy[0])).size === 1,
-  JSON.stringify([...d10.sbalene, ...d10.rozbalene].map((x) => [x.r.jmeno, x.r.boxy])));
+// Nadpisy čtyř sloupců i popisek formy stojí na jednom řádku a mezi kusy se
+// nehnou (sbalený a rozbalený stav mají každý svou výšku panelu).
+check("nadpisy sloupců hlavičky stojí na řádku s formou a nehýbou se mezi kusy",
+  [d10.sbalene, d10.rozbalene].every((stav) => stav.every((x) => x.r.nadpisyY.length === 1
+      && Math.abs(x.r.formaY - x.r.nadpisyY[0]) <= 2)
+    && new Set(stav.map((x) => x.r.nadpisyY[0])).size === 1),
+  JSON.stringify([...d10.sbalene, ...d10.rozbalene].map((x) => [x.r.jmeno, x.r.nadpisyY, x.r.formaY])));
 // Popisek řádku po evoluci nese jméno vyvinuté formy (u Eevee je to jediné,
 // co řekne, o kterou z osmi jde); „teď“ a „má“ jsou řádky současného kusu.
 check("…box útoků má vždycky obsah, nepřetéká a rozlišuje současné útoky od těch po evoluci",

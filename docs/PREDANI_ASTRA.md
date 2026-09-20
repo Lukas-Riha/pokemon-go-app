@@ -1206,3 +1206,33 @@ na konci pořadí kusu mezi všemi, co o tu ligu soupeří.
 
 Hlídá to `tests/atlas_vrstva.test.mjs` (98) a `tests/web_app.test.mjs`
 (2345, bloky 259–261).
+
+Kolo 20. 9. (4) — hlavička na jednom řádku, těsný stupeň, jednotné barvy
+------------------------------------------------------------------------
+
+Blok `Claude 20. 9. (9)` na konci `atlas.css`.
+
+- **Nadpisy čtyř sloupců stojí na řádku s „Běžná forma · OZNAČENO ★."**
+  Všechny čtyři sloupce (včetně textu se jménem) jsou `align-self:flex-start`
+  s `padding-top:20px`. Výšku si drží obsah — shadow kus má pod staty řádek
+  navíc, útoků může být šest. Test proto hlídá **pozici nadpisů**, ne výšku
+  sloupců; kdybys je zase chtěla stejně vysoké, uprav i test.
+- **Útoky nemají rámeček** a vejde se jich šest řádků (`max-height:156px`).
+- **Evoluční stupeň je těsný:** obrázek je v `.atlas-evo-ram`, všechno pod ním
+  v novém `.atlas-evo-popis` s pevnou výškou 40 px (46 px rozbaleně). Díky
+  tomu má stupeň konstantní výšku, ikony stojí u každého kusu stejně, šipka
+  sedí přesně mezi nimi a rámeček „tady jsi" obepíná jen kus. U větvené řady
+  (`.d-evo.husty`, Eevee) je popisek naopak volný — podmínky mají víc řádků.
+- **Verdikt má stejné barvy jako karty akcí a tlačítka dole**
+  (`--verdict-fg` se přebíjí na `--status-good/warning/critical`). Tři odstíny
+  téhož stavu vedle sebe mátly. Je to přepsané jen na `.atlas-verdict-first`,
+  tvoje `--atlas-*` proměnné zůstaly beze změny.
+
+V enginu (mimo vrstvu): bubliny rolí (liga, raid typ, gym, Dynamax) končí
+pořadím kusu mezi všemi, co o tu roli soupeří — má ho i kus, který není ani
+mezi držiteli, ani pod čarou. Dynamax bublina ukazuje pořadí i druhé kopii
+druhu, která se z výběru vyřadila. Ve čtyřech buňkách dole zůstává jen
+verdikt, síla v procentech a poznámka o evoluci; zbytek je v bublině.
+
+Hlídá to `tests/atlas_vrstva.test.mjs` (98) a `tests/web_app.test.mjs`
+(2348, bloky 259–262).

@@ -4235,11 +4235,31 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // Kdo se do ligy nevešel, ač druh v limitu pořadí je — po lize, nejlepší
   // druh první. Bublina z toho odpoví na „proč mám v LC jen šest kusů".
   var ligaPodCarou = {};
-  var ligaPoradiVse = {};
+  /** Pořadí kusu mezi VŠEMI, co o danou roli soupeří — jen pro bubliny.
+   *  Klíč je „pvp:GL", „raid:Ice", „gym" nebo „dmax:Ice". Držitelé a kusy
+   *  pod čarou jsou jen špička; tohle řekne, jak daleko je i ten zbytek. */
+  var poradiVsech = {};
+  function zapisPoradi(klic, seznam, idKusu) {
+    if (!seznam || !seznam.length) return;
+    poradiVsech[klic] = poradiVsech[klic] || {};
+    var m = poradiVsech[klic];
+    seznam.forEach(function (x, i) {
+      var id = idKusu ? idKusu(x) : x;
+      if (id !== undefined && id !== null && m[id] === undefined) {
+        m[id] = { poradi: i + 1, celkem: seznam.length };
+      }
+    });
+  }
+  function poradiVseHtml(klic, kusId) {
+    if (kusId === undefined || kusId === null) return "";
+    var v = (poradiVsech[klic] || {})[kusId];
+    if (!v) return "";
+    return '<div class="tip-pozn">V celém rosteru je ' + v.poradi + ". z " + v.celkem + ".</div>";
+  }
   // Pořadí Dmax kusů v Max Battle — všichni kandidáti po typech a tank, ne
   // jen ti se slotem. Bublina štítku „Dynamax" z toho ukáže pořadí ve všech
   // typech, kde kus figuruje.
-  var maxPoradi = { typy: {}, tank: [], slotu: 3 };
+  var maxPoradi = { typy: {}, typyVse: {}, tank: [], slotu: 3 };
   // Kdo drží který slot („raid:Fire", "gym", "pvp:GL"…), seřazené podle
   // pořadí. Skládá se jednou za přepočet — bubliny štítků u verdiktu z něj
   // čtou seznam držitelů, aniž by každá procházela celý roster.
@@ -7424,6 +7444,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    */
   function pridelSloty(base, s) {
     base.forEach(function (b) { b.sloty = []; b.podCarou = []; });
+    // Musí se vynulovat na ZAČÁTKU: raidová pořadí se zapisují dřív než
+    // ligová, a reset uprostřed je předtím mazal.
+    poradiVsech = {};
     // Strop kopií se tu ZÁMĚRNĚ neuplatňuje. Je od redundance — a kus, který
     // dělá práci, jakou žádná lepší kopie neumí, redundantní není: třetí
     // Metagross může být jediný, co smí bránit gym, protože shadow kopie
@@ -7460,6 +7483,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           skore: sila * 1000 + (b.ivPct || 0) + (b.levelNum || 0) / 100000 });
       });
       kand.sort(function (x, y) { return (y.skore - x.skore) || priShode(x.b, y.b); });
+      zapisPoradi("raid:" + typ, kand, function (k) { return k.b.row.id; });
       // Dva nezávislé stropy. CELKEM smí druh držet tolik slotů, kolik je
       // strop kopií (parta o šesti se dá poskládat ze tří druhů po dvou
       // kusech, ale ne ze tří kopií jednoho). NÁPLAST k tomu smí být jen
@@ -7520,7 +7544,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var LIGY_VSE = LEAGUES.map(function (l) { return { label: l.label, nazev: l.nazev }; })
       .concat([{ label: "ML", nazev: "Master League" }]);
     ligaPodCarou = {};
-    ligaPoradiVse = {};
     LIGY_VSE.forEach(function (lg) {
       var podleDruhu = {};
       base.forEach(function (b) {
@@ -7650,10 +7673,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var obsazeno = 0;
       // Pořadí mezi všemi kusy, co o tu ligu soupeří — do bubliny na konec,
       // aby bylo vidět, jak daleko kus je, i když není ani pod čarou.
-      ligaPoradiVse[lg.label] = ligaPoradiVse[lg.label] || {};
-      kand.forEach(function (kp, ip) {
-        ligaPoradiVse[lg.label][kp.b.row.id] = { poradi: ip + 1, celkem: kand.length };
-      });
+      zapisPoradi("pvp:" + lg.label, kand, function (kp) { return kp.b.row.id; });
       kand.forEach(function (k) {
         var vRezerve = obsazeno >= SLOTU_NA_LIGU;
         if (obsazeno >= celkemLiga || (vRezerve && !k.prahOK)) {
@@ -7703,6 +7723,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var d = gymSila(y) - gymSila(x);
       return d || priShode(x, y);
     });
+    zapisPoradi("gym", gymKand, function (b) { return b.row.id; });
     // Stejný strop na kopie jako u raidů: osm gymových slotů se nemá zaplnit
     // osmi Blissey. Bez tohohle si druhá kopie téhož druhu brala slot, i když
     // uživatel má v nastavení strop kopií — a pak se držela jako „díra",
@@ -7754,7 +7775,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     //
     // Do Max Battle se berou tři kusy, takže tři sloty na typ i na tank.
     var dmaxKusy = base.filter(function (b) { return b.dynamax; });
-    maxPoradi = { typy: {}, tank: [], slotu: s.dmaxSlotu };
+    maxPoradi = { typy: {}, typyVse: {}, tank: [], slotu: s.dmaxSlotu };
     var maxZaznam = function (b, pct) {
       return { id: b.row.id, jmeno: b.row.pokemon, cp: b.row.cp || "", pct: pct || 0 };
     };
@@ -7782,6 +7803,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var kand = dmaxTypy[typ].slice().sort(function (x, y) {
           return (silaVTypu(y, typ) - silaVTypu(x, typ)) || priShode(x, y);
         });
+        // Pořadí se bere PŘED vyřazením kopií druhu, jinak druhá kopie
+        // v bublině žádné pořadí neměla.
+        zapisPoradi("dmax:" + typ, kand, function (b) { return b.row.id; });
+        maxPoradi.typyVse[typ] = kand.map(function (b) { return maxZaznam(b, silaVTypu(b, typ)); });
         // od druhu jen jeden kus na typ: tři sloty se nemají zaplnit
         // třemi kusy téhož druhu, když Max Battle chce partu
         var videl = {};
@@ -11923,11 +11948,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // Úplně poslední řádek: kolikátý ten kus v téhle lize doopravdy je.
     // Bez toho se nedalo poznat, jestli je těsně pod čarou, nebo daleko.
     if (kusId !== undefined && kusId !== null) {
-      var vse = (ligaPoradiVse[zkr] || {})[kusId];
-      if (vse) {
-        h += '<div class="tip-pozn">V celém rosteru je v téhle lize '
-          + vse.poradi + ". z " + vse.celkem + ".</div>";
-      }
+      h += poradiVseHtml("pvp:" + zkr, kusId);
     }
     return h;
   }
@@ -12086,7 +12107,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     };
     Object.keys(maxPoradi.typy).forEach(function (typ) { pridej("Max " + typ, maxPoradi.typy[typ]); });
     pridej("Max tank", maxPoradi.tank);
+    // Do výběru se od druhu bere jen jeden kus, takže druhá kopie v seznamech
+    // výš není. Pořadí ale má — jen za lepší kopií.
+    var kopie = false;
+    if (!skupiny.length) {
+      Object.keys(maxPoradi.typyVse || {}).forEach(function (typ) {
+        pridej("Max " + typ, maxPoradi.typyVse[typ]);
+      });
+      kopie = skupiny.length > 0;
+    }
     if (!skupiny.length) return h;
+    if (kopie) {
+      h += '<div class="tip-radek">Od druhu se do Max Battles počítá jen jeden kus'
+        + " — tenhle stojí za lepší kopií.</div>";
+    }
     skupiny.sort(function (a, z) { return (a.i - z.i) || a.nazev.localeCompare(z.nazev); });
     h += '<div class="tip-podnadpis">Pořadí v Max Battle (' + slotu + " na typ, od druhu jeden)</div>";
     var polozka = function (x, n) {
@@ -12100,7 +12134,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       h += '<div class="tip-radek"><b>' + escHtml(g.nazev) + " " + (g.i + 1) + "/" + slotu + "</b>"
         + (g.i >= slotu ? ' <span class="tip-znak">pod čarou</span>' : "") + "</div>"
         + '<ol class="tip-seznam">' + g.list.slice(0, slotu).map(function (x) { return polozka(x); }).join("")
-        + (g.i >= slotu ? polozka(g.list[g.i], g.i + 1) : "") + "</ol>";
+        + (g.i >= slotu ? polozka(g.list[g.i], g.i + 1) : "") + "</ol>"
+        + poradiVseHtml("dmax:" + g.nazev.replace(/^Max /, ""), d.kusId);
     });
     return h + '<div class="tip-radek tip-pozn">Procenta = síla útočníka (u tanku výdrž)'
       + " proti špičce. Veřejný žebříček Max Battle neexistuje.</div>";
@@ -12259,7 +12294,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + "</li>";
     });
     return h + "</ol>" + '<div class="tip-radek tip-pozn">Procenta = síla proti nejlepšímu'
-      + (d.druh === "gym" ? " obránci." : " útočníkovi toho typu.") + "</div>";
+      + (d.druh === "gym" ? " obránci." : " útočníkovi toho typu.") + "</div>"
+      // Klíč slotu je rovnou „raid:Fighting" — `filtr` nese štítek, ne typ.
+      + poradiVseHtml(d.druh === "gym" ? "gym" : d.klic, d.kusId);
   }
 
   /** Štítky do buňky verdiktu. Kolik se vejde, se měří až po vykreslení
@@ -13550,6 +13587,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // Obě čísla jsou na JEDNÉ škále: kolik procent toho, co ve hře zvládne
     // nejlepší možný kus v té roli, odvede tenhle. Díky tomu se dá poprvé říct
     // „do raidu je lepší než do gymu" a neporovnávat útok s obranou.
+    /** Do buňky patří jen to hlavní: první údaj a poznámka o evoluci.
+     *  „Ano – LC · 97.4 % · vylepšit na L20.5" se do buňky nevešlo. */
+    function kratkaHodnota(text) {
+      var casti = String(text || "").split(" · ");
+      if (casti.length < 2) return String(text || "");
+      var ven = [casti[0]];
+      casti.slice(1).forEach(function (c2) {
+        var s2 = c2.trim();
+        // Síla (procento) a poznámka o evoluci zůstávají, zbytek jde do bubliny.
+        if (/^\d+([.,]\d+)?\s*%/.test(s2) || /^(až )?po (evoluci|vývinu)/i.test(s2)) ven.push(c2);
+      });
+      return ven.join(" · ");
+    }
     var rolePct = function (v) {
       return v === null || v === undefined || isNaN(v) ? ""
         : ' <span class="d-role-pct">' + Math.round(v * 100) + " % špičky</span>";
@@ -13562,8 +13612,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       : (c.pvpRec.indexOf("Ano") === 0 ? "good" : "muted");
     // Všechny karty na jeden řádek jako Mega (Lukáš): jen verdikt, text
     // a držitelé slotů jsou v bublině.
-    role.push(roleCardHtml("PvP", c.pvpRec + (c.pvpSub ? " · " + c.pvpSub : ""),
-      pvpKartaTone + " d-role-radek", "", null, c.pvpTitle || ""));
+    var pvpCele = c.pvpRec + (c.pvpSub ? " · " + c.pvpSub : "");
+    role.push(roleCardHtml("PvP", kratkaHodnota(pvpCele),
+      pvpKartaTone + " d-role-radek", "", null,
+      (pvpCele !== kratkaHodnota(pvpCele) ? "<div class=\"tip-hlava\">" + escHtml(pvpCele) + "</div>" : "")
+      + escHtml(c.pvpTitle || "")));
     role.push(roleCardHtml("Raid", c.raidRec + rolePct(c.raidPct),
       (c.raidRec === "Ne" || c.raidRec === "Slabý" ? "muted" : "good") + " d-role-radek", "",
       null, bublinaRole(c.duvody, "raid") || c.raidTitle || ""));
@@ -13578,10 +13631,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + " — to se řídí sloupcem Raid, ne tímhle.")));
     // Mega jen na jeden řádek: priorita a kdo megu drží (Lukáš). Proč stačí
     // jeden kus druhu je v bublině, ne v kartě.
-    role.push(roleCardHtml("Mega", c.mega + (c.megaSub ? " · " + c.megaSub : "")
-      + (c.megaDrzi ? " · drží ji tenhle kus" : ""),
+    var megaCele = c.mega + (c.megaSub ? " · " + c.megaSub : "")
+      + (c.megaDrzi ? " · drží ji tenhle kus" : "");
+    role.push(roleCardHtml("Mega", kratkaHodnota(megaCele),
       (c.mega === "Ne" ? "muted" : (c.megaTone || "good")) + " d-role-radek", "",
-      null, c.megaTitle || ""));
+      null, (megaCele !== kratkaHodnota(megaCele)
+        ? "<div class=\"tip-hlava\">" + escHtml(megaCele) + "</div>" : "")
+        + escHtml(c.megaTitle || "")));
     h += '<div class="d-box-h d-sec-h" data-sekce="naco">Na co je</div>'
       + '<div class="d-roles">' + role.join("") + "</div>";
 

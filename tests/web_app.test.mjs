@@ -16953,6 +16953,77 @@ try {
     s261b.nabidnuto === 0 || s261b.poVraceni.every((v) => !/Zahodit/i.test(v)),
     JSON.stringify(s261b));
 
+  // ---------------------------------------------------------------- 262
+  // Pořadí mezi všemi kusy, co o roli soupeří, je v bublině u ligy, raid
+  // typu i gymu — a má ho i kus, který není ani mezi držiteli, ani pod
+  // čarou. U Dynamaxu ho má i druhá kopie druhu, která se z výběru vyřadila.
+  console.log("\n262) Poradi mezi vsemi v bublinach roli");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s262 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    const rows = [];
+    // Dvacet Machampů: do raidu i gymu se vejde jen pár, zbytek je daleko.
+    for (let i = 0; i < 20; i++) {
+      rows.push({ pokemon: "Machamp", cp: 3000 - i * 60, level: 40 - i,
+        ivAtk: 15 - (i % 6), ivDef: 14 - (i % 5), ivSta: 13 - (i % 4), dynamax: "Ano" });
+    }
+    for (let i = 0; i < 8; i++) {
+      rows.push({ pokemon: "Blissey", cp: 2800 - i * 90, level: 38 - i,
+        ivAtk: 10, ivDef: 15 - (i % 4), ivSta: 15 - (i % 3) });
+    }
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 1200));
+    const comp = P.getComputed(), list = P.getRows();
+    const out = { radky: [], dmax: "" };
+    // Bubliny se čtou z vykresleného rozboru: u kusu, který roli drží
+    // (raid, gym), i u toho nejslabšího, co není nikde.
+    const machampy = list.filter((r) => r.pokemon === "Machamp");
+    const blissey = list.filter((r) => r.pokemon === "Blissey");
+    const slaby = machampy[machampy.length - 1];
+    const tipyKusu = (id) => {
+      const box = document.createElement("div");
+      document.body.append(box);
+      P.atlasDetail(id, box);
+      const t2 = [...box.querySelectorAll("[data-tip]")].map((e) => e.getAttribute("data-tip") || "");
+      box.remove();
+      return t2;
+    };
+    const popis = (t2) => t2.filter((x) => /V celém rosteru je/.test(x))
+      .map((x) => ((/<div class="tip-hlava">([^<]*)/.exec(x) || [])[1] || "?") + " → "
+        + (/V celém rosteru je (\d+)\. z (\d+)/.exec(x) || []).slice(1, 3).join(" z "));
+    const tipySilny = tipyKusu(machampy[0].id);
+    const tipyGym = tipyKusu(blissey[0].id);
+    const tipySlaby = tipyKusu(slaby.id);
+    out.raid = popis(tipySilny).filter((x) => !/Dynamax/.test(x));
+    out.gym = popis(tipyGym).filter((x) => /Gym/i.test(x));
+    out.vRosteru = popis(tipySilny).length + popis(tipyGym).length + popis(tipySlaby).length;
+    out.ukazky = popis(tipySlaby).concat(out.raid, out.gym).slice(0, 8);
+    const box = document.createElement("div");
+    document.body.append(box);
+    P.atlasDetail(slaby.id, box);
+    // Dynamax: druhá kopie druhu má v bublině pořadí i poznámku, proč není
+    // v seznamu výš.
+    const dmaxChip = [...box.querySelectorAll(".dv-chip")]
+      .find((e) => /Dynamax/.test(e.textContent));
+    out.dmax = dmaxChip ? dmaxChip.getAttribute("data-tip") || "" : "";
+    box.remove();
+    return out;
+  });
+  check("bubliny rolí končí pořadím mezi všemi kusy, co o ni soupeří",
+    s262.raid.length >= 1 && s262.gym.length >= 1,
+    JSON.stringify({ raid: s262.raid, gym: s262.gym, ukazky: s262.ukazky }));
+  check("…a má ho i kus, který není ani mezi držiteli, ani pod čarou",
+    s262.ukazky.some((t) => /→ \d+ z \d+/.test(t))
+      && s262.ukazky.some((t) => { const m = /→ (\d+) z (\d+)/.exec(t); return m && Number(m[1]) > 6; }),
+    JSON.stringify(s262.ukazky));
+  check("Dynamax bublina má pořadí i u kopie druhu, která se do výběru nevešla",
+    /Pořadí v Max Battle/.test(s262.dmax)
+      && (/Od druhu se do Max Battles počítá jen jeden kus/.test(s262.dmax)
+        || /V celém rosteru je/.test(s262.dmax)),
+    s262.dmax.replace(/<[^>]+>/g, " ").slice(0, 260));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

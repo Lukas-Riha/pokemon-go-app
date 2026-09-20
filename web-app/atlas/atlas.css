@@ -430,10 +430,11 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
    výška v pixelech se na nižším okně nevešla; takhle jsou pruhy vždycky
    stejné a obrázky stojí u každého kusu se stejným počtem stupňů stejně. */
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-stupen{flex:1 1 0;min-height:0;overflow:hidden}
-/* Obrázek se drží horního okraje pruhu, ne středu obsahu: stupeň s
-   podmínkou navíc (nebo s „tady jsi") je vyšší a vystředěný obsah by
-   ikonu posunul výš než u kusu vedle. */
-.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-kus{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:100%;overflow:hidden}
+/* Stupeň je těsný (obrázek + popisek pevné výšky) a v pruhu stojí na střed.
+   Díky tomu sedí šipka přesně mezi obrázky a rámeček „tady jsi" obepíná
+   jen kus, ne celý pruh. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-kus{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:auto;overflow:visible}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-stupen{display:flex;align-items:center;justify-content:center}
 /* Řádek ligy má pevnou výšku i se třemi řádky textu — dřív se o pár pixelů
    natáhl a celá tabulka se posunula. */
 .atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:52px;justify-content:center}
@@ -472,16 +473,17 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
    evoluční řada s rámečkem jen kolem ikony a štítky verdiktu na dva řádky. */
 /* Nadpisy všech čtyř sloupců stojí na jedné výšce; když má kus řádek navíc
    (shadow bonus), přiroste dolů, nadpis se nehne. */
+/* Všechny čtyři sloupce začínají na stejné výšce od horního okraje hlavičky;
+   výšku si drží obsah, takže se šest řádků útoků vejde celých. */
 .atlas-test .atlas-detail-identity .atlas-ident-stats,
-.atlas-test .atlas-detail-identity .atlas-ident-utoky{padding:18px 0 0;box-sizing:border-box;height:150px;align-self:center}
+.atlas-test .atlas-detail-identity .atlas-ident-utoky{padding:20px 0 0;box-sizing:border-box;height:auto;max-height:156px;align-self:flex-start}
 .atlas-test .atlas-detail-identity .atlas-ident-utoky{border:0;background:none;justify-content:flex-start}
 .atlas-test .atlas-ident-utoky .d-box-h{margin:0 0 5px}
 .atlas-test .atlas-ident-utoky .atlas-sestava{border-top:0;padding-top:0;margin-top:2px}
 /* Dlouhé jméno se zmenší, místo aby se zlomilo na dva řádky. */
 .atlas-test .atlas-ident-text h2.atlas-jmeno-dlouhe{font-size:22px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Zvýraznění „tady jsi" patří k obrázku, ne k celému pruhu stupně. */
-.atlas-test .atlas-evolution-column .d-evo-kus.tady{background:none;outline:0}
-.atlas-test .atlas-evolution-column .d-evo-kus.tady .atlas-evo-ram{outline:2px solid var(--status-good);border-radius:12px;background:var(--page)}
+
 /* Větvená řada: osamocený stupeň (Eevee) patří na střed nad své potomky. */
 .atlas-test .d-evo.husty .d-evo-stupen>.d-evo-kus:only-child{grid-column:1/-1;justify-self:center}
 /* Štítky verdiktu se smí zalomit na druhý řádek a rostou dolů. */
@@ -529,3 +531,26 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-import-tile-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .atlas-import-tile-txt strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .atlas-import-tile-txt span{font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Claude 20. 9. (9): popisek stupně má pevnou výšku, rámeček obepíná kus,
+   nadpisy hlavičky stojí na řádku s „Běžná forma" a verdikt má stejné barvy
+   jako karty akcí a tlačítka dole. */
+.atlas-evo-popis{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;height:40px;overflow:hidden;text-align:center;width:100%}
+/* Větvená řada má u každé formy podmínku na několik řádků — pevná výška
+   popisku je tam na škodu, mřížka je zarovnaná i bez ní. */
+.atlas-test .d-evo.husty .atlas-evo-popis{height:auto;overflow:visible}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-popis{height:46px}
+.atlas-test .atlas-evolution-column .d-evo-kus.tady{outline:2px solid var(--status-good);background:var(--page);border-radius:12px;padding:5px 7px}
+/* Šipka vyplní mezeru mezi stupni a její znak je v ní na střed. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-sip{display:flex;align-items:center;justify-content:center}
+/* Nadpisy sloupců začínají na stejném řádku jako „Běžná forma · OZNAČENO". */
+.atlas-test .atlas-detail-identity .atlas-ident-text{padding-top:20px;box-sizing:border-box;align-self:flex-start;height:auto}
+.atlas-test .atlas-ident-text .atlas-eyebrow{margin:0 0 5px;line-height:1.25}
+/* Šest řádků útoků se musí vejít celých. */
+.atlas-ident-utoky .atlas-sestava-utoky{gap:1px}
+.atlas-ident-utoky .d-move{line-height:1.3}
+.atlas-ident-utoky .atlas-sestava{margin-top:1px}
+/* Verdikt používá stejnou zelenou/oranžovou/červenou jako karty akcí
+   a tlačítka „Pustit / Nechat" — tři odstíny téhož stavu mátly. */
+.atlas-test .atlas-verdict-first[data-verdict=good]{--verdict-fg:var(--status-good);--verdict-bg:color-mix(in srgb,var(--status-good) 13%,var(--surface-1))}
+.atlas-test .atlas-verdict-first[data-verdict=warning]{--verdict-fg:var(--status-warning);--verdict-bg:color-mix(in srgb,var(--status-warning) 13%,var(--surface-1))}
+.atlas-test .atlas-verdict-first[data-verdict=critical]{--verdict-fg:var(--status-critical);--verdict-bg:color-mix(in srgb,var(--status-critical) 13%,var(--surface-1))}
