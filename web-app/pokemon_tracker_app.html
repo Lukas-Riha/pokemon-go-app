@@ -13393,12 +13393,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           ? "Označený jako Dynamax (z Max Battle). Klikni a zruš to."
           : "Není označený jako Dynamax. Pokud je z Max Battle, klikni.")
       + '">DMAX</button>';
-    // Pořadí značek všude stejné (Lukáš): DMAX, 100 %, CUTE, pak ostatní.
-    // 100 % není přepínač, plyne z IV a zapnout ani vypnout se nedá —
-    // třída `sto-znacka` jí dá velikost přepínačů.
-    if (c.stoProcent) {
-      chips += '<span class="rarity-chip r-H sto-znacka" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
-    }
     // CUTE je čistě osobní značka. Přepíná se stejně jako DMAX, aby se dala
     // nastavit v detailu i při čištění boxu, kde se rozhoduje nejrychleji.
     chips += '<button type="button" class="rarity-chip r-C cute-prepinac'
@@ -13418,6 +13412,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + ' vylepšení stojí poloviční prach a IV má zaručeně aspoň 12/12/12.'
         + ' Nejlevnější kus na dotažení do ligy; z výměny se lucky nedělá'
         + ' znovu, takže tenhle je nenahraditelný.">LUCKY</span>';
+    }
+    // 100 % je až na konci: není to přepínač (plyne z IV) a kdyby stálo mezi
+    // nimi, posunulo by u dokonalého kusu všechny ostatní značky jinam.
+    // Třída `sto-znacka` mu dá velikost přepínačů.
+    if (c.stoProcent) {
+      chips += '<span class="rarity-chip r-H sto-znacka" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
     }
     h += '<div class="detail-title"><span class="d-name">' + r.pokemon + "</span>" + chips
       + hraPruhHtml(r)
@@ -14683,9 +14683,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             if (c.dynamax) {
               chips += '<span class="rarity-chip r-D" title="Dynamax — použitelný v Max Battles">DMAX</span>';
             }
-            if (c.stoProcent) {
-              chips += '<span class="rarity-chip r-H" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
-            }
             if (c.cute) {
               chips += '<span class="rarity-chip r-C" title="Označený jako CUTE —'
                 + ' appka ho nikdy nenabídne k vyhození">CUTE</span>';
@@ -14693,6 +14690,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             if (c.shiny) {
               chips += '<span class="rarity-chip r-S" title="Shiny — hra ho nepustí'
                 + ' do hromadného výběru, vyplatí se spíš vytradovat">SHINY</span>';
+            }
+            // 100 % je až za přepínatelnými značkami: plyne z IV, nedá se
+            // zapnout ani vypnout, a kdyby stálo mezi nimi, posunulo by
+            // u dokonalého kusu všechny ostatní.
+            if (c.stoProcent) {
+              chips += '<span class="rarity-chip r-H" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
             }
             if (c.lucky) {
               chips += '<span class="rarity-chip r-L2" title="Lucky — vylepšení'

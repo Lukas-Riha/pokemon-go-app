@@ -1293,3 +1293,29 @@ zpátky** — tabulku čtou i jiné části appky a testy, i když není vidět.
 ukusovaly první písmeno nadpisu) a mají mezi sebou 22 px místo 12 px.
 V bublině evoluční řady svítí pořadí v lize zeleně jen tehdy, když se vejde do
 nastaveného limitu — Togekiss #166 byl zelený při limitu #50.
+
+Kolo 20. 9. (7) — roster bez tabulky, detail jako čištění boxu
+---------------------------------------------------------------
+
+Bloky `Claude 20. 9. (12)` a `(13)`.
+
+- **Přepínač „Úplná tabulka / Stručné karty" je pryč** — dlaždice jsou jediný
+  pohled. `compact` je natvrdo `true` a uložená volba se ignoruje.
+  `.atlas-mode` je schované a **řazení se přesunulo do řádku příkazů**, mezi
+  hledání a „Zobrazit" (`atlas.js`, seznam prvků v `.atlas-roster-commandbar`).
+  Nad seznamem tím zmizel celý pruh.
+- **Detail vypadá jako rozbor v čištění boxu:** tabulka lig má červený tón
+  u slabého pořadí, pruh kvality je skrytý, poslední řádek nemá linku,
+  evoluční sloupec začíná u verdiktu a má pevnou výšku
+  (`--atlas-evo-vyska`, výchozí 520 px) a značky začínají na stejné svislici
+  i u kusu s jedním typem (doplňuje se `.atlas-typ-mezera`, stejně jako v boxu).
+- **Poznámky v evoluční řadě** („Tenhle druh se nevyvíjí.", „Řada se větví…")
+  jsou v rozboru schované. V enginu zůstávají — visí na nich testy hlavní sady.
+- **100 % je až za přepínatelnými značkami** (DMAX, CUTE, SHINY), aby se
+  u dokonalého kusu ostatní neposouvaly. Platí v dlaždicích, v tabulce
+  i v rozboru; testy na pořadí jsou upravené v obou sadách.
+- Drobnosti: menší mezery mezi stupni evoluční řady (ohraničení se u tří
+  stupňů nevešlo), větší mezery mezi staty/IV/stropem a útoky, pevná výška
+  `h2` (u dlouhého jména se zmenší písmo, ale CP a level se nehnou), větší
+  rozestup řádků u větvené řady (Eevee) a stabilnější klíč pro nepřekreslování
+  evoluční řady — bere se posloupnost druhů, ne celé HTML.

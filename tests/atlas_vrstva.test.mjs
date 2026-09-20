@@ -414,7 +414,9 @@ const d7 = await vzhled.evaluate(async () => {
 });
 check("tmavý režim je výchozí", d7.tema === "dark", String(d7.tema));
 check("nad seznamem už není popisek „Zobrazení rosteru“", !/Zobrazení rosteru/.test(d7.modeText), d7.modeText);
-const PORADI_TAGU = ["SHADOW", "PURIFIED", "DMAX", "100%", "CUTE", "SHINY", "LUCKY"];
+// 100 % je až za přepínači: plyne z IV, nedá se přepnout, a kdyby stálo
+// mezi nimi, posunulo by u dokonalého kusu všechny ostatní značky.
+const PORADI_TAGU = ["SHADOW", "PURIFIED", "DMAX", "CUTE", "SHINY", "100%", "LUCKY"];
 const vPoradi = (t) => { const i = t.map((x) => PORADI_TAGU.indexOf(x)).filter((x) => x > -1); return i.every((v, k) => !k || v > i[k - 1]); };
 check("značky u jména v kartě: DMAX, 100%, CUTE",
   d7.tagy.indexOf("DMAX") > -1 && d7.tagy.indexOf("100%") > -1 && d7.tagy.indexOf("CUTE") > -1 && vPoradi(d7.tagy),

@@ -572,3 +572,45 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-stats{gap:22px}
 .atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-utoky{margin-left:22px}
 .atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-text{flex:0 0 150px}
+/* Claude 20. 9. (12): jediný pohled na roster, těsnější evoluční řada,
+   větší rozestupy v hlavičce a poznámky v řadě pryč. */
+/* Přepínač „Úplná tabulka / Stručné karty" je pryč, řazení se přesunulo
+   do řádku příkazů — nad seznamem tím zmizel celý jeden pruh. */
+.atlas-test .atlas-mode{display:none}
+.atlas-test .atlas-roster-commandbar .atlas-mode-controls{display:flex;align-items:center;gap:7px}
+.atlas-test .atlas-roster-commandbar .atlas-mode-controls label{font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.atlas-test .atlas-roster-commandbar .atlas-mode-controls select{min-height:42px}
+.atlas-test .atlas-roster-commandbar [data-atlas-action=mode]{display:none}
+/* Evoluční řada: mezi stupni menší mezera, ať se ohraničení vejde celé. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-sip{margin:0}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty){gap:0}
+/* Větvená řada (Eevee): řádky od sebe, ať podmínka nezasahuje do ikony. */
+.atlas-test .d-evo.husty .d-evo-stupen{row-gap:14px}
+/* Hlavička: strop je užší, staty a IV dostanou víc místa a mezery vzrostou. */
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-stats{gap:30px;grid-template-columns:minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,.8fr)}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-utoky{margin-left:30px}
+/* Jméno má pevnou výšku, takže menší písmo u dlouhého jména neposune CP. */
+.atlas-test .atlas-ident-text h2{height:34px;display:flex;align-items:center;margin:0}
+/* Poznámky v evoluční řadě („nevyvíjí se", „větví se") jsou v rozboru
+   zbytečné — řadu je vidět. */
+.atlas-test .atlas-evolution-column .d-evo>.d-note{display:none}
+/* Claude 20. 9. (13): detail vypadá stejně jako rozbor v čištění boxu. */
+/* Tabulka lig: slabé pořadí má červený tón, pruh kvality nezabírá místo
+   a pod posledním řádkem nezůstane kus linky. */
+.atlas-test .atlas-detail-modern .d-ligy-tab td.d-lg-slaby{background:color-mix(in srgb,var(--status-critical) 15%,transparent)!important}
+.atlas-test .atlas-detail-modern .d-ligy-tab .d-lg-bar{display:none!important}
+.atlas-test .atlas-detail-modern .d-ligy-tab .d-lg-hlava{flex-wrap:nowrap;gap:6px}
+.atlas-test .atlas-detail-modern .d-ligy-tab tr:last-child>*{border-bottom:0!important}
+.atlas-test .atlas-detail-modern [data-detail-section=ligy]{border-bottom:0}
+/* Evoluční řada začíná u verdiktu a má pevnou výšku, takže se nezmenšuje
+   podle toho, kolik stupňů řada má. */
+.atlas-test .atlas-detail-modern .atlas-evolution-column{align-self:flex-start}
+.atlas-test .atlas-detail-modern .atlas-evolution-column>.d-evo-side{height:var(--atlas-evo-vyska,520px)}
+.atlas-test .atlas-detail-modern .atlas-evolution-column>.d-evo-side>.d-evo{height:100%;display:flex;flex-direction:column;justify-content:space-evenly}
+.atlas-test .atlas-detail-modern .atlas-evolution-column .d-evo:not(.husty) .d-evo-stupen{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center}
+.atlas-test .atlas-detail-modern .atlas-evolution-column .d-evo:not(.husty) .d-evo-kus{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:auto}
+.atlas-test .atlas-detail-modern .atlas-evolution-column .d-evo:not(.husty) .d-evo-sip{display:flex;align-items:center;justify-content:center;margin:0;font-size:28px;line-height:1}
+/* Značky začínají na stejné svislici i u kusu s jedním typem. */
+.atlas-test .atlas-detail-modern .detail-title .atlas-typ-mezera{visibility:hidden}
+/* Evoluční sloupec lícuje s hlavičkou nahoře i se spodkem čtyř buněk dole. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column{align-self:stretch}

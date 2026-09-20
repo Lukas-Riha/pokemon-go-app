@@ -9632,10 +9632,13 @@ try {
       && znackaVzhled.sto.h === znackaVzhled.shiny.h
       && znackaVzhled.sto.fs === znackaVzhled.shiny.fs,
     JSON.stringify(znackaVzhled));
-  // Pořadí značek všude stejné (17. 9.): DMAX, 100%, CUTE, SHINY, LUCKY.
-  check("…a stojí mezi DMAX a CUTE",
+  // Pořadí značek všude stejné (20. 9.): přepínatelné (DMAX, CUTE, SHINY)
+  // drží pevná místa a 100 % stojí až za nimi — plyne z IV, přepnout se nedá
+  // a mezi nimi by u dokonalého kusu všechny ostatní posunulo.
+  check("…a stojí až za přepínatelnými značkami",
     znackaVzhled.poradi.indexOf("100%") > znackaVzhled.poradi.indexOf("DMAX")
-      && znackaVzhled.poradi.indexOf("100%") < znackaVzhled.poradi.indexOf("CUTE")
+      && znackaVzhled.poradi.indexOf("100%") > znackaVzhled.poradi.indexOf("CUTE")
+      && znackaVzhled.poradi.indexOf("100%") > znackaVzhled.poradi.indexOf("SHINY")
       && znackaVzhled.poradi.indexOf("CUTE") < znackaVzhled.poradi.indexOf("SHINY"),
     JSON.stringify(znackaVzhled.poradi));
 
@@ -16434,7 +16437,8 @@ try {
   check("…Gyarados: 100 % před CUTE",
     gyaDuvody.indexOf("znacka:100 %") > -1 && gyaDuvody.indexOf("znacka:100 %") < gyaDuvody.indexOf("znacka:CUTE"),
     JSON.stringify(gyaDuvody));
-  const TAG_PORADI = ["SHADOW", "PURIFIED", "DMAX", "100%", "CUTE", "SHINY", "LUCKY"];
+  // 100 % je až za přepínatelnými značkami — viz komentář u kontroly výš.
+  const TAG_PORADI = ["SHADOW", "PURIFIED", "DMAX", "CUTE", "SHINY", "100%", "LUCKY"];
   const tagyOk = poradi255.tagy.every((t) => {
     const idx = t.map((x) => TAG_PORADI.indexOf(x)).filter((i) => i > -1);
     return idx.every((v, i) => !i || v > idx[i - 1]);
