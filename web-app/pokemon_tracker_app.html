@@ -3866,8 +3866,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     sky: "sky", land: "land", hero: "hero"
   };
 
+  // Regexy forem se kompilují jednou. Uvnitř `dexKey` jich vznikalo dvacet
+  // při KAŽDÉM volání — a `dexKey` se volá statisíckrát za jeden přepočet.
+  var FORM_WORD_RE = Object.keys(FORM_WORDS).map(function (w) {
+    return { re: new RegExp("\\b" + w + "\\b"), hodnota: FORM_WORDS[w] };
+  });
+  // Výsledek závisí jen na jméně a na datech, která se po načtení nemění,
+  // takže se dá zapamatovat. Jména se v rosteru opakují (400 kusů, ~20 druhů)
+  // a tohle byla nejdražší funkce celého přepočtu.
+  var dexKeyCache = new Map();
+
   /** Klíč do pokédexu. Musí odpovídat funkcím norm()/dex_key() v tools/build_pokedex.py. */
   function dexKey(name) {
+    var cacheKlic = String(name === undefined || name === null ? "" : name);
+    if (dexKeyCache.has(cacheKlic)) return dexKeyCache.get(cacheKlic);
+    var vysledek = dexKeyVypocet(cacheKlic);
+    // Pojistka proti nekonečnému růstu u překlepů v ručně psaných jménech.
+    if (dexKeyCache.size > 5000) dexKeyCache.clear();
+    dexKeyCache.set(cacheKlic, vysledek);
+    return vysledek;
+  }
+
+  function dexKeyVypocet(name) {
     // Calcy píše velikost Zygarda procenty, herní data slovem. Přeložit se to
     // musí DŘÍV než přes cleanName — ten z názvu odstraňuje čísla (kvůli
     // přejmenování typu „Metagross 15/14/13") a „10 %" by spolkl, takže by
@@ -3879,11 +3899,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var raw = deaccent(cleanName(vstup)).toLowerCase().replace(/♀/g, "f").replace(/♂/g, "m");
     raw = raw.replace(/\b(shadow|purified|lucky|mega|primal)\b/g, " ");
     var suffix = "";
-    Object.keys(FORM_WORDS).forEach(function (w) {
-      if (suffix) return;
-      var re = new RegExp("\\b" + w + "\\b");
-      if (re.test(raw)) { suffix = FORM_WORDS[w]; raw = raw.replace(re, " "); }
-    });
+    for (var fi = 0; fi < FORM_WORD_RE.length; fi++) {
+      var fw = FORM_WORD_RE[fi];
+      if (fw.re.test(raw)) { suffix = fw.hodnota; raw = raw.replace(fw.re, " "); break; }
+    }
 
     // Dřív se všechna slova slepila dohromady a zkusil se jen výsledek:
     // „Squawkabilly Blue" -> „squawkabillyblue", což v pokédexu není, a druh
@@ -8049,7 +8068,38 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return nej && nej.length ? nej.join(", ") : "";
   }
 
+  /* Jeden přepočet celého rosteru stojí u 400 kusů ~65 ms a po každé změně
+     se volal čtyřikrát: tabulka, dlaždice, přehled a detail si ho každý
+     vyžádal zvlášť. Výsledek závisí jen na rosteru, nastavení a seznamu
+     puštěných kusů — otisk z nich se udělá řádově rychleji než celý výpočet,
+     takže se opakované volání vrátí z paměti.
+
+     POZOR: `analyze(list)` se zvláštním seznamem (zkouška „co kdyby") přepíše
+     i globální stav (`poradiVsech`, `maxPoradi`, `ligaPodCarou`, `b.sloty`).
+     Po něm se proto paměť zahazuje, aby další volání stav zase srovnalo. */
+  var analyzaCache = null, analyzaOtisk = "";
+  function analyzaOtiskDat() {
+    try {
+      // Nestačí `getSettings()`: část přepínačů (třeba „Shadow a Lucky držet
+      // vždy") čte výpočet přímo z políčka a v tom objektu není. Otisk proto
+      // bere celý seznam nastavení podle id.
+      var nast = SETTING_IDS.map(function (id) { return id + "=" + nastaveniHodnota(id); }).join(";");
+      return JSON.stringify(rows) + "|" + nast + "|" + JSON.stringify(discarded)
+        + "|" + (soloProhlidka ? "1" : "0");
+    } catch (e) { return ""; }
+  }
   function analyze(list) {
+    if (list) { analyzaCache = null; analyzaOtisk = ""; return analyzeVypocet(list); }
+    var otisk = analyzaOtiskDat();
+    if (otisk && otisk === analyzaOtisk && analyzaCache) return analyzaCache;
+    // BEZ argumentu: `analyzeVypocet(rows)` by se uvnitř tvářilo jako
+    // pomocný výpočet a neuložilo by `lastBase`, na kterém stojí detail.
+    analyzaCache = analyzeVypocet();
+    analyzaOtisk = otisk;
+    return analyzaCache;
+  }
+
+  function analyzeVypocet(list) {
     var s = getSettings();
     var zdroj = list || rows;
 
@@ -12779,8 +12829,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // POZOR na význam: tohle je skóre DRUHU z PvPoke (0–100), ne procento
       // tvého kusu. Psalo se to jako „91,6 %" a v rozboru kusu vedle stálo
       // „96,2 %" — dvě různé věci stejným zápisem u téhož pokémona.
+      // Zeleně jen to, co se vejde do TVÉHO limitu pořadí. „Je v metě"
+      // znamená jen „PvPoke ten druh zná" — Togekiss #166 svítil zeleně,
+      // přestože rozpočet bere do #50.
       h += radek(lg.nazev, "#" + p.rank + " · síla " + p.pct,
-        p.jeMeta ? "dobre" : "");
+        p.rank <= (getSettings().rankLimit || 0) ? "dobre"
+          : (p.jeMeta ? "" : "slabe"));
     });
     if (!maLigu) h += radek("Ligy", "nehraje žádnou", "slabe");
 

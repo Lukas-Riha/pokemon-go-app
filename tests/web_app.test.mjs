@@ -17024,6 +17024,56 @@ try {
         || /V celém rosteru je/.test(s262.dmax)),
     s262.dmax.replace(/<[^>]+>/g, " ").slice(0, 260));
 
+  // ---------------------------------------------------------------- 263
+  // Přepočet rosteru si pamatuje výsledek, dokud se nezmění data. Otisk musí
+  // pokrýt VŠECHNO, na čem výpočet stojí — roster, nastavení (i přepínače,
+  // které se čtou přímo z políčka) i seznam puštěných kusů. Jinak by appka
+  // ukazovala starý verdikt.
+  console.log("\n263) Pamet prepoctu se zahazuje pri kazde zmene");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s263 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Rattata", cp: 300, level: 20, ivAtk: 5, ivDef: 5, ivSta: 5, forma: "Shadow" },
+      { pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15 }
+    ]);
+    await new Promise((r) => setTimeout(r, 900));
+    const rows = P.getRows();
+    const id = rows.find((r) => r.pokemon === "Rattata").id;
+    const verdikt = () => ((P.getComputed() || {})[id] || {}).keep || "?";
+    const out = { start: verdikt() };
+    // 1) změna nastavení, které se čte přímo z políčka
+    const prep = document.getElementById("keepForms");
+    const puvodni = prep.checked;
+    prep.checked = !puvodni;
+    prep.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 500));
+    out.poNastaveni = verdikt();
+    prep.checked = puvodni;
+    prep.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 500));
+    out.zpet = verdikt();
+    // 2) změna kusu přímo v datech
+    const kus = P.getRows().find((r) => r.id === id);
+    out.pred = verdikt();
+    kus.ivAtk = 15; kus.ivDef = 15; kus.ivSta = 15;
+    out.poZmeneKusu = ((P.getComputed() || {})[id] || {}).ivPct;
+    out.ivPredtim = 15 / 45;
+    // 3) dvakrát za sebou beze změny = stejný objekt (paměť funguje)
+    out.stejny = P.getComputed() === P.getComputed();
+    return out;
+  });
+  check("změna nastavení čteného z políčka zahodí paměť přepočtu",
+    s263.poNastaveni !== s263.start && s263.zpet === s263.start,
+    JSON.stringify(s263));
+  check("…a změna kusu v datech taky",
+    typeof s263.poZmeneKusu === "number" && s263.poZmeneKusu > 0.9,
+    JSON.stringify(s263));
+  check("…zatímco beze změny se výsledek nepočítá znovu",
+    s263.stejny === true, JSON.stringify(s263));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

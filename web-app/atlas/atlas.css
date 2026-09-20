@@ -564,3 +564,11 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-evolution-column .d-evo-sip{font-size:34px;margin:6px 0}
 /* Šestý řádek útoků se o pixel nevešel. */
 .atlas-test .atlas-detail-identity .atlas-ident-utoky{max-height:162px}
+/* Claude 20. 9. (11): sloupce hlavičky bez zakulacení a s větší mezerou.
+   Boxům zůstalo `border-radius:10px` z doby, kdy měly rámeček — s
+   `overflow:hidden` to ukusovalo první písmeno nadpisu. */
+.atlas-test .atlas-box-rozbor .atlas-ident-stats>.d-box{border-radius:0;overflow:visible}
+.atlas-test .atlas-detail-identity .atlas-ident-utoky{border-radius:0}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-stats{gap:22px}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-utoky{margin-left:22px}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-text{flex:0 0 150px}

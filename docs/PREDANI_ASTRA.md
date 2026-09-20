@@ -1258,3 +1258,38 @@ V enginu (mimo vrstvu): pořadí v lize se počítá zvláštním průchodem př
 a od druhu jeden kus, takže druh mimo limit (#59 při limitu #50) ani druhá
 kopie žádné pořadí neměli. Stejně tak se Dmax pořadí počítá podle útočných
 typů kusu, ne jen podle typů, ve kterých druh stačí na raid.
+
+Kolo 20. 9. (6) — výkon a drobnosti v hlavičce
+-----------------------------------------------
+
+**Výkon** (měřeno na 400 kusech):
+
+| co | před | po |
+|---|---|---|
+| první přepočet po načtení | 1027 ms | 201 ms |
+| `getComputed()` (opakovaně) | 204 ms | 2 ms |
+| přechod na další kus v čištění boxu | 280–580 ms | 51–235 ms |
+| překreslení dlaždic při jedné změně | 400 dlaždic | jen ty změněné |
+
+Tři věci:
+
+1. **`dexKey` si pamatuje výsledky.** Uvnitř se kompilovalo dvacet regulárních
+   výrazů při každém volání a volá se statisíckrát za přepočet.
+2. **Přepočet rosteru se pamatuje**, dokud se nezmění data. Otisk je roster +
+   **všechna** nastavení podle `SETTING_IDS` + seznam puštěných kusů. Nestačí
+   `getSettings()` — část přepínačů (např. „Shadow a Lucky držet vždy") čte
+   výpočet přímo z políčka. Kdyby ses někdy dívala, proč se něco nepřepočítá,
+   je to tady.
+3. **`renderRoster` vyměňuje jen změněné dlaždice.** Když se nezmění pořadí ani
+   počet, porovná se HTML dlaždice proti minulému a přepíše se jen to, co je
+   jiné. Pokud budeš `rowHTML` měnit, nech ho čistou funkcí dat — na tom to
+   stojí.
+
+Zkoušel jsem i nekreslit schovanou tabulku rosteru (v tvém rozhraní ji nikdo
+nevidí, ale stojí 34 tisíc zásahů do DOMu na jednu změnu). **Vrátil jsem to
+zpátky** — tabulku čtou i jiné části appky a testy, i když není vidět.
+
+**Vzhled:** sloupce hlavičky už nemají zaoblené rohy (s `overflow:hidden`
+ukusovaly první písmeno nadpisu) a mají mezi sebou 22 px místo 12 px.
+V bublině evoluční řady svítí pořadí v lize zeleně jen tehdy, když se vejde do
+nastaveného limitu — Togekiss #166 byl zelený při limitu #50.

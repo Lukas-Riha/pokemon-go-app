@@ -91,7 +91,31 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   function rowHTML(r){const c=cache.computed[r.id]||{},iv=c.ivPct;return `<button class="atlas-row atlas-roster-tile" data-atlas-detail="${esc(r.id)}" aria-label="Detail ${esc(r.pokemon)}"><span class="atlas-tile-heading"><b>${esc(r.pokemon)}${r.star?' <span class="atlas-tile-star" aria-label="Označeno">★</span>':''}</b><span class="atlas-num"><small>CP</small>${fmt(r.cp)}</span></span><span class="atlas-poke">${monImage(r)}<span class="atlas-tile-info"><span class="atlas-tile-stats"><b>${iv==null?'IV neznámé':Math.round(iv*100)+' % IV'}</b><span>L${esc(r.level||'?')}</span></span><span class="atlas-tile-tags">${window.AtlasTags(c,r)}</span></span></span><span class="atlas-decision"><span class="atlas-pill" data-verdict="${window.AtlasVerdict(c).tone}">${decision(c)}</span>${(P.atlasDuvody&&P.atlasDuvody(c))||'<small>'+esc(role(c))+'</small>'}</span><span class="atlas-arrow" aria-hidden="true">${icon('next')}</span></button>`;}
 
   function renderedRows(){const ids=[...$('#tbody').querySelectorAll('tr[data-row-id]')].map(tr=>tr.dataset.rowId);const map=new Map(cache.rows.map(r=>[r.id,r]));return ids.map(id=>map.get(id)).filter(r=>r&&(!missingOnly||!r.fastMove||!r.charged1)&&(!window.AtlasRosterMatch||window.AtlasRosterMatch(r,cache.computed[r.id]||{})));}
-  function renderRoster(){const rows=renderedRows(),scroll=list.scrollTop,first=new Map([...list.querySelectorAll('.atlas-roster-tile')].map(el=>[el.dataset.atlasDetail,el.getBoundingClientRect()]));const previousIds=[...first.keys()].join('|'),nextIds=rows.map(r=>String(r.id)).join('|');list.innerHTML=`${missingOnly?'<div class="atlas-small-note">Pouze kusy bez úplných útoků · <button class="atlas-mini-btn" data-atlas-action="reset-list">Zrušit filtr útoků</button></div>':''}${rows.map(rowHTML).join('')||'<div class="atlas-empty">Filtrům neodpovídá žádný Pokémon. Zkus zrušit hledání nebo změnit filtr.</div>'}`;list.scrollTop=previousIds===nextIds?scroll:0;
+  // Dlaždice se překreslovaly všechny při každé změně: u 400 kusů to bylo
+  // 34 tisíc zásahů do DOMu na jedno kliknutí (třeba přepnutí značky) a mezi
+  // kusy se pak „sekalo". Když se pořadí ani počet nezmění, vymění se jen ty
+  // dlaždice, jejichž HTML je jiné — obvykle jedna nebo dvě.
+  let posledniHtml = [], posledniPoradi = '';
+  function renderRoster(){const rows=renderedRows(),scroll=list.scrollTop,first=new Map([...list.querySelectorAll('.atlas-roster-tile')].map(el=>[el.dataset.atlasDetail,el.getBoundingClientRect()]));const previousIds=[...first.keys()].join('|'),nextIds=rows.map(r=>String(r.id)).join('|');
+  const noveHtml=rows.map(rowHTML);
+  if(!missingOnly&&rows.length&&previousIds===nextIds&&posledniPoradi===nextIds
+    &&posledniHtml.length===rows.length){
+    const dlazdice=[...list.querySelectorAll('.atlas-roster-tile')];
+    if(dlazdice.length===rows.length){
+      const sablona=document.createElement('div');
+      for(let i=0;i<rows.length;i++){
+        if(noveHtml[i]===posledniHtml[i])continue;
+        sablona.innerHTML=noveHtml[i];
+        const nova=sablona.firstElementChild;
+        if(nova)dlazdice[i].replaceWith(nova);
+      }
+      posledniHtml=noveHtml;list.scrollTop=scroll;
+      if(P.srovnejDuvody)P.srovnejDuvody(list);
+      return;
+    }
+  }
+  posledniHtml=noveHtml;posledniPoradi=nextIds;
+  list.innerHTML=`${missingOnly?'<div class="atlas-small-note">Pouze kusy bez úplných útoků · <button class="atlas-mini-btn" data-atlas-action="reset-list">Zrušit filtr útoků</button></div>':''}${noveHtml.join('')||'<div class="atlas-empty">Filtrům neodpovídá žádný Pokémon. Zkus zrušit hledání nebo změnit filtr.</div>'}`;list.scrollTop=previousIds===nextIds?scroll:0;
  if(previousIds!==nextIds&&first.size&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const viewport=list.getBoundingClientRect();list.querySelectorAll('.atlas-roster-tile').forEach(el=>{const before=first.get(el.dataset.atlasDetail),after=el.getBoundingClientRect();if(after.bottom<viewport.top||after.top>viewport.bottom)return;if(before&&before.bottom>=viewport.top&&before.top<=viewport.bottom){const x=before.left-after.left,y=before.top-after.top;if(x||y)el.animate([{transform:`translate(${x}px,${y}px)`},{transform:'translate(0,0)'}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'})}else el.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:200,easing:'ease-out'})})}
  if(P.srovnejDuvody)P.srovnejDuvody(list);const sortState=P.snapshot(),sortValue=sortState.sortKey+':'+sortState.sortDir;$('#atlasSort').value=[...$('#atlasSort').options].some(o=>o.value===sortValue)?sortValue:'';mode.querySelector('button').textContent=compact?'Úplná tabulka':'Stručné karty';}
   function renderHome(){if(window.AtlasRenderHome)window.AtlasRenderHome(home);}
