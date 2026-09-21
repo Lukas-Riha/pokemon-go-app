@@ -614,3 +614,12 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-detail-modern .detail-title .atlas-typ-mezera{visibility:hidden}
 /* Evoluční sloupec lícuje s hlavičkou nahoře i se spodkem čtyř buněk dole. */
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column{align-self:stretch}
+/* Claude 21. 9.: drobnosti v rosteru a v detailu. */
+/* Šipka na dlaždici říkala „klikni a otevře se detail" — to je zřejmé
+   a jen brala místo. */
+.atlas-test #atlasRoster .atlas-roster-tile .atlas-arrow{display:none}
+/* Nabídka „Správa rosteru" se rozbalovala uvnitř lišty příkazů, takže si
+   vyrobila vlastní posuvník. Patří přes roster. */
+.atlas-test .atlas-roster-fixed-controls,
+.atlas-test .atlas-roster-commandbar{overflow:visible}
+.atlas-test .atlas-roster-commands>div{z-index:400}

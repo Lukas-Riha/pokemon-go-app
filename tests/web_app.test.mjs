@@ -17020,6 +17020,51 @@ try {
   check("…zatímco beze změny se výsledek nepočítá znovu",
     s263.stejny === true, JSON.stringify(s263));
 
+  // ---------------------------------------------------------------- 264
+  // Prázdný roster se přes uložený neprázdný nesmí zapsat sám od sebe.
+  // Stačilo jedno nepovedené načtení a první uložení smazalo data, která
+  // nikdo mazat nechtěl.
+  console.log("\n264) Prazdny roster neprepise ulozena data");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s264 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15 },
+      { pokemon: "Blissey", cp: 2700, level: 40, ivAtk: 10, ivDef: 15, ivSta: 15 }
+    ]);
+    await new Promise((r) => setTimeout(r, 700));
+    // Čte se hlavní úložiště a jen aktivní profil — zálohy (snímky před
+    // změnou) mají vlastní klíče a pro tenhle test nic neznamenají.
+    const ulozeno = () => {
+      try {
+        const st = JSON.parse(localStorage.getItem("pgo_tracker_v2") || "{}");
+        const prof = (st.profiles || {})[st.active];
+        return prof && Array.isArray(prof.rows) ? prof.rows.length : -1;
+      } catch (e) { return -1; }
+    };
+    const out = { pred: ulozeno() };
+    // Nehoda: pole řádků se vyprázdní zevnitř (tak by dopadlo nepovedené
+    // načtení) a appka uloží.
+    P.getRows().length = 0;
+    P.persistNow();
+    await new Promise((r) => setTimeout(r, 500));
+    out.poNehode = ulozeno();
+    out.hlaska = (document.getElementById("saveState") || {}).textContent || "";
+    // Úmyslné vymazání přes API projít musí.
+    P.setRows([]);
+    await new Promise((r) => setTimeout(r, 700));
+    out.poVymazani = ulozeno();
+    return out;
+  });
+  check("prázdný roster nepřepíše uložená data",
+    s264.pred === 2 && s264.poNehode === 2, JSON.stringify(s264));
+  check("…a appka to řekne místo tichého uložení",
+    /prázdn/i.test(s264.hlaska) && /Neuloženo/i.test(s264.hlaska), s264.hlaska);
+  check("…zatímco úmyslné vymazání projde",
+    s264.poVymazani === 0, JSON.stringify(s264));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

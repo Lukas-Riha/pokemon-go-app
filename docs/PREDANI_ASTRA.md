@@ -1319,3 +1319,22 @@ Bloky `Claude 20. 9. (12)` a `(13)`.
   `h2` (u dlouhého jména se zmenší písmo, ale CP a level se nehnou), větší
   rozestup řádků u větvené řady (Eevee) a stabilnější klíč pro nepřekreslování
   evoluční řady — bere se posloupnost druhů, ne celé HTML.
+
+Kolo 21. 9. — pojistka proti ztrátě dat a drobnosti
+-----------------------------------------------------
+
+- **Prázdný roster se přes uložený neprázdný nezapíše.** Dřív to hlídalo jen
+  zavření záložky, jenže zapsat umí každá akce — stačilo jedno nepovedené
+  načtení a první uložení data smazalo. Úmyslné vyprázdnění (Vymazat vše,
+  přepnutí profilu, `setRows([])`) si o zápis řekne přes `povolPrazdnyZapis()`.
+  Když se zápis zablokuje, řekne to lišta uložení místo tichého přepisu.
+- **Zkratky čištění boxu se nespouštějí při psaní do políčka.** Backspace se
+  chytal jako „o jednoho zpět", takže v poli „Nové CP" nešlo nic smazat.
+- **Šipka na dlaždici rosteru je pryč** (`.atlas-arrow`) a nabídka „Správa
+  rosteru" se rozbaluje přes roster, ne uvnitř lišty s vlastním posuvníkem
+  (`overflow:visible` na `.atlas-roster-fixed-controls` a `.atlas-roster-commandbar`).
+- **Posun v žebříčku na štítku ligy je barevný** — nahoru zeleně, dolů
+  červeně. Kreslí se jako `<em class="dv-posun">` uvnitř štítku, protože text
+  štítku se escapuje.
+- Pořadí mezi všemi kusy se počítá i pro **Master League** — `LEAGUES` ji
+  neobsahuje, přidává se všude zvlášť.

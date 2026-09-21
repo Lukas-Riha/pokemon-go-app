@@ -2478,6 +2478,10 @@
   .dv-chip.dv-pod { border-style: dashed;
     background: var(--dv-podklad, var(--surface-1)); color: var(--text-secondary); }
   .dv-chip.dv-kvalita { border-color: var(--status-critical); }
+  /* Posun v žebříčku uvnitř štítku ligy: nahoru zeleně, dolů červeně. */
+  .dv-posun { font-style: normal; font-weight: 700; margin-left: 2px; }
+  .dv-posun.nahoru { color: var(--status-good); }
+  .dv-posun.dolu { color: var(--status-critical); }
   /* V detailu se štítky zalamují — místa je dost a „+N" by jen schovávalo. */
   .d-duvody .dv-radek { flex-wrap: wrap; overflow: visible; margin-top: 6px; }
   .d-duvody .dv-chip { font-size: 12px; line-height: 1.6; }
@@ -6892,8 +6896,24 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       sortDir: sortDir, discarded: discarded, rucniUtoky: rucniUtoky, historie: historie };
   }
 
+  /* Prázdný roster se přes uložený neprázdný NIKDY nepřepíše sám od sebe.
+     Dřív to hlídalo jen zavření záložky, jenže zapsat umí každá akce —
+     a stačí jedno nepovedené načtení (rozepsaný soubor, jiný prohlížeč,
+     výjimka při startu), aby se data, která nikdo mazat nechtěl, ztratila.
+     Úmyslné vyprázdnění (Vymazat vše, přepnutí profilu, setRows) si o zápis
+     řekne přes `povolPrazdnyZapis()`. */
+  var prazdnyZapisPovolen = false;
+  function povolPrazdnyZapis() { prazdnyZapisPovolen = true; }
+
   function writeState() {
     naplanovatVse();
+    var smiPrazdny = prazdnyZapisPovolen;
+    prazdnyZapisPovolen = false;
+    if (!rows.length && !smiPrazdny && ulozenychRadku() > 0) {
+      setSaveState("Neuloženo — roster je prázdný, ale v prohlížeči data jsou."
+        + " Obnov stránku (F5); kdyby nepomohlo, nahraj zálohu.", false);
+      return;
+    }
     var store = loadStore();
     store.active = activeProfile;
     store.profiles[activeProfile] = currentSnapshot();
@@ -6990,6 +7010,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   function applySnapshot(snap) {
+    // Načtení profilu (i prázdného) je vědomá akce uživatele — zápis se
+    // pojistkou na prázdný roster blokovat nemá.
+    povolPrazdnyZapis();
     // Staví se POSTUPNĚ do prázdného pole, aby kontrola volného ID viděla
     // řádky vytvořené o kus výš. Dvě věci naráz: duplicita uvnitř jedné
     // dávky se odhalí, a řádky, které kolidovat nemůžou, si nechají své ID.
@@ -7463,7 +7486,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // Pořadí v lize je zvláštní průchod přes VŠECHNY kusy. Rozpočet bere jen
     // druhy do limitu pořadí a od druhu jeden kus — na otázku „kolikátý
     // doopravdy jsem" by z toho odpověď nevyšla.
-    LEAGUES.forEach(function (lg) {
+    // `LEAGUES` Master League neobsahuje — přidává se všude zvlášť.
+    LEAGUES.concat([{ label: "ML", meta: "master" }]).forEach(function (lg) {
       var vsichni = [];
       base.forEach(function (b) {
         var c2 = (b.cesty || {})[lg.label];
@@ -12070,9 +12094,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var ligaKlicP = ligaKlicZeZkratky(sl.typ);
         var posunP = ligaKlicP
           ? posunVLize(dexKey(sl.hraje || b.row.pokemon), ligaKlicP) : null;
-        d.stitek = sl.typ + " #" + sl.rank
-          + (posunP ? " " + (posunP.rozdil > 0 ? "\u25b2" : "\u25bc")
-              + Math.abs(posunP.rozdil) : "");
+        d.stitek = sl.typ + " #" + sl.rank;
+        // Posun se kreslí zvlášť, aby mohl být barevný: nahoru zeleně,
+        // dolů červeně. Do textu štítku se to nedá — ten se escapuje.
+        if (posunP) {
+          d.posun = { nahoru: posunP.rozdil > 0, o: Math.abs(posunP.rozdil) };
+        }
         d.hraje = sl.hraje || "";
       } else if (sl.druh === "raid") {
         d.filtr = sl.typ;
@@ -12400,7 +12427,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return '<span class="dv-chip dv-' + d.kat + (d.mezera ? " dv-naplast" : "")
         + (d.rezerva ? " dv-rezerva" : "") + '" data-duvod="' + escHtml(d.filtr) + '"'
         + ' data-proc="' + escHtml(d.proc) + '"'
-        + styl + ' data-tip="' + escHtml(bublinaDuvodu(d)) + '">' + escHtml(d.stitek) + "</span>";
+        + styl + ' data-tip="' + escHtml(bublinaDuvodu(d)) + '">' + escHtml(d.stitek)
+        + (d.posun
+            ? ' <em class="dv-posun ' + (d.posun.nahoru ? "nahoru" : "dolu") + '">'
+              + (d.posun.nahoru ? "▲" : "▼") + d.posun.o + "</em>"
+            : "")
+        + "</span>";
     };
     return '<span class="dv-radek">' + duvody.map(stitek).join("")
       + '<span class="dv-chip dv-vic" hidden></span></span>';
@@ -23029,6 +23061,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     snimekPred("vymazani-vseho");
     rows = [];
     discarded = [];
+    povolPrazdnyZapis();
     renderBody(); persist(true); renderDiscardBtn();
   });
   document.getElementById("forgetDiscardedBtn").addEventListener("click", function () {
@@ -25293,6 +25326,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // „nechat" splývá s posunem dál, protože to je ta častější odpověď.
   document.addEventListener("keydown", function (e) {
     if (document.getElementById("boxMode").hidden) return;
+    // Psaní do políčka nesmí spouštět zkratky čištění. Backspace se jinak
+    // chytil jako „o jednoho zpět" a v poli „Nové CP" nešlo nic smazat.
+    var cilKl = e.target;
+    if (cilKl && (cilKl.tagName === "INPUT" || cilKl.tagName === "TEXTAREA"
+        || cilKl.tagName === "SELECT" || cilKl.isContentEditable)) return;
+    var hraBoxEl = document.getElementById("hraBox");
+    if (hraBoxEl && !hraBoxEl.hidden) return;
     // otevřené potvrzení má přednost: Esc ho jen zavře a vrátí k čištění
     if (document.getElementById("bmZeptat").innerHTML) {
       if (e.key === "Escape") { e.preventDefault(); document.getElementById("bmZeptat").innerHTML = ""; }
@@ -25475,6 +25515,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     setRows: function (r) {
       rows = [];
       (r || []).forEach(function (x) { rows.push(newRow(x)); });
+      if (!rows.length) povolPrazdnyZapis();
       renderBody(); persist();
     },
     importText: function (t) { startImport(t); },
