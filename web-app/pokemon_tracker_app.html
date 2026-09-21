@@ -2702,6 +2702,21 @@
     border: 1px solid var(--grid); background: var(--surface-1);
     box-shadow: 0 18px 56px rgba(0, 0, 0, .5); }
   .rucni-box .rb-head b { font-size: 17px; }
+  /* Hláška appky — uprostřed stránky, nad vším ostatním. */
+  .app-okno { position: fixed; inset: 0; z-index: 3000; display: flex;
+    align-items: center; justify-content: center; padding: 20px;
+    background: #050d1cc7; backdrop-filter: blur(2px); }
+  .app-okno[hidden] { display: none; }
+  .app-okno-panel { width: min(520px, 100%); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+    box-shadow: 0 18px 50px #0006; }
+  .app-okno-text { font-size: 14px; line-height: 1.6; white-space: pre-line; }
+  .app-okno-vstup { display: block; margin-top: 14px; }
+  .app-okno-vstup input { width: 100%; box-sizing: border-box; padding: 10px;
+    background: var(--input-bg); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 8px; font: inherit; }
+  .app-okno-akce { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  .app-okno-akce button { min-height: 40px; padding: 0 16px; }
   .rucni-box { margin: 0 0 10px; padding: 11px 13px; border-radius: 10px;
     border: 1px solid var(--border); background: var(--input-bg); }
   .rucni-box .rb-head { margin-bottom: 8px; }
@@ -3424,6 +3439,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     <!-- Okno: co se s kusem stalo ve hře. Vyvinutý nebo vylepšený kus dřív
          znamenal naskenovat ho znovu a naimportovat. Tohle je druhá cesta:
          říct appce, co se stalo, a nechat ji dopočítat zbytek. -->
+    <!-- Vlastní hláška místo prohlížečového alert/confirm/prompt: stejný
+         vzhled jako zbytek appky a okno stojí uprostřed stránky. -->
+    <div class="app-okno" id="appOkno" hidden>
+      <div class="app-okno-panel" role="dialog" aria-modal="true" aria-labelledby="appOknoText">
+        <div class="app-okno-text" id="appOknoText"></div>
+        <label class="app-okno-vstup" id="appOknoVstupBox" hidden>
+          <input type="text" id="appOknoVstup" autocomplete="off" />
+        </label>
+        <div class="app-okno-akce">
+          <button type="button" id="appOknoZrusit">Zrušit</button>
+          <button type="button" class="primary" id="appOknoOk">OK</button>
+        </div>
+      </div>
+    </div>
     <div class="rucni-box" id="hraBox" hidden>
       <div class="rb-okno">
         <div class="rb-head"><b id="hraNadpis">Co se s ním stalo ve hře?</b>
@@ -5788,13 +5817,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     box.style.display = "";
     b2.style.display = "";
     b2.onclick = function () {
-      // Import se dokončuje v panelu „Importovat data" — bez jeho otevření
-      // se soubor sice načte, ale nabídka „sloučit / nahradit" zůstane
-      // schovaná a vypadá to, že se nestalo nic.
-      var panel = document.getElementById("importBox");
-      if (panel) panel.classList.add("open");
-      var vstup = document.getElementById("fileInput");
-      if (vstup) vstup.click();
+      // Otevře se přesně to, co funguje i z horní lišty („Import CSV").
+      // Vzhledová vrstva si klik na tohle tlačítko odchytí a ukáže svoje
+      // okno; bez vrstvy se rozbalí panel enginu. Vlastní `fileInput.click()`
+      // tady nestačil — soubor se načetl, ale nabídka „sloučit / nahradit"
+      // zůstala schovaná.
+      var tl = document.getElementById("toggleImportBtn");
+      if (tl) tl.click();
     };
   }
 
@@ -6207,7 +6236,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + " přihlášení nefunguje (Microsoft ho pouští jen z webové adresy)."
         + " Otevři appku přes lukas-riha.github.io/pokemon-go-app.";
       renderCloud();
-      window.alert(cloudStav);
+      appHlaska(cloudStav);
       return;
     }
     var id = cloudClientId();
@@ -6335,7 +6364,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     }).catch(function (e) {
       cloudStav = "Uložení do cloudu selhalo: " + (e && e.message ? e.message : "chyba");
       renderCloud();
-      if (!tise) window.alert(cloudStav);
+      if (!tise) appHlaska(cloudStav);
       return false;
     });
   }
@@ -6352,7 +6381,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       });
     }).then(function (d) {
       if (!d || !d.pgoCloud || !d.snapshot) {
-        if (!tise) window.alert("V cloudu zatím nic není. Nahraj tam roster tlačítkem"
+        if (!tise) appHlaska("V cloudu zatím nic není. Nahraj tam roster tlačítkem"
           + " „Nahrát do cloudu“.");
         return null;
       }
@@ -6360,7 +6389,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     }).catch(function (e) {
       cloudStav = "Stažení selhalo: " + (e && e.message ? e.message : "chyba");
       renderCloud();
-      if (!tise) window.alert(cloudStav);
+      if (!tise) appHlaska(cloudStav);
       return null;
     });
   }
@@ -6370,18 +6399,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     cloudStahnout(false).then(function (d) {
       if (!d) return;
       var kolik = (d.snapshot.rows || []).length;
-      var ok = window.confirm("V cloudu je roster o " + kolik + " kusech,"
+      appPotvrdit("V cloudu je roster o " + kolik + " kusech,"
         + " uložený " + new Date(d.ulozeno).toLocaleString()
         + (d.zarizeni ? " (" + d.zarizeni + ")" : "") + ".\n\nNahradit jím"
-        + " tenhle roster (" + rows.length + " kusů)? Současný se přepíše.");
-      if (!ok) return;
-      applySnapshot(d.snapshot);
-      cloudPosledni = d.ulozeno;
-      renderHeader();
-      renderBody();
-      persist();
-      cloudStav = "Načteno z cloudu (" + kolik + " kusů)";
-      renderCloud();
+        + " tenhle roster (" + rows.length + " kusů)? Současný se přepíše.",
+        function () {
+          povolPrazdnyZapis();
+          applySnapshot(d.snapshot);
+          cloudPosledni = d.ulozeno;
+          renderHeader();
+          renderBody();
+          persist();
+          cloudStav = "Načteno z cloudu (" + kolik + " kusů)";
+          renderCloud();
+        }, "Nahradit");
     });
   }
 
@@ -6398,16 +6429,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var vzdaleny = Date.parse(d.ulozeno) || 0;
       if (vzdaleny <= mistni) return;
       var kolik = (d.snapshot.rows || []).length;
-      if (!window.confirm("V cloudu je novější roster (" + kolik + " kusů, uložený "
+      appPotvrdit("V cloudu je novější roster (" + kolik + " kusů, uložený "
           + new Date(d.ulozeno).toLocaleString()
           + (d.zarizeni ? " z " + d.zarizeni : "") + ").\n\nNačíst ho? Tenhle"
-          + " roster (" + rows.length + " kusů) se přepíše.")) return;
-      applySnapshot(d.snapshot);
-      renderHeader();
-      renderBody();
-      persist();
-      cloudStav = "Načteno z cloudu (" + kolik + " kusů)";
-      renderCloud();
+          + " roster (" + rows.length + " kusů) se přepíše.",
+        function () {
+          povolPrazdnyZapis();
+          applySnapshot(d.snapshot);
+          renderHeader();
+          renderBody();
+          persist();
+          cloudStav = "Načteno z cloudu (" + kolik + " kusů)";
+          renderCloud();
+        }, "Načíst");
     });
   }
 
@@ -6996,6 +7030,52 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   /** persist(true) = zapsat hned (import, přidání/smazání řádku, změna profilu).
    *  persist() = odložený zápis, aby psaní do buňky nepsalo do storage na každý znak. */
+  /* ----------------------------------------------------------------
+   * Hlášky appky místo prohlížečových oken.
+   *
+   * `confirm` v prohlížeči zastaví běh a vrátí true/false — vlastní okno to
+   * neumí, takže se pokračování předává jako funkce. Volající proto místo
+   * „když nepotvrdí, skonči" píše „potvrdí-li, udělej tohle".
+   * ---------------------------------------------------------------- */
+  var appOknoHotovo = null;
+  function appOknoZavri(potvrzeno, hodnota) {
+    var box = document.getElementById("appOkno");
+    if (box) box.hidden = true;
+    var akce = appOknoHotovo;
+    appOknoHotovo = null;
+    if (akce && potvrzeno) akce(hodnota);
+  }
+  function appOknoOtevri(text, volby) {
+    volby = volby || {};
+    var box = document.getElementById("appOkno");
+    if (!box) {   // bez okna radši prohlížečová hláška než ticho
+      if (volby.potvrdit && !window.confirm(text)) return;
+      if (!volby.potvrdit) window.alert(text);
+      if (volby.ok) volby.ok(volby.vstup);
+      return;
+    }
+    document.getElementById("appOknoText").textContent = text;
+    var vstupBox = document.getElementById("appOknoVstupBox");
+    var vstup = document.getElementById("appOknoVstup");
+    vstupBox.hidden = volby.vstup === undefined || volby.vstup === null;
+    if (!vstupBox.hidden) vstup.value = volby.vstup;
+    document.getElementById("appOknoZrusit").hidden = !volby.potvrdit;
+    document.getElementById("appOknoOk").textContent = volby.okText || "OK";
+    appOknoHotovo = volby.ok || null;
+    box.hidden = false;
+    (vstupBox.hidden ? document.getElementById("appOknoOk") : vstup).focus();
+  }
+  /** Oznámení — jen potvrdit přečtení. */
+  function appHlaska(text, po) { appOknoOtevri(text, { ok: po }); }
+  /** Otázka ano/ne. `po` se zavolá jen při potvrzení. */
+  function appPotvrdit(text, po, okText) {
+    appOknoOtevri(text, { potvrdit: true, ok: po, okText: okText });
+  }
+  /** Otázka s textovým polem. `po` dostane zadaný text. */
+  function appDotaz(text, vychozi, po) {
+    appOknoOtevri(text, { potvrdit: true, vstup: vychozi === undefined ? "" : vychozi, ok: po });
+  }
+
   function persist(immediate) {
     if (!STORAGE_OK) { setSaveState(STORAGE_WARN, false); return; }
     window.clearTimeout(saveTimer);
@@ -7158,7 +7238,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     name = String(name || "").trim();
     if (!name) return false;
     var store = loadStore();
-    if (store.profiles[name]) { window.alert("Profil „" + name + "“ už existuje."); return false; }
+    if (store.profiles[name]) { appHlaska("Profil „" + name + "“ už existuje."); return false; }
     writeState();
     store = loadStore();
     activeProfile = name;
@@ -7177,7 +7257,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     newName = String(newName || "").trim();
     if (!newName || newName === activeProfile) return false;
     var store = loadStore();
-    if (store.profiles[newName]) { window.alert("Profil „" + newName + "“ už existuje."); return false; }
+    if (store.profiles[newName]) { appHlaska("Profil „" + newName + "“ už existuje."); return false; }
     store.profiles[newName] = store.profiles[activeProfile] || currentSnapshot();
     delete store.profiles[activeProfile];
     activeProfile = newName;
@@ -7191,7 +7271,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function deleteProfile() {
     var store = loadStore();
     var names = profileNames(store);
-    if (names.length <= 1) { window.alert("Poslední profil smazat nejde — použij „Vymazat vše“."); return false; }
+    if (names.length <= 1) { appHlaska("Poslední profil smazat nejde — použij „Vymazat vše“."); return false; }
     delete store.profiles[activeProfile];
     var next = profileNames(store)[0];
     activeProfile = next;
@@ -14089,7 +14169,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     duState.poradi = kusyBezUtoku();
     duState.kde = 0;
     if (!duState.poradi.length) {
-      window.alert("Všechny kusy, které si necháváš, mají útoky vyplněné.");
+      appHlaska("Všechny kusy, které si necháváš, mají útoky vyplněné.");
       return false;
     }
     var box = document.getElementById("doplnitBox");
@@ -21899,11 +21979,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (d.settings[id] === undefined) return;
       kolik += 1;
     });
-    var ok = window.confirm("Soubor s nastavením z " + (d.ulozeno || "?")
+    appPotvrdit("Soubor s nastavením z " + (d.ulozeno || "?")
       + (d.profil ? " (profil „" + d.profil + "“)" : "")
       + ".\n\nPřevzít " + kolik + " hodnot? Roster se nemění — mění se prahy,"
-      + " podle kterých se počítají verdikty.");
-    if (!ok) return;
+      + " podle kterých se počítají verdikty.",
+      function () { nastaveniPouzij(d); }, "Převzít");
+  }
+  function nastaveniPouzij(d) {
     SETTING_IDS.forEach(function (id) {
       var el = document.getElementById(id);
       if (!el || d.settings[id] === undefined) return;
@@ -21913,14 +21995,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     renderSettingWarnings();
     renderBody();
     persist();
-    window.alert("Nastavení převzato. Verdikty se přepočítaly.");
+    appHlaska("Nastavení převzato. Verdikty se přepočítaly.");
   }
 
   function startImport(text) {
     var nast = jeNastaveniSoubor(text);
     if (nast) { prevzitNastaveni(nast); return; }
     var parsed = parseText(text);
-    if (!parsed) { window.alert("Nepodařilo se načíst žádná data."); return; }
+    if (!parsed) { appHlaska("Nepodařilo se načíst žádná data."); return; }
     pending = { headers: parsed.headers, body: parsed.body, hasHeader: parsed.hasHeader, mapping: {}, auto: {} };
     var mapped = autoMap(parsed.headers);   // kouká i do dat (viz numericColumn)
     pending.mapping = mapped.mapping;
@@ -21936,7 +22018,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     else if (!mode) mode = "merge";
 
     var imported = buildRowsFromPending();
-    if (!imported.length) { window.alert("Nenačetl se žádný řádek — zkontroluj mapování sloupce „Pokémon“."); return; }
+    if (!imported.length) { appHlaska("Nenačetl se žádný řádek — zkontroluj mapování sloupce „Pokémon“."); return; }
     var skipped = 0;
     var celyBoxBox = document.getElementById("celyBox");
     var jeCelyBox = !!(celyBoxBox && celyBoxBox.checked);
@@ -23065,8 +23147,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   });
   document.getElementById("mapMergeBtn").addEventListener("click", function () { finishImport("merge"); });
   document.getElementById("mapReplaceBtn").addEventListener("click", function () {
-    if (rows.length && !window.confirm("Nahradit celý roster? Přijdeš o ruční úpravy (Forma, poznámky).")) return;
-    finishImport("replace");
+    if (!rows.length) { finishImport("replace"); return; }
+    appPotvrdit("Nahradit celý roster? Přijdeš o ruční úpravy (Forma, poznámky).",
+      function () { finishImport("replace"); }, "Nahradit");
   });
   document.getElementById("mapAppendBtn").addEventListener("click", function () { finishImport("append"); });
   document.getElementById("mapCancelBtn").addEventListener("click", function () {
@@ -23094,7 +23177,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function readFile(file) {
     var reader = new FileReader();
     reader.onload = function () { startImport(String(reader.result)); };
-    reader.onerror = function () { window.alert("Soubor se nepodařilo přečíst."); };
+    reader.onerror = function () { appHlaska("Soubor se nepodařilo přečíst."); };
     reader.readAsText(file, "UTF-8");
   }
 
@@ -23147,31 +23230,37 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     if (!kolik) return;
     renderBody(); persist(true);
-    window.alert("Označeno " + kolik + " kusů, které mají aspoň někde zelený nebo žlutý stav.\n\n"
+    appHlaska("Označeno " + kolik + " kusů, které mají aspoň někde zelený nebo žlutý stav.\n\n"
       + "Ve hře jim dej „Oblíbený“ — hra je pak nepustí do hromadného transferu.");
   });
 
   document.getElementById("clearUnstarredBtn").addEventListener("click", function () {
     var doomed = rows.filter(function (r) { return !r.star; });
     if (!doomed.length) return;
-    if (!window.confirm("Smazat " + doomed.length + " pokémonů bez hvězdičky?\n\n"
+    appPotvrdit("Smazat " + doomed.length + " pokémonů bez hvězdičky?\n\n"
       + "V rosteru zůstane " + (rows.length - doomed.length) + " označených. Smazané si appka zapamatuje, "
-      + "takže se ti při dalším importu nevrátí (dokud nedáš „Zapomenout smazané“).")) return;
-    snimekPred("mazani");
-    doomed.forEach(function (r) {
-      if (r.cp) discarded.push({ k: scanKey(r), at: parseScanDate(r.scanDate), n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
-    });
-    rows = rows.filter(function (r) { return !!r.star; });
-    renderBody(); persist(true); renderDiscardBtn();
+      + "takže se ti při dalším importu nevrátí (dokud nedáš „Zapomenout smazané“).",
+      function () {
+        snimekPred("mazani");
+        doomed.forEach(function (r) {
+          if (r.cp) discarded.push({ k: scanKey(r), at: parseScanDate(r.scanDate), n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
+        });
+        rows = rows.filter(function (r) { return !!r.star; });
+        renderBody(); persist(true); renderDiscardBtn();
+      }, "Smazat");
   });
 
   document.getElementById("clearBtn").addEventListener("click", function () {
-    if (rows.length && !window.confirm("Opravdu smazat celý roster? Smaže se i uložená kopie v prohlížeči.")) return;
-    snimekPred("vymazani-vseho");
-    rows = [];
-    discarded = [];
-    povolPrazdnyZapis();
-    renderBody(); persist(true); renderDiscardBtn();
+    var vymaz = function () {
+      snimekPred("vymazani-vseho");
+      rows = [];
+      discarded = [];
+      povolPrazdnyZapis();
+      renderBody(); persist(true); renderDiscardBtn();
+    };
+    if (!rows.length) { vymaz(); return; }
+    appPotvrdit("Opravdu smazat celý roster? Smaže se i uložená kopie v prohlížeči.",
+      vymaz, "Smazat vše");
   });
   document.getElementById("forgetDiscardedBtn").addEventListener("click", function () {
     var box = document.getElementById("discardBox");
@@ -23202,9 +23291,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   });
   document.getElementById("forgetAllBtn").addEventListener("click", function () {
     if (!discarded.length) return;
-    if (!window.confirm("Zapomenout " + discarded.length + " smazaných kusů? Při dalším importu se zase objeví všechny.")) return;
-    discarded = [];
-    persist(true); renderDiscardBtn();
+    appPotvrdit("Zapomenout " + discarded.length + " smazaných kusů?"
+      + " Při dalším importu se zase objeví všechny.",
+      function () { discarded = []; persist(true); renderDiscardBtn(); }, "Zapomenout");
   });
   document.getElementById("profileSelect").addEventListener("change", function (e) {
     switchProfile(e.target.value);
@@ -23218,7 +23307,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (name) renameProfile(name);
   });
   document.getElementById("delProfileBtn").addEventListener("click", function () {
-    if (window.confirm("Smazat celý profil „" + activeProfile + "“ i s jeho rosterem?")) deleteProfile();
+    appPotvrdit("Smazat celý profil „" + activeProfile + "“ i s jeho rosterem?",
+      function () { deleteProfile(); }, "Smazat profil");
   });
   document.getElementById("viewSelect").addEventListener("change", function (e) {
     viewMode = e.target.value;
@@ -24572,7 +24662,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     bmIndex = 0;
     bmVolby = {};
     if (!bmList.length) {
-      window.alert("Není co čistit — pod aktivním filtrem není ani jeden kus.");
+      appHlaska("Není co čistit — pod aktivním filtrem není ani jeden kus.");
       return;
     }
     document.getElementById("boxMode").hidden = false;
@@ -24647,7 +24737,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     bmZavritNatvrdo();
     renderBody(); persist(true); renderDiscardBtn();
     if (jenProjite) {
-      window.alert("Uloženo: " + nechat.length + " označeno hvězdičkou, "
+      appHlaska("Uloženo: " + nechat.length + " označeno hvězdičkou, "
         + kusu(pustit.length) + " pustěno."
         + "\nZbytek rosteru zůstal nedotčený — můžeš pokračovat, kdy budeš chtít.");
     }
@@ -25418,6 +25508,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var el = document.getElementById(id);
     if (el) el.addEventListener("change", function () { renderFriend(); });
   });
+
+  (function napojitAppOkno() {
+    var ok = document.getElementById("appOknoOk");
+    var zrus = document.getElementById("appOknoZrusit");
+    var box = document.getElementById("appOkno");
+    if (!ok || !zrus || !box) return;
+    ok.addEventListener("click", function () {
+      appOknoZavri(true, document.getElementById("appOknoVstup").value);
+    });
+    zrus.addEventListener("click", function () { appOknoZavri(false); });
+    box.addEventListener("mousedown", function (e) { if (e.target === box) appOknoZavri(false); });
+    document.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      if (e.key === "Escape") { e.preventDefault(); appOknoZavri(false); }
+      else if (e.key === "Enter") { e.preventDefault(); ok.click(); }
+    }, true);
+  })();
 
   document.getElementById("boxModeBtn").addEventListener("click", bmOtevrit);
   document.getElementById("bmClose").addEventListener("click", bmZavrit);

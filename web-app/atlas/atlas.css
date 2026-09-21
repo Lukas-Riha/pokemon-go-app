@@ -623,3 +623,9 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-roster-fixed-controls,
 .atlas-test .atlas-roster-commandbar{overflow:visible}
 .atlas-test .atlas-roster-commands>div{z-index:400}
+/* Claude 21. 9. (2): posuvník v seznamu dlaždic ve stylu appky. */
+.atlas-test #atlasRoster{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.atlas-test #atlasRoster::-webkit-scrollbar{width:10px;height:10px}
+.atlas-test #atlasRoster::-webkit-scrollbar-track{background:transparent}
+.atlas-test #atlasRoster::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text-secondary) 30%,transparent);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+.atlas-test #atlasRoster::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--series-1) 55%,transparent);background-clip:content-box}

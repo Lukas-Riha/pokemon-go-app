@@ -1810,7 +1810,13 @@ try {
     out.viditelne = btn.style.display !== "none";
 
     window.confirm = () => true;
+    // Appka má vlastní potvrzovací okno místo prohlížečového confirm —
+    // v testu se hned odklikne (otevírá se i zavírá synchronně).
+    const potvrdit = () => { const b = document.getElementById("appOknoOk");
+      const box = document.getElementById("appOkno");
+      if (b && box && !box.hidden) b.click(); };
     btn.click();
+    potvrdit();
     out.zbylo = window.__pgo.getRows().map((r) => r.pokemon);
     out.zapamatovano = window.__pgo.getDiscarded().length;
     return out;
@@ -11451,7 +11457,13 @@ try {
     const pred = rl.value;
     window.confirm = () => true;
     window.alert = () => {};
+    // Appka má vlastní potvrzovací okno místo prohlížečového confirm —
+    // v testu se hned odklikne (otevírá se i zavírá synchronně).
+    const potvrdit = () => { const b = document.getElementById("appOknoOk");
+      const box = document.getElementById("appOkno");
+      if (b && box && !box.hidden) b.click(); };
     window.__pgo.importText((zapsane["nastaveni.json"] || "").replace(/^\ufeff/, ""));
+    potvrdit();
     await new Promise((r) => setTimeout(r, 600));
     const po = rl.value;
     rl.value = puvodni;
@@ -11744,7 +11756,14 @@ try {
     window.confirm = () => true;
     window.__pgo.setRows([]);
     await new Promise((r) => setTimeout(r, 300));
+    // Appka má vlastní potvrzovací okno místo prohlížečového confirm —
+    // v testu se hned odklikne (otevírá se i zavírá synchronně).
+    const potvrdit = () => { const b = document.getElementById("appOknoOk");
+      const box = document.getElementById("appOkno");
+      if (b && box && !box.hidden) b.click(); };
     document.getElementById("cloudStahnout").click();
+    await new Promise((r) => setTimeout(r, 500));
+    potvrdit();
     await new Promise((r) => setTimeout(r, 800));
     out.poStazeni = window.__pgo.getRows().length;
     out.jmena = window.__pgo.getRows().map((r) => r.pokemon).sort();

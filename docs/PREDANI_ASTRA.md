@@ -1361,3 +1361,28 @@ Při první obnově to hned dvě kontroly shodilo a obě byly na straně testu:
 strop velikosti appky (data rostou, zvednuto na 1,90 MB) a tvrdě zapsané
 „běžná kopie je na 100 %" — měřítko se pohnulo, takže se teď kontroluje jen
 to, co platit musí (běžná kopie nikdy nepřeleze 100 %).
+
+Kolo 21. 9. (3) — vlastní okno místo prohlížečových hlášek
+------------------------------------------------------------
+
+Appka už nepoužívá `alert` / `confirm` prohlížeče. Místo nich je vlastní okno
+uprostřed stránky (`#appOkno`, styly `.app-okno*` v enginu) a tři funkce:
+
+- `appHlaska(text)` — oznámení s OK,
+- `appPotvrdit(text, akce, popisekOK)` — otázka; `akce` se zavolá **jen při
+  potvrzení**,
+- `appDotaz(text, vychozi, akce)` — otázka s textovým polem.
+
+**Pozor na rozdíl proti `confirm`:** prohlížečové okno zastaví běh a vrátí
+true/false, tohle ne. Volající proto místo „když nepotvrdí, skonči" píše
+„potvrdí-li, udělej tohle" (pokračování jako funkce). Když se okno v DOMu
+nenajde, spadne se zpátky na prohlížečovou hlášku, ať se nikdy nestane, že
+appka mlčí.
+
+V testech se okno odklikne pomocnou funkcí `potvrdit()` hned po akci —
+otevírá se i zavírá synchronně, takže to jde v jednom `page.evaluate`.
+
+Drobnosti: posuvník v seznamu dlaždic má vzhled appky a tlačítko „Načíst ze
+souboru (CSV)" u prázdného rosteru otevírá `#toggleImportBtn` (tvoje okno
+importu) — vlastní `fileInput.click()` nestačil, soubor se načetl, ale
+nabídka „sloučit / nahradit" zůstala schovaná.
