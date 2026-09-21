@@ -17145,6 +17145,10 @@ try {
   console.log("\n266) Vadny radek nesmi sebrat cely roster");
   await page.goto(URL);
   await page.waitForTimeout(700);
+  // Roster se nejdřív vyprázdní, jinak by ho appka při odchodu ze stránky
+  // (beforeunload) uložila zpátky přes náš připravený obsah.
+  await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
+  await page.waitForTimeout(600);
   await page.evaluate(() => {
     const rows = [];
     for (let i = 0; i < 40; i++) {
