@@ -17527,6 +17527,55 @@ try {
     await page4.close();
   }
 
+  // ---------------------------------------------------------------- 273
+  // „Zahodil jsem ho a hned se nabízí zpátky." Nabídka na vrácení se počítá
+  // proti rosteru bez puštěných kusů — jenže když se od rozhodnutí nikdo
+  // další nepustil, je to pořád ten samý roster, ve kterém kusu vyšlo
+  // „zahodit". Nabídnout ho zpátky je pak nesmysl ze zastaralého verdiktu.
+  console.log("\n273) Prave puszeny kus se nenabidne hned zpatky");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s273 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const druhy = ["Snorlax", "Machamp", "Gardevoir", "Swampert", "Registeel",
+      "Altaria", "Azumarill", "Medicham", "Skarmory", "Umbreon", "Metagross"];
+    const rows = [];
+    let n = 0;
+    druhy.forEach((d) => {
+      const kopii = d === "Snorlax" ? 8 : 4;
+      for (let i = 0; i < kopii; i++) {
+        rows.push({ id: "b" + (n++), pokemon: d, cp: 1200 + i * 140 + d.length * 13,
+          level: 20 + i * 2, ivAtk: (i * 5) % 16, ivDef: (i * 7) % 16, ivSta: (i * 11) % 16 });
+      }
+    });
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 2000));
+    P.boxOtevrit();
+    await new Promise((r) => setTimeout(r, 1000));
+    const nalezy = [];
+    let nabidek = 0;
+    const delka = P.boxStav().delka;
+    for (let i = 0; i < delka; i++) {
+      const stav = P.boxStav();
+      if (stav.index >= stav.delka) break;
+      const x = P.bmSeznam()[stav.index];
+      const id = x.row.id;
+      const pustit = /zahod|pust/i.test(x.c.keep);
+      P.boxRozhodnout(pustit ? "drop" : "keep");
+      await new Promise((r) => setTimeout(r, 10));
+      const vraceni = P.boxVraceni();
+      nabidek += vraceni.length;
+      if (pustit && vraceni.indexOf(id) !== -1) {
+        nalezy.push(x.row.pokemon + " " + x.row.cp + " (" + x.c.keep + ")");
+      }
+    }
+    P.boxZavritNatvrdo();
+    return { delka: delka, nalezy: nalezy.slice(0, 3), nabidek: nabidek };
+  });
+  check("kus se hned po puštění nenabídne zpátky", s273.nalezy.length === 0,
+    JSON.stringify(s273));
+  check("…a čištění celé fronty projde", s273.delka > 20, JSON.stringify(s273));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

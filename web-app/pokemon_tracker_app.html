@@ -25093,6 +25093,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     bmList.forEach(function (x) { bmSekceZmrazene[x.row.id] = x.sekce; });
     bmIndex = 0;
     bmVolby = {};
+    bmVerzeRosteru = 0;
+    bmVerzeRozhodnuti = {};
     if (!bmList.length) {
       appHlaska("Není co čistit — pod aktivním filtrem není ani jeden kus.");
       return;
@@ -25513,6 +25515,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     for (var j = 0; j < bmIndex; j++) {
       var y = bmList[j];
       if (bmVolby[y.row.id] !== "drop" || bmVraceniOdmitnute[y.row.id]) continue;
+      // Od jeho rozhodnutí se nic dalšího nepustilo: roster je pořád ten,
+      // ve kterém mu vyšlo „zahodit". Nabízet ho zpátky by byl nesmysl.
+      if (bmVerzeRozhodnuti[y.row.id] === bmVerzeRosteru) continue;
       var sila = bmSilaKusu(y.c);
       if (sila <= 0) continue;   // kus bez jakékoli role se vrátit nemá proč
       kandidati.push({ x: y, sila: sila });
@@ -25688,16 +25693,29 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   /** Držel ten kus nějaké místo v rozpočtu? Bez slotu se puštěním nic
-   *  neuvolní a přepočítávat je zbytečné. */
+   *  neuvolní a přepočítávat je zbytečné.
+   *
+   *  Rezerva se počítá taky: liga drží 6 + 6, takže puštěním kusu z rezervy
+   *  se do ní posune další v pořadí — a bez přepočtu by ostatním ve frontě
+   *  zůstal verdikt spočítaný ještě s ním. */
   function bmDrzelSlot(x) {
-    return !!(x && x.b && x.b.sloty && x.b.sloty.length);
+    if (!x) return false;
+    if (x.b && x.b.sloty && x.b.sloty.length) return true;
+    return !!(x.c && x.c.jeRezerva);
   }
+
+  /* Kolikrát se od otevření čištění něco pustilo. Nabídka na vrácení kusu
+     dává smysl jen tehdy, když se od jeho rozhodnutí roster opravdu změnil. */
+  var bmVerzeRosteru = 0;
+  var bmVerzeRozhodnuti = {};
 
   function bmRozhodnout(volba) {
     if (bmIndex >= bmList.length) return;
     var x = bmList[bmIndex];
     bmVolby[x.row.id] = volba;
     bmIndex++;
+    if (volba === "drop") bmVerzeRosteru++;
+    bmVerzeRozhodnuti[x.row.id] = bmVerzeRosteru;
     if (volba === "drop" && bmDrzelSlot(x)) bmPrepocitatZbytek();
     bmVykreslit();
   }
@@ -25708,6 +25726,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var x = bmList[bmIndex];
     var bylPusteny = bmVolby[x.row.id] === "drop";
     delete bmVolby[x.row.id];
+    delete bmVerzeRozhodnuti[x.row.id];
+    if (bylPusteny) bmVerzeRosteru++;
     // Vrácené rozhodnutí musí slot zase zabrat.
     if (bylPusteny && bmDrzelSlot(x)) bmPrepocitatZbytek();
     bmVykreslit();
