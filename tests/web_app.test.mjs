@@ -17328,6 +17328,53 @@ try {
     if (okno && !okno.hidden) okno.hidden = true;
   });
 
+  // ---------------------------------------------------------------- 270
+  // Vyrovnávací paměť měření ikon uživateli narostla do 7 MB a zabrala
+  // úložiště, do kterého se pak nevešel roster. Je celá dopočitatelná —
+  // když dojde místo, musí jít stranou ona, ne data.
+  console.log("\n270) Pamet ikon nesmi ukradnout misto rosteru");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s270 = await page.evaluate(async (klic) => {
+    const out = {};
+    const velky = {};
+    for (let i = 0; i < 20000; i++) {
+      velky["https://example.test/ikona-" + i + ".png"] = { s: 1.2, x: 3, y: -4 };
+    }
+    const klicRamecku = klic.replace("tracker_v2", "sprite_ramecek");
+    try { localStorage.setItem(klicRamecku, JSON.stringify(velky)); }
+    catch (e) { out.ramecekChyba = e.name; }
+    // zbytek úložiště se zaplní, aby další velký zápis spadl na kvótu
+    let i = 0;
+    for (const velikost of [200000, 50000, 10000]) {
+      const blok = "x".repeat(velikost);
+      try { for (let n = 0; n < 6000; n++) localStorage.setItem("cizi_test_" + (i++), blok); }
+      catch (e) { out.plno = e.name; }
+    }
+    const rows = [];
+    for (let n = 0; n < 120; n++) {
+      rows.push({ id: "t" + n, pokemon: "Machamp", cp: 2000 + n, level: 30,
+        ivAtk: 15, ivDef: 14, ivSta: 13, note: "poznamka ".repeat(20) });
+    }
+    window.__pgo.setRows(rows);
+    window.__pgo.persistNow();
+    await new Promise((r) => setTimeout(r, 300));
+    try {
+      const st = JSON.parse(localStorage.getItem(klic) || "{}");
+      const pr = (st.profiles || {})[st.active];
+      out.ulozeno = pr && pr.rows ? pr.rows.length : -1;
+    } catch (e) { out.ulozeno = -1; }
+    out.ramecekZbyl = localStorage.getItem(klicRamecku) !== null;
+    // po sobě uklidit, ať zbytek testů neběží v plném úložišti
+    Object.keys(localStorage).forEach((k) => {
+      if (k.indexOf("cizi_test_") === 0) localStorage.removeItem(k);
+    });
+    return out;
+  }, klicAppky);
+  check("roster se uloží i do plného úložiště", s270.ulozeno === 120, JSON.stringify(s270));
+  check("…a místo pro něj udělá paměť ikon, ne data",
+    s270.ramecekZbyl === false, JSON.stringify(s270));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

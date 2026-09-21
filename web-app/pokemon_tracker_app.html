@@ -7167,10 +7167,22 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   function saveStore(store) {
     if (!STORAGE_OK) { setSaveState(STORAGE_WARN, false); zapisSelhal(STORAGE_CHYBA); return false; }
+    var text = JSON.stringify(store);
     try {
-      window.localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(store));
+      window.localStorage.setItem(STORAGE_KEY_V2, text);
       return true;
     } catch (e) {
+      // Došlo místo. Než se vzdáme, zahodíme vlastní vyrovnávací paměti —
+      // ty se dopočítají, roster ne.
+      var uvolneno = uvolnitMisto();
+      if (uvolneno) {
+        try {
+          window.localStorage.setItem(STORAGE_KEY_V2, text);
+          setSaveState("Uloženo v prohlížeči — uvolnilo se " + kb(uvolneno)
+            + " místa po vyrovnávací paměti obrázků", true);
+          return true;
+        } catch (e2) { /* ani tak se to nevešlo */ }
+      }
       setSaveState("Uložení selhalo (" + (e && e.name ? e.name : "chyba") + ") — exportuj CSV", false);
       zapisSelhal(e && e.name ? e.name : String(e));
       return false;
@@ -11871,11 +11883,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      z pixelů. Měří se na zvláštním obrázku s crossOrigin: kdyby protějšek
      nepustil CORS, rozbil by se jen ten měřicí, ne zobrazený. */
   var spriteRamecky = null;
+  /* Kolik znaků JSONu si měření ikon smí nechat (~1500 ikon). */
+  var SPRITE_STROP = 300000;
   function vystredSprite(img) {
     if (!img || !img.src) return;
     if (spriteRamecky === null) {
-      try { spriteRamecky = JSON.parse(localStorage.getItem("pgo_sprite_ramecek") || "{}"); }
-      catch (e) { spriteRamecky = {}; }
+      try {
+        var ulozene = localStorage.getItem("pgo_sprite_ramecek") || "{}";
+        // Strop: přerostlá vyrovnávací paměť umí zabrat celé úložiště
+        // (na file:// ho sdílí všechny stránky z disku) a sebrat místo
+        // rosteru. Měření ikon se dopočítá, roster ne.
+        spriteRamecky = ulozene.length > SPRITE_STROP ? {} : JSON.parse(ulozene);
+      } catch (e) { spriteRamecky = {}; }
     }
     var url = img.src;
     var pouzij = function (v) {
@@ -11916,9 +11935,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var v = { s: mer2,
           y: Math.max(-35, Math.min(35, Math.round(-mer2 * dY * 10) / 10)),
           x: Math.max(-35, Math.min(35, Math.round(-mer2 * dX * 10) / 10)) };
-        spriteRamecky[url] = v;
-        try { localStorage.setItem("pgo_sprite_ramecek", JSON.stringify(spriteRamecky)); }
-        catch (e) {}
+        // Vložené obrázky (`data:`) se neukládají — adresa je sama o sobě
+        // dlouhá jako celý obrázek a v úložišti by zabrala nesmyslně moc.
+        if (url.indexOf("data:") !== 0 && url.indexOf("blob:") !== 0) {
+          spriteRamecky[url] = v;
+          try {
+            var text = JSON.stringify(spriteRamecky);
+            if (text.length > SPRITE_STROP) { spriteRamecky = {}; text = "{}"; }
+            localStorage.setItem("pgo_sprite_ramecek", text);
+          } catch (e) {
+            // Došlo místo: paměť ikon jde stranou, ať se vejde roster.
+            spriteRamecky = {};
+            try { localStorage.removeItem("pgo_sprite_ramecek"); } catch (e2) {}
+          }
+        }
         // než se doměřilo, mohl uživatel přeskočit na jiný kus
         if (img.src === url) pouzij(v);
       } catch (e) { /* CORS nebo cokoliv jiného: obrázek necháme, jak je */ }
@@ -21722,6 +21752,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (!d.r) return false;
     rows.push(newRow(d.r));
     return true;
+  }
+
+  /** Zahodí vyrovnávací paměti appky — i těch jejích kopií vedle (ostrá
+   *  versus testovací). Měření ikon se dopočítá znovu; uživatelská data
+   *  kvůli němu nesmí zůstat neuložená. Vrací, kolik bajtů se uvolnilo. */
+  function uvolnitMisto() {
+    var uvolneno = 0;
+    try {
+      var smazat = [];
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        if (!k || k.length < 14) continue;
+        if (k.slice(k.length - 14) === "sprite_ramecek") smazat.push(k);
+      }
+      smazat.forEach(function (k) {
+        var v = window.localStorage.getItem(k) || "";
+        uvolneno += (k.length + v.length) * 2;
+        window.localStorage.removeItem(k);
+      });
+      if (smazat.length) spriteRamecky = {};
+    } catch (e) { /* nevadí — pak se to jen nepovede */ }
+    return uvolneno;
   }
 
   /** Zahodí zápisy starší než nastavená doba, ať paměť neroste do tisíců. */
