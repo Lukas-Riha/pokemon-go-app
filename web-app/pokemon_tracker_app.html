@@ -5837,6 +5837,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       .then(function (text) {
         var radku = String(text || "").trim().split("\n").length - 1;
         if (radku < 1) return;
+        // Prázdný roster nemá co přepsat, takže se záloha načte sama.
+        // Dřív se jen nabízela — jenže po nepovedeném startu (jiná kopie
+        // appky, vyčištěné úložiště prohlížeče) vypadala appka prázdná
+        // a uživatel měl za to, že o data přišel. Ptát se má smysl jen
+        // tehdy, když je co ztratit.
+        if (!rows.length) {
+          startImport(text);
+          finishImport("merge");
+          appHlaska("Roster v prohlížeči byl prázdný, takže se sám načetl"
+            + " ze zálohy ve složce (" + radku + " kusů).");
+          return;
+        }
         var box = document.getElementById("zalWarn");
         var txt = document.getElementById("zalWarnText");
         if (!box || !txt) return;

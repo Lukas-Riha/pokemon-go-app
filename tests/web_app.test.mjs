@@ -11828,16 +11828,14 @@ try {
     return { videt: box ? getComputedStyle(box).display !== "none" : false,
       text: (document.getElementById("zalWarnText") || {}).textContent || "",
       tlacitko: btn ? btn.textContent : "",
-      kusuPred: window.__pgo.getRows().length };
+      hlaska: (document.getElementById("appOknoText") || {}).textContent || "",
+      kusuPo: window.__pgo.getRows().length };
   });
-  check("nabídne se návrat ze zálohy", navrat.videt, String(navrat.videt));
-  check("…a řekne kolik kusů v ní je", /2 kusů/.test(navrat.text), navrat.text.slice(0, 90));
-  // Tohle je ten skutečný důvod: dvě kopie appky mají každá vlastní úložiště.
-  check("…i proč je roster prázdný", /jinou kopii appky/.test(navrat.text),
-    navrat.text.slice(0, 120));
-  eq("…ale sama nic nenačte", navrat.kusuPred, 0);
-  check("tlačítko nabízí počet", /Načíst zálohu \(2 kusů\)/.test(navrat.tlacitko),
-    navrat.tlacitko);
+  // Prázdný roster nemá co přepsat, takže se záloha načte sama — jinak to
+  // po nepovedeném startu vypadá, že jsou data pryč.
+  eq("prázdný roster se ze zálohy načte sám", navrat.kusuPo, 2);
+  check("…a appka to řekne", /sám načetl/.test(navrat.hlaska) && /2 kusů/.test(navrat.hlaska),
+    navrat.hlaska.slice(0, 120));
 
   console.log("\n202) tlačítko cloudu nikdy nemlčí");
   await page.goto(URL);
