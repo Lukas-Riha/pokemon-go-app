@@ -730,3 +730,82 @@ html[data-theme=dark] .atlas-test[data-atlas-view=home]{--page:#040f20;--surface
 .atlas-test .atlas-drawer .atlas-detail-identity{height:auto;min-height:210px}
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-utoky{height:auto;min-height:160px;max-height:none;overflow:visible}
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{height:auto;min-height:160px}
+/* Claude 21. 9. (4): evoluční řada, útoky, štítky, nadpisy. */
+/* Text pod kusem v evoluční řadě (TADY JSI, „jen ve dne", cena v bonbónech)
+   se ořezával: stupně si rovnoměrně dělily pevnou výšku sloupce a na popis
+   pod obrázkem nezbylo. Stupeň proto roste podle obsahu a zbylé místo se
+   rozdělí kolem nich. */
+#atlasDetailContent .atlas-evolution-column .d-evo:not(.husty) .d-evo-stupen,
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-stupen{flex:0 0 auto;min-height:0}
+.atlas-test .atlas-evolution-column,
+.atlas-test .atlas-evolution-column .d-evo,
+.atlas-test .atlas-evolution-column .d-evo-kus{overflow:visible}
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-podminka,
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-bonus{white-space:normal}
+/* Útoky v detailu byly vyšší než v čištění boxu, takže se šest řádků
+   nevešlo. Kompaktní míra je stejná jako tam. */
+.atlas-test .atlas-drawer .atlas-ident-utoky .d-move{font-size:10px;gap:4px;padding:1px 2px;line-height:1.25}
+.atlas-test .atlas-drawer .atlas-ident-utoky .d-move .d-type{font-size:9px;padding:0 6px}
+.atlas-test .atlas-drawer .atlas-ident-utoky .d-moves{gap:1px}
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-sestava{gap:3px;padding-top:1px;margin-top:0}
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-sestava-utoky{gap:1px}
+/* Čištění boxu: tabulka lig byla zespodu otevřená a čtyři buňky pod ní
+   nekončily ve stejné výšce jako evoluční řada vedle. */
+.atlas-test .atlas-box-rozbor [data-detail-section=ligy]{border-bottom:1px solid var(--border)}
+.atlas-test .atlas-box-rozbor>.atlas-box-obsah{display:flex;flex-direction:column}
+.atlas-test .atlas-box-rozbor>.atlas-box-obsah>.atlas-detail-columns{flex:1;min-height:0}
+.atlas-test .atlas-box-rozbor .atlas-detail-columns{align-items:stretch}
+.atlas-test .atlas-box-rozbor>.atlas-box-obsah{overflow:hidden}
+.atlas-test .atlas-box-rozbor .atlas-detail-column{display:flex;flex-direction:column;min-height:0}
+.atlas-test .atlas-box-rozbor .atlas-detail-column>.detail-main{display:flex;flex-direction:column;flex:1;min-height:0}
+.atlas-test .atlas-box-rozbor .detail-main>.d-roles.atlas-vyuziti{margin-top:auto;margin-bottom:0;padding-top:14px}
+.atlas-test .atlas-box-rozbor .atlas-detail-column>.detail-main{margin-bottom:0;padding-bottom:0}
+/* Rozvětvená řada (Eevee, Gardevoir) se v úzkém sloupci nevešla do šířky —
+   rámeček posledního stupně přetékal ven z panelu. */
+.atlas-test .atlas-evolution-column .d-evo-kus{min-width:0;max-width:100%}
+.atlas-test .atlas-evolution-column .d-evo.husty .d-evo-stupen{flex-wrap:wrap;justify-content:center}
+.atlas-test .atlas-evolution-column .d-evo.husty .d-evo-kus{flex:0 1 auto}
+.atlas-test .atlas-evolution-column .d-evo-stupen>.d-evo-kus:not(:only-child){max-width:calc(50% - 6px)}
+/* Nadpis stránky vypadá všude stejně jako na Přehledu. */
+.atlas-test .atlas-heading{margin-bottom:12px}
+.atlas-test .atlas-heading h1{font-size:clamp(28px,3vw,42px);font-weight:800;letter-spacing:-1.2px}
+/* Popis pod ikonou (cena v bonbónech, TADY JSI, „jen ve dne") měl pevných
+   40 px a přebytek se ořezával — z podmínky evoluce zbyl proužek. Výška se
+   drží jako MINIMUM: ikony na sebe pořád lícují, delší popis tile povyrostí. */
+.atlas-test .atlas-evo-popis{height:auto;min-height:40px;overflow:visible}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-popis{height:auto;min-height:46px}
+/* Lišta „ve hře jsem s ním něco udělal" stojí v čištění boxu nad evoluční
+   řadou. Dřív byla v pruhu postupu, takže se pruh u každého kusu zužoval
+   podle toho, kolik tlačítek se zrovna nabízí. */
+.atlas-test .atlas-box-rozbor{grid-template-areas:"hlavicka akce" "obsah evoluce"}
+.atlas-test .box-mode.siroky .atlas-box-rozbor{grid-template-areas:"hlavicka akce" "obsah evoluce"}
+.atlas-test .atlas-box-rozbor>.hra-pruh.atlas-hra-nad-evoluci{grid-area:akce;align-self:end;justify-self:stretch;display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.atlas-test .atlas-box-rozbor>.hra-pruh.atlas-hra-nad-evoluci .hra-btn{flex:1 1 auto;min-height:36px;font-size:12px}
+/* Otevřená nabídka „Správa rosteru" visí nad stránkou, ne uvnitř lišty —
+   ta si v kompaktním režimu roluje, takže panel končil pod rosterem. */
+.atlas-test .atlas-roster-commands[open]>div{z-index:3000;box-shadow:0 18px 44px #0007}
+/* Úprava kusu stojí vedle plachty s detailem — detail se otevřením úprav
+   nesmí posunout ani zúžit. Formulář je zároveň kompaktnější: dvě pole
+   v řádku, menší rozestupy, bez zaškrtávátek (osobní značky se přepínají
+   přímo v detailu) a bez vysvětlivky. */
+.atlas-test #atlasRowEditor.atlas-editor-vedle{position:fixed;left:12px;top:92px;z-index:1600;
+  max-height:calc(100vh - 116px);overflow:auto;margin:0;padding:16px;box-shadow:0 22px 60px #0008}
+.atlas-test #atlasRowEditor.atlas-editor-vedle h3{font-size:18px;margin:4px 0 12px}
+.atlas-test #atlasRowEditor.atlas-editor-vedle .atlas-editor-grid{grid-template-columns:1fr 1fr;gap:9px}
+.atlas-test #atlasRowEditor.atlas-editor-vedle .atlas-editor-grid label{font-size:11px;gap:4px}
+.atlas-test #atlasRowEditor.atlas-editor-vedle .atlas-editor-grid input,
+.atlas-test #atlasRowEditor.atlas-editor-vedle .atlas-editor-grid select{min-height:36px;padding:7px 8px;font-size:13px}
+.atlas-test #atlasRowEditor.atlas-editor-vedle .atlas-editor-grid textarea{min-height:48px;padding:7px 8px;font-size:13px}
+.atlas-test #atlasRowEditor.atlas-editor-vedle .atlas-utok-vyber .uv-pole{min-height:36px}
+.atlas-test #atlasRowEditor.atlas-editor-vedle .atlas-editor-actions{gap:10px;margin-top:12px;align-items:center}
+.atlas-test #atlasRowEditor .atlas-editor-actions [role=status]{flex:1 1 100%;margin:0;font-size:11px}
+@media(max-width:1100px){.atlas-test #atlasRowEditor.atlas-editor-vedle{position:static;width:auto!important;max-height:none}}
+/* V čištění boxu má sloupec pevnou výšku (panel se nesmí natahovat), takže
+   delší řada se do něj musí vejít i s popisem pod ikonou. Čím víc stupňů,
+   tím menší ikony — text zůstává celý. */
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo{overflow:hidden}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:56px;height:56px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:46px;height:46px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:72px;height:72px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:58px;height:58px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{padding-top:2px;padding-bottom:2px}

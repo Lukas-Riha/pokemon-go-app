@@ -25146,6 +25146,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     bmVolby = {};
     bmVerzeRosteru = 0;
     bmVerzeRozhodnuti = {};
+    bmSekceOhlasene = {};
     if (!bmList.length) {
       appHlaska("Není co čistit — pod aktivním filtrem není ani jeden kus.");
       return;
@@ -25271,6 +25272,30 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return d.innerHTML;
   }
 
+  /* Které sekce už se ohlásily. Zpátky po ← se ohlašovat znovu nemusí. */
+  var bmSekceOhlasene = {};
+  var BM_SEKCE_POPIS = {
+    1: "Tyhle pustíš ve hře jedním výběrem — appka ti je pak najde"
+       + " podle jmen a CP.",
+    2: "Shadow kusy. Tady se rozhoduje, jestli je chceš očistit: stojí to"
+       + " prach a bonbóny, ale kus tím přijde o shadow bonus k útoku.",
+    3: "Shiny, legendární a mytické. Hra je do hromadného výběru nepustí,"
+       + " takže je budeš posílat po jednom."
+  };
+
+  /** Než se začne nová sekce, řekne se to. Včetně té první — jinak není
+   *  poznat, podle čeho je fronta vlastně seřazená. */
+  function bmOhlasitSekci(x) {
+    if (!x || bmSekceOhlasene[x.sekce]) return;
+    var nazvy = bmNazvySekci(bmRezimSekci());
+    var nazev = nazvy[x.sekce];
+    if (!nazev) return;                       // jedna sekce = není co ohlašovat
+    bmSekceOhlasene[x.sekce] = true;
+    var kolik = bmList.filter(function (y) { return y.sekce === x.sekce; }).length;
+    appHlaska(x.sekce + ". sekce — " + nazev + " · " + kusu(kolik)
+      + "\n\n" + (BM_SEKCE_POPIS[x.sekce] || ""));
+  }
+
   function bmVykreslit() {
     var pos = document.getElementById("bmPos");
     var bar = document.getElementById("bmBar");
@@ -25280,6 +25305,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
     if (bmIndex >= bmList.length) { bmVykreslitVraceni(); bmVykreslitVypadle(); bmSouhrn(); return; }
 
+    bmOhlasitSekci(bmList[bmIndex]);
     akce.style.display = "";
     hint.style.display = "";
     // Souhrn si blok s rozborem schoval; u dalšího kusu se musí vrátit.
@@ -27208,7 +27234,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         tlacitko.appendChild(tecka);
         var jmeno = document.createElement("span");
         jmeno.className = "uv-jmeno";
-        jmeno.textContent = hodnota || POPIS[klic];
+        // Prázdná buňka popisek nepotřebuje — co se vybírá, říká nadpis
+        // nad ní. Zůstane pomlčka, ať je vidět, že je to k vyplnění.
+        jmeno.textContent = hodnota || "—";
+        if (!hodnota) tlacitko.title = "Vyber " + POPIS[klic];
         tlacitko.appendChild(jmeno);
         var sipka = document.createElement("span");
         sipka.className = "uv-sipka";

@@ -786,7 +786,15 @@ async function boxKontrola(page) {
     const out = { sbalene: [], rozbalene: [],
       zamek: getComputedStyle(document.body).overflow === "hidden",
       schovane: ["#bmBody > .bm-head", "#bmBody > .bm-verdikt", "#bmBody > .bm-why", "#bmBody > .bm-roles", "#bmBody > .bm-ligy", "#bmVic"].filter((s) => vidno(s)),
-      hraPruh: !!document.querySelector("#boxMode .bm-top .hra-pruh"),
+      // Lišta „ve hře jsem s ním něco udělal" patří nad evoluční řadu:
+      // v pruhu postupu měnila jeho šířku podle počtu tlačítek.
+      hraPruh: (function () {
+        const pruh = document.querySelector("#boxMode .atlas-box-rozbor > .hra-pruh");
+        const evo = document.querySelector("#boxMode .atlas-evolution-column");
+        if (!pruh || !evo) return false;
+        return !document.querySelector("#boxMode .bm-top .hra-pruh")
+          && pruh.getBoundingClientRect().bottom <= evo.getBoundingClientRect().top + 1;
+      })(),
       pozice: (document.getElementById("bmPos") || {}).textContent || "" };
     for (let i = 0; i < 4; i++) {
       out.sbalene.push({ r: rozbor(), prebytek: prebytek() });
@@ -820,7 +828,8 @@ check("čištění boxu vykreslí rozbor jako v detailu (hlavička, staty, útok
     && d10.prvni.znacky >= 4 && d10.prvni.vyhoda && d10.prvni.vyuziti === 4, JSON.stringify(d10.prvni));
 check("…a nic z toho nezůstane ve staré podobě (zjednodušené bloky enginu jsou schované)",
   d10.schovane.length === 0, d10.schovane.join(", "));
-check("…lišta „ve hře jsem s ním něco udělal“ je nahoře u postupu", d10.hraPruh, String(d10.hraPruh));
+check("…lišta „ve hře jsem s ním něco udělal“ stojí nad evoluční řadou",
+  d10.hraPruh, String(d10.hraPruh));
 check("…a po rozhodnutí se přepne na další kus se stejným rozborem",
   !!d10.druhy && d10.druhy.jmeno !== d10.prvni.jmeno && d10.druhy.staty === 3 && d10.druhy.utoky
     && d10.pozice2 !== d10.pozice,
@@ -1013,6 +1022,82 @@ check("…a ikona zůstane na střed hlavičky",
   dDet.sprite && dDet.hlavicka
   && Math.abs((dDet.sprite.t + dDet.sprite.b) / 2 - (dDet.hlavicka.t + dDet.hlavicka.b) / 2) <= 3,
   JSON.stringify({ sprite: dDet.sprite, hlavicka: dDet.hlavicka }));
+
+// ------------------------------------------------ úpravy kusu a lišta příkazů
+console.log("\n8) Úprava kusu, lišta příkazů, popis v evoluční řadě");
+const pUpr = await otevri(1720, [
+  { pokemon: "Jolteon", cp: 2218, level: 27.5, ivAtk: 14, ivDef: 11, ivSta: 12, note: "Jo1d82" },
+  { pokemon: "Tyrunt", cp: 570, level: 13, ivAtk: 14, ivDef: 9, ivSta: 4, forma: "Shadow" },
+  { pokemon: "Machamp", cp: 3000, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13 },
+]);
+const dUpr = await pUpr.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const r = (sel) => {
+    const e = document.querySelector(sel);
+    if (!e) return null;
+    const b = e.getBoundingClientRect();
+    return { t: Math.round(b.top), b: Math.round(b.bottom), l: Math.round(b.left), w: Math.round(b.width) };
+  };
+  // lišta příkazů: „projít box" místo „čistit box" a nabídka nad rosterem
+  const tlacitko = (document.getElementById("boxModeBtn") || {}).textContent || "";
+  const menu = document.querySelector(".atlas-roster-commands");
+  menu.open = true;
+  menu.dispatchEvent(new Event("toggle"));
+  await cekej(150);
+  const panelPozice = getComputedStyle(menu.lastElementChild).position;
+  const panel = menu.lastElementChild.getBoundingClientRect();
+  const nadRosterem = document.elementFromPoint(panel.x + 20, panel.y + 20);
+  const lista = document.querySelector(".atlas-roster-fixed-controls");
+  const posuv = lista ? lista.scrollHeight - lista.clientHeight : 0;
+  menu.open = false;
+  menu.dispatchEvent(new Event("toggle"));
+
+  // detail se otevřením úprav nesmí hnout
+  const id = P.getRows().filter((x) => x.pokemon === "Jolteon")[0].id;
+  A.openDetail(id);
+  await cekej(1200);
+  const pred = { hlavicka: r(".atlas-drawer .atlas-detail-identity"), verdikt: r(".atlas-verdict-radek") };
+  window.AtlasEditRow(id);
+  await cekej(600);
+  const po = { hlavicka: r(".atlas-drawer .atlas-detail-identity"), verdikt: r(".atlas-verdict-radek") };
+  const editor = document.getElementById("atlasRowEditor");
+  const editorRect = r("#atlasRowEditor");
+  const drawer = r(".atlas-drawer");
+  const out = {
+    tlacitko: tlacitko.trim(),
+    panelFixed: panelPozice,
+    nadRosterem: nadRosterem ? String(nadRosterem.tagName) : "nic",
+    posuv,
+    nehnulo: JSON.stringify(pred) === JSON.stringify(po),
+    vedle: !!editor && editor.classList.contains("atlas-editor-vedle")
+      && !!editorRect && !!drawer && editorRect.l + editorRect.w <= drawer.l,
+    checkboxy: document.querySelectorAll("#atlasRowEditor input[type=checkbox]").length,
+    prazdnyUtok: [...document.querySelectorAll("#atlasRowEditor .uv-jmeno")]
+      .every((e) => !/útok/i.test(e.textContent)),
+  };
+  editor.remove();
+  // popis pod ikonou v evoluční řadě se nesmí ořezávat
+  A.openDetail(P.getRows().filter((x) => x.pokemon === "Tyrunt")[0].id);
+  await cekej(1200);
+  out.popis = [...document.querySelectorAll("#atlasDetailContent .atlas-evo-popis")]
+    .map((e) => e.scrollHeight - e.clientHeight);
+  out.podminka = [...document.querySelectorAll("#atlasDetailContent .d-evo-kus u")]
+    .map((e) => Math.round(e.getBoundingClientRect().height));
+  return out;
+});
+await pUpr.close();
+check("v liště příkazů je „Projít box“", /Projít box/.test(dUpr.tlacitko), dUpr.tlacitko);
+check("nabídka „Správa rosteru“ stojí nad rosterem a nedělá posuvník",
+  dUpr.panelFixed === "fixed" && dUpr.nadRosterem === "BUTTON" && dUpr.posuv === 0,
+  JSON.stringify(dUpr));
+check("úprava kusu se otevře vedle detailu a detailem nehne",
+  dUpr.vedle === true && dUpr.nehnulo === true, JSON.stringify(dUpr));
+check("…bez zaškrtávátek značek a bez popisku v prázdném výběru útoku",
+  dUpr.checkboxy === 0 && dUpr.prazdnyUtok === true, JSON.stringify(dUpr));
+check("popis pod ikonou v evoluční řadě se neořezává",
+  dUpr.popis.every((v) => v <= 0) && dUpr.podminka.every((v) => v >= 12),
+  JSON.stringify({ popis: dUpr.popis, podminka: dUpr.podminka }));
 
 // ----------------------------------------------- hlášky musí být vidět
 // Okno s hláškou appky stojí v HTML uvnitř karty rosteru — a tu vzhledová
