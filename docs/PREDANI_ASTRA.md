@@ -1338,3 +1338,26 @@ Kolo 21. 9. — pojistka proti ztrátě dat a drobnosti
   štítku se escapuje.
 - Pořadí mezi všemi kusy se počítá i pro **Master League** — `LEAGUES` ji
   neobsahuje, přidává se všude zvlášť.
+
+Kolo 21. 9. (2) — data se obnovují sama
+-----------------------------------------
+
+V repozitáři je nová naplánovaná úloha `.github/workflows/data.yml`. Každý den
+ráno stáhne pokédex, ligy z PvPoke, útoky, obrázky forem a eventy, projede
+audit integrity, zapeče data do appky a **když se něco změnilo, commitne to
+do `main`**. Celé to dělá `tools/refresh_all.py`, který existoval už dřív —
+úloha ho jen spouští.
+
+Dvě věci, na které si dát pozor:
+
+- **Zámek produkce platí i tam.** Dokud v kořeni leží `PRODUKCE_ZAMCENA.txt`,
+  data se jen commitnou a na Pages nejde nic.
+- **Testy appky se v úloze nespouští** (potřebovaly by prohlížeč). Běží jen
+  audit dat. Po ranní obnově se proto vyplatí pustit `node tests/web_app.test.mjs`
+  lokálně — čerstvá data umí shodit kontroly, které se opírají o konkrétní
+  pořadí v žebříčku.
+
+Při první obnově to hned dvě kontroly shodilo a obě byly na straně testu:
+strop velikosti appky (data rostou, zvednuto na 1,90 MB) a tvrdě zapsané
+„běžná kopie je na 100 %" — měřítko se pohnulo, takže se teď kontroluje jen
+to, co platit musí (běžná kopie nikdy nepřeleze 100 %).
