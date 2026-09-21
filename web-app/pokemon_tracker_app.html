@@ -5898,7 +5898,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         return n + ": " + (pr && Array.isArray(pr.rows) ? pr.rows.length : 0);
       }).join(", ");
       return kde + " · v úložišti: " + (kusu || "nic")
-        + (st.ulozeno ? " · naposledy uloženo " + st.ulozeno : "");
+        + (st.ulozeno ? " · naposledy uloženo " + st.ulozeno : "")
+        + (idbFunguje ? " · velké úložiště (IndexedDB) funguje" : "");
     } catch (e) {
       return kde + " · obsah úložiště se nepodařilo přečíst (" + (e && e.name) + ").";
     }
@@ -7175,6 +7176,66 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return store;
   }
 
+  var IDB_DB = "pgo_uloziste", IDB_STORE = "stav";
+  var idbSpojeni = null;
+  /* Funguje velké úložiště? Rozhoduje o tom, jak zní hláška, když
+     localStorage odmítne zapsat. */
+  var idbFunguje = false;
+
+  function idbOtevri() {
+    if (idbSpojeni) return idbSpojeni;
+    idbSpojeni = new Promise(function (res, rej) {
+      try {
+        if (!window.indexedDB) { rej(new Error("prohlížeč nemá IndexedDB")); return; }
+        var r = window.indexedDB.open(IDB_DB, 1);
+        r.onupgradeneeded = function () {
+          if (!r.result.objectStoreNames.contains(IDB_STORE)) {
+            r.result.createObjectStore(IDB_STORE);
+          }
+        };
+        r.onsuccess = function () { idbFunguje = true; res(r.result); };
+        r.onerror = function () { rej(r.error || new Error("IndexedDB se neotevřela")); };
+        r.onblocked = function () { rej(new Error("IndexedDB je zablokovaná jinou záložkou")); };
+      } catch (e) { rej(e); }
+    });
+    idbSpojeni.catch(function () { /* bez velkého úložiště se dá žít dál */ });
+    return idbSpojeni;
+  }
+
+  /** Uloží celý stav do velkého úložiště. Text, ne objekt: co se uloží, je
+   *  přesně to, co by šlo i do localStorage — žádné překvapení z klonování. */
+  function idbUloz(store) {
+    var zaznam = { text: JSON.stringify(store), ms: Date.now() };
+    return idbOtevri().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).put(zaznam, STORAGE_KEY_V2);
+        tx.oncomplete = function () { res(true); };
+        tx.onerror = function () { rej(tx.error); };
+        tx.onabort = function () { rej(tx.error); };
+      });
+    });
+  }
+
+  function idbNacti() {
+    return idbOtevri().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction(IDB_STORE, "readonly");
+        var q = tx.objectStore(IDB_STORE).get(STORAGE_KEY_V2);
+        q.onsuccess = function () { res(q.result || null); };
+        q.onerror = function () { rej(q.error); };
+      });
+    });
+  }
+
+  /** Zápis do velkého úložiště na pozadí. Nikdy nesmí shodit ukládání —
+   *  je to pojistka, ne hlavní cesta. */
+  function idbUlozNaPozadi(store) {
+    try {
+      idbUloz(store).catch(function () { /* nevadí, localStorage to nese */ });
+    } catch (e) { /* nevadí */ }
+  }
+
   function saveStore(store) {
     if (!STORAGE_OK) {
       // Poslední pokus: uvolnit vlastní paměti a zkusit to znovu.
@@ -7216,14 +7277,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var nejvetsi = misto.polozky.slice(0, 3).map(function (x) {
         return x.klic + " " + kb(x.bajtu);
       }).join(", ");
-      appHlaska("Prohlížeč nedokázal roster uložit (" + zapisNejde + ")."
-        + (misto.celkem ? "\n\nV úložišti je obsazeno " + kb(misto.celkem)
+      appHlaska("Prohlížeč nedokázal roster uložit do rychlého úložiště ("
+        + zapisNejde + ")."
+        + (misto.celkem ? "\n\nV něm je obsazeno " + kb(misto.celkem)
             + (nejvetsi ? " — nejvíc zabírá: " + nejvetsi : "") : "")
         + "\n\nStránky otevřené z disku (file://) sdílí jedno úložiště o 5 MB,"
-        + " takže ho mohla zaplnit i úplně jiná stránka. Dokud se to nespraví,"
-        + " žádná změna nepřežije obnovení stránky (F5)."
-        + "\n\nUdělej si hned zálohu do souboru — data, která teď vidíš,"
-        + " tím zachráníš.");
+        + " takže ho mohla zaplnit i úplně jiná stránka."
+        + (idbFunguje
+            ? "\n\nRoster je i tak v bezpečí: ukládá se zároveň do velkého"
+              + " úložiště (IndexedDB), které tenhle strop nemá, a odtud se"
+              + " po obnovení stránky načte."
+            : "\n\nDokud se to nespraví, žádná změna nepřežije obnovení"
+              + " stránky (F5). Udělej si hned zálohu do souboru — data,"
+              + " která teď vidíš, tím zachráníš."));
     } catch (e) { /* aspoň to nespadne */ }
   }
   var zapisNejde = "";
@@ -7246,6 +7312,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      výjimka při startu), aby se data, která nikdo mazat nechtěl, ztratila.
      Úmyslné vyprázdnění (Vymazat vše, přepnutí profilu, setRows) si o zápis
      řekne přes `povolPrazdnyZapis()`. */
+  /* Sáhl uživatel od startu na data? Rozhoduje o tom, jestli se smí stav
+     přepsat tím, co dorazí z velkého úložiště. */
+  var zmenenoOdStartu = false;
   var prazdnyZapisPovolen = false;
   function povolPrazdnyZapis() { prazdnyZapisPovolen = true; }
   /* Když načtení uloženého stavu spadne, appka běží prázdná. V takovém stavu
@@ -7297,6 +7366,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // Razítko pomáhá poznat, jestli se v tomhle úložišti vůbec kdy ukládalo.
     try { store.ulozeno = new Date().toISOString().slice(0, 16).replace("T", " "); }
     catch (e) { /* nevadí */ }
+    store.ulozenoMs = Date.now();
+    // Do velkého úložiště se píše vždycky — právě kvůli chvílím, kdy
+    // localStorage odmítne (plno, zamčené ukládání).
+    idbUlozNaPozadi(store);
+    zmenenoOdStartu = true;
     if (!saveStore(store)) return;
     var label = PROFILES_ENABLED ? " — profil „" + activeProfile + "“" : "";
     setSaveState("Uloženo v prohlížeči" + label + " ✓", true);
@@ -26030,6 +26104,41 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + " stránky otevřené z disku (file://) sdílí jedno malé úložiště"
       + " a zaplnit ho může i úplně jiná stránka.");
   }
+
+  // Velké úložiště dorazí pár desítek milisekund po startu — je asynchronní.
+  // Do té doby appka běží na tom, co stihla přečíst z localStorage.
+  try {
+    idbNacti().then(function (zaznam) {
+      var mistni = loadStore();
+      var mistniMs = Number(mistni.ulozenoMs) || 0;
+      if (!zaznam || !zaznam.text) {
+        // První spuštění s velkým úložištěm: přenese se tam, co je teď.
+        if (rows.length) idbUlozNaPozadi(mistni);
+        return;
+      }
+      var velky = null;
+      try { velky = JSON.parse(zaznam.text); } catch (e) { return; }
+      if (!velky || !velky.profiles) return;
+      var prof = velky.profiles[velky.active] || velky.profiles[Object.keys(velky.profiles)[0]];
+      var kolik = (prof && Array.isArray(prof.rows)) ? prof.rows.length : 0;
+      if (!kolik) return;
+      var novejsi = (Number(zaznam.ms) || 0) > mistniMs;
+      if (rows.length && (!novejsi || zmenenoOdStartu)) return;
+      var puvodne = rows.length;
+      rows = [];
+      var v = postavitRadky(prof.rows);
+      if (!v.ok) { return; }   // rows zůstanou prázdné jen když nebylo z čeho
+      activeProfile = velky.profiles[velky.active] ? velky.active : Object.keys(velky.profiles)[0];
+      if (velky.discarded) discarded = normalizeDiscarded(velky.discarded);
+      renderBody();
+      appHlaska(puvodne
+        ? "Ve velkém úložišti (IndexedDB) byl novější roster — appka vzala"
+          + " jeho " + v.ok + " kusů. Rychlé úložiště prohlížeče je nejspíš"
+          + " plné, takže do něj poslední změny nedošly."
+        : "Rychlé úložiště prohlížeče bylo prázdné, ale ve velkém (IndexedDB)"
+          + " roster byl — appka z něj vzala " + v.ok + " kusů.");
+    }).catch(function () { /* bez velkého úložiště appka běží jako dřív */ });
+  } catch (e) { /* nevadí */ }
 
   startHotov = true;
 

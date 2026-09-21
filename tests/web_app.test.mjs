@@ -17210,6 +17210,26 @@ try {
     }));
     return klic;
   });
+  /** Zahodí záznam ve velkém úložišti. Bloky níž zkoušejí chování rychlého
+   *  úložiště — a appka by jinak (správně) přinesla novější stav z IndexedDB. */
+  const smazVelkeUloziste = (p) => p.evaluate((klic) => new Promise((hotovo) => {
+    try {
+      const r = indexedDB.open(klic.replace("tracker_v2", "uloziste"), 1);
+      r.onupgradeneeded = () => {
+        try { r.result.createObjectStore("stav"); } catch (e) { /* už je */ }
+      };
+      r.onsuccess = () => {
+        try {
+          const tx = r.result.transaction("stav", "readwrite");
+          tx.objectStore("stav").delete(klic);
+          tx.oncomplete = () => hotovo(true);
+          tx.onerror = () => hotovo(false);
+        } catch (e) { hotovo(false); }
+      };
+      r.onerror = () => hotovo(false);
+    } catch (e) { hotovo(false); }
+  }), klicAppky);
+  await smazVelkeUloziste(page);
   {
     const page2 = await context.newPage();
     // zápis do úložiště padá na kvótu — přesně jako v plném prohlížeči
@@ -17260,6 +17280,7 @@ try {
       }
     }));
   }, klicAppky);
+  await smazVelkeUloziste(page);
   await page.reload();
   await page.waitForTimeout(1800);
   const s268 = await page.evaluate((klic) => ({
@@ -17299,6 +17320,7 @@ try {
       profiles: { "Můj roster": { v: 2, rows, settings: {}, filterMode: "all" } }
     }));
   }, klicAppky);
+  await smazVelkeUloziste(page);
   await page.reload();
   await page.waitForTimeout(1800);
   const s269a = await page.evaluate(() => ({
@@ -17399,6 +17421,7 @@ try {
     }
     localStorage.setItem(klic.replace("tracker_v2", "sprite_ramecek"), JSON.stringify(velky));
   }, klicAppky);
+  await smazVelkeUloziste(page);
   {
     const page3 = await context.newPage();
     // zápis projde, jen když se celkový objem vejde pod strop
@@ -17442,6 +17465,66 @@ try {
     check("…a změna se zase uloží", s271.zapis === true, JSON.stringify(s271).slice(0, 200));
     check("…a appka řekne, co uvolnila", /uvolnila/.test(s271.okno), s271.okno.slice(0, 140));
     await page3.close();
+  }
+
+  // ---------------------------------------------------------------- 272
+  // Velké úložiště (IndexedDB). localStorage má pevných ~5 MB na původ a na
+  // file:// ho sdílí všechny stránky otevřené z disku — stačí jedna cizí
+  // stránka a roster se nemá kam uložit. IndexedDB má na tom samém souboru
+  // přes 3 GB. Zapisovat se proto musí do obou a při startu se bere ten
+  // novější; prázdná localStorage nesmí znamenat prázdnou appku.
+  console.log("\n272) Roster se uklada i do velkeho uloziste");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.evaluate(() => {
+    const rows = [];
+    for (let i = 0; i < 45; i++) {
+      rows.push({ id: "i" + i, pokemon: "Machamp", cp: 2000 + i, level: 30,
+        ivAtk: 15, ivDef: 14, ivSta: 13 });
+    }
+    window.__pgo.setRows(rows);
+    window.__pgo.persistNow();
+  });
+  await page.waitForTimeout(900);
+  const vIdb = await page.evaluate(async (klic) => {
+    const db = await new Promise((res) => {
+      const r = indexedDB.open(klic.replace("tracker_v2", "uloziste"), 1);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => res(null);
+    });
+    if (!db) return -3;
+    return await new Promise((res) => {
+      const tx = db.transaction("stav", "readonly");
+      const q = tx.objectStore("stav").get(klic);
+      q.onsuccess = () => {
+        try {
+          const st = JSON.parse(q.result.text);
+          const pr = st.profiles[st.active];
+          res(pr && pr.rows ? pr.rows.length : -1);
+        } catch (e) { res(-2); }
+      };
+      q.onerror = () => res(-4);
+    });
+  }, klicAppky);
+  check("uložení skončí i ve velkém úložišti", vIdb === 45, String(vIdb));
+  {
+    // Rychlé úložiště se vyprázdní ještě než se appka spustí — přesně jako
+    // když ho vyčistí prohlížeč nebo ho zaplní cizí stránka.
+    const page4 = await context.newPage();
+    await page4.addInitScript((klic) => {
+      try { localStorage.removeItem(klic); } catch (e) { /* nevadí */ }
+    }, klicAppky);
+    await page4.goto(URL);
+    await page4.waitForTimeout(2600);
+    const s272 = await page4.evaluate(() => ({
+      vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
+      okno: (document.getElementById("appOknoText") || {}).textContent || "",
+    }));
+    check("prázdné rychlé úložiště neznamená prázdnou appku",
+      s272.vRosteru === 45, JSON.stringify(s272).slice(0, 200));
+    check("…a appka řekne, odkud roster vzala",
+      /IndexedDB/.test(s272.okno), s272.okno.slice(0, 140));
+    await page4.close();
   }
 
   await page.goto(URL);
