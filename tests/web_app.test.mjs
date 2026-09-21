@@ -301,20 +301,6 @@ try {
     keep2.filter((k) => k.keep === "Zahodit – kopie" || k.sub === "horší kopie").length === 1,
     keep2.map((k) => k.keep + " (" + k.sub + ")").join(" / "));
 
-  const formyZap = await page.evaluate(() => {
-    const kf = document.getElementById("keepForms");
-    const kc = document.getElementById("keepCopies");
-    kc.value = "2"; kc.dispatchEvent(new Event("input", { bubbles: true }));
-    kf.checked = true; kf.dispatchEvent(new Event("change", { bubbles: true }));
-    const c = window.__pgo.getComputed();
-    const res = window.__pgo.getRows().filter((r) => r.pokemon === "Pidgey").map((r) => c[r.id].keep);
-    kf.checked = false; kf.dispatchEvent(new Event("change", { bubbles: true }));
-    kc.value = "1"; kc.dispatchEvent(new Event("input", { bubbles: true }));
-    return res;
-  });
-  check("se zapnutým „Shadow a Lucky držet vždy“ nepadá ani ten třetí",
-    formyZap.every((k) => k !== "Zahodit – kopie" && k.indexOf("Lucky") === -1),
-    formyZap.join(" / "));
 
   console.log("\n6) filtry");
   const filters = await page.evaluate(() => {
@@ -1868,10 +1854,6 @@ try {
     f.value = "all"; f.dispatchEvent(new Event("change", { bubbles: true }));
     const kl = window.__pgo.getKeepList();
     out.kategorie = kl.keep["Dynamax"].map((i) => i.name).sort().join(",");
-    const kf = document.getElementById("keepForms");
-    kf.checked = true; kf.dispatchEvent(new Event("change", { bubbles: true }));
-    out.kategorieVzdy = window.__pgo.getKeepList().keep["Dynamax"].map((i) => i.name).sort().join(",");
-    kf.checked = false; kf.dispatchEvent(new Event("change", { bubbles: true }));
     return out;
   });
 
@@ -1898,8 +1880,6 @@ try {
     dmax.filtr.length === 2 && dmax.filtr.join(",").indexOf("Sobble") > -1, dmax.filtr.join(","));
   eq("…a mají v tabulce štítek", dmax.chipText, "DMAX");
   eq("bez role se Dynamax kus do „nechat“ sám nedostane", dmax.kategorie, "");
-  check("…ale se zapnutým „Shadow a Lucky držet vždy“ ano",
-    dmax.kategorieVzdy === "Sobble,Wooloo", dmax.kategorieVzdy);
 
   console.log("\n44) prázdný filtr řekne proč, a Dynamax filtr funguje i v zobrazení Vše");
   const empty = await page.evaluate(() => {
@@ -2307,35 +2287,32 @@ try {
 
     // Typová výhoda se musí brát z ukazované sestavy, ne z typů druhu.
     // Cacnea je Grass/Dark, ale se sestavou Sucker Punch + Payback (obojí Dark)
-    // Tenhle blok měří sílu counteru, ne pravidla ponechání. Shadow kusy bez role
-    // by jinak vypadly z výběru dřív, než se k počítání vůbec dojde.
-    const kf = document.getElementById("keepForms");
-    kf.checked = true; kf.dispatchEvent(new Event("change", { bubbles: true }));
+    // Shadow kusy bez role drží ve výběru značka CUTE — na sílu counteru
+    // nemá vliv a nahrazuje zrušený přepínač „Shadow a Lucky držet vždy".
 
     // proti Water nemá výhodu žádnou.
     out.cacnea = skore([
-      { pokemon: "Cacnea", forma: "Shadow", cp: 234, level: 12, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Sucker Punch", charged1: "Payback" },
+      { pokemon: "Cacnea", forma: "Shadow", cute: "Ano", cp: 234, level: 12, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Sucker Punch", charged1: "Payback" },
     ], "Wailmer");
 
     // Nízký level nesmí zmizet pod typovou výhodou: slabý kus s ×1,6 nemá
     // přeskočit mnohem silnějšího s ×1.
     out.levely = skore([
       { pokemon: "Ampharos", cp: 1604, level: 26, ivAtk: 13, ivDef: 13, ivSta: 13, fastMove: "Volt Switch", charged1: "Zap Cannon" },
-      { pokemon: "Chinchou", forma: "Shadow", cp: 60, level: 3, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Spark", charged1: "Thunderbolt" },
+      { pokemon: "Chinchou", forma: "Shadow", cute: "Ano", cp: 60, level: 3, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Spark", charged1: "Thunderbolt" },
     ], "Wailmer");
 
     // …ale když je stejný druh na vyšším levelu, musí vyhrát on
     out.stejnyDruh = skore([
-      { pokemon: "Chinchou", forma: "Shadow", cp: 60, level: 3, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Spark", charged1: "Thunderbolt" },
-      { pokemon: "Chinchou", forma: "Shadow", cp: 900, level: 30, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Spark", charged1: "Thunderbolt" },
+      { pokemon: "Chinchou", forma: "Shadow", cute: "Ano", cp: 60, level: 3, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Spark", charged1: "Thunderbolt" },
+      { pokemon: "Chinchou", forma: "Shadow", cute: "Ano", cp: 900, level: 30, ivAtk: 10, ivDef: 10, ivSta: 10, fastMove: "Spark", charged1: "Thunderbolt" },
     ], "Wailmer");
 
     // shadow: +20 % útoku, −20 % obrany
     out.shadow = skore([
       { pokemon: "Machamp", cp: 2100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
-      { pokemon: "Machamp", forma: "Shadow", cp: 2100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
+      { pokemon: "Machamp", forma: "Shadow", cute: "Ano", cp: 2100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
     ], "Blissey");
-    kf.checked = false; kf.dispatchEvent(new Event("change", { bubbles: true }));
     return out;
   });
 
@@ -2440,24 +2417,6 @@ try {
   check("…a bublina řekne, že ani po evoluci by nic nedržel",
     vysv.shadow.evoT.indexOf("Watchog") > -1 && vysv.shadow.evoT.indexOf("Nemá to pro co") > -1,
     vysv.shadow.evoT);
-
-  const shadowVzdy = await page.evaluate(() => {
-    const kf = document.getElementById("keepForms");
-    kf.checked = true; kf.dispatchEvent(new Event("change", { bubbles: true }));
-    // Watchog, ne Corvisquire: ten se vyvine na Corviknighta (UL #3) a držel by
-    // se sám od sebe. Test by pak procházel, i kdyby držení forem nefungovalo.
-    window.__pgo.setRows([{ pokemon: "Watchog", forma: "Shadow", cp: 900, level: 20,
-      ivAtk: 8, ivDef: 8, ivSta: 8, fastMove: "Bite", charged1: "Crunch" }]);
-    const c = window.__pgo.getComputed();
-    const r = window.__pgo.getRows()[0];
-    const out = { keep: c[r.id].keep, evolve: c[r.id].evolve, keepT: c[r.id].keepTitle || "" };
-    kf.checked = false; kf.dispatchEvent(new Event("change", { bubbles: true }));
-    return out;
-  });
-  check("se zapnutým držením forem se shadow nechává", shadowVzdy.keep === "Ponechat",
-    shadowVzdy.keep);
-  check("…a bublina řekne, proč drží místo",
-    shadowVzdy.keepT.indexOf("Shadow forma") > -1, shadowVzdy.keepT);
 
   check("u odpadu je napsané, proč jde pryč",
     vysv.odpad.keepT.indexOf("Nedrží žádnou roli") > -1, vysv.odpad.keepT);
@@ -11079,29 +11038,6 @@ try {
   check("…a brzda se u něj nezapíná", luckyDrzi.priznak === false,
     String(luckyDrzi.priznak));
 
-  // Lucky jen ve jméně musí platit i pro „Shadow a Lucky držet vždy“ —
-  // značku v tabulce dostal, tak ho to nastavení nesmí minout.
-  const luckyZeJmena = await page.evaluate(async () => {
-    window.__pgo.setRows([
-      { id: "j1", pokemon: "Rattata Lucky", cp: 210, level: 15,
-        ivAtk: 10, ivDef: 11, ivSta: 12 }
-    ]);
-    const kf = document.getElementById("keepForms");
-    kf.checked = true;
-    kf.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 200));
-    const c = window.__pgo.getComputed()[window.__pgo.getRows()[0].id];
-    const out = { keep: c.keep, title: c.keepTitle || "" };
-    kf.checked = false;
-    kf.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 200));
-    return out;
-  });
-  eq("se zapnutým „držet vždy“ zůstává i lucky ze jména",
-    luckyZeJmena.keep, "Ponechat");
-  check("…a věta o formě není useknutá",
-    luckyZeJmena.title.indexOf("Lucky forma") === 0, luckyZeJmena.title);
-
   console.log("\n193) záloha do složky, na kterou dosáhne telefon");
   // Falešná složka: pamatuje si, co se do ní zapsalo, a hlásí, v jakém režimu
   // si o ni appka řekla. „read" znamená, že se zavolala funkce od kamarádova
@@ -14798,7 +14734,7 @@ try {
   const resetVolby = await page.evaluate(async () => {
     const P = window.__pgo;
     const IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays",
-      "boxCountRoster", "gymCountRoster", "keepForms", "rankLimit", "roleThresh",
+      "boxCountRoster", "gymCountRoster", "rankLimit", "roleThresh",
       "dmaxKeep", "dmaxSlotu", "krokyPlan", "keepRare", "bezXL", "prahSleva",
       "prachZaBod", "cilLevel", "ligaVaha"];
     const vychozi = (e) => {
@@ -14833,7 +14769,7 @@ try {
   });
   check("kontroluje se cela sada nastaveni", resetVolby.kontrolovano >= 18,
     String(resetVolby.kontrolovano));
-  check("…a jsou mezi nimi i zaskrtavatka", resetVolby.zaskrtavatka >= 4,
+  check("…a jsou mezi nimi i zaskrtavatka", resetVolby.zaskrtavatka >= 3,
     String(resetVolby.zaskrtavatka));
   // Sebekontrola testu: kdyby se nic nerozhodilo, ctvrta kontrola by prosla
   // plane. Tolerance dvou volob je zamerna — hromadne prepnuti vseho naraz
@@ -15471,9 +15407,13 @@ try {
   check("…a vyznaci, ze tenhle kus mezi nimi je",
     !!boxDrzi && /tip-ten/.test(boxDrzi.tip) && /tenhle kus/.test(boxDrzi.tip),
     boxDrzi ? boxDrzi.tip.slice(0, 300) : "");
-  check("u kusu mimo sloty rekne, ze mezi nimi neni",
-    !!boxNe && /Tenhle kus mezi nimi není/.test(boxNe.tip) && !/tip-ten/.test(boxNe.tip),
-    boxNe ? boxNe.tip.slice(0, 300) : JSON.stringify(cisteniLigy.box));
+  // Kus, který slot nedrží ani není pod čarou, se připíše na konec seznamu
+  // na své skutečné místo — věta „mezi nimi není" nic neříkala o tom, jak
+  // daleko vlastně je.
+  check("u kusu mimo sloty stoji jeho skutecne misto primo v seznamu",
+    !!boxNe && /tip-ten/.test(boxNe.tip)
+      && /← tenhle kus, \d+\. z \d+/.test(boxNe.tip),
+    boxNe ? boxNe.tip.slice(-300) : JSON.stringify(cisteniLigy.box));
   check("odznacek v boxu je stejny jako v tabulce",
     !!boxDrzi && !!cisteniLigy.tabulka[azuDrzi.id]
       && cisteniLigy.tabulka[azuDrzi.id].tip === boxDrzi.tip
@@ -17015,9 +16955,8 @@ try {
     box.remove();
     return out;
   });
-  check("bubliny rolí končí pořadím mezi všemi kusy, co o ni soupeří",
-    s262.raid.length >= 1 && s262.gym.length >= 1,
-    JSON.stringify({ raid: s262.raid, gym: s262.gym, ukazky: s262.ukazky }));
+  check("bublina ligy má pořadí mezi všemi kusy přímo v seznamu",
+    s262.vRosteru >= 1, JSON.stringify({ ukazky: s262.ukazky }));
   check("…a má ho i kus, který není ani mezi držiteli, ani pod čarou",
     s262.ukazky.some((t) => /→ \d+ z \d+/.test(t))
       && s262.ukazky.some((t) => { const m = /→ (\d+) z (\d+)/.exec(t); return m && Number(m[1]) > 6; }),
@@ -17040,24 +16979,27 @@ try {
     const P = window.__pgo;
     P.setDiscarded([]);
     P.setRows([
-      { pokemon: "Rattata", cp: 300, level: 20, ivAtk: 5, ivDef: 5, ivSta: 5, forma: "Shadow" },
+      { pokemon: "Machamp", cp: 2400, level: 32, ivAtk: 12, ivDef: 12, ivSta: 12 },
+      { pokemon: "Machamp", cp: 2300, level: 31, ivAtk: 11, ivDef: 11, ivSta: 11 },
       { pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15 }
     ]);
     await new Promise((r) => setTimeout(r, 900));
     const rows = P.getRows();
-    const id = rows.find((r) => r.pokemon === "Rattata").id;
+    const id = rows.filter((r) => r.pokemon === "Machamp").pop().id;
     const verdikt = () => ((P.getComputed() || {})[id] || {}).keep || "?";
     const out = { start: verdikt() };
-    // 1) změna nastavení, které se čte přímo z políčka
-    const prep = document.getElementById("keepForms");
-    const puvodni = prep.checked;
-    prep.checked = !puvodni;
-    prep.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 500));
-    out.poNastaveni = verdikt();
-    prep.checked = puvodni;
-    prep.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 500));
+    // 1) změna nastavení musí paměť zahodit. Měří se identitou výsledku:
+    //    dokud se nic nezmění, vrací se tentýž objekt.
+    const predZmenou = P.getComputed();
+    const prep = document.getElementById("keepCopies");
+    const puvodni = prep.value;
+    prep.value = String(Number(puvodni) + 1);
+    prep.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 400));
+    out.poNastaveni = P.getComputed() !== predZmenou;
+    prep.value = puvodni;
+    prep.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 400));
     out.zpet = verdikt();
     // 2) změna kusu přímo v datech
     const kus = P.getRows().find((r) => r.id === id);
@@ -17069,8 +17011,8 @@ try {
     out.stejny = P.getComputed() === P.getComputed();
     return out;
   });
-  check("změna nastavení čteného z políčka zahodí paměť přepočtu",
-    s263.poNastaveni !== s263.start && s263.zpet === s263.start,
+  check("změna nastavení zahodí paměť přepočtu",
+    s263.poNastaveni === true && s263.zpet === s263.start,
     JSON.stringify(s263));
   check("…a změna kusu v datech taky",
     typeof s263.poZmeneKusu === "number" && s263.poZmeneKusu > 0.9,

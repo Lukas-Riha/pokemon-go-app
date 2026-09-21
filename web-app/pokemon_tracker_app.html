@@ -3026,13 +3026,6 @@
           „je to teď zbytečné“ a „za tu cenu je to jedno“, musíš říct ty.</span>
         <div id="ligaVahaInfo" class="prah-krivka"></div>
       </div>
-      <div class="setting setting-prepinac">
-        <label for="keepForms">Shadow a Lucky držet vždy</label>
-        <input type="checkbox" id="keepForms" />
-        <span class="hint">Vypnuté (doporučeno): shadow, lucky, purified a dynamax se počítají
-          jako běžné kusy — shadow Rattata je pořád Rattata. Zapnuté: nezahodí se ani jeden,
-          ani když ten druh nic nehraje. Na reálném rosteru je v tom rozdíl 16 vs. 6 ponechaných.</span>
-      </div>
     </div>
     <div class="settings-foot">
       <button id="resetSettingsBtn">Nastavit doporučené</button>
@@ -5664,7 +5657,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // kusy i vlastní připojené soubory (záloha, sdílení) — viz klicHandle níž.
   var PROFILES_ENABLED = true;
 
-  var SETTING_IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "keepForms", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha"];
+  var SETTING_IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -6957,7 +6950,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *
    * Musí to být jedno místo, protože zaškrtávátko se nastavuje JINAK než
    * číslo: `el.value = ...` u checkboxu nedělá vůbec nic. Tlačítko "Nastavit
-   * doporučené" proto čtyři přepínače (Shadow a Lucky držet vždy, plánovat
+   * doporučené" proto tři přepínače (plánovat
    * po krocích, nechat legendární při nahrazení, jen bez XL) nechávalo tak,
    * jak byly — a stejnou dírou si je profily přetahovaly mezi sebou.
    */
@@ -7130,9 +7123,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *  Zapnuté = sbírka forem (nic se z nich nezahodí). Vypnuté = shadow Rattata
    *  je pořád Rattata. Na reálném rosteru je v tom rozdíl 16 vs. 6 ponechaných. */
   function keepAllForms() {
-    var el = document.getElementById("keepForms");
-    if (!el) return false;
-    return soloProhlidka ? el.defaultChecked : el.checked;
+    // Volba „Shadow a Lucky držet vždy" se zrušila (20. 9. 2026): sbírka forem
+    // držela i kusy, které nic nehrají, a rozhodování to jen ředilo.
+    // Shadow, lucky a purified se počítají jako běžné kusy.
+    return false;
   }
 
   // Výchozí sleva za umístění v lize, v podílu. Dá se přenastavit v Nastavení
@@ -8762,15 +8756,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             : " Jediný Dmax kus toho druhu — hra ho stejně nepustí do transferu.")
           + (b.maSlot ? " K tomu drží místo v rozpočtu: " + slotVety(b) + "." : "")
           + nadLimitemVeta;
-      } else if (keepAllForms() && (b.specialForm || b.dynamax)) {
-        // Nastavení slibuje „nezahodí se ani jeden", takže tahle větev musí
-        // být NAD stropem kopií — jinak třetí shadow kus stejně spadne
-        // a slib neplatí. Vypnuté (výchozí) je shadow Rattata pořád Rattata.
-        keepGood = true;
-        keepLabel = "Ponechat";
-        keepTone = "good";
-        keepTitle = (b.formaText || "Dynamax") + " forma se jinak nezíská a v nastavení"
-          + " máš zapnuté „Shadow a Lucky držet vždy“." + nadLimitemVeta;
       } else if (sameMonWarning) {
         keepGood = true;
         keepLabel = "Duplikát?";
@@ -12001,7 +11986,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var pod = (ligaPodCarou[zkr] || []).slice(0, 4);
     var tenPod = false;
     if (pod.length) {
-      h += '<div class="tip-podnadpis">Nejblíž pod čarou</div><ul class="tip-seznam tip-pod">';
+      h += '<div class="tip-podnadpis">Nejblíž pod čarou</div><ol class="tip-seznam tip-pod" start="'
+        + (drzi.length + 1) + '">';
       pod.forEach(function (d) {
         var ten = kusId !== undefined && kusId !== null && d.id === kusId;
         if (ten) tenPod = true;
@@ -12020,15 +12006,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + (ten ? ' <span class="tip-znak">← tenhle kus</span>' : "")
           + "</li>";
       });
-      h += "</ul>";
+      h += "</ol>";
     }
+    // Když kus není ani mezi držiteli, ani pod čarou, připíše se na konec
+    // seznamu na své skutečné místo. Věta „v celém rosteru je 12. z 76"
+    // říkala totéž, jen se muselo dopočítávat, kam v tom seznamu patří.
     if (kusId !== undefined && kusId !== null && !jeMezi && !tenPod) {
-      h += '<div class="tip-radek">Tenhle kus mezi nimi není.</div>';
-    }
-    // Úplně poslední řádek: kolikátý ten kus v téhle lize doopravdy je.
-    // Bez toho se nedalo poznat, jestli je těsně pod čarou, nebo daleko.
-    if (kusId !== undefined && kusId !== null) {
-      h += poradiVseHtml("pvp:" + zkr, kusId);
+      var vse = (poradiVsech["pvp:" + zkr] || {})[kusId];
+      var kusB = null;
+      lastBase.forEach(function (x) { if (x.row.id === kusId) kusB = x; });
+      if (vse && kusB) {
+        var cesta = (kusB.cesty || {})[zkr] || null;
+        h += '<ol class="tip-seznam tip-pod"><li value="' + vse.poradi + '" class="tip-ten"><b>'
+          + escHtml(kusB.row.pokemon) + "</b>"
+          + (kusB.row.cp ? " " + escHtml(String(kusB.row.cp)) + " CP" : "")
+          + (cesta && cesta.rank ? " <em>#" + cesta.rank + "</em>" : "")
+          + (cesta && typeof cesta.pct === "number"
+              ? " " + (Math.round(cesta.pct * 1000) / 10) + "\u00a0%" : "")
+          + ' <span class="tip-znak">\u2190 tenhle kus, ' + vse.poradi
+          + ". z " + vse.celkem + "</span></li></ol>";
+      } else {
+        h += '<div class="tip-radek">Tenhle kus mezi nimi není.</div>';
+      }
     }
     return h;
   }
@@ -12066,7 +12065,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         rezerva: !!sl.rezerva, poEvoluci: !!sl.poEvoluci };
       if (sl.druh === "pvp") {
         d.filtr = sl.typ;
-        d.stitek = sl.typ + " #" + sl.rank;
+        // Posun v žebříčku patří na štítek: pořadí druhu se v PvPoke mění
+        // a „#19" samo o sobě neřekne, jestli kus stoupá, nebo padá.
+        var ligaKlicP = ligaKlicZeZkratky(sl.typ);
+        var posunP = ligaKlicP
+          ? posunVLize(dexKey(sl.hraje || b.row.pokemon), ligaKlicP) : null;
+        d.stitek = sl.typ + " #" + sl.rank
+          + (posunP ? " " + (posunP.rozdil > 0 ? "\u25b2" : "\u25bc")
+              + Math.abs(posunP.rozdil) : "");
         d.hraje = sl.hraje || "";
       } else if (sl.druh === "raid") {
         d.filtr = sl.typ;
@@ -12374,9 +12380,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         + "</li>";
     });
     return h + "</ol>" + '<div class="tip-radek tip-pozn">Procenta = síla proti nejlepšímu'
-      + (d.druh === "gym" ? " obránci." : " útočníkovi toho typu.") + "</div>"
-      // Klíč slotu je rovnou „raid:Fighting" — `filtr` nese štítek, ne typ.
-      + poradiVseHtml(d.druh === "gym" ? "gym" : d.klic, d.kusId);
+      + (d.druh === "gym" ? " obránci." : " útočníkovi toho typu.") + "</div>";
   }
 
   /** Štítky do buňky verdiktu. Kolik se vejde, se měří až po vykreslení
@@ -13182,7 +13186,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       { nazev: "Kvalita kusu", popis: "Kdy je kus dost dobrý na to, aby o roli soupeřil.",
         ids: ["ivThresh", "spThresh", "prahSleva", "rankThresh", "rankLimit"] },
       { nazev: "Rozpočet rolí", popis: "Kolik kusů od role a od druhu si vůbec držet.",
-        ids: ["keepCopies", "roleThresh", "ligaRezerva", "pametPoradi", "dmaxKeep", "dmaxSlotu", "keepForms", "keepRare"] },
+        ids: ["keepCopies", "roleThresh", "ligaRezerva", "pametPoradi", "dmaxKeep", "dmaxSlotu", "keepRare"] },
       { nazev: "Prach a vylepšování", popis: "Za co se vyplatí utrácet.",
         ids: ["prachZaBod", "cilLevel", "dustBudget", "bezXL", "ligaVaha"] },
       { nazev: "Kontrola a data", popis: "Sedí roster s hrou a jak dlouho si co pamatovat.",
@@ -14301,7 +14305,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return "Neznámá úprava.";
     }
     persist(true);
-    zamerKus(r.id);
+    // V čištění boxu se nesmí otvírat detail v tabulce — uživatel je uprostřed
+    // rozhodování a chce jen vidět, že se změna propsala do rozboru před ním.
+    var boxEl = document.getElementById("boxMode");
+    if (boxEl && !boxEl.hidden) {
+      bmObnovAktualni();
+    } else {
+      zamerKus(r.id);
+    }
     ohlasitZmenuVerdiktu(predtim, r.id);
     return null;
   }
@@ -24769,6 +24780,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    * Mění se jen to, co se u zbylých kusů píše: uvolněný slot má dostat
    * ten další v pořadí.
    */
+  /** Po úpravě kusu ve hře (vylepšil / vyvinul / očistil) se v čištění boxu
+   *  překreslí jen rozbor před uživatelem. Řazení se nemění — kus zůstane
+   *  tam, kde v sekci je, jen s novými čísly. */
+  function bmObnovAktualni() {
+    if (bmIndex >= bmList.length) return;
+    var x = bmList[bmIndex];
+    if (!x) return;
+    var comp = analyze();
+    var novy = comp[x.row.id];
+    if (novy) {
+      x.c = novy;
+      lastBase.forEach(function (b) { if (b.row.id === x.row.id) x.b = b; });
+    }
+    bmPrepocitatZbytek();
+    bmVykreslit();
+  }
+
   function bmPrepocitatZbytek() {
     var pustene = {};
     var jePustene = false;
