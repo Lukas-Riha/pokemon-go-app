@@ -8148,6 +8148,8 @@ try {
     if (window.__pgo.boxZavritNatvrdo) window.__pgo.boxZavritNatvrdo();
     const bm = document.getElementById("boxMode");
     if (bm) bm.hidden = true;
+    const okno = document.getElementById("appOkno");
+    if (okno && !okno.hidden) okno.hidden = true;
     window.scrollTo(0, 0);
   });
   const poradiPred = await page.evaluate(() =>
@@ -17084,7 +17086,8 @@ try {
   check("prázdný roster nepřepíše uložená data",
     s264.pred === 2 && s264.poNehode === 2, JSON.stringify(s264));
   check("…a appka to řekne místo tichého uložení",
-    /prázdn/i.test(s264.hlaska) && /Neuloženo/i.test(s264.hlaska), s264.hlaska);
+    /Neuloženo/i.test(s264.hlaska) && /(prázdn|nedotčen)/i.test(s264.hlaska)
+    && /F5/.test(s264.hlaska), s264.hlaska);
   check("…zatímco úmyslné vymazání projde",
     s264.poVymazani === 0, JSON.stringify(s264));
 
@@ -17095,6 +17098,10 @@ try {
   console.log("\n265) Zruseny prepinac v ulozenem profilu nesmi sebrat roster");
   await page.goto(URL);
   await page.waitForTimeout(700);
+  // Roster se nejdřív vyprázdní, jinak by ho appka při odchodu ze stránky
+  // uložila zpátky přes náš připravený obsah.
+  await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
+  await page.waitForTimeout(600);
   await page.evaluate(() => {
     const store = {
       active: "Výchozí",
@@ -17179,6 +17186,147 @@ try {
   check("vadný řádek nezabije start appky", s266.apiZije === true, JSON.stringify(s266));
   check("…načte se všechno ostatní", s266.vRosteru === 39, JSON.stringify(s266));
   check("…a uložená data zůstanou nedotčená", s266.ulozeno === 40, JSON.stringify(s266));
+
+  // ---------------------------------------------------------------- 267
+  // Plné úložiště prohlížeče (na file:// ho sdílí všechny stránky z disku,
+  // dohromady mají 5 MB) shazovalo zkušební ZÁPIS — a appka z toho usoudila,
+  // že úložiště nemá, takže nic nenačetla. Data přitom celou dobu ležela
+  // v prohlížeči: roster zmizel po každém F5 a appka mlčela.
+  console.log("\n267) Plne uloziste nesmi vypadat jako ztraceny roster");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
+  await page.waitForTimeout(500);
+  const klicAppky = await page.evaluate(() => {
+    const rows = [];
+    for (let i = 0; i < 30; i++) {
+      rows.push({ id: "q" + i, pokemon: "Azumarill", cp: 1400 + i, level: 30,
+        ivAtk: 2, ivDef: 14, ivSta: 13 });
+    }
+    const klic = Object.keys(localStorage).filter((k) => k.endsWith("tracker_v2"))[0];
+    localStorage.setItem(klic, JSON.stringify({
+      active: "Můj roster",
+      profiles: { "Můj roster": { v: 2, rows, settings: {}, filterMode: "all" } }
+    }));
+    return klic;
+  });
+  {
+    const page2 = await context.newPage();
+    // zápis do úložiště padá na kvótu — přesně jako v plném prohlížeči
+    await page2.addInitScript(() => {
+      const puvodni = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) {
+        if (String(k).indexOf("pgo") !== -1) {
+          throw new DOMException("kvóta vyčerpána", "QuotaExceededError");
+        }
+        return puvodni.call(this, k, v);
+      };
+    });
+    await page2.goto(URL);
+    await page2.waitForTimeout(1800);
+    const s267 = await page2.evaluate(() => ({
+      vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
+      okno: (document.getElementById("appOknoText") || {}).textContent || "",
+      pruh: (document.getElementById("zalWarnText") || {}).textContent || "",
+    }));
+    check("plné úložiště nezakryje uložený roster", s267.vRosteru === 30,
+      JSON.stringify(s267).slice(0, 200));
+    check("…a appka nahlas řekne, že se neukládá",
+      /QuotaExceededError/.test(s267.okno) && /uložit|ukládá/i.test(s267.okno),
+      s267.okno.slice(0, 160));
+    await page2.close();
+  }
+
+  // ---------------------------------------------------------------- 268
+  // Aktivní profil ukazuje na prázdno, roster leží ve vedlejším profilu.
+  // Dřív ho prázdná appka při zavření stránky přepsala prázdnem — pojistka
+  // se totiž ptala na `store.active`, ne na profil, do kterého se zapisuje.
+  console.log("\n268) Prazdny profil nesmi prepsat roster ve vedlejsim");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
+  await page.waitForTimeout(500);
+  await page.evaluate((klic) => {
+    const rows = [];
+    for (let i = 0; i < 25; i++) {
+      rows.push({ id: "w" + i, pokemon: "Skarmory", cp: 1500 + i, level: 28,
+        ivAtk: 0, ivDef: 15, ivSta: 15 });
+    }
+    localStorage.setItem(klic, JSON.stringify({
+      active: "Prázdný",
+      profiles: {
+        "Prázdný": { v: 2, rows: [], settings: {}, filterMode: "all" },
+        "Můj roster": { v: 2, rows, settings: {}, filterMode: "all" }
+      }
+    }));
+  }, klicAppky);
+  await page.reload();
+  await page.waitForTimeout(1800);
+  const s268 = await page.evaluate((klic) => ({
+    vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
+    ulozeno: (function () {
+      try {
+        const st = JSON.parse(localStorage.getItem(klic) || "{}");
+        const pr = (st.profiles || {})["Můj roster"];
+        return pr && pr.rows ? pr.rows.length : -1;
+      } catch (e) { return -1; }
+    })()
+  }), klicAppky);
+  check("roster ve vedlejším profilu přežije obnovení stránky",
+    s268.ulozeno === 25, JSON.stringify(s268));
+  check("…a appka ho sama najde a načte", s268.vRosteru === 25, JSON.stringify(s268));
+  await page.evaluate(() => {
+    const okno = document.getElementById("appOkno");
+    if (okno && !okno.hidden) okno.hidden = true;
+  });
+
+  // ---------------------------------------------------------------- 269
+  // Roster pod klíčem JINÉ kopie appky (ostrá vedle testovací). Appka má
+  // nabídnout jeho načtení — jinak vypadá prázdná a data leží pár znaků
+  // vedle, v tom samém prohlížeči.
+  console.log("\n269) Roster z jine kopie appky se nabidne");
+  await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
+  await page.waitForTimeout(500);
+  await page.evaluate((klic) => {
+    const rows = [];
+    for (let i = 0; i < 19; i++) {
+      rows.push({ id: "e" + i, pokemon: "Umbreon", cp: 1600 + i, level: 26,
+        ivAtk: 1, ivDef: 15, ivSta: 14 });
+    }
+    localStorage.removeItem(klic);
+    localStorage.setItem("jina_kopie_tracker_v2", JSON.stringify({
+      active: "Můj roster",
+      profiles: { "Můj roster": { v: 2, rows, settings: {}, filterMode: "all" } }
+    }));
+  }, klicAppky);
+  await page.reload();
+  await page.waitForTimeout(1800);
+  const s269a = await page.evaluate(() => ({
+    vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
+    okno: (document.getElementById("appOknoText") || {}).textContent || "",
+    tlacitko: (document.getElementById("appOknoOk") || {}).textContent || "",
+  }));
+  check("appka nabídne roster z jiné kopie", /19 kusů/.test(s269a.okno),
+    JSON.stringify(s269a).slice(0, 200));
+  await page.click("#appOknoOk");
+  await page.waitForTimeout(1200);
+  const s269b = await page.evaluate((klic) => ({
+    vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
+    ulozeno: (function () {
+      try {
+        const st = JSON.parse(localStorage.getItem(klic) || "{}");
+        const pr = (st.profiles || {})[st.active];
+        return pr && pr.rows ? pr.rows.length : -1;
+      } catch (e) { return -1; }
+    })()
+  }), klicAppky);
+  check("…a po potvrzení ho načte", s269b.vRosteru === 19, JSON.stringify(s269b));
+  check("…a rovnou uloží k sobě", s269b.ulozeno === 19, JSON.stringify(s269b));
+  await page.evaluate(() => {
+    localStorage.removeItem("jina_kopie_tracker_v2");
+    const okno = document.getElementById("appOkno");
+    if (okno && !okno.hidden) okno.hidden = true;
+  });
 
   await page.goto(URL);
   await page.waitForTimeout(700);

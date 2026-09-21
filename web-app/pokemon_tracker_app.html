@@ -2712,6 +2712,7 @@
     box-shadow: 0 18px 50px #0006; }
   .app-okno-text { font-size: 14px; line-height: 1.6; white-space: pre-line; }
   .app-okno-vstup { display: block; margin-top: 14px; }
+  .app-okno-vstup[hidden] { display: none; }
   .app-okno-vstup input { width: 100%; box-sizing: border-box; padding: 10px;
     background: var(--input-bg); color: var(--text-primary);
     border: 1px solid var(--border); border-radius: 8px; font: inherit; }
@@ -3314,6 +3315,7 @@
       </div>
       <button class="primary" id="zalWarnBtn">Zálohovat do souboru…</button>
       <button id="zalWarnSoubor" style="display:none">Načíst ze souboru (CSV)…</button>
+      <button class="primary" id="zalWarnZachrana" style="display:none">Načíst roster z úložiště</button>
     </div>
     <div class="toolbar">
       <button class="primary" id="addRowBtn">+ Přidat pokémona</button>
@@ -5786,8 +5788,99 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *  ta věc, kterou appka dělat nesmí. */
   /** Kde appka data hledá a co v úložišti je. Když roster zmizí, tohle je
    *  první otázka: jiná adresa = jiné úložiště prohlížeče. */
+  var zachranaUdelana = false;
+  var zachranaHlaska = "";
+  /* Záchrana se nabízí jen při startu. Potom je prázdný roster vědomý stav
+     (nový profil, přepnutí, úmyslné vymazání) a sahat do jiného profilu by
+     bylo proti uživateli. */
+  var startHotov = false;
+
+  /** Postaví řádky z uloženého profilu — každý zvlášť, aby jeden vadný
+   *  nesebral celý roster. */
+  function postavitRadky(ulozene) {
+    var ok = 0, spadlo = 0;
+    (Array.isArray(ulozene) ? ulozene : []).forEach(function (r) {
+      try {
+        var novy = newRow(r);
+        if (!novy || typeof novy.pokemon !== "string") throw new Error("řádek bez jména druhu");
+        rows.push(novy);
+        ok++;
+      } catch (e) {
+        spadlo++;
+        if (!nactenoChyba) nactenoChyba = (e && e.message) ? e.message : String(e);
+      }
+    });
+    return { ok: ok, spadlo: spadlo };
+  }
+
+  /** Profil, ve kterém data OPRAVDU jsou. Když aktivní profil ukazuje na
+   *  prázdno a plný roster leží vedle, je tohle přesně ta chvíle, kdy appka
+   *  vypadá, že o data přišla. */
+  function nejplnejsiProfil(store) {
+    var profily = (store && store.profiles) || {};
+    var jmeno = "", nejvic = 0;
+    Object.keys(profily).forEach(function (n) {
+      var pr = profily[n];
+      var kolik = (pr && Array.isArray(pr.rows)) ? pr.rows.length : 0;
+      if (kolik > nejvic) { nejvic = kolik; jmeno = n; }
+    });
+    return jmeno ? { jmeno: jmeno, kusu: nejvic, profil: profily[jmeno] } : null;
+  }
+
+  /** Roster v úložišti jiné kopie appky (ostrá versus testovací). Každá kopie
+   *  má vlastní klíč, takže „appka je prázdná, ale data tu byla" může znamenat
+   *  jen tohle: otevřel se jiný soubor. */
+  function cizeUloziste() {
+    if (!STORAGE_CTE) return null;
+    var nej = null;
+    try {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var klic = window.localStorage.key(i);
+        if (!klic || klic === STORAGE_KEY_V2) continue;
+        if (klic.length < 10 || klic.slice(klic.length - 10) !== "tracker_v2") continue;
+        var st = null;
+        try { st = JSON.parse(window.localStorage.getItem(klic) || "null"); }
+        catch (e) { st = null; }
+        var pr = st && st.profiles ? nejplnejsiProfil(st) : null;
+        if (pr && (!nej || pr.kusu > nej.kusu)) {
+          nej = { klic: klic, jmeno: pr.jmeno, kusu: pr.kusu, profil: pr.profil };
+        }
+      }
+    } catch (e) { /* nevadí, jen se nic nenabídne */ }
+    return nej;
+  }
+
+  /** Prázdná appka nad plným úložištěm = druhý pokus o načtení.
+   *  `znovu` = ruční pokus tlačítkem (ten se smí opakovat). */
+  function zachranitRoster(znovu) {
+    if ((zachranaUdelana && !znovu) || startHotov || rows.length || !STORAGE_CTE) return false;
+    var nej = nejplnejsiProfil(loadStore());
+    if (!nej) return false;   // není co zachraňovat, zkusí se zas příště
+    zachranaUdelana = true;
+    var v = postavitRadky(nej.profil.rows);
+    if (!v.ok) { rows = []; return false; }
+    activeProfile = nej.jmeno;
+    nactenoPreskoceno = v.spadlo;
+    zachranaHlaska = "Roster se při načtení nepodařilo otevřít, ale v úložišti byl —"
+      + " appka ho vzala znovu a dostala " + v.ok + " kusů"
+      + (v.spadlo ? " (" + v.spadlo + " se nepovedlo)" : "") + ".";
+    return true;
+  }
+
   function kdeJsouData() {
-    var kde = "Úložiště prohlížeče pro: " + (location.origin === "null"
+    var zaklad = kdeJsouDataZaklad();
+    var c = cizeUloziste();
+    return c
+      ? zaklad + " · POZOR: v úložišti jiné kopie appky (" + c.klic + ") leží "
+        + c.kusu + " kusů — nejspíš jsi otevřel jiný soubor s appkou."
+      : zaklad;
+  }
+
+  function kdeJsouDataZaklad() {
+    var kde = ((STORAGE_OK && !zapisNejde) ? ""
+        : "ZÁPIS NEJDE (" + (zapisNejde || STORAGE_CHYBA || "?")
+          + ") — změny se neuloží · ")
+      + "Úložiště prohlížeče pro: " + (location.origin === "null"
       ? "soubor na disku (" + (location.pathname || "").split("/").pop() + ")"
       : location.origin);
     if (nactenoChyba) {
@@ -5876,6 +5969,69 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       .catch(function () { /* soubor tam není — nic se nenabízí */ });
   }
 
+  /** Zdroj dat pro záchranu: vlastní úložiště, jinak úložiště jiné kopie
+   *  appky. Vrací null, když v prohlížeči opravdu nic není. */
+  function zdrojZachrany() {
+    if (rows.length || !STORAGE_CTE || startHotov) return null;
+    var vlastni = nejplnejsiProfil(loadStore());
+    if (vlastni) return { zdroj: vlastni, cizi: false };
+    var cizi = cizeUloziste();
+    return cizi ? { zdroj: cizi, cizi: true } : null;
+  }
+
+  /** Načte roster ze zdroje záchrany. Vrací počet postavených kusů. */
+  function nactiZeZachrany(z) {
+    if (!z || rows.length) return 0;
+    var v = postavitRadky(z.zdroj.profil.rows);
+    if (!v.ok) { rows = []; return 0; }
+    if (!z.cizi) activeProfile = z.zdroj.jmeno;
+    nactenoPreskoceno = v.spadlo;
+    renderBody();
+    persist(true);
+    appHlaska("Načteno " + v.ok + " kusů"
+      + (z.cizi ? " z úložiště jiné kopie appky (přenesl se roster, ne nastavení)" : "")
+      + (v.spadlo ? " — " + v.spadlo + " se nepovedlo postavit" : "") + ".");
+    return v.ok;
+  }
+
+  /** Appka je prázdná, ale v prohlížeči roster leží: zeptat se oknem.
+   *  Pruh nad rosterem vzhledová vrstva schovává, tohle okno stojí nad vším
+   *  a je to poslední jistá cesta zpátky k datům. */
+  var zachranaNabidnuta = false;
+  function nabidnoutZachranuOknem() {
+    if (zachranaNabidnuta) return;
+    var z = zdrojZachrany();
+    if (!z) return;
+    zachranaNabidnuta = true;
+    appPotvrdit("V prohlížeči je uložený roster (" + z.zdroj.kusu + " kusů"
+      + (z.cizi ? " v úložišti jiné kopie appky" : "") + "), ale appka ho"
+      + " nenačetla.\n\nNačíst ho teď?",
+      function () { nactiZeZachrany(z); }, "Načíst roster");
+  }
+
+  /** Prázdná appka a někde v prohlížeči přitom roster leží: nabídnout ho
+   *  tlačítkem. Automatika může selhat z důvodu, na který jsme nepřišli —
+   *  tohle je ruční cesta zpátky k datům, která funguje vždycky. */
+  function nabidnoutZachranu() {
+    var b = document.getElementById("zalWarnZachrana");
+    var box = document.getElementById("zalWarn");
+    if (!b || !box) return;
+    if (rows.length) { b.style.display = "none"; return; }
+    var vlastni = nejplnejsiProfil(loadStore());
+    var cizi = vlastni ? null : cizeUloziste();
+    var zdroj = vlastni || cizi;
+    if (!zdroj) { b.style.display = "none"; return; }
+    box.style.display = "";
+    b.style.display = "";
+    b.textContent = "Načíst roster z úložiště (" + zdroj.kusu + " kusů)";
+    b.onclick = function () {
+      if (!nactiZeZachrany({ zdroj: zdroj, cizi: !vlastni }) && !rows.length) {
+        appHlaska("Z úložiště se nepodařilo postavit ani jeden kus"
+          + (nactenoChyba ? " (" + nactenoChyba + ")" : "") + ".");
+      }
+    };
+  }
+
   function renderZalWarn() {
     var box = document.getElementById("zalWarn");
     if (!box) return;
@@ -5891,6 +6047,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + " a zkus obnovit stránku (F5)</b> — teprve pak načti zálohu."
           + '<br><span class="hint">' + escHtml(kdeJsouData()) + "</span>";
       }
+      nabidnoutZachranu();
       nabidnoutSoubor();
       return;
     }
@@ -6943,13 +7100,41 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     box.appendChild(st);
   }
 
+  /* Proč zápis nejde — kvóta (plné úložiště) versus zakázané ukládání. */
+  var STORAGE_CHYBA = "";
   var STORAGE_OK = (function () {
     try {
       window.localStorage.setItem("__pgo_probe", "1");
       window.localStorage.removeItem("__pgo_probe");
       return true;
-    } catch (e) { return false; }
+    } catch (e) {
+      STORAGE_CHYBA = (e && e.name) ? e.name : String(e);
+      return false;
+    }
   })();
+  /* Číst jde skoro vždycky, i když zápis padá na kvótu. Data v prohlížeči
+     zůstávají — appka je musí najít a ukázat, i když k nim nesmí připsat. */
+  var STORAGE_CTE = (function () {
+    try { window.localStorage.getItem("__pgo_probe"); return true; }
+    catch (e) { return false; }
+  })();
+  /** Kolik místa co v úložišti zabírá — bez toho se plná kvóta neřeší. */
+  function mistoVUlozisti() {
+    var polozky = [], celkem = 0;
+    if (!STORAGE_CTE) return { celkem: 0, polozky: polozky };
+    try {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        var v = window.localStorage.getItem(k) || "";
+        var b = (k.length + v.length) * 2;   // UTF-16, jak to počítá prohlížeč
+        celkem += b;
+        polozky.push({ klic: k, bajtu: b });
+      }
+    } catch (e) { /* nevadí, jen se neporadí */ }
+    polozky.sort(function (a, b) { return b.bajtu - a.bajtu; });
+    return { celkem: celkem, polozky: polozky };
+  }
+  function kb(b) { return Math.round(b / 1024) + " kB"; }
   var STORAGE_WARN = "Prohlížeč tady neumožňuje ukládání — otevři soubor přímo z disku a data si zálohuj přes Exportovat CSV.";
 
   function setSaveState(text, ok) {
@@ -6960,7 +7145,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   function loadStore() {
     var store = { active: DEFAULT_PROFILE, profiles: {} };
-    if (!STORAGE_OK) return store;
+    if (!STORAGE_CTE) return store;
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY_V2);
       if (raw) {
@@ -6981,15 +7166,41 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   function saveStore(store) {
-    if (!STORAGE_OK) { setSaveState(STORAGE_WARN, false); return false; }
+    if (!STORAGE_OK) { setSaveState(STORAGE_WARN, false); zapisSelhal(STORAGE_CHYBA); return false; }
     try {
       window.localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(store));
       return true;
     } catch (e) {
       setSaveState("Uložení selhalo (" + (e && e.name ? e.name : "chyba") + ") — exportuj CSV", false);
+      zapisSelhal(e && e.name ? e.name : String(e));
       return false;
     }
   }
+
+  /* Že se neukládá, se řekne jednou za sezení — ale oknem, ne do lišty.
+     Tohle je ta nejhorší tichá porucha, jakou appka může mít: všechno
+     vypadá, že jede, a po obnovení stránky je změna pryč. */
+  var zapisSelhalOhlaseno = false;
+  function zapisSelhal(duvod) {
+    if (zapisSelhalOhlaseno) return;
+    zapisSelhalOhlaseno = true;
+    zapisNejde = duvod || "?";
+    try {
+      var misto = mistoVUlozisti();
+      var nejvetsi = misto.polozky.slice(0, 3).map(function (x) {
+        return x.klic + " " + kb(x.bajtu);
+      }).join(", ");
+      appHlaska("Prohlížeč nedokázal roster uložit (" + zapisNejde + ")."
+        + (misto.celkem ? "\n\nV úložišti je obsazeno " + kb(misto.celkem)
+            + (nejvetsi ? " — nejvíc zabírá: " + nejvetsi : "") : "")
+        + "\n\nStránky otevřené z disku (file://) sdílí jedno úložiště o 5 MB,"
+        + " takže ho mohla zaplnit i úplně jiná stránka. Dokud se to nespraví,"
+        + " žádná změna nepřežije obnovení stránky (F5)."
+        + "\n\nUdělej si hned zálohu do souboru — data, která teď vidíš,"
+        + " tím zachráníš.");
+    } catch (e) { /* aspoň to nespadne */ }
+  }
+  var zapisNejde = "";
 
   function currentSnapshot() {
     var settings = {};
@@ -7029,14 +7240,34 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     naplanovatVse();
     var smiPrazdny = prazdnyZapisPovolen;
     prazdnyZapisPovolen = false;
-    if (!rows.length && !smiPrazdny && ulozenychRadku() > 0) {
-      setSaveState("Neuloženo — roster je prázdný, ale v prohlížeči data jsou."
-        + " Obnov stránku (F5); kdyby nepomohlo, nahraj zálohu.", false);
-      return;
-    }
     var store = loadStore();
     store.active = activeProfile;
-    store.profiles[activeProfile] = currentSnapshot();
+    var snap = currentSnapshot();
+    if (!snap.rows.length && !smiPrazdny) {
+      // Appka je prázdná, a nikdo o to nepožádal. Uložené řádky se nechají
+      // být — zapíše se kolem nich jen nastavení. Roster se takhle nedá
+      // ztratit ani nešťastným zavřením stránky.
+      var stary = store.profiles[activeProfile];
+      var ulozene = (stary && Array.isArray(stary.rows)) ? stary.rows : [];
+      if (ulozene.length) {
+        snap.rows = ulozene;
+        snap.discarded = stary.discarded || snap.discarded;
+        store.profiles[activeProfile] = snap;
+        saveStore(store);
+        setSaveState("Neuloženo — roster v prohlížeči zůstal nedotčený ("
+          + ulozene.length + " kusů), appka ho teď nemá načtený."
+          + " Obnov stránku (F5).", false);
+        return;
+      }
+      if (!stary) {
+        // Profil v úložišti vůbec není. Zakládat ho prázdný a přepnout na něj
+        // `active` by znamenalo, že se appka příště otevře na prázdnu — a
+        // uložený roster zůstane ležet stranou pod jiným jménem.
+        setSaveState("Neuloženo — roster je prázdný.", false);
+        return;
+      }
+    }
+    store.profiles[activeProfile] = snap;
     // Razítko pomáhá poznat, jestli se v tomhle úložišti vůbec kdy ukládalo.
     try { store.ulozeno = new Date().toISOString().slice(0, 16).replace("T", " "); }
     catch (e) { /* nevadí */ }
@@ -7075,6 +7306,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (volby.ok) volby.ok(volby.vstup);
       return;
     }
+    if (box.parentElement !== document.body) document.body.appendChild(box);
     document.getElementById("appOknoText").textContent = text;
     var vstupBox = document.getElementById("appOknoVstupBox");
     var vstup = document.getElementById("appOknoVstup");
@@ -7118,7 +7350,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function ulozenychRadku() {
     try {
       var st = loadStore();
-      var p = st.profiles[st.profiles[st.active] ? st.active : Object.keys(st.profiles)[0]];
+      var p = st.profiles ? st.profiles[activeProfile] : null;
       return p && Array.isArray(p.rows) ? p.rows.length : 0;
     } catch (e) { return 0; }
   }
@@ -15055,6 +15287,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         var key = scanKey(r);
         if (r.cp) discarded.push({ k: key, at: parseScanDate(r.scanDate), n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
         rows = rows.filter(function (x) { return x.id !== r.id; });
+        if (!rows.length) povolPrazdnyZapis();   // smazal poslední kus, ať to drží
         renderBody(); renderTiles(); persist(true); renderDiscardBtn();
         ohlasitZmenuVerdiktu(predSmazanim, r.id);
       });
@@ -20866,6 +21099,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   function truthy(v) { return /^(1|true|ano|yes|y|x|✓|shadow|purified|lucky)$/i.test(String(v).trim()); }
 
+  /* Proč se řádky při posledním importu zahodily — bez toho je hláška
+     „nenačetl se žádný řádek" hádanka. */
+  var zahozenoPriImportu = { bezJmena: 0, mimoOkno: 0, nejisty: 0 };
+
   function buildRowsFromPending() {
     var headers = pending.headers, body = pending.body, mapping = pending.mapping;
     var norm = headers.map(normHeader);
@@ -20880,6 +21117,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
 
     var out = [];
+    zahozenoPriImportu = { bezJmena: 0, mimoOkno: 0, nejisty: 0 };
+    var zahozeno = zahozenoPriImportu;
     var windowHours = selectedWindowHours();
     var newestTs = null;
     if (windowHours && mapping.scanDate !== undefined) {
@@ -20917,11 +21156,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         vals.shiny = (sv.charAt(0) === "s"
           || ["1", "ano", "yes", "true"].indexOf(sv) !== -1) ? "Ano" : "";
       }
-      if (!vals.pokemon) return;
-      if (windowHours && !inScanWindow(vals, windowHours, newestTs)) return;
+      if (!vals.pokemon) { zahozeno.bezJmena++; return; }
+      if (windowHours && !inScanWindow(vals, windowHours, newestTs)) { zahozeno.mimoOkno++; return; }
       if (onlyExactWanted()) {
         var lo = num(vals.ivPctMin), hi = num(vals.ivPctMax);
-        if (lo !== null && hi !== null && (hi - lo) > 2) return;   // nejistý sken
+        if (lo !== null && hi !== null && (hi - lo) > 2) { zahozeno.nejisty++; return; }   // nejistý sken
       }
 
       // IV zapsané jako "13/15/14" v jednom sloupci
@@ -22052,7 +22291,24 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     else if (!mode) mode = "merge";
 
     var imported = buildRowsFromPending();
-    if (!imported.length) { appHlaska("Nenačetl se žádný řádek — zkontroluj mapování sloupce „Pokémon“."); return; }
+    if (!imported.length) {
+      var z = zahozenoPriImportu;
+      var sloupec = (pending.mapping && pending.mapping.pokemon !== undefined)
+        ? "„" + (pending.headers[pending.mapping.pokemon] || "?") + "“"
+        : "žádný (vyber ho v mapování)";
+      var proc = [];
+      if (z.bezJmena) proc.push(z.bezJmena + " bez jména pokémona");
+      if (z.mimoOkno) proc.push(z.mimoOkno + " mimo zvolené okno skenů"
+        + " (nahoře „Brát jen skeny z posledních…“ — dej „vše“)");
+      if (z.nejisty) proc.push(z.nejisty + " s nejistým IV"
+        + " (zapnuté „jen přesné skeny“)");
+      appHlaska("Nenačetl se žádný řádek."
+        + "\n\nV souboru: " + (pending.body ? pending.body.length : 0) + " řádků."
+        + "\nSloupec s druhem: " + sloupec + "."
+        + "\nSloupce v souboru: " + (pending.headers || []).join(", ")
+        + (proc.length ? "\n\nZahozeno: " + proc.join(", ") + "." : ""));
+      return;
+    }
     var skipped = 0;
     var celyBoxBox = document.getElementById("celyBox");
     var jeCelyBox = !!(celyBoxBox && celyBoxBox.checked);
@@ -22178,6 +22434,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
         });
         rows = rows.filter(function (r) { return kSmazani.indexOf(r) === -1; });
+        if (!rows.length) povolPrazdnyZapis();
         report += "\nSken je celý box, takže se odebralo " + kSmazani.length
           + " kusů, které v něm nebyly — ty jsi pustil. Najdeš je mezi smazanými"
           + " a dají se vrátit.";
@@ -23280,6 +23537,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           if (r.cp) discarded.push({ k: scanKey(r), at: parseScanDate(r.scanDate), n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
         });
         rows = rows.filter(function (r) { return !!r.star; });
+        if (!rows.length) povolPrazdnyZapis();
         renderBody(); persist(true); renderDiscardBtn();
       }, "Smazat");
   });
@@ -24768,6 +25026,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       }
     });
     if (pustit.length) rows = rows.filter(function (r) { return !ids[r.id]; });
+    if (!rows.length) povolPrazdnyZapis();
     bmZavritNatvrdo();
     renderBody(); persist(true); renderDiscardBtn();
     if (jenProjite) {
@@ -25548,6 +25807,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var zrus = document.getElementById("appOknoZrusit");
     var box = document.getElementById("appOkno");
     if (!ok || !zrus || !box) return;
+    if (box.parentElement !== document.body) document.body.appendChild(box);
     ok.addEventListener("click", function () {
       appOknoZavri(true, document.getElementById("appOknoVstup").value);
     });
@@ -25681,6 +25941,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         ? chybaStartu.message : String(chybaStartu);
     }
   }
+  // Prázdná appka nad plným úložištěm = druhý pokus, řádek po řádku.
+  try {
+    if (zachranitRoster()) {
+      renderBody();
+      if (zachranaHlaska) appHlaska(zachranaHlaska);
+    } else {
+      // Ani to nepomohlo (data pod klíčem jiné kopie appky, nebo prostě
+      // důvod, na který jsme nepřišli) — zeptat se oknem, ať je vidět.
+      nabidnoutZachranuOknem();
+    }
+  } catch (e) { /* když ani tohle nevyjde, aspoň nespadne zbytek */ }
+
+  // Zápis do prohlížeče nefunguje: to je ta nejhorší tichá porucha, jakou
+  // appka může mít — všechno vypadá, že jede, a po F5 je to pryč.
+  if (!STORAGE_OK) zapisSelhal(STORAGE_CHYBA);
+
+  startHotov = true;
 
   // testovací háček (Playwright) — v běžném provozu se nepoužívá
   window.__pgo = {

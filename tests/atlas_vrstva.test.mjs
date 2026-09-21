@@ -957,6 +957,40 @@ check("stránka nemá vodorovný posuvník", sirkaStranky <= 1, String(sirkaStra
 check("na telefonu je doporučený krok pod verdiktem, ne vedle", dTel.krokPod === true, JSON.stringify(dTel));
 await tel.close();
 
+// ----------------------------------------------- hlášky musí být vidět
+// Okno s hláškou appky stojí v HTML uvnitř karty rosteru — a tu vzhledová
+// vrstva schovává. Hláška pak byla „otevřená", ale neviditelná a neklikatelná:
+// import, potvrzení i varování o neuloženém rosteru se tvářily, že se nic
+// neděje. Okno proto patří přímo na <body>.
+console.log("\n6) Hlášky appky");
+const pOkno = await otevri(1400);
+const dOkno = await pOkno.evaluate(async () => {
+  const okno = document.getElementById("appOkno");
+  const rodic = okno ? okno.parentElement.tagName : "nic";
+  window.__pgo.setRows([]);            // vyvolá hlášku o prázdném rosteru
+  const tl = document.getElementById("zalWarnZachrana");
+  // hláška se pustí napřímo, ať test nezávisí na tom, co zrovna appka řekne
+  document.getElementById("appOknoText").textContent = "zkouška";
+  okno.hidden = false;
+  const ok = document.getElementById("appOknoOk");
+  const r = ok.getBoundingClientRect();
+  const nahore = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+  okno.hidden = true;
+  return {
+    rodic,
+    sirka: Math.round(r.width),
+    nahore: nahore ? (nahore.id || nahore.className || nahore.tagName) : "nic",
+    vstupSkryty: document.getElementById("appOknoVstupBox").offsetParent === null,
+    maTlacitkoZachrany: !!tl,
+  };
+});
+await pOkno.close();
+check("okno s hláškou visí přímo na <body>", dOkno.rodic === "BODY", JSON.stringify(dOkno));
+check("…a dá se na něj kliknout i přes vzhledovou vrstvu",
+  dOkno.sirka > 0 && dOkno.nahore === "appOknoOk", JSON.stringify(dOkno));
+check("…a u obyčejné hlášky není vidět textové pole",
+  dOkno.vstupSkryty === true, JSON.stringify(dOkno));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();
