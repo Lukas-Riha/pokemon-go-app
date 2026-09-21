@@ -17065,6 +17065,55 @@ try {
   check("…zatímco úmyslné vymazání projde",
     s264.poVymazani === 0, JSON.stringify(s264));
 
+  // ---------------------------------------------------------------- 265
+  // Uložený profil může obsahovat volbu, která v novější verzi appky už
+  // neexistuje. Dřív se na tom načtení zastavilo, appka naběhla prázdná
+  // a první uložení přepsalo roster prázdnem.
+  console.log("\n265) Zruseny prepinac v ulozenem profilu nesmi sebrat roster");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.evaluate(() => {
+    const store = {
+      active: "Výchozí",
+      profiles: {
+        "Výchozí": {
+          v: 2,
+          rows: [
+            { id: "a1", pokemon: "Machamp", cp: 3000, level: 40, ivAtk: 15, ivDef: 15, ivSta: 15 },
+            { id: "a2", pokemon: "Blissey", cp: 2700, level: 40, ivAtk: 10, ivDef: 15, ivSta: 15 },
+            { id: "a3", pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15 }
+          ],
+          // „keepForms" se zrušil 20. 9. 2026 — v uložených profilech zůstal.
+          settings: { keepForms: "1", uzNeexistuje: "42", ivThresh: "90" },
+          filterMode: "all"
+        }
+      }
+    };
+    localStorage.setItem("pgo_tracker_v2", JSON.stringify(store));
+  });
+  await page.reload();
+  await page.waitForTimeout(1200);
+  const s265 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const rows = P.getRows();
+    const ulozeno = () => {
+      try {
+        const st = JSON.parse(localStorage.getItem("pgo_tracker_v2") || "{}");
+        const prof = (st.profiles || {})[st.active];
+        return prof && Array.isArray(prof.rows) ? prof.rows.length : -1;
+      } catch (e) { return -1; }
+    };
+    const out = { nacteno: rows.length, ulozenoPred: ulozeno() };
+    // Běžná akce po načtení nesmí data poškodit.
+    P.persistNow();
+    out.ulozenoPo = ulozeno();
+    return out;
+  });
+  check("zrušená volba v uloženém profilu nesebere roster",
+    s265.nacteno === 3, JSON.stringify(s265));
+  check("…a uložená data zůstanou celá",
+    s265.ulozenoPred === 3 && s265.ulozenoPo === 3, JSON.stringify(s265));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

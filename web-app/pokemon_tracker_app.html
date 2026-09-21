@@ -3298,6 +3298,7 @@
         <span id="zalWarnText"></span>
       </div>
       <button class="primary" id="zalWarnBtn">Zálohovat do souboru…</button>
+      <button id="zalWarnSoubor" style="display:none">Načíst ze souboru (CSV)…</button>
     </div>
     <div class="toolbar">
       <button class="primary" id="addRowBtn">+ Přidat pokémona</button>
@@ -5754,8 +5755,46 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *
    *  Nabízí se, nikdy se nenačítá samo — přepsat roster bez zeptání je přesně
    *  ta věc, kterou appka dělat nesmí. */
+  /** Kde appka data hledá a co v úložišti je. Když roster zmizí, tohle je
+   *  první otázka: jiná adresa = jiné úložiště prohlížeče. */
+  function kdeJsouData() {
+    var kde = "Úložiště prohlížeče pro: " + (location.origin === "null"
+      ? "soubor na disku (" + (location.pathname || "").split("/").pop() + ")"
+      : location.origin);
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY_V2);
+      if (!raw) return kde + " · v tomhle úložišti není uložený žádný roster.";
+      var st = JSON.parse(raw);
+      var jmena = Object.keys(st.profiles || {});
+      var kusu = jmena.map(function (n) {
+        var pr = st.profiles[n];
+        return n + ": " + (pr && Array.isArray(pr.rows) ? pr.rows.length : 0);
+      }).join(", ");
+      return kde + " · v úložišti: " + (kusu || "nic")
+        + (st.ulozeno ? " · naposledy uloženo " + st.ulozeno : "");
+    } catch (e) {
+      return kde + " · obsah úložiště se nepodařilo přečíst (" + (e && e.name) + ").";
+    }
+  }
+
   var zalNabidnuto = false;
+  /** Prázdný roster: vždycky nabídnout i obyčejný výběr souboru. Výběr složky
+   *  žádné soubory neukazuje, takže to vypadalo, že appka CSV nebere. */
+  function nabidnoutSoubor() {
+    var b2 = document.getElementById("zalWarnSoubor");
+    var box = document.getElementById("zalWarn");
+    if (!b2 || !box) return;
+    if (rows.length) { b2.style.display = "none"; return; }
+    box.style.display = "";
+    b2.style.display = "";
+    b2.onclick = function () {
+      var vstup = document.getElementById("fileInput");
+      if (vstup) vstup.click();
+    };
+  }
+
   function nabidnoutZalohu() {
+    nabidnoutSoubor();
     if (zalNabidnuto || rows.length || !dirHandle) return;
     zalNabidnuto = true;
     dirHandle.getFileHandle("roster.csv")
@@ -5793,7 +5832,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // pozor: zálohou je i připojená SLOŽKA, nejen jeden soubor — jinak panel
     // straší i toho, kdo má zálohu nastavenou lépe než dřív.
     // Přihlášený cloud je záloha taky — a na telefonu jediná možná.
-    if (backupHandle || dirHandle || cloudToken() || !rows.length) {
+    if (!rows.length) {
+      // Prázdný roster: místo schovaného pruhu se nabídne načtení ze souboru.
+      // Uživatel po nepovedeném načtení potřebuje hlavně cestu zpátky k datům.
+      if (txt) {
+        txt.innerHTML = "Roster je prázdný. Pokud tu data byla, <b>neukládej nic"
+          + " a zkus obnovit stránku (F5)</b> — teprve pak načti zálohu."
+          + '<br><span class="hint">' + escHtml(kdeJsouData()) + "</span>";
+      }
+      nabidnoutSoubor();
+      return;
+    }
+    if (backupHandle || dirHandle || cloudToken()) {
       box.style.display = "none"; return;
     }
     box.style.display = "";
@@ -6889,6 +6939,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var settings = {};
     SETTING_IDS.forEach(function (id) {
       var el = document.getElementById(id);
+      if (!el) return;
       // zaškrtávátko nese stav v .checked, ne v .value
       settings[id] = el.type === "checkbox" ? (el.checked ? "1" : "0") : el.value;
     });
@@ -6904,8 +6955,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      řekne přes `povolPrazdnyZapis()`. */
   var prazdnyZapisPovolen = false;
   function povolPrazdnyZapis() { prazdnyZapisPovolen = true; }
+  /* Když načtení uloženého stavu spadne, appka běží prázdná. V takovém stavu
+     se nesmí uložit vůbec nic — jinak se prázdný roster zapíše přes data,
+     která v prohlížeči pořád jsou. */
+  var zapisZamcen = false;
 
   function writeState() {
+    if (zapisZamcen) {
+      setSaveState("Neuloženo — načtení uloženého stavu selhalo."
+        + " Obnov stránku (F5), ať se o data nepřijde.", false);
+      return;
+    }
     naplanovatVse();
     var smiPrazdny = prazdnyZapisPovolen;
     prazdnyZapisPovolen = false;
@@ -6917,6 +6977,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var store = loadStore();
     store.active = activeProfile;
     store.profiles[activeProfile] = currentSnapshot();
+    // Razítko pomáhá poznat, jestli se v tomhle úložišti vůbec kdy ukládalo.
+    try { store.ulozeno = new Date().toISOString().slice(0, 16).replace("T", " "); }
+    catch (e) { /* nevadí */ }
     if (!saveStore(store)) return;
     var label = PROFILES_ENABLED ? " — profil „" + activeProfile + "“" : "";
     setSaveState("Uloženo v prohlížeči" + label + " ✓", true);
@@ -7010,9 +7073,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   function applySnapshot(snap) {
-    // Načtení profilu (i prázdného) je vědomá akce uživatele — zápis se
-    // pojistkou na prázdný roster blokovat nemá.
-    povolPrazdnyZapis();
+    // POZOR: tahle funkce běží i při startu appky, takže se v ní pojistka
+    // proti zápisu prázdného rosteru NESMÍ vypínat. Vědomé přepnutí profilu
+    // si o povolení řekne samo (viz volající).
     // Staví se POSTUPNĚ do prázdného pole, aby kontrola volného ID viděla
     // řádky vytvořené o kus výš. Dvě věci naráz: duplicita uvnitř jedné
     // dávky se odhalí, a řádky, které kolidovat nemůžou, si nechají své ID.
@@ -7022,6 +7085,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     SETTING_IDS.forEach(function (id) {
       var el = document.getElementById(id);
+      // Zrušená volba (nebo jiná verze appky) = políčko neexistuje. Bez téhle
+      // pojistky by se na tom načtení celého profilu zastavilo.
+      if (!el) return;
       if (snap && snap.settings && snap.settings[id] !== undefined && snap.settings[id] !== "") {
         if (el.type === "checkbox") el.checked = snap.settings[id] === "1" || snap.settings[id] === true;
         else el.value = snap.settings[id];
@@ -7066,6 +7132,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     store.active = name;
     if (!store.profiles[name]) store.profiles[name] = currentSnapshot(), store.profiles[name].rows = [];
     saveStore(store);
+    povolPrazdnyZapis();   // vědomé přepnutí profilu
     applySnapshot(store.profiles[name]);
     // Připojené soubory patří profilu — po přepnutí se zapomenou a načtou
     // znovu ty jeho, jinak by nový profil psal do cizí zálohy.
@@ -7093,6 +7160,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     store.active = name;
     store.profiles[name] = { v: 2, rows: [], settings: {}, filterMode: "all", sortKey: null, sortDir: 1 };
     saveStore(store);
+    povolPrazdnyZapis();   // vědomé přepnutí profilu
     applySnapshot(store.profiles[name]);
     renderProfiles();
     renderHeader();
@@ -7124,6 +7192,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     activeProfile = next;
     store.active = next;
     saveStore(store);
+    povolPrazdnyZapis();   // vědomé přepnutí profilu
     applySnapshot(store.profiles[next]);
     renderProfiles();
     renderHeader();
@@ -25377,7 +25446,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // ---------- init ----------
   renderColgroup();
   renderHeader();
-  restore();   // prázdný roster zůstane prázdný — ukázka se načte až na vyžádání
+  // Načtení nesmí shodit zbytek startu a hlavně nesmí vést k tichému
+  // přepsání dat: když spadne, zamkne se zápis a řekne se to nahlas.
+  try {
+    restore();   // prázdný roster zůstane prázdný — ukázka se načte až na vyžádání
+  } catch (chybaNacteni) {
+    zapisZamcen = true;
+    rows = [];
+    try {
+      setSaveState("Načtení uloženého stavu selhalo (" + (chybaNacteni && chybaNacteni.name)
+        + ") — data v prohlížeči zůstala, ale appka je teď nemůže přepsat."
+        + " Obnov stránku (F5).", false);
+    } catch (e2) { /* lišta ještě nemusí existovat */ }
+  }
   renderProfiles();
   if (!PROFILES_ENABLED) {
     var pb = document.querySelector(".profile-box");
