@@ -17137,6 +17137,45 @@ try {
   check("…a uložená data zůstanou celá",
     s265.ulozenoPred === 3 && s265.ulozenoPo === 3, JSON.stringify(s265));
 
+  // ---------------------------------------------------------------- 266
+  // Jeden vadný řádek v uloženém rosteru nesmí sebrat celý roster ani
+  // shodit start appky. Dřív pád při načtení zabil i export `window.__pgo`,
+  // takže vzhledová vrstva neměla z čeho kreslit a stránka byla prázdná —
+  // přestože v úložišti data ležela.
+  console.log("\n266) Vadny radek nesmi sebrat cely roster");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.evaluate(() => {
+    const rows = [];
+    for (let i = 0; i < 40; i++) {
+      rows.push({ id: "r" + i, pokemon: "Machamp", cp: 2000 + i, level: 30,
+        ivAtk: 15, ivDef: 14, ivSta: 13 });
+    }
+    // jméno druhu jako objekt — přesně to, co spadne v každém dalším výpočtu
+    rows[20] = { id: "zly", pokemon: { nesmysl: true }, cp: 1, level: 1,
+      ivAtk: 0, ivDef: 0, ivSta: 0 };
+    localStorage.setItem("pgo_tracker_v2", JSON.stringify({
+      active: "Můj roster",
+      profiles: { "Můj roster": { v: 2, rows: rows, settings: {}, filterMode: "all" } }
+    }));
+  });
+  await page.reload();
+  await page.waitForTimeout(1500);
+  const s266 = await page.evaluate(() => ({
+    apiZije: !!window.__pgo,
+    vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
+    ulozeno: (function () {
+      try {
+        const st = JSON.parse(localStorage.getItem("pgo_tracker_v2") || "{}");
+        const prof = (st.profiles || {})[st.active];
+        return prof && prof.rows ? prof.rows.length : -1;
+      } catch (e) { return -1; }
+    })()
+  }));
+  check("vadný řádek nezabije start appky", s266.apiZije === true, JSON.stringify(s266));
+  check("…načte se všechno ostatní", s266.vRosteru === 39, JSON.stringify(s266));
+  check("…a uložená data zůstanou nedotčená", s266.ulozeno === 40, JSON.stringify(s266));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

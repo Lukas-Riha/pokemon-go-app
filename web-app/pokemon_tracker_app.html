@@ -5790,6 +5790,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var kde = "Úložiště prohlížeče pro: " + (location.origin === "null"
       ? "soubor na disku (" + (location.pathname || "").split("/").pop() + ")"
       : location.origin);
+    if (nactenoChyba) {
+      kde = "Načtení selhalo: " + nactenoChyba
+        + (nactenoPreskoceno ? " (přeskočeno " + nactenoPreskoceno + " kusů)" : "")
+        + " · " + kde;
+    }
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY_V2);
       if (!raw) return kde + " · v tomhle úložišti není uložený žádný roster.";
@@ -7010,6 +7015,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      se nesmí uložit vůbec nic — jinak se prázdný roster zapíše přes data,
      která v prohlížeči pořád jsou. */
   var zapisZamcen = false;
+  /* Co se pokazilo při načtení. Ukazuje se v pruhu nad rosterem, protože
+     lištu uložení vzhledová vrstva schovává. */
+  var nactenoChyba = "";
+  var nactenoPreskoceno = 0;
 
   function writeState() {
     if (zapisZamcen) {
@@ -7177,8 +7186,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // řádky vytvořené o kus výš. Dvě věci naráz: duplicita uvnitř jedné
     // dávky se odhalí, a řádky, které kolidovat nemůžou, si nechají své ID.
     rows = [];
+    nactenoPreskoceno = 0;
     (snap && Array.isArray(snap.rows) ? snap.rows : []).forEach(function (r) {
-      rows.push(newRow(r));
+      // Jediný řádek, na kterém `newRow` spadne (neznámý druh, rozbitá
+      // hodnota z jiné verze), dřív shodil načtení celého profilu — appka
+      // pak naběhla prázdná, i když v úložišti data byla.
+      try {
+        var novy = newRow(r);
+        // Pojistka na data z jiné verze: bez jména druhu se na řádku zlomí
+        // celý výpočet a start appky s ním.
+        if (!novy || typeof novy.pokemon !== "string") throw new Error("řádek bez jména druhu");
+        rows.push(novy);
+      } catch (e) {
+        nactenoPreskoceno++;
+        if (!nactenoChyba) nactenoChyba = (e && e.message ? e.message : String(e));
+      }
     });
     SETTING_IDS.forEach(function (id) {
       var el = document.getElementById(id);
@@ -25611,13 +25633,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     restore();   // prázdný roster zůstane prázdný — ukázka se načte až na vyžádání
   } catch (chybaNacteni) {
     zapisZamcen = true;
-    rows = [];
+    // `rows` se tu SCHVÁLNĚ nevyprazdňuje: co se stihlo načíst, ať je vidět.
+    // Dřív tu bylo `rows = []`, takže jediný vadný řádek udělal z rosteru
+    // prázdno, přestože v úložišti data byla.
+    nactenoChyba = (chybaNacteni && chybaNacteni.message)
+      ? chybaNacteni.message : String(chybaNacteni);
     try {
       setSaveState("Načtení uloženého stavu selhalo (" + (chybaNacteni && chybaNacteni.name)
         + ") — data v prohlížeči zůstala, ale appka je teď nemůže přepsat."
         + " Obnov stránku (F5).", false);
     } catch (e2) { /* lišta ještě nemusí existovat */ }
   }
+  // Zbytek startu nesmí zabít export API: kdyby spadl, vzhledová vrstva by
+  // neměla `window.__pgo` a stránka by zůstala úplně prázdná — přesně to
+  // vypadalo jako „přišel jsem o roster", i když data v úložišti byla.
+  try {
   renderProfiles();
   if (!PROFILES_ENABLED) {
     var pb = document.querySelector(".profile-box");
@@ -25645,6 +25675,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   renderBuild();
   renderBody();
   setSaveState(STORAGE_OK ? (rows.length ? "Uloženo v prohlížeči" + (PROFILES_ENABLED ? " — profil „" + activeProfile + "“" : "") : "") : STORAGE_WARN, false);
+  } catch (chybaStartu) {
+    if (!nactenoChyba) {
+      nactenoChyba = (chybaStartu && chybaStartu.message)
+        ? chybaStartu.message : String(chybaStartu);
+    }
+  }
 
   // testovací háček (Playwright) — v běžném provozu se nepoužívá
   window.__pgo = {
