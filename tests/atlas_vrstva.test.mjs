@@ -957,6 +957,63 @@ check("stránka nemá vodorovný posuvník", sirkaStranky <= 1, String(sirkaStra
 check("na telefonu je doporučený krok pod verdiktem, ne vedle", dTel.krokPod === true, JSON.stringify(dTel));
 await tel.close();
 
+// ------------------------------------------------- dodělávky v detailu
+// Detail má vypadat jako rozbor v čištění boxu: ligy uzavřené linkou, čtyři
+// buňky pod nimi ne nalepené, evoluční sloupec přes celou výšku obsahu a
+// útoky celé — Eevee jich ukáže tři sestavy (má / teď / po evoluci).
+console.log("\n7) Detail — ligy, evoluční sloupec, útoky");
+const pDet = await otevri(1500, [
+  { pokemon: "Eevee", cp: 900, level: 20, ivAtk: 14, ivDef: 15, ivSta: 15,
+    fastMove: "Quick Attack", charged1: "Last Resort", charged2: "Swift" },
+  { pokemon: "Azumarill", cp: 1500, level: 30, ivAtk: 0, ivDef: 15, ivSta: 15 },
+  { pokemon: "Machamp", cp: 3000, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13 },
+]);
+const dDet = await pDet.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  A.openDetail(P.getRows().filter((r) => r.pokemon === "Eevee")[0].id);
+  await new Promise((r) => setTimeout(r, 1400));
+  const r = (sel) => {
+    const e = typeof sel === "string" ? document.querySelector(sel) : sel;
+    if (!e) return null;
+    const b = e.getBoundingClientRect();
+    return { t: Math.round(b.top), b: Math.round(b.bottom) };
+  };
+  const ligy = [...document.querySelectorAll("#atlasDetailContent .atlas-detail-section")]
+    .filter((e) => e.querySelector(".d-ligy-tab"))[0];
+  const utoky = document.querySelector(".atlas-drawer .atlas-ident-utoky");
+  return {
+    verdikt: r(".atlas-verdict-radek"),
+    bunky: r("#atlasDetailContent .d-roles.atlas-vyuziti"),
+    evo: r("#atlasDetailContent .atlas-evolution-column"),
+    ligySpodni: ligy ? parseFloat(getComputedStyle(ligy).borderBottomWidth) : -1,
+    ligy: r(ligy),
+    evoVnitrniLinka: [...document.querySelectorAll("#atlasDetailContent .atlas-evolution-column .d-evo")]
+      .some((e) => parseFloat(getComputedStyle(e).borderTopWidth) > 0
+        || parseFloat(getComputedStyle(e).borderBottomWidth) > 0),
+    utoky: utoky ? { scroll: utoky.scrollHeight, klient: utoky.clientHeight,
+      sestav: document.querySelectorAll(".atlas-drawer .atlas-sestava").length } : null,
+    sprite: r(".atlas-drawer .atlas-detail-identity img"),
+    hlavicka: r(".atlas-drawer .atlas-detail-identity"),
+  };
+});
+await pDet.close();
+check("ligy v detailu jsou uzavřené spodní linkou", dDet.ligySpodni >= 1, JSON.stringify(dDet.ligySpodni));
+check("…a čtyři buňky pod nimi nejsou nalepené",
+  dDet.bunky && dDet.ligy && dDet.bunky.t - dDet.ligy.b >= 18,
+  JSON.stringify({ ligy: dDet.ligy, bunky: dDet.bunky }));
+check("evoluční sloupec začíná u verdiktu a končí se spodkem buněk",
+  dDet.evo && dDet.verdikt && dDet.bunky
+  && Math.abs(dDet.evo.t - dDet.verdikt.t) <= 2 && Math.abs(dDet.evo.b - dDet.bunky.b) <= 2,
+  JSON.stringify({ evo: dDet.evo, verdikt: dDet.verdikt, bunky: dDet.bunky }));
+check("…a nemá v sobě linku navíc", dDet.evoVnitrniLinka === false, String(dDet.evoVnitrniLinka));
+check("tři sestavy útoků se vejdou celé (nic se neuřízne)",
+  dDet.utoky && dDet.utoky.sestav >= 3 && dDet.utoky.scroll <= dDet.utoky.klient + 1,
+  JSON.stringify(dDet.utoky));
+check("…a ikona zůstane na střed hlavičky",
+  dDet.sprite && dDet.hlavicka
+  && Math.abs((dDet.sprite.t + dDet.sprite.b) / 2 - (dDet.hlavicka.t + dDet.hlavicka.b) / 2) <= 3,
+  JSON.stringify({ sprite: dDet.sprite, hlavicka: dDet.hlavicka }));
+
 // ----------------------------------------------- hlášky musí být vidět
 // Okno s hláškou appky stojí v HTML uvnitř karty rosteru — a tu vzhledová
 // vrstva schovává. Hláška pak byla „otevřená", ale neviditelná a neklikatelná:

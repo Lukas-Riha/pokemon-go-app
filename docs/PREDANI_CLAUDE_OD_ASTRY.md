@@ -128,3 +128,30 @@ Poslední UI sada: 80 kontrol prošlo; výpočetní sada 23 kontrol prošla při
 Obrázkové výstupy: `navrh-aplikace/production-test/screenshots/detail-pc.png` a `detail-mobil.png`.
 
 Navržený další krok pro Claude: porovnat engine s výše uvedenými opravami a doplnit/potvrdit rozšíření kontraktu pro activePlan, validationIssues, příznaky sbírky a detail/řazení. Odpověď zapsat do PREDANI_ASTRA.md. Poté Astra přesune UI na společný build a ověří obě sady testů proti stejnému enginu, bez nasazení.
+
+## A-008 — Ilustrovaný Přehled a pozadí menu (21. 9.)
+
+Hotovo v lokálním TESTu: nový blok na konci atlas.css, noční park v menu, obrazové karty událostí, kompaktní týden pod kartami a menší řádky raidů/Max. Mobil má první událost velkou a další jako menší řádky. Roster, detail a výpočty se v této dávce neměnily.
+
+Podklad je v web-app/atlas/assets/night-park-v1.png. CSS se vkládá do HTML, proto cesta atlas/assets/night-park-v1.png vychází z web-app. Při kopírování TESTu zachovat i tuto složku. Pozadí je dekorace, Pokémoni a termíny pocházejí z dat. Soubor vznikl vestavěným imagegen: noční modrý park, vzdálená kruhová věž vlevo, jezero, les, tmavá horní polovina, bez textu, UI a Pokémonů.
+
+Dřívější změna funkce card() a horizontu dnešních událostí v atlas.js už byla při pokračování součástí čistého aktuálního gitu. V této dávce přibylo pouze CSS a asset. Build node tools/build_atlas_test.mjs ověřil nezměněný produkční engine. Bez commitu, push či nasazení Astrou.
+
+Pro Claude: při dalších úpravách Přehledu zachovat strukturu atlas-event-visual / atlas-event-copy a data-event-kind. Přehled má nadále zdrojové názvy; jejich kompletní česká lokalizace ani nové prioritizační skóre nejsou součástí této grafické úpravy.
+
+## A-009 — Přehled blíž vizuálnímu návrhu, desktop / tablet / mobil (21. 9.)
+
+Navazuje na A-008. Uživatel chtěl výrazně věrnější provedení návrhu a využití celé šířky webu.
+
+- atlas.css: blok illustrated overview v2 nahradil původní grafickou dávku. Tmavší Přehled, plnoobrazové pozadí karet s přechodem pod text, barevné statusy, kulatá tlačítka a výraznější menu. Styly obsahu jsou omezené na #atlasHome / data-atlas-view=home.
+- Nový asset web-app/atlas/assets/event-scenes-v2.png: tři svislé scény v jednom obrázku, CSS background-size 300% 100%, pozice 0/50/100 %. Vestavěný imagegen, žádná dodatečná API služba. Prompt: Production game UI background texture atlas, three equal vertical panels side by side, no gutters, no text, no logos, no creatures. Left: purple lightning raid arena. Middle: sunny emerald meadow, large red-white Pokéball, berries. Right: orange sunset forest clearing. Premium painterly game illustration, bottom 20 percent fading into #030e20. Výsledek je dekorace; Pokémoni v kartách se nadále berou z dat.
+- atlas.js pouze v Overview: eventNames helper, bossCards jako galerie, Shadow označení se zachovává; dvě priority ze stejného engine plánu místo tří dlouhých výpisů, spawn skupiny sbalené a přesunuté pod priority. Výpočty a roster beze změny. Klik na bosse otevírá příslušnou akci, ne simulovaný přímý výběr týmu.
+- Desktop bez max-width limitu; nad 1600 px plynule větší bannery/písmo/obrázky. Tablet 651–1050 px hlavní karta přes oba sloupce, další dvě pod ní. Mobil jedna velká a ostatní kompaktní karty.
+- Ručně ověřeno 1920×1080, 820×1180, 390×844, bez vodorovného přetečení na mobilu/tabletu; klik na Shadow Thundurus otevřel správnou událost. Build ověřil nezměněný engine produkce.
+- Složku atlas/assets je třeba ponechat vedle HTML. Nic nebylo Astrou commitováno, pushnuto ani nasazeno. Nejde o plnou lokalizaci externích názvů událostí.
+
+Úkol pro Claude při navazující práci: zachovat scoped styly a asset cesty; změny funkčního směrování boss → konkrétní tým případně provést přes engine API, ne přes domněnku odvozenou z názvu události.
+
+## A-010 — Oprava deformace ilustrací (21. 9.)
+
+CSS pozadí již nepřizpůsobuje výšku i šířku atlasu nezávisle. Pseudoelement atlas-event-visual::after drží poměr každé scény 1:2, vyplní plochu jako cover a přebytek se ořízne. CSS container units měří velikost vizuálního panelu. Výřez se nastavuje --scene-x a --scene-y; výzkum míří na Pokéball, bojová scéna na arénu. Asset se neměnil. Desktop ověřen: obrazová plocha 509×1018 px u všech tří karet, tedy přesně původní poměr stran. Vizuálně ověřeno také 390 px. TEST sestaven, produkční soubor build nezměnil. Pro Claude: nevracet background-size:300% 100% přímo na libovolně širokou kartu; patří pouze na proporční vnitřní vrstvu.
