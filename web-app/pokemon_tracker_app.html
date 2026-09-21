@@ -5788,6 +5788,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     box.style.display = "";
     b2.style.display = "";
     b2.onclick = function () {
+      // Import se dokončuje v panelu „Importovat data" — bez jeho otevření
+      // se soubor sice načte, ale nabídka „sloučit / nahradit" zůstane
+      // schovaná a vypadá to, že se nestalo nic.
+      var panel = document.getElementById("importBox");
+      if (panel) panel.classList.add("open");
       var vstup = document.getElementById("fileInput");
       if (vstup) vstup.click();
     };
@@ -7560,8 +7565,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var vsichni = [];
       base.forEach(function (b) {
         var c2 = (b.cesty || {})[lg.label];
-        if (!c2 || c2.rank === null || c2.rank === undefined) return;
-        vsichni.push({ b: b, rank: c2.rank, pct: c2.pct || 0 });
+        var rank = (c2 && c2.rank !== null && c2.rank !== undefined) ? c2.rank : null;
+        var pct = (c2 && typeof c2.pct === "number") ? c2.pct : (b.ivPct || 0);
+        // `cesty` se počítá jen pro LEAGUES — Master League v nich není.
+        // Pořadí druhu se tam vezme rovnou ze žebříčku.
+        if (rank === null) {
+          var lp = ligovePoradi(dexKey(b.row.pokemon), lg.meta);
+          if (lp && lp.rank) rank = lp.rank;
+        }
+        if (rank === null) return;
+        vsichni.push({ b: b, rank: rank, pct: pct });
       });
       vsichni.sort(function (x, y) {
         return (x.rank - y.rank) || (y.pct - x.pct) || priShode(x.b, y.b);
@@ -10997,6 +11010,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *  Verdikt se tím NEMĚNÍ. Je to údaj pro toho, kdo kus zadával, a pro
    *  vzhledovou vrstvu; rozhodování běží dál po svém.
    */
+  /** Sedí zadané CP aspoň JEDNÉ formě toho druhu?
+   *
+   *  Pumpkaboo a Gourgeist mají čtyři velikostní formy a každá jiné staty —
+   *  a sken velikost neříká. Appka si vezme základní formu, CP pak „nesedí"
+   *  a kus dostane verdikt „Ověřit data", přestože je úplně v pořádku.
+   *  Totéž platí pro každý druh, jehož klíč má varianty (`druh-neco`). */
+  function sediNekteraForma(b, cp, level) {
+    if (!b.dex) return false;
+    var zaklad = dexKey(b.row.pokemon);
+    if (!zaklad) return false;
+    var cpm = cpmAtLevel(level);
+    var sedi = false;
+    Object.keys(POKEDEX.species).forEach(function (k) {
+      if (sedi) return;
+      if (k !== zaklad && k.indexOf(zaklad + "-") !== 0) return;
+      var d = dexByKey(k);
+      var cp2 = d ? cpAt(d, b.atk, b.def, b.sta, cpm) : null;
+      if (cp2 && Math.abs(cp2 - cp) <= 1) sedi = true;
+    });
+    return sedi;
+  }
+
   function overitVstup(b) {
     var r = b.row, potize = [];
     if (!b.dex) {
@@ -11023,7 +11058,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (!potize.length && cp !== null && level !== null && !b.ivUncertain
         && iv.every(function (v) { return v !== null; })) {
       var ocekavane = cpAt(b.dex, b.atk, b.def, b.sta, cpmAtLevel(level));
-      if (ocekavane && Math.abs(ocekavane - cp) > 1) {
+      if (ocekavane && Math.abs(ocekavane - cp) > 1 && !sediNekteraForma(b, cp, level)) {
         potize.push("CP " + cp + " nesedí s levelem " + level + " a IV "
           + iv.join("/") + " — vychází " + ocekavane + " CP.");
       }
@@ -12110,6 +12145,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       lastBase.forEach(function (x) { if (x.row.id === kusId) kusB = x; });
       if (vse && kusB) {
         var cesta = (kusB.cesty || {})[zkr] || null;
+        // U Master League se cesta nepočítá — pořadí druhu je v žebříčku.
+        if (!cesta) {
+          var lpK = ligovePoradi(dexKey(kusB.row.pokemon), ligaKlic);
+          if (lpK && lpK.rank) cesta = { rank: lpK.rank, pct: null };
+        }
         h += '<ol class="tip-seznam tip-pod"><li value="' + vse.poradi + '" class="tip-ten"><b>'
           + escHtml(kusB.row.pokemon) + "</b>"
           + (kusB.row.cp ? " " + escHtml(String(kusB.row.cp)) + " CP" : "")
