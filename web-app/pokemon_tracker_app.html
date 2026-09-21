@@ -2920,6 +2920,21 @@
     </div>
     <div class="settings-row">
       <div class="setting">
+        <label for="boxSekce">Sekce v čištění boxu</label>
+        <select id="boxSekce">
+          <option value="3" selected>Tři sekce</option>
+          <option value="2">Dvě sekce</option>
+          <option value="1">Jedna sekce</option>
+        </select>
+        <span class="hint">Čištění jde rychleji, když je fronta rozdělená podle toho,
+          co se dá ve hře udělat jedním tahem. <b>Hromadně</b> je všechno, co pustíš
+          jedním výběrem. <b>Shadow</b> je zvlášť, protože je to jiná úvaha: očista
+          stojí prach a bonbóny, a než se rozhodneš, chceš je vidět pohromadě
+          (kusy se značkou 100 % nebo CUTE mezi ně nepatří — ty se nepouští).
+          <b>Po jednom</b> jsou shiny, legendární a mytické, které hra do hromadného
+          výběru nepustí.</span>
+      </div>
+      <div class="setting">
         <label for="ivThresh">Práh „vysoké IV“ (%)</label>
         <input type="number" id="ivThresh" min="0" max="100" value="90" />
         <span class="hint">Používá se jako <b>tiebreak mezi kusy, které soupeří o tutéž roli</b>,
@@ -5693,7 +5708,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // kusy i vlastní připojené soubory (záloha, sdílení) — viz klicHandle níž.
   var PROFILES_ENABLED = true;
 
-  var SETTING_IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha"];
+  var SETTING_IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -13794,6 +13809,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         ids: ["keepCopies", "roleThresh", "ligaRezerva", "pametPoradi", "dmaxKeep", "dmaxSlotu", "keepRare"] },
       { nazev: "Prach a vylepšování", popis: "Za co se vyplatí utrácet.",
         ids: ["prachZaBod", "cilLevel", "dustBudget", "bezXL", "ligaVaha"] },
+      { nazev: "Čištění boxu", popis: "Jak rozdělit frontu, než ji projdeš.",
+        ids: ["boxSekce"] },
       { nazev: "Kontrola a data", popis: "Sedí roster s hrou a jak dlouho si co pamatovat.",
         ids: ["discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster"],
         prilep: "boxCheck" }
@@ -25048,6 +25065,42 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return null;
   }
 
+  /** Na kolik sekcí frontu dělit: 3 (i shadow), 2 (jako dřív), 1 (nedělit). */
+  function bmRezimSekci() {
+    var el = document.getElementById("boxSekce");
+    var v = el ? parseInt(el.value, 10) : 3;
+    return (v === 1 || v === 2) ? v : 3;
+  }
+
+  /** Kus, u kterého je shadow to jediné, o čem se rozhoduje.
+   *
+   *  Očista stojí prach a bonbóny a mění staty — je to jiná úvaha než
+   *  „pustit / nechat" u běžného kusu, a projet je chce člověk pohromadě.
+   *  Kusy se značkou 100 % nebo CUTE mezi ně nepatří: ty se nepouští, takže
+   *  by tu sekci jen ředily. */
+  function bmJeShadow(x) {
+    var r = x.row;
+    if (String(r.forma || "").toLowerCase().indexOf("shadow") !== 0) return false;
+    if (r.cute === "Ano") return false;
+    if (x.c && x.c.stoProcent) return false;
+    return true;
+  }
+
+  /** Číslo sekce kusu. Pořadí sekcí je vždycky stejné (hromadně, shadow,
+   *  po jednom), spojením sekcí se jen zmenší čísla. */
+  function bmSekceKusu(x, rezim) {
+    if (rezim === 1) return 1;
+    if (x.blok) return rezim === 3 ? 3 : 2;
+    if (rezim === 3 && bmJeShadow(x)) return 2;
+    return 1;
+  }
+
+  function bmNazvySekci(rezim) {
+    if (rezim === 3) return { 1: "hromadně", 2: "shadow", 3: "po jednom" };
+    if (rezim === 2) return { 1: "hromadně", 2: "po jednom" };
+    return {};
+  }
+
   function bmSestavit() {
     renderBody();                     // ať lastVisibleIds odpovídá tomu, co je vidět
     var computed = analyze();
@@ -25063,22 +25116,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (!String(r.pokemon || "").trim()) return;
       out.push({ row: r, c: computed[id], b: b, blok: proNejdeHromadne(b) });
     });
-    // Napřed všechno, co půjde poslat jedním hromadným výběrem, pak zbytek.
-    // Pořadí uvnitř sekcí zůstává takové, jaké je v tabulce.
-    if (bmSekceZmrazene) {
-      out.forEach(function (x) {
-        var z = bmSekceZmrazene[x.row.id];
-        x.sekce = z || (x.blok ? 2 : 1);
-      });
-      var s1 = out.filter(function (x) { return x.sekce === 1; });
-      var s2 = out.filter(function (x) { return x.sekce !== 1; });
-      return s1.concat(s2);
-    }
-    var hromadne = out.filter(function (x) { return !x.blok; });
-    var poJednom = out.filter(function (x) { return !!x.blok; });
-    hromadne.forEach(function (x) { x.sekce = 1; });
-    poJednom.forEach(function (x) { x.sekce = 2; });
-    return hromadne.concat(poJednom);
+    // Napřed všechno, co půjde poslat jedním hromadným výběrem, pak shadow,
+    // nakonec kusy, které hra hromadně nepustí. Pořadí uvnitř sekcí zůstává
+    // takové, jaké je v tabulce. Rozdělení z běžícího čištění se nemění —
+    // jinak by se fronta pod rukama přeskládala.
+    var rezim = bmRezimSekci();
+    out.forEach(function (x) {
+      var z = bmSekceZmrazene ? bmSekceZmrazene[x.row.id] : 0;
+      x.sekce = z || bmSekceKusu(x, rezim);
+    });
+    var serazeno = [];
+    [1, 2, 3].forEach(function (s) {
+      out.forEach(function (x) { if (x.sekce === s) serazeno.push(x); });
+    });
+    return serazeno;
   }
 
   function bmOtevrit() {
@@ -25246,9 +25297,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // nedávala smysl u sekce, která začíná někde uprostřed.
     var vSekci = bmList.filter(function (y) { return y.sekce === x.sekce; });
     var poradiVSekci = vSekci.indexOf(x) + 1;
-    var maDruhouSekci = bmList.some(function (y) { return y.sekce === 2; });
-    pos.textContent = maDruhouSekci
-      ? (x.sekce === 1 ? "1. sekce (hromadně)" : "2. sekce (po jednom)")
+    var sekci = {};
+    bmList.forEach(function (y) { sekci[y.sekce] = 1; });
+    var nazvy = bmNazvySekci(bmRezimSekci());
+    var nazev = nazvy[x.sekce];
+    pos.textContent = Object.keys(sekci).length > 1
+      ? x.sekce + ". sekce" + (nazev ? " (" + nazev + ")" : "")
         + " · " + poradiVSekci + " / " + vSekci.length
       : (bmIndex + 1) + " / " + bmList.length;
     bar.style.width = Math.round(bmIndex / bmList.length * 100) + "%";

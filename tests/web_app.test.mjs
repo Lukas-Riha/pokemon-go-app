@@ -6682,19 +6682,19 @@ try {
       pos: pos, blok: blok,
     };
   });
-  check("seznam se rozdělí na dvě sekce", !!sekce.poradi, JSON.stringify(sekce.poradi));
-  check("…a první sekce je celá před druhou",
+  check("seznam se rozdělí na sekce", !!sekce.poradi, JSON.stringify(sekce.poradi));
+  check("…a sekce jdou za sebou",
     (function () {
-      const s2 = sekce.poradi.findIndex((x) => x.indexOf(":2") > -1);
-      return s2 === -1 || sekce.poradi.slice(s2).every((x) => x.indexOf(":2") > -1);
+      const cisla = sekce.poradi.map((x) => Number(x.split(":")[1]));
+      return cisla.every((v, i) => i === 0 || v >= cisla[i - 1]);
     })(), sekce.poradi.join(" | "));
   // Do druhé sekce patří jen to, co hra nepustí BEZ OHLEDU na uživatele.
   // Hvězdička se sem nepočítá: appka si ji dává sama u všeho, co si necháváš,
   // takže by se do druhé sekce sesypal celý roster — a odznačit se dá.
-  check("shiny, legendární i mytický jsou ve druhé sekci",
+  check("shiny, legendární i mytický jsou v sekci po jednom",
     ["Gyarados", "Mewtwo", "Mew"].every((jm) =>
-      sekce.poradi.indexOf(jm + ":2") > -1), sekce.poradi.join(" | "));
-  check("…ale hvězdička sama o sobě do druhé sekce nepatří",
+      sekce.poradi.indexOf(jm + ":3") > -1), sekce.poradi.join(" | "));
+  check("…ale hvězdička sama o sobě tam nepatří",
     sekce.poradi.indexOf("Magikarp:1") > -1, sekce.poradi.join(" | "));
   check("běžný odpad zůstal v první", sekce.poradi.indexOf("Rattata:1") > -1,
     sekce.poradi.join(" | "));
@@ -7611,7 +7611,7 @@ try {
   check("běžný odpad zůstává červený", shiny.bez.keep === "Zahodit", shiny.bez.keep);
   // Hra shiny do hromadného výběru nepustí — patří do druhé sekce.
   check("shiny jde do sekce po jednom",
-    /205 → sekce 2/.test(shiny.sekce.join(" | ")), shiny.sekce.join(" | "));
+    /205 → sekce 3/.test(shiny.sekce.join(" | ")), shiny.sekce.join(" | "));
 
   // Označení uprostřed čištění nesmí kus přesunout — zmizel by z ruky.
   const sekceStabil = await page.evaluate(() => {
@@ -17575,6 +17575,71 @@ try {
   check("kus se hned po puštění nenabídne zpátky", s273.nalezy.length === 0,
     JSON.stringify(s273));
   check("…a čištění celé fronty projde", s273.delka > 20, JSON.stringify(s273));
+
+  // ---------------------------------------------------------------- 274
+  // Třetí sekce v čištění boxu: shadow kusy zvlášť. Očista stojí prach
+  // a bonbóny a mění staty — je to jiná úvaha než „pustit / nechat"
+  // u běžného kusu. Kusy se značkou 100 % nebo CUTE mezi ně nepatří,
+  // ty se nepouští. V nastavení jde sekce spojit zpátky.
+  console.log("\n274) Shadow kusy maji v cisteni boxu vlastni sekci");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s274 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const rows = [];
+    const druhy = ["Machamp", "Gardevoir", "Swampert", "Altaria", "Azumarill"];
+    let n = 0;
+    druhy.forEach((d) => {
+      for (let i = 0; i < 4; i++) {
+        rows.push({ id: "n" + (n++), pokemon: d, cp: 1100 + i * 150, level: 20 + i,
+          ivAtk: (i * 5) % 16, ivDef: (i * 3) % 16, ivSta: (i * 9) % 16 });
+      }
+      for (let i = 0; i < 2; i++) {
+        rows.push({ id: "s" + (n++), pokemon: d, cp: 1000 + i * 200, level: 18 + i,
+          ivAtk: (i * 4) % 16, ivDef: (i * 6) % 16, ivSta: (i * 8) % 16, forma: "Shadow" });
+      }
+    });
+    rows.push({ id: "cute1", pokemon: "Azumarill", cp: 900, level: 15,
+      ivAtk: 1, ivDef: 2, ivSta: 3, forma: "Shadow", cute: "Ano" });
+    rows.push({ id: "sto1", pokemon: "Machamp", cp: 2100, level: 25,
+      ivAtk: 15, ivDef: 15, ivSta: 15, forma: "Shadow" });
+    rows.push({ id: "shiny1", pokemon: "Altaria", cp: 1200, level: 20,
+      ivAtk: 5, ivDef: 5, ivSta: 5, shiny: "Ano" });
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 1800));
+    const zmer = async (rezim) => {
+      document.getElementById("boxSekce").value = String(rezim);
+      P.boxOtevrit();
+      await new Promise((r) => setTimeout(r, 700));
+      const seznam = P.bmSeznam();
+      const sekce = {};
+      seznam.forEach((x) => { sekce[x.sekce] = (sekce[x.sekce] || 0) + 1; });
+      const cislaVPoradi = seznam.map((x) => x.sekce);
+      const out = {
+        sekci: Object.keys(sekce).length,
+        pocty: sekce,
+        popis: (document.getElementById("bmPos") || {}).textContent || "",
+        // v sekci shadow smí být jen shadow, a to bez značek 100 % / CUTE
+        shadowCiste: seznam.filter((x) => x.sekce === 2).every((x) =>
+          String(x.row.forma || "").toLowerCase() === "shadow"
+          && x.row.cute !== "Ano" && !x.c.stoProcent),
+        shadowVsechny: seznam.filter((x) => x.sekce === 2).length,
+        serazeno: cislaVPoradi.every((v, i) => i === 0 || v >= cislaVPoradi[i - 1]),
+      };
+      P.boxZavritNatvrdo();
+      return out;
+    };
+    return { tri: await zmer(3), dve: await zmer(2), jedna: await zmer(1) };
+  });
+  check("na tři sekce se fronta rozdělí", s274.tri.sekci === 3, JSON.stringify(s274.tri));
+  check("…v shadow sekci jsou jen shadow kusy bez značek",
+    s274.tri.shadowCiste === true && s274.tri.shadowVsechny >= 8, JSON.stringify(s274.tri));
+  check("…sekce jdou za sebou a ukazatel je pojmenuje",
+    s274.tri.serazeno === true && /sekce/.test(s274.tri.popis), JSON.stringify(s274.tri));
+  check("nastavení „dvě sekce“ shadow zase sloučí",
+    s274.dve.sekci === 2, JSON.stringify(s274.dve));
+  check("nastavení „jedna sekce“ frontu nedělí vůbec",
+    s274.jedna.sekci === 1 && !/sekce/.test(s274.jedna.popis), JSON.stringify(s274.jedna));
 
   await page.goto(URL);
   await page.waitForTimeout(700);
