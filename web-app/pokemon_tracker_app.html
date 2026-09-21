@@ -14007,8 +14007,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (r.forma && r.forma !== "Normal" && r.forma !== "Shadow") {
       chips += '<span class="d-flag">' + r.forma + "</span>";
     }
-    if (c.rarity) chips += '<span class="rarity-chip r-' + c.rarity + '">'
-      + ({ L: "LEG", M: "MYT", U: "UB" }[c.rarity] || "") + "</span>";
+    /* LEG/MYT/UB se přidává až na konec, za osobní značky — viz níž. */
     // Dynamax se nedá vyčíst ze skenu — Calcy ho v exportu buď má, nebo (starší
     // verze) nemá vůbec. Sloupec „Dynamax?" je jen v zobrazení Vše, takže ho
     // nikdo nenašel. Tady je odznáček přepínač: v detailu ho jde zapnout jedním
@@ -14042,6 +14041,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // 100 % je až na konci: není to přepínač (plyne z IV) a kdyby stálo mezi
     // nimi, posunulo by u dokonalého kusu všechny ostatní značky jinam.
     // Třída `sto-znacka` mu dá velikost přepínačů.
+    if (c.rarity) {
+      chips += '<span class="rarity-chip r-' + c.rarity + ' sto-znacka">'
+        + ({ L: "LEG", M: "MYT", U: "UB" }[c.rarity] || "") + "</span>";
+    }
     if (c.stoProcent) {
       chips += '<span class="rarity-chip r-H sto-znacka" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
     }

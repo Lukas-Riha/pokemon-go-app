@@ -809,3 +809,50 @@ html[data-theme=dark] .atlas-test[data-atlas-view=home]{--page:#040f20;--surface
 .atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:72px;height:72px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:58px;height:58px}
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{padding-top:2px;padding-bottom:2px}
+/* Claude 21. 9. (5): rozložení panelu čištění, štítky, nadpisy, tečky u útoků. */
+/* Lišta akcí patří nad evoluční řadu, ale nesmí jí ubrat výšku: sedí ve
+   stejné buňce mřížky u jejího horního okraje a řada začíná pod ní. */
+.atlas-test .atlas-box-rozbor{grid-template-areas:"hlavicka evoluce" "obsah evoluce"}
+.atlas-test .box-mode.siroky .atlas-box-rozbor{grid-template-areas:"hlavicka evoluce" "obsah evoluce"}
+.atlas-test .atlas-box-rozbor>.hra-pruh.atlas-hra-nad-evoluci{grid-area:evoluce;align-self:start;justify-self:stretch;
+  display:flex;flex-wrap:wrap;gap:6px;margin:0;z-index:2}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column{margin-top:44px}
+/* Ikony v řadě se tím pádem nemusí zmenšovat — sloupec je zase přes celý panel. */
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:68px;height:68px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:56px;height:56px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:92px;height:92px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:72px;height:72px}
+/* Typ má pevnou šířku, takže osobní značky začínají u jednoho i dvou typů
+   na stejné svislici. Dřív to řešila mezera, jenže ta byla užší než štítek. */
+.atlas-test .detail-title .d-type{min-width:104px;justify-content:center;text-align:center}
+.atlas-test .detail-title .d-type.atlas-typ-mezera{visibility:hidden}
+/* Podmínka evoluce se nesmí lámat po slovech: je to jeden řádek na šířku
+   dlaždice, celé znění je v bublině kusu. */
+/* Rozvětvená řada (Eevee má osm cílů) se kreslí jako mřížka. V úzkém
+   sloupci byly dlaždice 23 px široké a podmínka se lámala po slovech —
+   dva sloupce jsou čitelné a text se vejde na šířku jména. */
+.atlas-test .atlas-evolution-column .d-evo.husty .d-evo-stupen,
+.atlas-test .atlas-evolution-column .d-evo-stupen:has(>.d-evo-kus:nth-child(4)){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;justify-items:stretch}
+.atlas-test .atlas-evolution-column .d-evo.husty .d-evo-kus{width:100%;max-width:none;box-sizing:border-box}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u.d-evo-podminka{-webkit-line-clamp:2}
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-podminka,
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-bonus{white-space:normal;overflow-wrap:normal;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-width:100%}
+/* Tečka u útoku říká, jak dobrý ten útok na tom kusu je. */
+.atlas-utok-radek{display:flex;align-items:center;gap:6px;min-width:0}
+.atlas-utok-tecka{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:var(--text-muted);
+  box-shadow:0 0 0 1px #0004 inset}
+.atlas-utok-tecka[data-stav=nej]{background:var(--status-good)}
+.atlas-utok-tecka[data-stav=dobry]{background:var(--status-warning)}
+.atlas-utok-tecka[data-stav=preucit]{background:var(--status-critical)}
+.atlas-utok-tecka[data-stav=nezna]{background:var(--grid)}
+/* Nadpis stránky vypadá všude jako na Přehledu — stejné odsazení shora
+   i stejně tmavé pozadí pod ním. */
+.atlas-test .app{padding-top:96px}
+html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#25405e;--series-1:#60baff;--text-secondary:#adc8e6}
+/* „Projít box" v liště příkazů má stejnou modrou jako „+ Přidat pokémona". */
+.atlas-test .atlas-roster-commandbar #boxModeBtn{background:#195be8;border-color:#195be8;color:#fff;font-weight:700}
+.atlas-test .atlas-roster-commandbar #boxModeBtn .atlas-icon{stroke:#fff}
+/* Zaoblení: sekce v detailu (evoluční řada) měla rohy naostro. */
+.atlas-test .atlas-detail-section{border-radius:12px;overflow:hidden}
+.atlas-test .atlas-detail-section>summary{border-radius:12px 12px 0 0}

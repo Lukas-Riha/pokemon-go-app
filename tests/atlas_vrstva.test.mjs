@@ -421,7 +421,17 @@ const vPoradi = (t) => { const i = t.map((x) => PORADI_TAGU.indexOf(x)).filter((
 check("značky u jména v kartě: DMAX, 100%, CUTE",
   d7.tagy.indexOf("DMAX") > -1 && d7.tagy.indexOf("100%") > -1 && d7.tagy.indexOf("CUTE") > -1 && vPoradi(d7.tagy),
   JSON.stringify(d7.tagy));
-check("…i v detailu stejně", vPoradi(d7.detailTagy) && d7.detailTagy.indexOf("100%") > -1, JSON.stringify(d7.detailTagy));
+// V hlavičce detailu jdou automatické značky (LEG, MYT, UB, 100 %) až za
+// osobní: jinak je legendární nebo dokonalý kus posune a oko je hledá
+// pokaždé jinde.
+const PORADI_DETAIL = ["SHADOW", "PURIFIED", "DMAX", "CUTE", "SHINY", "LUCKY", "LEG", "MYT", "UB", "100%"];
+const vPoradiDetail = (t) => {
+  const i = t.map((x) => PORADI_DETAIL.indexOf(x)).filter((x) => x > -1);
+  return i.every((v, k) => !k || v > i[k - 1]);
+};
+check("…i v detailu, kde automatické značky stojí až za osobními",
+  vPoradiDetail(d7.detailTagy) && d7.detailTagy.indexOf("100%") === d7.detailTagy.length - 1,
+  JSON.stringify(d7.detailTagy));
 check("detail nemá souhrnný box Využití / Krok / Cena / Chybí", !d7.journey, String(d7.journey));
 check("doporučený krok stojí vedle verdiktu, ne v sekci dole",
   !d7.coted && d7.krok && d7.krok.spolecnyRadek && d7.krok.vedle && d7.krok.karet >= 1, JSON.stringify(d7));
@@ -1098,6 +1108,55 @@ check("…bez zaškrtávátek značek a bez popisku v prázdném výběru útoku
 check("popis pod ikonou v evoluční řadě se neořezává",
   dUpr.popis.every((v) => v <= 0) && dUpr.podminka.every((v) => v >= 12),
   JSON.stringify({ popis: dUpr.popis, podminka: dUpr.podminka }));
+
+// ---------------------------------- nadpisy, tečky u útoků, rozvětvená řada
+console.log("\n9) Nadpisy, tečky u útoků, rozvětvená řada");
+const pMix = await otevri(1720, [
+  { pokemon: "Machamp", cp: 3000, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13,
+    fastMove: "Karate Chop", charged1: "Cross Chop" },
+  { pokemon: "Eevee", cp: 900, level: 20, ivAtk: 14, ivDef: 15, ivSta: 15,
+    fastMove: "Quick Attack", charged1: "Last Resort" },
+  { pokemon: "Azumarill", cp: 1500, level: 30, ivAtk: 0, ivDef: 15, ivSta: 15 },
+]);
+const dMix = await pMix.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  out.eyebrowRoster = document.querySelectorAll(".atlas-heading .atlas-eyebrow").length;
+  out.ctaRoster = document.querySelectorAll(".atlas-heading .atlas-cta").length;
+  A.go("home");
+  await cekej(600);
+  out.eyebrowHome = document.querySelectorAll(".atlas-heading .atlas-eyebrow").length;
+  out.ctaHome = document.querySelectorAll(".atlas-heading .atlas-cta").length;
+  A.go("roster"); A.refresh();
+  await cekej(700);
+  // tečka u útoku podle toho, jak je dobrý
+  A.openDetail(P.getRows().filter((r) => r.pokemon === "Machamp")[0].id);
+  await cekej(1200);
+  out.tecky = [...document.querySelectorAll(".atlas-drawer .atlas-utok-radek")].map((e) =>
+    ((e.querySelector(".atlas-utok-tecka") || {}).dataset || {}).stav + "|"
+    + (e.textContent || "").replace(/\s+/g, " ").trim().slice(0, 20));
+  // rozvětvená řada: dlaždice musí být čitelně široké
+  A.openDetail(P.getRows().filter((r) => r.pokemon === "Eevee")[0].id);
+  await cekej(1200);
+  const kusy = [...document.querySelectorAll("#atlasDetailContent .d-evo.husty .d-evo-kus")];
+  out.sirkaDlazdic = kusy.map((e) => Math.round(e.getBoundingClientRect().width));
+  out.sirkaPodminek = [...document.querySelectorAll("#atlasDetailContent .d-evo-kus u.d-evo-podminka")]
+    .map((e) => Math.round(e.getBoundingClientRect().width));
+  return out;
+});
+await pMix.close();
+check("„GO ATLAS · TESTOVACÍ VERZE“ nad nadpisem už není",
+  dMix.eyebrowRoster === 0 && dMix.eyebrowHome === 0, JSON.stringify(dMix));
+check("tlačítko „Projít box“ u nadpisu je jen na Přehledu",
+  dMix.ctaHome === 1 && dMix.ctaRoster === 0, JSON.stringify(dMix));
+check("u útoku svítí tečka podle jeho kvality",
+  dMix.tecky.some((x) => x.startsWith("dobry|")) && dMix.tecky.some((x) => x.startsWith("preucit|")),
+  JSON.stringify(dMix.tecky));
+check("rozvětvená řada má čitelně široké dlaždice i podmínky",
+  dMix.sirkaDlazdic.length >= 6 && dMix.sirkaDlazdic.every((v) => v >= 95)
+  && dMix.sirkaPodminek.every((v) => v >= 60),
+  JSON.stringify({ dlazdice: dMix.sirkaDlazdic, podminky: dMix.sirkaPodminek }));
 
 // ----------------------------------------------- hlášky musí být vidět
 // Okno s hláškou appky stojí v HTML uvnitř karty rosteru — a tu vzhledová
