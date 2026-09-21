@@ -17375,6 +17375,75 @@ try {
   check("…a místo pro něj udělá paměť ikon, ne data",
     s270.ramecekZbyl === false, JSON.stringify(s270));
 
+  // ---------------------------------------------------------------- 271
+  // Úložiště plné na doraz: neprojde ani zkušební zápis jednoho znaku.
+  // Appka se dřív na tomhle zjištění otočila ve dveřích — nenačetla nic,
+  // neuložila nic a uklidit po sobě se nedostala, takže uživatel v tom
+  // uvízl napořád. Vlastní vyrovnávací paměť musí jít stranou hned při startu.
+  console.log("\n271) Docela plne uloziste appka uklidi sama pri startu");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.evaluate((klic) => {
+    const rows = [];
+    for (let i = 0; i < 40; i++) {
+      rows.push({ id: "u" + i, pokemon: "Azumarill", cp: 1400 + i, level: 30,
+        ivAtk: 2, ivDef: 14, ivSta: 13 });
+    }
+    localStorage.setItem(klic, JSON.stringify({
+      active: "Můj roster",
+      profiles: { "Můj roster": { v: 2, rows, settings: {}, filterMode: "all" } }
+    }));
+    const velky = {};
+    for (let i = 0; i < 10000; i++) {
+      velky["https://example.test/ikona-" + i + ".png"] = { s: 1.2, x: 3, y: -4 };
+    }
+    localStorage.setItem(klic.replace("tracker_v2", "sprite_ramecek"), JSON.stringify(velky));
+  }, klicAppky);
+  {
+    const page3 = await context.newPage();
+    // zápis projde, jen když se celkový objem vejde pod strop
+    await page3.addInitScript(() => {
+      const proto = Object.getPrototypeOf(window.localStorage);
+      const orig = proto.setItem;
+      const STROP = 200000;
+      proto.setItem = function (k, v) {
+        let celkem = 0;
+        for (let i = 0; i < this.length; i++) {
+          const kk = this.key(i);
+          if (kk === String(k)) continue;
+          celkem += (this.getItem(kk) || "").length + kk.length;
+        }
+        if (celkem + String(v).length > STROP) {
+          throw new DOMException("plno", "QuotaExceededError");
+        }
+        return orig.call(this, k, v);
+      };
+    });
+    await page3.goto(URL);
+    await page3.waitForTimeout(2200);
+    const s271 = await page3.evaluate((klic) => {
+      const out = {
+        vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
+        okno: (document.getElementById("appOknoText") || {}).textContent || "",
+        ramecekZbyl: localStorage.getItem(klic.replace("tracker_v2", "sprite_ramecek")) !== null,
+      };
+      try {
+        const r = window.__pgo.getRows();
+        if (r[0]) r[0].note = "zkouska";
+        window.__pgo.persistNow();
+        const st = JSON.parse(localStorage.getItem(klic) || "{}");
+        out.zapis = (st.profiles[st.active].rows[0] || {}).note === "zkouska";
+      } catch (e) { out.zapis = false; }
+      return out;
+    }, klicAppky);
+    check("docela plné úložiště appka uklidí sama", s271.ramecekZbyl === false,
+      JSON.stringify(s271).slice(0, 200));
+    check("…roster se načte", s271.vRosteru === 40, JSON.stringify(s271).slice(0, 200));
+    check("…a změna se zase uloží", s271.zapis === true, JSON.stringify(s271).slice(0, 200));
+    check("…a appka řekne, co uvolnila", /uvolnila/.test(s271.okno), s271.okno.slice(0, 140));
+    await page3.close();
+  }
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 
