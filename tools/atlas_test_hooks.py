@@ -27,4 +27,8 @@ def prepare_atlas_test(html):
     # Podle téhle vlajky si vzhledová vrstva rozsvítí testovací popisky
     # (LOKÁLNÍ TEST, TESTOVACÍ VERZE). V produkci vlajka není, popisky
     # zůstanou schované — a `--vzhled` tím projde kontrolou.
-    return html.replace("<body", "<script>window.__ATLAS_TEST_BUILD=true;</script><body", 1)
+    # Předpona názvu záložky je tady schválně: v atlas.js by ji kontrola
+    # před nasazením našla i v produkčním souboru a nasazení by zastavila.
+    vlajky = ("<script>window.__ATLAS_TEST_BUILD=true;"
+              "window.__ATLAS_TEST_NAZEV='[" + "TEST] ';</script>")
+    return html.replace("<body", vlajky + "<body", 1)

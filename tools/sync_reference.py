@@ -203,7 +203,9 @@ else:
         # jen testovací build (viz atlas_test_hooks.py) — ten kontrole vadit
         # nemusí. Vadí popisek, který by byl v produkci vidět.
         bez_schovanych = re.sub(r"<[^<>]*data-atlas-test-badge[^<>]*>[^<>]*</span>", "", text)
-        spatne = [z for z in ("pgo_test_", "LOKÁLNÍ TEST", "TESTOVACÍ VERZE")
+        # „[TEST]" chytá i název záložky prohlížeče — ten kontrola dřív
+        # neviděla, protože není v žádném viditelném popisku na stránce.
+        spatne = [z for z in ("pgo_test_", "LOKÁLNÍ TEST", "TESTOVACÍ VERZE", "[TEST]")
                   if z in bez_schovanych]
         if spatne:
             raise SystemExit(
