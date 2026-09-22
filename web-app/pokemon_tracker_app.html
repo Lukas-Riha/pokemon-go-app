@@ -1445,6 +1445,9 @@
      jinak by pořád svítily a vypadaly jako stav, který platí. */
   /* 100 % má vlastní barvu, ať se neplete s ručními značkami. */
   .rarity-chip.r-H { background: var(--status-good); color: #fff; }
+  /* Poslední naskenovaný kus — odtud se ve hře pokračuje. */
+  .rarity-chip.r-SKEN { background: color-mix(in srgb, var(--series-3, #7aa2ff) 30%, transparent);
+    color: var(--text-primary); border: 1px dashed var(--series-3, #7aa2ff); }
   /* Shadow: tmavě fialová se světlým písmem — ve hře má fialovou auru
      a mezi ostatními značkami je ten odstín volný. Purified naopak
      světlá s tmavým písmem, jak vypadá očištěný kus. */
@@ -8660,9 +8663,22 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return analyzaCache;
   }
 
+  /** Kus s nejnovějším datem skenu. Null, když data skenu nejsou. */
+  var posledniSkenRadek = null;
+  function najitPosledniSken(seznam) {
+    var nej = null, nejCas = -1;
+    (seznam || []).forEach(function (r) {
+      var cas = parseScanTime(r.scanDate);
+      if (cas === null || cas === undefined) return;
+      if (cas > nejCas) { nejCas = cas; nej = r; }
+    });
+    return nej;
+  }
+
   function analyzeVypocet(list) {
     var s = getSettings();
     var zdroj = list || rows;
+    posledniSkenRadek = najitPosledniSken(zdroj);
 
     var base = zdroj.map(function (r) {
       var atk = num(r.ivAtk), def = num(r.ivDef), sta = num(r.ivSta);
@@ -10623,6 +10639,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         dynamax: b.dynamax,
         cute: b.cute,
         stoProcent: b.stoProcent,
+        /* Poslední kus, který prošel skenováním — od něj se pokračuje. */
+        posledniSken: b.row === posledniSkenRadek,
         lucky: !!b.lucky,
         shiny: b.shiny,
         cpMax: b.cpMax,
@@ -11929,7 +11947,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   var HERNI_URL = "https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/"
     + "Images/Pokemon%20-%20256x256/Addressable%20Assets/";
   var FORMA_PRIPONA = { alola: "ALOLA", galar: "GALARIAN", hisui: "HISUIAN",
-    paldea: "PALDEA" };
+    paldea: "PALDEA", armored: "A" };
 
   /* Formy, které NEJSOU v klíči druhu, jen v zobrazeném jméně. Shellos a
      Gastrodon mají východní a západní moře a herní ikona bez té přípony
@@ -12153,12 +12171,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
   }
 
-  function obrazekHtml(name, dex, trida) {
+  function obrazekHtml(name, dex, trida, shiny) {
     var zaloha = spriteId(name, dex);
     var herni = herniObrazek(name, dex);
-    var src = herni || (zaloha ? SPRITE_URL + zaloha + ".png" : "");
+    var pixel = zaloha ? SPRITE_URL + zaloha + ".png" : "";
+    // Shiny obrázek se jmenuje stejně, jen má před příponou „.s". Když ho
+    // mirror nemá, spadne se na běžnou herní ikonu a teprve pak na sprite.
+    var trblet = (shiny && herni) ? herni.replace(".icon.png", ".s.icon.png") : "";
+    var src = trblet || herni || pixel;
     if (!src) return "";
-    var nahradni = (zaloha && herni) ? SPRITE_URL + zaloha + ".png" : "";
+    var nahradni = [trblet ? herni : "", pixel].filter(function (x) { return !!x; }).join("|");
     // Obrázek je do načtení průhledný. Když první adresa neexistuje, prohlížeč
     // na okamžik vykreslí rozbitý rámeček a teprve pak se spustí onerror —
     // a to probliknutí je vidět. Takhle se prostě nic neukáže, dokud není co.
@@ -12166,12 +12188,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + ' style="opacity:0;transition:opacity .12s"'
       + ' data-zaloha="' + nahradni + '"'
       + ' onload="this.style.opacity=1"'
-      + ' onerror="if(this.dataset.zaloha){this.src=this.dataset.zaloha;'
-      + 'this.dataset.zaloha=&quot;&quot;;}else{this.style.display=&quot;none&quot;;}" />';
+      + ' onerror="var z=(this.dataset.zaloha||&quot;&quot;).split(&quot;|&quot;)'
+      + '.filter(function(x){return !!x});'
+      + 'if(z.length){this.src=z.shift();this.dataset.zaloha=z.join(&quot;|&quot;);}'
+      + 'else{this.style.display=&quot;none&quot;;}" />';
   }
 
   function spriteHtml(b) {
-    return obrazekHtml(b && b.row ? b.row.pokemon : "", b ? b.dex : null, "d-sprite");
+    var jeShiny = !!(b && (b.shiny || (b.row && b.row.shiny === "Ano")));
+    return obrazekHtml(b && b.row ? b.row.pokemon : "", b ? b.dex : null, "d-sprite", jeShiny);
   }
 
   /**
@@ -14041,6 +14066,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // 100 % je až na konci: není to přepínač (plyne z IV) a kdyby stálo mezi
     // nimi, posunulo by u dokonalého kusu všechny ostatní značky jinam.
     // Třída `sto-znacka` mu dá velikost přepínačů.
+    if (c.posledniSken) {
+      chips += '<span class="rarity-chip r-SKEN sto-znacka" title="Poslední kus,'
+        + ' který prošel skenováním. Ve hře od něj pokračuj dál — co je za ním,'
+        + ' appka ještě nevidí.">POSLEDNÍ SKEN</span>';
+    }
     if (c.rarity) {
       chips += '<span class="rarity-chip r-' + c.rarity + ' sto-znacka">'
         + ({ L: "LEG", M: "MYT", U: "UB" }[c.rarity] || "") + "</span>";
@@ -26369,6 +26399,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     renderCheatSheet: renderCheatSheet,
     // Seznam v čištění boxu — testy potřebují vidět rozdělení na sekce.
     bmSeznam: function () { return bmList; },
+    /* Vystředění spritu v rámečku — obrázky, které kreslí vzhledová vrstva
+       sama (hlavička detailu, čištění boxu), o něj jinak přijdou a ikona
+       pak v rámečku sedí nakřivo. */
+    vystreditSprity: function (kontejner) { vystreditVse(kontejner || document); },
     // Rotace lig — testy si ověřují, že se promítá do pořadí v rozpočtu.
     ligyStav: ligyStav,
     megaPriority: megaPriority,

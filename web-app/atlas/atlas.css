@@ -856,3 +856,39 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 /* Zaoblení: sekce v detailu (evoluční řada) měla rohy naostro. */
 .atlas-test .atlas-detail-section{border-radius:12px;overflow:hidden}
 .atlas-test .atlas-detail-section>summary{border-radius:12px 12px 0 0}
+/* Claude 22. 9.: panel čištění, editor kusu, štítky. */
+/* Lišta akcí vyplňuje mezeru nad rozborem (tam nic není), takže evoluční
+   řada může začít hned na horní hraně panelu a je o 44 px vyšší. */
+.atlas-test .atlas-box-rozbor>.hra-pruh.atlas-hra-nad-evoluci{margin-top:-40px}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column{margin-top:0}
+/* Osm cílů Eevee se do pevné výšky panelu vejde jen s menšími ikonami
+   a jednořádkovou podmínkou. V detailu, kde je místa dost, zůstává velká. */
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo.husty .atlas-evo-ram{width:44px;height:44px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo.husty .d-evo-kus b{font-size:10px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo.husty .atlas-evo-popis{min-height:0;gap:0}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo.husty u.d-evo-podminka{-webkit-line-clamp:1;font-size:8.5px}
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo.husty .d-evo-stupen{gap:4px}
+/* Editor kusu: zbytek plachty je při úpravách zamčený, ať nic netahá pozornost. */
+.atlas-test.atlas-edituje .atlas-drawer{pointer-events:none;filter:brightness(.78) saturate(.85)}
+.atlas-test.atlas-edituje #atlasRowEditor{pointer-events:auto}
+.atlas-test.atlas-edituje .atlas-backdrop{pointer-events:none}
+/* „+N" u schovaných typů v „silný proti". */
+.atlas-vyhoda-vic{font-style:normal;font-size:10px;font-weight:700;color:var(--text-muted);
+  border:1px dashed var(--border);border-radius:9px;padding:1px 6px;cursor:help}
+/* Karty doporučeného kroku mají pevnou výšku: delší vysvětlení („Zvážit…")
+   jinak roztáhlo celou řadu a posunulo všechno pod ní. */
+.atlas-test .atlas-krok .d-roles-akce>.d-role{min-height:104px}
+.atlas-test .atlas-krok .d-roles-akce>.d-role .d-role-p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* Na užším okně stačí typům menší pevná šířka — pořád lícují, ale nechají
+   místo značkám a „silný proti" na stejném řádku. */
+@media(max-width:1450px){.atlas-test .detail-title .d-type{min-width:84px}}
+@media(max-width:1250px){.atlas-test .detail-title .d-type{min-width:0;padding-left:8px;padding-right:8px}}
+/* Nabídka „Správa rosteru" je mimo tok VŽDY, ne až po otevření — jinak
+   na jeden snímek rozhodí lištu a příkazy vedle ní probliknou. */
+.atlas-test .atlas-roster-commands>div{position:fixed}
+/* Pruh o záloze vypadá jako zbytek appky: zaoblený, s vlastním rámečkem
+   a tlačítkem v barvě appky. */
+.atlas-test .zal-warn{border-radius:12px;border:1px solid color-mix(in srgb,var(--status-warning) 45%,var(--border));
+  background:color-mix(in srgb,var(--status-warning) 10%,var(--surface-1));padding:14px 16px;gap:12px}
+.atlas-test .zal-warn button{border-radius:9px;min-height:40px}
+.atlas-test .zal-warn button.primary{background:#195be8;border-color:#195be8;color:#fff}

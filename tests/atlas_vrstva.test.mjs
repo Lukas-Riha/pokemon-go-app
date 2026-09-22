@@ -1011,7 +1011,9 @@ const dDet = await pDet.evaluate(async () => {
         || parseFloat(getComputedStyle(e).borderBottomWidth) > 0),
     utoky: utoky ? { scroll: utoky.scrollHeight, klient: utoky.clientHeight,
       sestav: document.querySelectorAll(".atlas-drawer .atlas-sestava").length } : null,
-    sprite: r(".atlas-drawer .atlas-detail-identity img"),
+    // Měří se RÁMEČEK, ne <img>: sprite má vlastní zvětšení, takže jeho
+    // vlastní rámec z obalu vyčuhuje (a obal ho ořízne).
+    sprite: r(".atlas-drawer .atlas-detail-identity .atlas-ident-obr"),
     hlavicka: r(".atlas-drawer .atlas-detail-identity"),
   };
 });
@@ -1157,6 +1159,72 @@ check("rozvětvená řada má čitelně široké dlaždice i podmínky",
   dMix.sirkaDlazdic.length >= 6 && dMix.sirkaDlazdic.every((v) => v >= 95)
   && dMix.sirkaPodminek.every((v) => v >= 60),
   JSON.stringify({ dlazdice: dMix.sirkaDlazdic, podminky: dMix.sirkaPodminek }));
+
+// ------------------------- editor, jeden řádek štítků, poslední sken, shiny
+console.log("\n10) Editor, štítky na jednom řádku, poslední sken");
+const pEd = await otevri(1720, [
+  { pokemon: "Diancie", cp: 2300, level: 25, ivAtk: 14, ivDef: 14, ivSta: 14,
+    fastMove: "Rock Throw", charged1: "Moonblast", charged2: "Rock Slide",
+    scanDate: "2026-09-10 10:00" },
+  { pokemon: "Azumarill", cp: 1500, level: 30, ivAtk: 0, ivDef: 15, ivSta: 15,
+    shiny: "Ano", scanDate: "2026-09-21 19:30" },
+  { pokemon: "Machamp", cp: 3000, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13 },
+]);
+const dEd = await pEd.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  const rows = P.getRows(), c = P.getComputed();
+  // poslední naskenovaný kus
+  out.posledni = rows.filter((r) => c[r.id].posledniSken).map((r) => r.pokemon);
+  out.znackaVDlazdici = document.querySelectorAll("#atlasRoster .rarity-chip.r-SKEN").length;
+  // shiny má vlastní obrázek (a náhrady za ním)
+  A.openDetail(rows.filter((r) => r.pokemon === "Azumarill")[0].id);
+  await cekej(1200);
+  const sprite = document.querySelector(".atlas-drawer .d-sprite");
+  out.shinySrc = sprite ? /\.s\.icon\.png$/.test(sprite.getAttribute("src")) : false;
+  out.shinyZaloha = sprite ? String(sprite.dataset.zaloha || "").split("|").length : 0;
+  // editor: zámek plachty, lícování s hlavičkou, přilepení
+  A.openDetail(rows.filter((r) => r.pokemon === "Diancie")[0].id);
+  await cekej(1200);
+  window.AtlasEditRow(rows.filter((r) => r.pokemon === "Diancie")[0].id);
+  await cekej(600);
+  const form = document.getElementById("atlasRowEditor");
+  const drawer = document.querySelector(".atlas-drawer");
+  const hlavicka = document.querySelector(".atlas-drawer .atlas-detail-identity");
+  out.zamek = document.body.classList.contains("atlas-edituje")
+    && getComputedStyle(drawer).pointerEvents === "none";
+  out.lici = Math.abs(form.getBoundingClientRect().top - hlavicka.getBoundingClientRect().top) <= 2;
+  out.prilepeny = Math.round(form.getBoundingClientRect().right)
+    >= Math.round(drawer.getBoundingClientRect().left) - 10;
+  form.querySelector("[data-editor-cancel]").click();
+  await cekej(300);
+  out.poZavreni = document.body.classList.contains("atlas-edituje");
+  return out;
+});
+// štítky a „silný proti" na jednom řádku i na užším okně
+await pEd.setViewportSize({ width: 1150, height: 950 });
+await pEd.waitForTimeout(500);
+const dRadek = await pEd.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  A.openDetail(P.getRows().filter((r) => r.pokemon === "Diancie")[0].id);
+  await new Promise((r) => setTimeout(r, 1300));
+  const t = document.querySelector("#atlasDetailContent .detail-title");
+  const v = t.querySelector(".atlas-vyhoda"), prvni = t.querySelector(".d-type,.rarity-chip");
+  return { jedenRadek: Math.abs(v.getBoundingClientRect().top - prvni.getBoundingClientRect().top) < 8,
+    vic: (v.querySelector(".atlas-vyhoda-vic") || {}).textContent || "" };
+});
+await pEd.close();
+check("poslední naskenovaný kus je označený",
+  dEd.posledni.length === 1 && dEd.posledni[0] === "Azumarill" && dEd.znackaVDlazdici === 1,
+  JSON.stringify(dEd));
+check("shiny kus má vlastní obrázek i náhrady za ním",
+  dEd.shinySrc === true && dEd.shinyZaloha >= 2, JSON.stringify(dEd));
+check("editor zamkne plachtu, lícuje s hlavičkou a je přilepený",
+  dEd.zamek === true && dEd.lici === true && dEd.prilepeny === true && dEd.poZavreni === false,
+  JSON.stringify(dEd));
+check("značky a „silný proti“ zůstanou na jednom řádku i na úzkém okně",
+  dRadek.jedenRadek === true && /^\+\d+$/.test(dRadek.vic), JSON.stringify(dRadek));
 
 // ----------------------------------------------- hlášky musí být vidět
 // Okno s hláškou appky stojí v HTML uvnitř karty rosteru — a tu vzhledová

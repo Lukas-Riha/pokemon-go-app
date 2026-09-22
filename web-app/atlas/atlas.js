@@ -42,7 +42,7 @@ window.AtlasVerdict=c=>({
   label:c.validationIssues?.length?'Ověřit data':c.cuteOnly?'CUTE · sbírka':c.keep||'K posouzení',
   tone:c.validationIssues?.length||c.lucky?'warning':c.cuteOnly?'collection':['good','warning','critical'].includes(c.keepTone)?c.keepTone:c.keepGood?'good':'critical'
 });
-window.AtlasTags=(c,r={})=>String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+[['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],['D','DMAX',c.dynamax],['C','CUTE',c.cute],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('');
+window.AtlasTags=(c,r={})=>String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+[['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],['D','DMAX',c.dynamax],['C','CUTE',c.cute],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky],['SKEN','POSLEDNÍ SKEN',c.posledniSken]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('');
 
 window.AtlasRole=function(c){if(c.cuteOnly)return 'Osobní sbírka · bez investičního cíle';const roles=[];if(c.pvpRec&&!['Ne','–'].includes(c.pvpRec))roles.push(c.pvpRec);if(c.raidRec&&!['Ne','Slabý','Slabý útok','–'].includes(c.raidRec))roles.push('Raid · '+c.raidRec);if(c.gymRec&&!['Ne','Slabý','–'].includes(c.gymRec))roles.push('Gym · '+c.gymRec);return roles.join(' / ')||(c.megaKandidat?'Mega evoluce':'Sbírka a další využití');};
 window.AtlasJourney=(c,r)=>{
@@ -63,7 +63,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const icon=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[k]||paths.spark}"/></svg>`;
   const fallback='data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="43" fill="#eaf0fa" stroke="#9bb2d4" stroke-width="3"/><path d="M17 60h86" stroke="#9bb2d4" stroke-width="3"/><circle cx="60" cy="60" r="12" fill="white" stroke="#9bb2d4" stroke-width="3"/></svg>');
   const art=r=>{const key=P.dexKeyOf(r.pokemon);if(/^(shellos|gastrodon)/i.test(key)){const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')||fallback}return window.ATLAS_ART[key]||(/^pumpkaboo/i.test(r.pokemon)?window.ATLAS_ART['pumpkaboo-average']:null)||(/^shellos east sea/i.test(r.pokemon)?window.ATLAS_ART['shellos-eastsea']:null)||(()=>{const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')})()||fallback;};
-  document.addEventListener('error',e=>{const img=e.target;if(!img.matches?.('img[data-atlas-pokemon]'))return;const t=document.createElement('template');t.innerHTML=P.atlasImage(img.dataset.atlasPokemon);const native=t.content.querySelector('img'),urls=[native?.getAttribute('src'),native?.dataset.zaloha,fallback].filter(Boolean);const tried=JSON.parse(img.dataset.atlasTried||'[]');tried.push(img.src);img.dataset.atlasTried=JSON.stringify(tried);const next=urls.find(url=>!tried.includes(url));if(next)img.src=next;},true);
+  document.addEventListener('error',e=>{const img=e.target;if(!img.matches?.('img[data-atlas-pokemon]'))return;const t=document.createElement('template');t.innerHTML=P.atlasImage(img.dataset.atlasPokemon);const native=t.content.querySelector('img'),urls=[native?.getAttribute('src'),...String(native?.dataset.zaloha||'').split('|'),fallback].filter(Boolean);const tried=JSON.parse(img.dataset.atlasTried||'[]');tried.push(img.src);img.dataset.atlasTried=JSON.stringify(tried);const next=urls.find(url=>!tried.includes(url));if(next)img.src=next;},true);
   const monImage=(r,extra='')=>`<img src="${art(r)}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy" ${extra}>`;
   window.AtlasMonImage=monImage;
   const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář'],['catchCard','Co chytat']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
@@ -284,17 +284,37 @@ globalThis.AtlasBudget = (() => {
     // Útoky se vybírají stejným výběrem jako ve Vyhledávání (typ, síla, ★ elitní) — engine __pgoUtoky.vyber na dočasném objektu; hodnota jde do skrytého pole formuláře. Při změně druhu se výběr postaví znovu.
     const utoky={pokemon:row.pokemon,fastMove:row.fastMove||'',charged1:row.charged1||'',charged2:row.charged2||'',__docasny:true};const vyberUtoku=()=>{if(!window.__pgoUtoky)return;utoky.pokemon=form.elements.pokemon.value;['fastMove','charged1','charged2'].forEach(k=>{const input=form.elements[k];let obal=form.querySelector('[data-utok-obal="'+k+'"]');if(!obal){obal=document.createElement('div');obal.className='atlas-utok-vyber';obal.dataset.utokObal=k;input.after(obal);input.type='hidden'}obal.innerHTML='';window.__pgoUtoky.vyber(obal,utoky,k,()=>{input.value=utoky[k]||''})})};vyberUtoku();form.elements.pokemon.addEventListener('change',vyberUtoku);
     const baseline=new Map([...form.elements].filter(e=>e.name).map(e=>[e.name,e.type==='checkbox'?e.checked:e.value]));
-    form.querySelector('[data-editor-cancel]').addEventListener('click',()=>{form.remove();document.querySelector('.atlas-drawer-header button')?.focus()});
+    form.querySelector('[data-editor-cancel]').addEventListener('click',()=>{form.remove();document.body.classList.remove('atlas-edituje');document.querySelector('.atlas-drawer-header button')?.focus()});
     form.addEventListener('submit',e=>{e.preventDefault();const current=P.getRows().find(r=>r.id===id);if(!current||profile!==P.getProfile()){form.querySelector('[role=status]').textContent='Kus nebo profil se změnil. Zavři detail a zkontroluj roster.';return}if(!form.reportValidity())return;
       for(const input of form.elements){if(!input.name)continue;const value=input.type==='checkbox'?input.checked:input.value;if(value!==baseline.get(input.name))current[input.name]=input.type==='checkbox'?(value?'Ano':'Ne'):value;}
-      P.prekreslit();P.persistNow();window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));document.querySelector('.atlas-drawer').scrollTop=0;
+      P.prekreslit();P.persistNow();document.body.classList.remove('atlas-edituje');window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));document.querySelector('.atlas-drawer').scrollTop=0;
     });
     const plachta=document.getElementById('atlasModal'),plocha=document.querySelector('.atlas-drawer');
     const volno=plocha?Math.round(plocha.getBoundingClientRect().left):0;
     // Vedle plachty, ne v ní: detail se otevřením úprav nesmí posunout ani
     // zúžit. Když vedle místo není (úzké okno), zůstane úprava v detailu.
-    if(plachta&&volno>=300){form.classList.add('atlas-editor-vedle');const sirka=Math.min(400,volno-16);form.style.width=sirka+'px';form.style.left=(volno-sirka)+'px';plachta.append(form)}
-    else host.prepend(form),form.scrollIntoView({block:'start'});
+    const umistit=()=>{
+      if(!form.isConnected){window.removeEventListener('resize',umistit);document.body.classList.remove('atlas-edituje');return}
+      const plocha=document.querySelector('.atlas-drawer');
+      const misto=plocha?Math.round(plocha.getBoundingClientRect().left):0;
+      if(!plachta||misto<300){                       // úzké okno: zpátky do detailu
+        form.classList.remove('atlas-editor-vedle');form.removeAttribute('style');
+        if(form.parentElement!==host)host.prepend(form);
+        return;
+      }
+      const hlavicka=document.querySelector('.atlas-drawer .atlas-detail-identity');
+      const sirka=Math.min(400,misto-16);
+      form.classList.add('atlas-editor-vedle');
+      form.style.width=sirka+'px';
+      form.style.left=Math.max(8,misto-sirka)+'px';
+      form.style.top=Math.max(12,Math.round(hlavicka?hlavicka.getBoundingClientRect().top:92))+'px';
+      if(form.parentElement!==plachta)plachta.append(form);
+    };
+    host.prepend(form);        // ať je formulář v dokumentu, než se rozhodne, kam patří
+    umistit();
+    document.body.classList.add('atlas-edituje');
+    window.addEventListener('resize',umistit);
+    if(!form.classList.contains('atlas-editor-vedle'))form.scrollIntoView({block:'start'});
     form.querySelector('[name="'+(field||'pokemon')+'"]').focus({preventScroll:true});
   };
   document.addEventListener('click',e=>{const button=e.target.closest('[data-atlas-action="edit"]');if(!button)return;const id=window.__atlasTest.getState().dialogId;if(!id)return;e.preventDefault();e.stopImmediatePropagation();window.AtlasEditRow(id);},true);
@@ -320,7 +340,7 @@ globalThis.AtlasBudget = (() => {
   const toolbar=$('#addRowBtn')?.parentElement;if(toolbar){const menu=document.createElement('details');menu.className='atlas-roster-commands';menu.innerHTML='<summary>Správa rosteru ▾</summary><div></div>';toolbar.append(menu);for(const id of ['toggleImportBtn','exportBtn','backupBtn','backupNowBtn','starKeepersBtn','clearUnstarredBtn','clearBtn','forgetDiscardedBtn']){const el=$('#'+id);if(el){menu.lastChild.append(el);
     // Import a export mají vlastní tlačítka nahoře v liště. Tady zůstávají
     // jen schované, aby na ně horní tlačítka měla kam klikat.
-    if(id==='toggleImportBtn'||id==='exportBtn')el.hidden=true}}const umistit=()=>{const panel=menu.lastElementChild,sum=menu.querySelector('summary');if(!panel||!sum)return;if(!menu.open){panel.style.position='';panel.style.top='';panel.style.left='';panel.style.minWidth='';return}const r=sum.getBoundingClientRect();panel.style.position='fixed';panel.style.top=Math.round(r.bottom+6)+'px';panel.style.left=Math.round(Math.min(r.left,window.innerWidth-260))+'px';panel.style.minWidth=Math.round(Math.max(r.width,230))+'px'};menu.addEventListener('toggle',umistit);menu.querySelector('summary').addEventListener('pointerdown',()=>{if(!menu.open)requestAnimationFrame(umistit)});window.addEventListener('resize',umistit);window.addEventListener('scroll',umistit,true);document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.open=false});menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.open=false});}
+    if(id==='toggleImportBtn'||id==='exportBtn')el.hidden=true}}const umistit=()=>{const panel=menu.lastElementChild,sum=menu.querySelector('summary');if(!panel||!sum)return;if(!menu.open)return;const r=sum.getBoundingClientRect();panel.style.top=Math.round(r.bottom+6)+'px';panel.style.left=Math.round(Math.min(r.left,window.innerWidth-260))+'px';panel.style.minWidth=Math.round(Math.max(r.width,230))+'px'};menu.addEventListener('toggle',umistit);menu.querySelector('summary').addEventListener('pointerdown',()=>{if(!menu.open)requestAnimationFrame(umistit)});window.addEventListener('resize',umistit);window.addEventListener('scroll',umistit,true);document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.open=false});menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.open=false});}
 })();
 
 (() => {
@@ -406,7 +426,10 @@ globalThis.AtlasBudget = (() => {
 (() => {
  const $=s=>document.querySelector(s),P=window.__pgo,old=window.AtlasEnhanceDetail;
  window.AtlasEnhanceDetail=(container,row,c)=>{
-  old(container,row,c);const vPlachte=!!container.closest('#atlasModal');if(vPlachte)$('.atlas-drawer-header .hra-pruh')?.remove();const bar=container.querySelector('.hra-pruh');
+  old(container,row,c);const vPlachte=!!container.closest('#atlasModal');
+  // Obrázek v hlavičce kreslí vrstva sama, takže se o vystředění v rámečku
+  // musí říct — jinak sedí ikona nakřivo (u Machopa dole, u Abry nahoře).
+  try{const hl=document.querySelector(vPlachte?'.atlas-drawer .atlas-detail-identity':'#boxMode .atlas-detail-identity');if(hl&&P.vystreditSprity)P.vystreditSprity(hl)}catch(e){}if(vPlachte)$('.atlas-drawer-header .hra-pruh')?.remove();const bar=container.querySelector('.hra-pruh');
   // V čištění boxu patří lišta „ve hře jsem s ním něco udělal" nahoru k postupu.
   if(bar&&!vPlachte&&window.innerWidth>650){const rozbor=document.querySelector('#boxMode .atlas-box-rozbor');if(rozbor){document.querySelectorAll('#boxMode .bm-top .hra-pruh,#boxMode .atlas-box-rozbor>.hra-pruh').forEach(e=>e.remove());bar.classList.add('atlas-hra-nad-evoluci');rozbor.append(bar)}}
   if(bar&&vPlachte){bar.setAttribute('aria-label','Zapsat změnu ve hře');bar.querySelectorAll('[aria-pressed]').forEach(b=>b.removeAttribute('aria-pressed'));const editBtn=$('#atlasEditPokemon');if(editBtn)editBtn.before(bar);else $('.atlas-drawer-header').append(bar)}
@@ -421,7 +444,34 @@ globalThis.AtlasBudget = (() => {
     const typy=[];
     pokryti.querySelectorAll('.d-pokryti-radek:not(.d-pokryti-pozor)').forEach(r=>{r.querySelectorAll('.pk-typ').forEach(t=>{if(!typy.some(x=>x.textContent===t.textContent))typy.push(t)});r.remove()});
     titulek.querySelector('.atlas-vyhoda')?.remove();
-    if(typy.length){const obal=document.createElement('span');obal.className='atlas-vyhoda';obal.setAttribute('data-tip','Proti těmto typům je jeho útok silný. Dvojtyp s jedním z nich schytá 1,6×, se dvěma z nich 2,56× — kde to druhý typ vyruší, je v Typovém pokrytí.');obal.innerHTML='<small>silný proti</small>';typy.forEach(t=>obal.append(t));titulek.append(obal)}
+    titulek.querySelector('.atlas-vyhoda-vic')?.remove();
+    if(typy.length){const obal=document.createElement('span');obal.className='atlas-vyhoda';obal.setAttribute('data-tip','Proti těmto typům je jeho útok silný. Dvojtyp s jedním z nich schytá 1,6×, se dvěma z nich 2,56× — kde to druhý typ vyruší, je v Typovém pokrytí.');obal.innerHTML='<small>silný proti</small>';typy.forEach(t=>obal.append(t));titulek.append(obal);
+      // Značky a „silný proti" musí zůstat na jednom řádku. Když se přestanou
+      // vejít, schová se tolik typů, kolik je potřeba, a přibude „+N".
+      const vejdeSe=()=>{const prvni=titulek.querySelector('.d-type,.rarity-chip');
+        return !prvni||Math.abs(obal.getBoundingClientRect().top-prvni.getBoundingClientRect().top)<8};
+      const srovnat=()=>{
+        const vsechny=[...obal.querySelectorAll('.pk-typ')];
+        vsechny.forEach(t=>{t.hidden=false});
+        obal.querySelector('.atlas-vyhoda-vic')?.remove();
+        if(vejdeSe())return;
+        const vic=document.createElement('em');vic.className='atlas-vyhoda-vic';obal.append(vic);
+        let schovano=0;
+        const popis=obal.querySelector('small');
+        if(popis)popis.hidden=false;
+        for(let i=vsechny.length-1;i>=0;i--){
+          vsechny[i].hidden=true;schovano++;
+          vic.textContent='+'+schovano;
+          vic.title=vsechny.filter(t=>t.hidden).map(t=>t.textContent.trim()).join(', ');
+          if(vejdeSe())break;
+        }
+        // Pořád se to nevejde? Jde stranou i popisek „silný proti" — na jeden
+        // řádek se to vejít MUSÍ, dvouřádkový titulek posouvá celý detail.
+        if(!vejdeSe()&&popis){popis.hidden=true;vic.title='silný proti: '+vic.title}
+      };
+      requestAnimationFrame(srovnat);
+      if(window.ResizeObserver){const ro=new ResizeObserver(()=>{if(obal.isConnected)srovnat();else ro.disconnect()});ro.observe(titulek)}
+    }
     pokryti.closest('details')?.remove();
   }
   const hostitel=container.closest('#atlasModal, .atlas-box-rozbor')||document;
