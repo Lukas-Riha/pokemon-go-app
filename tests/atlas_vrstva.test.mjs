@@ -1354,6 +1354,100 @@ check("…a dá se na něj kliknout i přes vzhledovou vrstvu",
 check("…a u obyčejné hlášky není vidět textové pole",
   dOkno.vstupSkryty === true, JSON.stringify(dOkno));
 
+// --------------------------------------- detail: bubliny, Esc, přidávání
+// Drobnosti, které se po předchozí várce rozbily nebo chyběly: popisná věta
+// pod nadpisem stránky, dvě bubliny o tomtéž u útoků, Escape zavírající
+// rovnou detail (a nechávající viset rozbalenou nabídku) a okno „Přidat
+// pokémona", které vypadalo úplně jinak než úprava kusu.
+console.log("\n7) Detail: bubliny, Escape a přidávání");
+const pDr = await otevri(820);
+const dDr = await pDr.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = { podnadpisy: [] };
+  for (const g of ["home", "roster", "teams", "invest", "events", "settings"]) {
+    A.go(g); await cekej(250);
+    out.podnadpisy.push(document.querySelectorAll("#atlasHeading p").length);
+  }
+  A.go("roster"); A.refresh(); await cekej(500);
+
+  // kus bez útoků: jedna bublina u celé sekce, vykřičník svoji nemá
+  const bez = P.getRows().filter((r) => !r.fastMove || !r.charged1)[0];
+  A.openDetail(bez.id); await cekej(1400);
+  const box = document.querySelector(".atlas-drawer .atlas-ident-utoky");
+  out.utokyTip = box ? box.getAttribute("data-tip") : "";
+  out.vykricnikTitle = (document.querySelector(".atlas-drawer .atlas-utoky-chybi") || {}).title || "";
+
+  // štítky verdiktu drží jeden řádek, zbytek je pod „+N"
+  const radek = document.querySelector("#atlasDetailContent .dv-radek");
+  out.radku = radek ? radek.getAttribute("data-radku") : null;
+  out.poEvo = /po evo/.test(radek ? radek.textContent : "");
+  out.chipRadku = radek
+    ? new Set([...radek.querySelectorAll(".dv-chip:not([hidden])")].map((e) => e.offsetTop)).size : null;
+  out.vic = radek ? (radek.querySelector(".dv-vic") || {}).textContent : "";
+  out.skryto = radek ? radek.querySelectorAll(".dv-chip[hidden]:not(.dv-vic)").length : 0;
+
+  // číslo statu sedí u pruhu, ne u kraje buňky
+  const bar = document.querySelector(".atlas-drawer .atlas-ident-stats .d-bar");
+  if (bar) {
+    const track = bar.querySelector(".d-bar-track").getBoundingClientRect();
+    const val = bar.querySelector(".d-bar-v").getBoundingClientRect();
+    out.kPruhu = Math.round(val.left - track.right);
+    out.zaCislem = Math.round(bar.getBoundingClientRect().right - val.right);
+  }
+
+  // Escape po vrstvách: nejdřív úprava, teprve pak detail
+  window.AtlasEditRow(P.getRows()[0].id); await cekej(500);
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(350);
+  out.poPrvnimEsc = { editor: !!document.getElementById("atlasRowEditor"),
+    detail: !document.getElementById("atlasModal").hidden };
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(350);
+  out.poDruhemEsc = !document.getElementById("atlasModal").hidden;
+
+  // odstranění kusu zavře i detail
+  A.openDetail(P.getRows()[0].id); await cekej(900);
+  const pred = P.getRows().length;
+  window.AtlasSmazatKus(P.getRows()[0].id); await cekej(350);
+  document.getElementById("appOknoOk").click(); await cekej(600);
+  out.smazano = pred - P.getRows().length;
+  out.detailZavreny = document.getElementById("atlasModal").hidden;
+
+  // „Přidat pokémona": stejný výběr útoků, žádné pole o gymu
+  const btn = [...document.querySelectorAll("button")].filter((b) => /Přidat pokémona/i.test(b.textContent))[0];
+  if (btn) btn.click();
+  await cekej(500);
+  const jm = document.getElementById("rbName");
+  if (jm) { jm.value = "Machamp"; jm.dispatchEvent(new Event("change", { bubbles: true })); }
+  await cekej(900);
+  const rb = document.getElementById("rucniBox");
+  const hod = document.getElementById("rbHod");
+  out.pridat = { vyberu: rb ? rb.querySelectorAll(".atlas-utok-vyber").length : 0,
+    gymSkryty: hod && hod.closest("label") ? !!hod.closest("label").hidden : null };
+  return out;
+});
+await pDr.close();
+check("pod nadpisem stránky už není popisná věta",
+  dDr.podnadpisy.every((n) => n === 0), JSON.stringify(dDr.podnadpisy));
+check("kus bez útoků má jednu bublinu u celé sekce",
+  /Útoky nemáš vyplněné/.test(dDr.utokyTip) && /Doplň útoky v úpravě pokémona/.test(dDr.utokyTip)
+    && dDr.vykricnikTitle === "", JSON.stringify({ tip: dDr.utokyTip, v: dDr.vykricnikTitle }));
+check("štítky verdiktu drží jeden řádek a zbytek je pod „+N“",
+  dDr.radku === "1" && dDr.chipRadku === 1 && (dDr.skryto === 0 || /^\+\d+$/.test(dDr.vic)),
+  JSON.stringify({ radku: dDr.radku, chipRadku: dDr.chipRadku, vic: dDr.vic, skryto: dDr.skryto }));
+check("ve štítku verdiktu už nestojí „po evo“", dDr.poEvo === false, String(dDr.poEvo));
+check("číslo statu sedí u pruhu a mezera je až za ním",
+  dDr.kPruhu >= 0 && dDr.kPruhu <= 10 && dDr.zaCislem >= dDr.kPruhu * 2,
+  JSON.stringify({ kPruhu: dDr.kPruhu, zaCislem: dDr.zaCislem }));
+check("Escape zavře nejdřív úpravu, až potom detail",
+  dDr.poPrvnimEsc.editor === false && dDr.poPrvnimEsc.detail === true && dDr.poDruhemEsc === false,
+  JSON.stringify({ prvni: dDr.poPrvnimEsc, druhy: dDr.poDruhemEsc }));
+check("po odstranění kusu se detail zavře",
+  dDr.smazano === 1 && dDr.detailZavreny === true, JSON.stringify(dDr));
+check("„Přidat pokémona“ má stejný výběr útoků a nemá pole o gymu",
+  dDr.pridat.vyberu === 3 && dDr.pridat.gymSkryty === true, JSON.stringify(dDr.pridat));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

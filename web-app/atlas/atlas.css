@@ -1058,3 +1058,11 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 .atlas-test #rucniBox .actions{display:flex;gap:10px;margin-top:14px}
 .atlas-test #rucniBox .actions button{min-height:38px;border-radius:9px;padding:0 14px}
 .atlas-test #rucniBox .actions button.primary{background:#195be8;border-color:#195be8;color:#fff}
+/* Claude 22. 9. (10): čísla statů a IV sedí u pruhu, za nimi je vzduch. */
+/* Dřív bylo číslo zarovnané doprava na pevných 36 px: od pruhu daleko,
+   od kraje buňky natěsno. Teď hugne pruh a mezera je až za ním. */
+.atlas-test .atlas-ident-stats .d-bar{gap:7px;padding-right:18px}
+.atlas-test .atlas-ident-stats .d-bar-v{width:auto;min-width:24px;text-align:left}
+/* Claude 22. 9. (11): jeden řádek štítků verdiktu je opravdu jeden. */
+.atlas-test .d-duvody .dv-radek[data-radku="1"],
+.atlas-test .dv-radek[data-radku="1"]{flex-wrap:nowrap;overflow:hidden;row-gap:0}

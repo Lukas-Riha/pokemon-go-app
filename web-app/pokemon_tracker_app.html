@@ -13005,7 +13005,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var text, tip, trida = "dv-pod", styl = "";
       if (x.kusId !== undefined) kusId = x.kusId;
       if (x.druh === "pvp") {
-        text = x.typ + " #" + x.rank + (x.poEvoluci ? " po evo" : "");
+        text = x.typ + " #" + x.rank;
         trida += " dv-liga";
         var uvod = x.duvod === "limit"
           ? "Druh je #" + x.rank + (x.poEvoluci ? " (až jako " + x.jmeno + ")" : "")
@@ -13024,8 +13024,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + '<div class="tip-pozn">' + (x.typ === "ML" ? "Master League: IV kusu proti prahu vysokého IV."
             : "Práh platí pro #" + x.rank + " — čím výš druh v lize je, tím nižší.") + "</div>";
       } else if (x.druh === "raid" || x.druh === "gym") {
-        text = (x.druh === "gym" ? "Gym" : x.typ) + " " + x.poradi + "/" + x.celkem
-          + (x.poEvoluci ? " po evo" : "");
+        /* Poznámka o evoluci se ze štítku přesunula sem — štítek se tím
+           zkrátil natolik, že se vejde na jeden řádek. */
+        text = (x.druh === "gym" ? "Gym" : x.typ) + " " + x.poradi + "/" + x.celkem;
         trida += x.druh === "gym" ? " dv-role" : " dv-raid";
         if (x.druh === "raid" && TYPE_COLORS[x.typ]) styl = ' style="border-color:' + TYPE_COLORS[x.typ] + '"';
         var drzi = drziteleSlotu(x.druh === "gym" ? "gym" : "raid:" + x.typ);

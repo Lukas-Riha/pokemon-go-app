@@ -16693,15 +16693,17 @@ try {
       const chip = [...d.querySelectorAll(".dv-pod")].find((e) => e.textContent.indexOf(pod.druh === "gym" ? "Gym " : pod.typ + " ") === 0);
       if (chip) { out.podCarou = chip.getAttribute("data-tip") || ""; out.podCarouKus = r.pokemon + " " + r.cp; }
     });
-    // a u držitele slotu, který ho drží až po evoluci, to stojí v seznamu
+    // a u držitele slotu, který ho drží až po evoluci, to stojí v bublině
+    // (ve štítku ne — tam by se ten text nevešel na řádek)
     out.drzitel = "";
+    out.drzitelText = "";
     rows.forEach((r) => {
       if (out.drzitel) return;
       const d2 = document.createElement("div");
       d2.innerHTML = P.atlasDuvody(comp[r.id]) || "";
-      const chip2 = [...d2.querySelectorAll(".dv-chip")].find((e) => /po evo/.test(e.textContent)
-        && /(až jako|po evoluci na)/.test(e.getAttribute("data-tip") || ""));
-      if (chip2) out.drzitel = chip2.getAttribute("data-tip");
+      const chip2 = [...d2.querySelectorAll(".dv-chip")].find((e) =>
+        /(až jako|po evoluci na)/.test(e.getAttribute("data-tip") || ""));
+      if (chip2) { out.drzitel = chip2.getAttribute("data-tip"); out.drzitelText = chip2.textContent; }
     });
     return out;
   });
@@ -16719,8 +16721,9 @@ try {
   check("u kusu pod čarou stojí u procenta, že platí až po evoluci",
     /po evoluci na /.test(s258.podCarou),
     s258.podCarouKus + " " + s258.podCarou.replace(/<[^>]+>/g, " ").slice(0, 200));
-  check("…a u držitele slotu je to v seznamu taky",
-    /(až jako|po evoluci na) \w/.test(s258.drzitel), s258.drzitel.replace(/<[^>]+>/g, " ").slice(0, 200));
+  check("…a u držitele slotu to stojí v bublině, ne ve štítku",
+    /(až jako|po evoluci na) \w/.test(s258.drzitel) && !/po evo/.test(s258.drzitelText),
+    s258.drzitelText + " | " + s258.drzitel.replace(/<[^>]+>/g, " ").slice(0, 200));
 
   // ---------------------------------------------------------------- 259
   // Purifikovat je jen verdikt (zeleně, text v bublině), čtvrtá akce
