@@ -23,4 +23,8 @@ def prepare_atlas_test(html):
                 "STOP: engine uz nenabizi %s, na kterem stoji vzhledova vrstva.\n"
                 "      Viz docs/ATLAS_KONTRAKT.md, oddil API pro vzhledovou vrstvu." % cast)
     html = re.sub(r'''(["'])pgo_''', r'\1pgo_test_', html)
-    return html.replace("__pgo_profily_zalohy", "__pgo_test_profily_zalohy")
+    html = html.replace("__pgo_profily_zalohy", "__pgo_test_profily_zalohy")
+    # Podle téhle vlajky si vzhledová vrstva rozsvítí testovací popisky
+    # (LOKÁLNÍ TEST, TESTOVACÍ VERZE). V produkci vlajka není, popisky
+    # zůstanou schované — a `--vzhled` tím projde kontrolou.
+    return html.replace("<body", "<script>window.__ATLAS_TEST_BUILD=true;</script><body", 1)

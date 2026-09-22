@@ -7,6 +7,7 @@ Spusť po každé změně dat:
     python tools/sync_reference.py
 """
 import json
+import re
 import datetime
 import sys
 from pathlib import Path
@@ -198,8 +199,12 @@ else:
         # Pojistka proti tomu, aby na Pages odešla appka, která si sahá do
         # testovacího úložiště nebo se sama označuje za testovací verzi.
         # Bez ní by si uživatel otevřel produkci a nenašel v ní svůj roster.
+        # Popisek označený `data-atlas-test-badge` je schovaný a rozsvítí ho
+        # jen testovací build (viz atlas_test_hooks.py) — ten kontrole vadit
+        # nemusí. Vadí popisek, který by byl v produkci vidět.
+        bez_schovanych = re.sub(r"<[^<>]*data-atlas-test-badge[^<>]*>[^<>]*</span>", "", text)
         spatne = [z for z in ("pgo_test_", "LOKÁLNÍ TEST", "TESTOVACÍ VERZE")
-                  if z in text]
+                  if z in bez_schovanych]
         if spatne:
             raise SystemExit(
                 "STOP: vzhledova vrstva by do produkce vzala: "
