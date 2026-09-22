@@ -1226,6 +1226,85 @@ check("editor zamkne plachtu, lícuje s hlavičkou a je přilepený",
 check("značky a „silný proti“ zůstanou na jednom řádku i na úzkém okně",
   dRadek.jedenRadek === true && /^\+\d+$/.test(dRadek.vic), JSON.stringify(dRadek));
 
+// ------------------- vzhled kusu, útoky po očištění, panel čištění, Přehled
+console.log("\n11) Vzhled kusu, útoky po očištění, panel čištění");
+const pVz = await otevri(1600, [
+  { pokemon: "Machamp", cp: 3000, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13,
+    forma: "Shadow", fastMove: "Counter", charged1: "Frustration" },
+  { pokemon: "Pyroar", cp: 1800, level: 25, ivAtk: 12, ivDef: 12, ivSta: 12, pohlavi: "Samice" },
+  { pokemon: "Azumarill", cp: 1500, level: 30, ivAtk: 0, ivDef: 15, ivSta: 15,
+    shiny: "Ano", scanDate: "2026-09-21 19:30" },
+  { pokemon: "Eevee", cp: 900, level: 20, ivAtk: 14, ivDef: 15, ivSta: 15,
+    dynamax: "Ano", cute: "Ano" },
+]);
+const dVz = await pVz.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  const adresa = (jm) => {
+    const r = P.getRows().find((x) => x.pokemon === jm);
+    const m = /src="([^"]+)"/.exec(P.atlasObrazek(r) || "");
+    return m ? m[1] : "";
+  };
+  out.shiny = /\.s\.icon\.png$/.test(adresa("Azumarill"));
+  out.zena = /\.g2\.icon\.png$/.test(adresa("Pyroar"));
+  // útoky po očištění
+  A.openDetail(P.getRows().find((r) => r.pokemon === "Machamp").id);
+  await cekej(1300);
+  out.sestavy = [...document.querySelectorAll(".atlas-drawer .atlas-sestava")].map((e) =>
+    ((e.querySelector(".atlas-sestava-kdy") || {}).textContent || "") + ": "
+    + [...e.querySelectorAll(".d-move-jm")].map((x) => x.textContent).join(" + "));
+  // evoluční řada v detailu bez rámečku
+  const evo = document.querySelector("#atlasDetailContent .atlas-evolution-column");
+  const cs = getComputedStyle(evo);
+  out.evoBezRamecku = parseFloat(cs.borderTopWidth) === 0
+    && (cs.backgroundColor === "rgba(0, 0, 0, 0)" || cs.backgroundColor === "transparent");
+  // pohlaví v úpravě kusu
+  window.AtlasEditRow(P.getRows().find((r) => r.pokemon === "Pyroar").id);
+  await cekej(500);
+  out.pohlavi = (document.querySelector("#atlasRowEditor select[name=pohlavi]") || {}).value || "";
+  document.getElementById("atlasRowEditor").querySelector("[data-editor-cancel]").click();
+  await cekej(300);
+  // Přehled: karta posledního skenu
+  A.go("home");
+  await cekej(900);
+  out.karta = /Azumarill/.test((document.querySelector(".atlas-posledni-sken") || {}).textContent || "");
+  A.go("roster"); A.refresh();
+  await cekej(700);
+  // panel čištění: lišta akcí celá vidět, verdikt má pevnou výšku
+  P.boxOtevrit();
+  await cekej(1100);
+  const ok = document.getElementById("appOknoOk");
+  if (ok && !document.getElementById("appOkno").hidden) ok.click();
+  await cekej(400);
+  const vyska = [];
+  for (let i = 0; i < 3; i++) {
+    const pruh = document.querySelector("#boxMode .atlas-box-rozbor>.hra-pruh");
+    const telo = document.getElementById("bmBody");
+    if (pruh && telo) {
+      out.pruhCely = Math.round(pruh.getBoundingClientRect().top)
+        >= Math.round(telo.getBoundingClientRect().top) - 1;
+    }
+    const v = document.querySelector("#boxMode .atlas-verdict-radek");
+    if (v) vyska.push(Math.round(v.getBoundingClientRect().height));
+    P.boxRozhodnout("keep");
+    await cekej(250);
+  }
+  out.verdiktStejny = new Set(vyska).size === 1;
+  out.vysky = vyska;
+  P.boxZavritNatvrdo();
+  return out;
+});
+await pVz.close();
+check("shiny a samice mají vlastní obrázek", dVz.shiny === true && dVz.zena === true, JSON.stringify(dVz));
+check("shadow kus ukáže i útoky po očištění (Return místo Frustration)",
+  dVz.sestavy.some((x) => /po očištění/.test(x) && /Return/.test(x)), JSON.stringify(dVz.sestavy));
+check("evoluční řada v detailu je bez rámečku", dVz.evoBezRamecku === true, String(dVz.evoBezRamecku));
+check("pohlaví se dá nastavit v úpravě kusu", dVz.pohlavi === "Samice", dVz.pohlavi);
+check("poslední skenovaný kus je i na Přehledu", dVz.karta === true, String(dVz.karta));
+check("lišta akcí v čištění se neořezává", dVz.pruhCely === true, String(dVz.pruhCely));
+check("…a verdikt má pořád stejnou výšku", dVz.verdiktStejny === true, JSON.stringify(dVz.vysky));
+
 // ----------------------------------------------- hlášky musí být vidět
 // Okno s hláškou appky stojí v HTML uvnitř karty rosteru — a tu vzhledová
 // vrstva schovává. Hláška pak byla „otevřená", ale neviditelná a neklikatelná:

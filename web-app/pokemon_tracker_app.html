@@ -5711,6 +5711,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // kusy i vlastní připojené soubory (záloha, sdílení) — viz klicHandle níž.
   var PROFILES_ENABLED = true;
 
+  /* Pohlaví se ve skenech nevyskytuje; je to ruční údaj kvůli obrázku. */
   var SETTING_IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
@@ -12171,21 +12172,51 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
   }
 
+  /** Změřené posazení spritu pro danou adresu, pokud ho už appka zná. */
+  function ramecekProUrl(url) {
+    if (!url) return null;
+    if (spriteRamecky === null) {
+      try {
+        var ulozene = localStorage.getItem("pgo_sprite_ramecek") || "{}";
+        spriteRamecky = ulozene.length > SPRITE_STROP ? {} : JSON.parse(ulozene);
+      } catch (e) { spriteRamecky = {}; }
+    }
+    return spriteRamecky[url] || null;
+  }
+
   function obrazekHtml(name, dex, trida, shiny) {
     var zaloha = spriteId(name, dex);
     var herni = herniObrazek(name, dex);
     var pixel = zaloha ? SPRITE_URL + zaloha + ".png" : "";
     // Shiny obrázek se jmenuje stejně, jen má před příponou „.s". Když ho
     // mirror nemá, spadne se na běžnou herní ikonu a teprve pak na sprite.
-    var trblet = (shiny && herni) ? herni.replace(".icon.png", ".s.icon.png") : "";
-    var src = trblet || herni || pixel;
+    var zena = shiny && typeof shiny === "object" ? !!shiny.zena : false;
+    var jeShiny = shiny && typeof shiny === "object" ? !!shiny.shiny : !!shiny;
+    var varianty = [];
+    if (herni) {
+      if (zena && jeShiny) varianty.push(herni.replace(".icon.png", ".g2.s.icon.png"));
+      if (jeShiny) varianty.push(herni.replace(".icon.png", ".s.icon.png"));
+      if (zena) varianty.push(herni.replace(".icon.png", ".g2.icon.png"));
+      varianty.push(herni);
+    }
+    if (pixel) varianty.push(pixel);
+    var src = varianty[0] || "";
     if (!src) return "";
-    var nahradni = [trblet ? herni : "", pixel].filter(function (x) { return !!x; }).join("|");
+    var nahradni = varianty.slice(1).join("|");
     // Obrázek je do načtení průhledný. Když první adresa neexistuje, prohlížeč
     // na okamžik vykreslí rozbitý rámeček a teprve pak se spustí onerror —
     // a to probliknutí je vidět. Takhle se prostě nic neukáže, dokud není co.
+    // Absolutní adresa — v paměti se posazení drží pod tou, kterou vrátí
+    // `img.src`, ne pod tou, co je ve značce.
+    var plna = src;
+    try { plna = new URL(src, location.href).href; } catch (e) { /* nevadí */ }
+    var ram = ramecekProUrl(plna) || ramecekProUrl(src);
+    var styl = ram
+      ? "opacity:0;transform:translate(" + ram.x + "%, " + ram.y + "%) scale(" + ram.s + ")"
+      : "opacity:0";
     return '<img class="' + (trida || "") + '" loading="lazy" alt="" src="' + src + '"'
-      + ' style="opacity:0;transition:opacity .12s"'
+      + ' style="' + styl + '"'
+      + (ram ? ' data-vystredeno="1"' : "")
       + ' data-zaloha="' + nahradni + '"'
       + ' onload="this.style.opacity=1"'
       + ' onerror="var z=(this.dataset.zaloha||&quot;&quot;).split(&quot;|&quot;)'
@@ -12195,8 +12226,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   function spriteHtml(b) {
-    var jeShiny = !!(b && (b.shiny || (b.row && b.row.shiny === "Ano")));
-    return obrazekHtml(b && b.row ? b.row.pokemon : "", b ? b.dex : null, "d-sprite", jeShiny);
+    var r = b && b.row ? b.row : null;
+    var vzhled = { shiny: !!(b && (b.shiny || (r && r.shiny === "Ano"))),
+      zena: !!(r && String(r.pohlavi || "").toLowerCase().indexOf("sam") === 0
+        && String(r.pohlavi).toLowerCase() !== "samec") };
+    return obrazekHtml(r ? r.pokemon : "", b ? b.dex : null, "d-sprite", vzhled);
   }
 
   /**
@@ -26360,6 +26394,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      */
     atlasImage: function (jmeno, trida) {
       return obrazekHtml(jmeno, dexEntry(jmeno), trida || "");
+    },
+    /** Obrázek pro konkrétní KUS — zná shiny i pohlaví, takže vrátí variantu,
+     *  kterou zapečený obrázek druhu nemá. */
+    atlasObrazek: function (r, trida) {
+      if (!r || !r.pokemon) return "";
+      return obrazekHtml(r.pokemon, dexEntry(r.pokemon), trida || "", {
+        shiny: r.shiny === "Ano",
+        zena: String(r.pohlavi || "").toLowerCase() === "samice"
+      });
     },
 
     /**

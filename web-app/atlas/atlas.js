@@ -64,7 +64,16 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const fallback='data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="43" fill="#eaf0fa" stroke="#9bb2d4" stroke-width="3"/><path d="M17 60h86" stroke="#9bb2d4" stroke-width="3"/><circle cx="60" cy="60" r="12" fill="white" stroke="#9bb2d4" stroke-width="3"/></svg>');
   const art=r=>{const key=P.dexKeyOf(r.pokemon);if(/^(shellos|gastrodon)/i.test(key)){const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')||fallback}return window.ATLAS_ART[key]||(/^pumpkaboo/i.test(r.pokemon)?window.ATLAS_ART['pumpkaboo-average']:null)||(/^shellos east sea/i.test(r.pokemon)?window.ATLAS_ART['shellos-eastsea']:null)||(()=>{const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')})()||fallback;};
   document.addEventListener('error',e=>{const img=e.target;if(!img.matches?.('img[data-atlas-pokemon]'))return;const t=document.createElement('template');t.innerHTML=P.atlasImage(img.dataset.atlasPokemon);const native=t.content.querySelector('img'),urls=[native?.getAttribute('src'),...String(native?.dataset.zaloha||'').split('|'),fallback].filter(Boolean);const tried=JSON.parse(img.dataset.atlasTried||'[]');tried.push(img.src);img.dataset.atlasTried=JSON.stringify(tried);const next=urls.find(url=>!tried.includes(url));if(next)img.src=next;},true);
-  const monImage=(r,extra='')=>`<img src="${art(r)}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy" ${extra}>`;
+  const monImage=(r,extra='')=>{
+    // Shiny a samice mají u PokeMiners vlastní soubor; zapečený obrázek druhu
+    // variantu nezná, takže se u nich vezme značka přímo z enginu.
+    if((r.shiny==='Ano'||String(r.pohlavi||'').toLowerCase()==='samice')&&P.atlasObrazek){
+      const html=P.atlasObrazek(r);
+      if(html){const t=document.createElement('template');t.innerHTML=html;const im=t.content.querySelector('img');
+        if(im){im.setAttribute('alt',r.pokemon||'');im.dataset.atlasPokemon=r.pokemon||'';if(extra)im.setAttribute('data-extra','1');return im.outerHTML}}
+    }
+    return `<img src="${art(r)}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy" ${extra}>`;
+  };
   window.AtlasMonImage=monImage;
   const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář'],['catchCard','Co chytat']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
   const nav=[['home','home','Přehled'],['roster','box','Pokémoni'],['teams','team','Týmy'],['invest','invest','Investice'],['events','calendar','Události']];
@@ -120,7 +129,25 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   list.innerHTML=`${missingOnly?'<div class="atlas-small-note">Pouze kusy bez úplných útoků · <button class="atlas-mini-btn" data-atlas-action="reset-list">Zrušit filtr útoků</button></div>':''}${noveHtml.join('')||'<div class="atlas-empty">Filtrům neodpovídá žádný Pokémon. Zkus zrušit hledání nebo změnit filtr.</div>'}`;list.scrollTop=previousIds===nextIds?scroll:0;
  if(previousIds!==nextIds&&first.size&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const viewport=list.getBoundingClientRect();list.querySelectorAll('.atlas-roster-tile').forEach(el=>{const before=first.get(el.dataset.atlasDetail),after=el.getBoundingClientRect();if(after.bottom<viewport.top||after.top>viewport.bottom)return;if(before&&before.bottom>=viewport.top&&before.top<=viewport.bottom){const x=before.left-after.left,y=before.top-after.top;if(x||y)el.animate([{transform:`translate(${x}px,${y}px)`},{transform:'translate(0,0)'}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'})}else el.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:200,easing:'ease-out'})})}
  if(P.srovnejDuvody)P.srovnejDuvody(list);const sortState=P.snapshot(),sortValue=sortState.sortKey+':'+sortState.sortDir;$('#atlasSort').value=[...$('#atlasSort').options].some(o=>o.value===sortValue)?sortValue:'';}
-  function renderHome(){if(window.AtlasRenderHome)window.AtlasRenderHome(home);}
+  function renderHome(){if(window.AtlasRenderHome)window.AtlasRenderHome(home);posledniSkenKarta();}
+  /* Poslední naskenovaný kus na Přehledu: štítek v rosteru se mezi stovkami
+     dlaždic hledá dlouho, tohle je odpověď na „odkud mám dál skenovat". */
+  function posledniSkenKarta(){
+    home.querySelector('.atlas-posledni-sken')?.remove();
+    const c=P.getComputed(),rows=P.getRows();
+    const kus=rows.find(r=>c[r.id]&&c[r.id].posledniSken);
+    if(!kus)return;
+    const karta=document.createElement('section');karta.className='atlas-posledni-sken';
+    karta.innerHTML=`<h3>Poslední skenovaný kus</h3>
+      <div class="atlas-posledni-sken-telo">
+        ${window.AtlasMonImage(kus)}
+        <div><b>${esc(kus.pokemon)}</b><span>${esc(kus.cp?kus.cp+' CP':'')}${kus.scanDate?' · sken '+esc(kus.scanDate):''}</span>
+        <p>Ve hře pokračuj od něj — co je za ním, appka ještě nevidí.</p></div>
+        <button type="button" class="atlas-mini-btn">Otevřít kus</button>
+      </div>`;
+    karta.querySelector('button').addEventListener('click',()=>{go('roster');setTimeout(()=>openDetail(kus.id),260)});
+    home.append(karta);
+  }
   function refresh(){cache={rows:P.getRows(),computed:P.getComputed()};$('#atlasProfile').textContent=P.getProfile();$('#atlasCount').textContent=cache.rows.length+' Pokémonů · lokální profil';renderRoster();if(view==='home')renderHome();}
   // „48.0“ a „14.0“ ze skenu jako 48 a 14; IV procento (nebo rozsah ze skenu) za hodnotami IV.
   const cisloKusu=v=>v===''||v==null?'?':(isNaN(Number(v))?String(v):String(Number(v)));
@@ -280,7 +307,8 @@ globalThis.AtlasBudget = (() => {
     const form=document.createElement('form');form.id='atlasRowEditor';form.className='atlas-row-editor';
     const fields=[['pokemon','Pokémon','text'],['cp','CP','number',10,99999,1],['level','Level','number',1,50,.5],['ivAtk','IV útok','number',0,15,1],['ivDef','IV obrana','number',0,15,1],['ivSta','IV HP','number',0,15,1],['fastMove','Rychlý útok','text'],['charged1','Nabitý útok 1','text'],['charged2','Nabitý útok 2','text']];
     const forms=[...new Set([row.forma||'Normal','Normal','Lucky','Shadow','Purified'])];
-    form.innerHTML='<div class="atlas-eyebrow">UPRAVUJEŠ JEDEN KUS</div><h3>'+esc(row.pokemon)+'</h3><div class="atlas-editor-grid">'+fields.map(([key,label,type,min,max,step])=>`<label>${label}<input name="${key}" type="${type}" value="${esc(row[key])}" ${min!=null?`min="${min}" max="${max}" step="${step}"`:''} ${key==='pokemon'?'required':''}></label>`).join('')+'<label>Stav / forma<select name="forma">'+forms.map(f=>`<option value="${esc(f)}" ${f===(row.forma||'Normal')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+'<label class="atlas-editor-note">Poznámka<textarea name="note">'+esc(row.note)+'</textarea></label></div>'+'<div class="atlas-editor-actions"><button type="submit" class="atlas-cta">Uložit</button><button type="button" class="atlas-mini-btn" data-editor-cancel>Zrušit</button><p role="status" id="atlasEditorStatus"></p></div>';
+    const pohlavi=[...new Set([row.pohlavi||'—','—','Samec','Samice'])];
+    form.innerHTML='<div class="atlas-eyebrow">UPRAVUJEŠ JEDEN KUS</div><h3>'+esc(row.pokemon)+'</h3><div class="atlas-editor-grid">'+fields.map(([key,label,type,min,max,step])=>`<label>${label}<input name="${key}" type="${type}" value="${esc(row[key])}" ${min!=null?`min="${min}" max="${max}" step="${step}"`:''} ${key==='pokemon'?'required':''}></label>`).join('')+'<label>Stav / forma<select name="forma">'+forms.map(f=>`<option value="${esc(f)}" ${f===(row.forma||'Normal')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+'<label>Pohlaví<select name="pohlavi">'+pohlavi.map(f=>`<option value="${f==='—'?'':esc(f)}" ${f===(row.pohlavi||'—')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+'<label class="atlas-editor-note">Poznámka<textarea name="note">'+esc(row.note)+'</textarea></label></div>'+'<div class="atlas-editor-actions"><button type="submit" class="atlas-cta">Uložit</button><button type="button" class="atlas-mini-btn" data-editor-cancel>Zrušit</button><p role="status" id="atlasEditorStatus"></p></div>';
     // Útoky se vybírají stejným výběrem jako ve Vyhledávání (typ, síla, ★ elitní) — engine __pgoUtoky.vyber na dočasném objektu; hodnota jde do skrytého pole formuláře. Při změně druhu se výběr postaví znovu.
     const utoky={pokemon:row.pokemon,fastMove:row.fastMove||'',charged1:row.charged1||'',charged2:row.charged2||'',__docasny:true};const vyberUtoku=()=>{if(!window.__pgoUtoky)return;utoky.pokemon=form.elements.pokemon.value;['fastMove','charged1','charged2'].forEach(k=>{const input=form.elements[k];let obal=form.querySelector('[data-utok-obal="'+k+'"]');if(!obal){obal=document.createElement('div');obal.className='atlas-utok-vyber';obal.dataset.utokObal=k;input.after(obal);input.type='hidden'}obal.innerHTML='';window.__pgoUtoky.vyber(obal,utoky,k,()=>{input.value=utoky[k]||''})})};vyberUtoku();form.elements.pokemon.addEventListener('change',vyberUtoku);
     const baseline=new Map([...form.elements].filter(e=>e.name).map(e=>[e.name,e.type==='checkbox'?e.checked:e.value]));
@@ -527,6 +555,14 @@ globalThis.AtlasBudget = (() => {
     if(why)why.remove();
     // Nejdřív co kus doopravdy má, pak co by mít měl.
     if(row.fastMove&&row.charged1)pridej('má',[row.fastMove,row.charged1,row.charged2].filter(Boolean),'Útoky, které kus má ve hře.');
+    // Po očištění se Frustration mění na Return — jiný útok si shadow kus
+    // nechá. Ukazuje se jen u shadow kusů, kterých se to týká.
+    if(row.forma==='Shadow'&&row.fastMove&&row.charged1){
+      const po=[row.fastMove,row.charged1,row.charged2].filter(Boolean)
+        .map(x=>/frustration/i.test(String(x))?'Return':x);
+      if(po.some((x,i)=>x!==[row.fastMove,row.charged1,row.charged2].filter(Boolean)[i]))
+        pridej('po očištění',po,'Co bude mít po očištění: Frustration se mění na Return (jde přeučit jen očistou nebo během akce Team GO Rocket).');
+    }
     if(sestavySekce){
       [...sestavySekce.querySelectorAll('.d-sestavy > div')].forEach(d=>{
         const h=(d.querySelector('.d-role-h')||{}).textContent||'',v=(d.querySelector('.d-role-v')||{}).textContent||'',pop=(d.querySelector('.d-role-p')||{}).textContent||'';

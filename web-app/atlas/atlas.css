@@ -723,10 +723,9 @@ html[data-theme=dark] .atlas-test[data-atlas-view=home]{--page:#040f20;--surface
 #atlasDetailContent .atlas-evolution-column .d-evo{border:0}
 /* Šest útoků (má + teď + po evoluci) se do hlavičky nevešlo a poslední řádek
    se ořízl. Hlavička proto roste podle obsahu — a nikdy není nižší než dřív,
-   takže ikona s jménem zůstává na svém místě. */
-   Minimum je o kousek vyšší, než co potřebuje běžný kus (154 px u kusu
-   s jednou nabídnutou sestavou) — jinak by hlavička o ty čtyři pixely
-   poskakovala při listování mezi kusy. */
+   takže ikona s jménem zůstává na svém místě. Minimum je o kousek vyšší,
+   než co potřebuje běžný kus (154 px u kusu s jednou nabídnutou sestavou) —
+   jinak by hlavička o ty čtyři pixely poskakovala při listování. */
 .atlas-test .atlas-drawer .atlas-detail-identity{height:auto;min-height:210px}
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-utoky{height:auto;min-height:160px;max-height:none;overflow:visible}
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{height:auto;min-height:160px}
@@ -892,3 +891,46 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
   background:color-mix(in srgb,var(--status-warning) 10%,var(--surface-1));padding:14px 16px;gap:12px}
 .atlas-test .zal-warn button{border-radius:9px;min-height:40px}
 .atlas-test .zal-warn button.primary{background:#195be8;border-color:#195be8;color:#fff}
+/* Claude 22. 9. (2): lišta akcí, pevná výška verdiktu, responzivní hlavička. */
+/* Lišta akcí se vešla jen taktak a shora se ořezávala. Tlačítka jsou menší,
+   drží svou velikost a řadí se vedle sebe — ne že se roztahují přes celou
+   šířku sloupce. */
+.atlas-test .atlas-box-rozbor>.hra-pruh.atlas-hra-nad-evoluci{margin-top:-32px;justify-content:flex-end;gap:5px}
+.atlas-test .atlas-box-rozbor>.hra-pruh.atlas-hra-nad-evoluci .hra-btn{flex:0 0 auto;min-height:26px;height:26px;
+  padding:0 10px;font-size:11px;line-height:24px;white-space:nowrap}
+/* Verdikt a doporučený krok mají v čištění pevnou výšku: dva řádky štítků
+   je běžný stav a panel se kvůli nim nesmí přeskládat. */
+.atlas-test .atlas-box-rozbor .atlas-verdict-radek{min-height:120px}
+.atlas-test .atlas-box-rozbor .atlas-verdict-radek>.d-verdict-row,
+.atlas-test .atlas-box-rozbor .atlas-verdict-radek .d-verdict,
+.atlas-test .atlas-box-rozbor .atlas-krok .d-roles-akce>.d-role{height:120px;overflow:hidden}
+/* V užším panelu čištění nemusí mít typ tak širokou rezervu. */
+.atlas-test .atlas-box-rozbor .detail-title .d-type{min-width:84px}
+/* Hlavička detailu se v užším okně zalomí místo toho, aby se útoky ořezaly. */
+.atlas-test .atlas-drawer .atlas-detail-identity{flex-wrap:wrap}
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-text{flex:1 1 240px;min-width:0}
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{flex:1 1 320px;min-width:0}
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-utoky{flex:1 1 300px;min-width:0}
+/* Evoluční řada v detailu bez rámečku: různé druhy mají různě dlouhou řadu
+   a poloprázdný box vypadal jako chyba. Zůstal nadpis a pod ním řada. */
+#atlasDetailContent .atlas-evolution-column{border:0;background:none;overflow:visible}
+#atlasDetailContent .atlas-evolution-column>summary{border-bottom:1px solid var(--border);
+  padding-left:0;padding-right:0;background:none}
+#atlasDetailContent .atlas-evolution-column .d-evo{background:none;padding:14px 0 0}
+#atlasDetailContent .atlas-evolution-column>.d-evo-side{padding:0}
+/* Poslední skenovaný kus: v rosteru ho pozná i oko, ne jen štítek. */
+.atlas-test #atlasRoster .atlas-roster-tile:has(.rarity-chip.r-SKEN),
+.atlas-test #atlasRoster .atlas-row:has(.rarity-chip.r-SKEN){outline:2px dashed var(--series-3,#7aa2ff);
+  outline-offset:-2px;border-radius:14px}
+/* Karta „poslední skenovaný kus" na Přehledu. */
+.atlas-posledni-sken{margin-top:18px;padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--surface-1)}
+.atlas-posledni-sken h3{margin:0 0 12px;font-size:15px;color:var(--text-primary)}
+.atlas-posledni-sken-telo{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.atlas-posledni-sken-telo img{width:64px;height:64px;object-fit:contain;flex:0 0 auto}
+.atlas-posledni-sken-telo>div{flex:1 1 220px;min-width:0}
+.atlas-posledni-sken-telo b{display:block;font-size:16px;color:var(--text-primary)}
+.atlas-posledni-sken-telo span{font-size:12px;color:var(--text-muted)}
+.atlas-posledni-sken-telo p{margin:6px 0 0;font-size:12px;color:var(--text-secondary)}
+/* Po zalomení hlavičky se rámeček s ikonou přestal držet na středu. */
+.atlas-test .atlas-drawer .atlas-detail-identity{align-items:center}
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-obr{align-self:center}
