@@ -934,3 +934,9 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 /* Po zalomení hlavičky se rámeček s ikonou přestal držet na středu. */
 .atlas-test .atlas-drawer .atlas-detail-identity{align-items:center}
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-obr{align-self:center}
+/* Sloupce hlavičky se musí umět zúžit, jinak se útoky překryjí se stropem.
+   Mřížka staty/IV/strop proto nemá pevné šířky a při nedostatku místa se
+   celý blok zalomí pod jméno. */
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats>.d-box{min-width:0}
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-utoky{flex:1 1 280px;margin-left:0}
