@@ -1010,3 +1010,20 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
    sedí na jedné ose, stránkování zůstává pod tím. */
 .atlas-test .atlas-drawer-header>*{align-self:center}
 .atlas-test .atlas-drawer-header .atlas-detail-paging{align-self:stretch;margin-top:4px}
+/* Claude 22. 9. (7): hlavička, odstranění, náhrada útoku, rámeček buněk. */
+/* Řádky statů blíž k sobě, mezi sloupci naopak víc místa. */
+.atlas-test .atlas-drawer .atlas-ident-stats{gap:26px}
+.atlas-test .atlas-drawer .atlas-ident-stats .d-box{display:flex;flex-direction:column;gap:4px}
+.atlas-test .atlas-drawer .atlas-ident-stats .d-stat{margin:0;line-height:1.25}
+.atlas-test .atlas-drawer .atlas-ident-stats .d-bar{margin:0;min-height:0;height:22px;align-items:center}
+.atlas-test .atlas-drawer .atlas-ident-stats{align-items:start}
+/* „Odstranit" přetékalo z tlačítka: v hlavičce mají tlačítka pevných 42 px
+   (kvůli křížku), textová z toho musí ven. */
+.atlas-test .atlas-drawer-header .atlas-mini-btn{width:auto}
+/* U útoku, který není ten nejlepší, rovnou stojí, na co ho přeučit. */
+.atlas-utok-lepsi{font-style:normal;font-size:10.5px;color:var(--text-muted);white-space:nowrap;cursor:help}
+/* Čtyři buňky dole jsou čtyři samostatné odpovědi, ne položky seznamu —
+   rámeček se jim vrací. Ligy a verdikt zůstávají bez něj. */
+#atlasDetailContent .d-roles.atlas-vyuziti{gap:12px}
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role{background:var(--input-bg);border:1px solid var(--border);
+  border-left-width:3px;border-radius:12px;padding:12px 14px}

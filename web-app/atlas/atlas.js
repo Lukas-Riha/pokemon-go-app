@@ -288,7 +288,10 @@ globalThis.AtlasBudget = (() => {
     const api=window.__atlasTest;
     let ids=api.getDetailSequence();if(!ids.includes(row.id))ids=window.__pgo.getRows().map(r=>r.id);
     const index=ids.indexOf(row.id),paging=document.createElement('nav');paging.className='atlas-detail-paging';paging.setAttribute('aria-label','Procházení Pokémonů');
-    for(const [step,label] of [[-1,'← Předchozí'],[1,'Další →']]){const button=document.createElement('button');button.className='atlas-mini-btn';button.textContent=label;button.disabled=!ids[index+step];button.dataset.detailStep=step;button.addEventListener('click',()=>{api.openDetail(ids[index+step],true);document.querySelector('.atlas-drawer').scrollTop=0;const next=document.querySelector('[data-detail-step="'+step+'"]');(next&&!next.disabled?next:document.querySelector('.atlas-drawer-header button')).focus({preventScroll:true})});paging.append(button);}
+    for(const [step,label] of [[-1,'← Předchozí'],[1,'Další →']]){const button=document.createElement('button');button.className='atlas-mini-btn';button.textContent=label;button.disabled=!ids[index+step];button.dataset.detailStep=step;button.addEventListener('click',(ev)=>{api.openDetail(ids[index+step],true);document.querySelector('.atlas-drawer').scrollTop=0;
+      // Fokus se přesouvá jen při skutečném kliknutí. Při listování klávesou
+      // by kolem tlačítka svítil rámeček, který uživatel nevyvolal.
+      if(ev&&ev.detail>0){const next=document.querySelector('[data-detail-step="'+step+'"]');(next&&!next.disabled?next:document.querySelector('.atlas-drawer-header button')).focus({preventScroll:true})}});paging.append(button);}
     const position=document.createElement('span');position.textContent=(index+1)+' / '+ids.length;paging.firstChild.after(position);
     if(vPlachte)document.querySelector('.atlas-drawer-header').append(paging);
     const main=container.querySelector('.detail-main');if(!main){const edit=document.createElement('button');edit.className='atlas-mini-btn';edit.textContent='Opravit údaje tohoto kusu';edit.addEventListener('click',()=>window.AtlasEditRow(row.id));container.append(edit);return;}
@@ -586,7 +589,21 @@ globalThis.AtlasBudget = (() => {
           const stav=stavUtoku(String(jm).trim());tecka.dataset.stav=stav;
           tecka.title={nej:'Nejlepší útok, jaký tenhle druh má.',dobry:'Použitelný, ale nejlepší to není.',preucit:'Slabý útok — stojí za přeučení.',nezna:'Kvalita útoku se nedá posoudit.'}[stav]||'';
           radek.append(tecka)}
-        radek.append(chipUtoku(String(jm).trim(),i===0));sloupec.append(radek)});
+        radek.append(chipUtoku(String(jm).trim(),i===0));
+        if(sTeckou&&doporucene&&doporucene.length){
+          const stav=stavUtoku(String(jm).trim());
+          const cist=cisteJmeno(String(jm)).trim().toLowerCase();
+          // Rychlý útok se mění za rychlý, nabitý za nabitý.
+          const nabidka=i===0?doporucene.slice(0,1):doporucene.slice(1);
+          const lepsi=nabidka.find(x=>x&&x.toLowerCase()!==cist&&!jmena.some(y=>cisteJmeno(String(y)).trim().toLowerCase()===x.toLowerCase()));
+          if(stav!=='nej'&&lepsi){
+            const sip=document.createElement('em');sip.className='atlas-utok-lepsi';
+            sip.textContent='→ '+lepsi;
+            sip.title='Lepší volba pro tenhle kus: '+lepsi+'. Přeučení stojí TM.';
+            radek.append(sip);
+          }
+        }
+        sloupec.append(radek)});
       radek.append(sloupec);box.append(radek);
     };
     // Mapa „jméno útoku → jak je dobrý" z útoků, které engine vypsal v detailu.
@@ -604,6 +621,20 @@ globalThis.AtlasBudget = (() => {
       if(tr)stavy.set(klic,tr);
     });
     const stavUtoku=jm=>stavy.get(cisteJmeno(jm).toLowerCase())||'nej';
+    // Nejlepší sestava pro TEĎEJŠÍ formu — z ní se bere, na co přeučit.
+    let doporucene=null;
+    if(sestavySekce){
+      const prvni=[...sestavySekce.querySelectorAll('.d-sestavy > div')]
+        .find(d=>!/^Po evoluci/.test(((d.querySelector('.d-role-h')||{}).textContent||'')));
+      const v=prvni?((prvni.querySelector('.d-role-v')||{}).textContent||''):'';
+      if(v)doporucene=v.split(' + ').map(x=>cisteJmeno(x).trim()).filter(Boolean);
+    }
+    // Kus bez ligové role žádnou „nejlepší sestavu" v detailu nemá —
+    // engine ji ale zná jako `movesBest` (sestava druhu, kterým je teď).
+    if((!doporucene||!doporucene.length)&&c&&c.movesBest){
+      doporucene=String(c.movesBest).replace(/\s*\(Elite TM\)/ig,'').split(/\s*\+\s*/)
+        .map(x=>cisteJmeno(x).trim()).filter(Boolean);
+    }
     const why=moves?moves.querySelector('.d-why'):null;
     const veta=[stav?stav.textContent.trim():'',why?why.textContent.trim():''].filter(Boolean).join(' ');
     if(why)why.remove();
