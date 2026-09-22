@@ -15970,8 +15970,11 @@ try {
   check("zadny viditelny stitek nepretece bunku",
     stitky.kusy.every((k) => !k.pretece), JSON.stringify(stitky.kusy.filter((k) => k.pretece).map((k) => k.jmeno)));
   const sVic = stitky.kusy.filter((k) => k.vic > 0)[0];
+  // Bublina nese cele bubliny schovanych stitku — kazdy ma vlastni hlavicku
+  // se svym nazvem, aby „+N" rekl to same, co by rekl stitek sam.
   check("„+N\" ma bublinu se schovanymi duvody a jejich vysvetlenim",
-    !!sVic && /Další důvody/.test(sVic.vicTip) && (sVic.vicTip.match(/<li>/g) || []).length === sVic.vic,
+    !!sVic && /Další důvody/.test(sVic.vicTip)
+      && (sVic.vicTip.match(/tip-hlava|tip-podnadpis/g) || []).length >= sVic.vic,
     sVic ? sVic.vicTip.slice(0, 200) : "zadny kus s +N");
   check("CUTE, Lucky a 100 % jsou stitky",
     kus("Pikachu").duvody.some((d) => d.filtr === "CUTE")

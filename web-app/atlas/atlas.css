@@ -1090,3 +1090,32 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 /* Nabidka utoku je nad vsim krome hlasek appky: okno ,,Pridat pokemona"
    sedi na 2500, drivejsi pravidlo drzelo nabidku !important na 1600. */
 .atlas-test .uv-seznam{z-index:2600!important}
+/* Claude 22. 9. (13): hlavicka detailu na jednom radku, prikazy stejne
+   oblecene, posuvnik v nabidce utoku jako jinde v appce. */
+/* Mrizka 1fr auto auto posilala krizek na vlastni radek. Rada tlacitek
+   se chova lip jako flex: co se nevejde, zalomi se az jako posledni. */
+.atlas-test .atlas-drawer-header{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px}
+.atlas-test .atlas-drawer-header>span:first-child{margin-right:auto}
+.atlas-test .atlas-drawer-header .atlas-detail-paging{flex:1 1 100%}
+/* Vsechny prikazy v hlavicce vypadaji stejne — vcetne najeti mysi.
+   „Upravit tohoto Pokemona" bylo tucne a tmavsi nez zbytek rady. */
+.atlas-test .atlas-drawer-header button,
+.atlas-test .atlas-drawer-header .hra-pruh button{background:var(--input-bg);border:1px solid var(--border);
+  color:var(--text-primary);font-weight:400;transition:background .12s,border-color .12s}
+.atlas-test .atlas-drawer-header button:hover,
+.atlas-test .atlas-drawer-header .hra-pruh button:hover{background:color-mix(in srgb,var(--series-1) 16%,var(--input-bg));
+  border-color:color-mix(in srgb,var(--series-1) 60%,var(--border))}
+.atlas-test .atlas-drawer-header .atlas-smazat-btn:hover{background:color-mix(in srgb,var(--status-critical) 14%,var(--input-bg));
+  border-color:color-mix(in srgb,var(--status-critical) 70%,var(--border))}
+/* Nabidka utoku ma stejny posuvnik jako roster, ne systemovy sedy pruh. */
+.atlas-test .uv-seznam{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.atlas-test .uv-seznam::-webkit-scrollbar{width:10px;height:10px}
+.atlas-test .uv-seznam::-webkit-scrollbar-track{background:transparent}
+.atlas-test .uv-seznam::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text-secondary) 30%,transparent);
+  border-radius:8px;border:2px solid transparent;background-clip:content-box}
+.atlas-test .uv-seznam::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--series-1) 55%,transparent);
+  background-clip:content-box}
+/* Bublina „+N" nese cele bubliny schovanych stitku, takze muze byt dlouha. */
+.atlas-test .tip-bublina:not(.atlas-evo-tooltip){max-height:72vh;overflow:auto}
+/* Strop ligy je soucast radku s cenou — nesmi z nej cnit vetsim pismem. */
+.atlas-test .d-lg-cena .d-lg-varovani{font-size:inherit;line-height:inherit;letter-spacing:inherit}

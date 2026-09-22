@@ -13212,14 +13212,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (!skryte.length) { vic.hidden = true; vic.removeAttribute("data-tip"); return; }
       vic.hidden = false;
       vic.textContent = "+" + skryte.length;
-      vic.setAttribute("data-tip", '<div class="tip-hlava">Další důvody</div><ul class="tip-seznam">'
+      vic.setAttribute("data-tip", '<div class="tip-hlava">Další důvody</div>'
         + skryte.map(function (e) {
+          // Stitek ma vlastni bublinu se seznamem a poradim. Ta se ukaze
+          // cela — „+N" pak rika to same, co by rekl stitek sam.
+          var vlastni = e.getAttribute("data-tip") || "";
+          if (vlastni) return vlastni;
           var proc = e.getAttribute("data-proc") || "";
-          // Stitek uz pojmenovani nese sam (,,Grass 14/3"). Kdyz k nemu
-          // appka nema vetu navic, pomlcka by visela v prazdnu.
-          return "<li><b>" + escHtml(e.textContent) + "</b>"
-            + (proc ? " — " + escHtml(proc) : "") + "</li>";
-        }).join("") + "</ul>");
+          return '<div class="tip-podnadpis">' + escHtml(e.textContent) + "</div>"
+            + (proc ? "<div>" + escHtml(proc) + "</div>" : "");
+        }).join('<hr class="tip-oddel">'));
     });
   }
 
@@ -14317,15 +14319,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             : (dobrePct && !v.cena) ? "d-lg-ready"
             : "d-lg-up";
           var blizko = !poEvoluci && v.cena === null && v.odsudBlizko;
+          // „L29 je strop ligy → 2477 CP" rekne to same co drive dva radky.
+          var levelText = "L" + v.level
+            + (blizko ? '<b class="d-lg-varovani"> je strop ligy</b>' : "");
           var cena = v.cena
-            ? "L" + v.level + " → " + v.cp + " CP · " + formatDust(v.cena.dust)
+            ? levelText + " → " + v.cp + " CP · " + formatDust(v.cena.dust)
               + " prachu + " + v.cena.candy + " bonbónů"
               + (v.cena.xl ? " + " + v.cena.xl + " XL" : "")
-            : "hotový · L" + v.level + " → " + v.cp + " CP";
+            : "hotový · " + levelText + " → " + v.cp + " CP";
           // Do bubliny jde všechno, co by řádek natahovalo: max CP před
           // evolucí a celé znění varování o stropu. V řádku zůstane jen to,
           // podle čeho se rozhoduje.
-          var bublina = (Math.round(v.pct * 1000) / 10) + " % kvality kusu · " + cena;
+          var bublina = (Math.round(v.pct * 1000) / 10) + " % kvality kusu · "
+            + cena.replace(/<[^>]+>/g, "");
           if (poEvoluci && v.cpPredEvoluci) {
             bublina += " · Max CP před evolucí: "
               + [{ jmeno: v.jmenoZakladu, cp: v.cpPredEvoluci }]
@@ -14375,8 +14381,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
                       }).join("")
                   + "</span>"
                 : "")
-            + (blizko ? '<span class="d-lg-varovani">L' + v.level
-                + " je strop ligy</span>" : "")
             + "</div></td>";
         }
         h += '<tr><th><span class="d-lg-nazev">' + L.nazev + "</span>"

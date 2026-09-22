@@ -186,6 +186,10 @@ check("…a nezajede pod posuvník panelu", tip.videt && tip.pravy <= tip.obsah,
 const metang = pc.locator('.atlas-evolution-column .d-evo-kus.evo-klikaci[data-druh="Metang"]').first();
 let dialog = { otevreny: false, nadpis: "" };
 if (await metang.count()) {
+  // Napred na nej najed: bublina se prepne na tenhle stupen a preskoci
+  // jinam, takze klik dopadne na kus, ne na bublinu predchoziho stupne.
+  await metang.hover();
+  await pc.waitForTimeout(350);
   await metang.click();
   await pc.waitForTimeout(400);
   dialog = await pc.evaluate(() => {
@@ -1555,15 +1559,113 @@ const dPlus = await pPlus.evaluate(async () => {
   const pom = document.createElement("div");
   pom.innerHTML = tip;
   return { text: vic ? vic.textContent : "", tip,
-    polozky: [...pom.querySelectorAll("li")].map((li) => li.textContent.trim()) };
+    radky: pom.textContent.split(/[\n·]/).map((x) => x.trim()).filter(Boolean) };
 });
 await pPlus.close();
-check("seznam pod „+N“ nekončí visící pomlčkou",
-  dPlus.polozky.length > 0 && dPlus.polozky.every((x) => !/[—-]\s*$/.test(x)),
-  JSON.stringify(dPlus.polozky).slice(0, 220));
+check("bublina „+N“ nikde nekončí visící pomlčkou",
+  dPlus.radky.length > 0 && dPlus.radky.every((x) => !/[—-]\s*$/.test(x)),
+  JSON.stringify(dPlus.radky).slice(0, 220));
 check("…a neopakuje tutéž větu o evoluci dvakrát",
-  dPlus.polozky.every((x) => (x.match(/nevyvineš/g) || []).length <= 1),
-  JSON.stringify(dPlus.polozky).slice(0, 260));
+  (dPlus.tip.match(/Platí až po evoluci/g) || []).length === 0,
+  dPlus.tip.replace(/<[^>]+>/g, " ").slice(0, 260));
+
+// ------------------- hlavička detailu, strop ligy a bublina „+N"
+// Křížek si bral vlastní řádek, „Upravit tohoto Pokémona" bylo tučnější
+// a tmavší než zbytek řady, řádek ligy měl pod sebou třetí (žlutý) řádek,
+// který se ořezával, a „+N" říkalo míň než štítek sám.
+console.log("\n9) Hlavička detailu, strop ligy a „+N“");
+const pHl = await otevri(1500, [
+  { pokemon: "Swampert", cp: 2492, level: 32, ivAtk: 4, ivDef: 14, ivSta: 14,
+    fastMove: "Mud Shot", charged1: "Hydro Cannon", charged2: "Earthquake" },
+  { pokemon: "Eevee", cp: 536, level: 20, ivAtk: 8, ivDef: 0, ivSta: 12 },
+]);
+const dHl = await pHl.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  A.openDetail(P.getRows().filter((r) => r.pokemon === "Swampert")[0].id);
+  await cekej(1600);
+  const out = {};
+
+  const h = document.querySelector(".atlas-drawer-header");
+  const tl = [...h.querySelectorAll(":scope>button,:scope>.hra-pruh>button")];
+  const topy = tl.map((b) => b.getBoundingClientRect().top);
+  out.rozptyl = Math.round(Math.max(...topy) - Math.min(...topy));
+  const posledni = [...h.children].filter((e) => e.tagName !== "NAV").pop();
+  out.krizekPosledni = !!(posledni && posledni.matches('[data-atlas-action="close"]'));
+  const styl = (b) => {
+    const c = getComputedStyle(b);
+    return c.fontWeight + "|" + c.backgroundColor;
+  };
+  const vyvin = tl.filter((b) => /Vylepšil|Vyvinul/.test(b.textContent))[0];
+  const uprav = document.getElementById("atlasEditPokemon");
+  out.stejnyVzhled = !!(vyvin && uprav) && styl(vyvin) === styl(uprav);
+  out.styly = vyvin && uprav ? [styl(vyvin), styl(uprav)] : "nic";
+
+  // strop ligy: jeden řádek, stejné písmo jako zbytek řádku
+  const varovani = document.querySelector("#atlasDetailContent .d-lg-varovani");
+  out.strop = varovani ? varovani.textContent.trim() : "(bez stropu)";
+  const cena = varovani ? varovani.closest(".d-lg-cena") : null;
+  out.vRadku = !!cena;
+  out.stejnePismo = cena
+    ? getComputedStyle(varovani).fontSize === getComputedStyle(cena).fontSize : false;
+  out.radekCely = cena
+    ? cena.textContent.replace(/\s+/g, " ").trim() : "";
+  return out;
+});
+await pHl.close();
+check("příkazy v hlavičce drží jeden řádek a křížek je až za nimi",
+  dHl.rozptyl <= 10 && dHl.krizekPosledni === true,
+  JSON.stringify({ rozptyl: dHl.rozptyl, krizek: dHl.krizekPosledni }));
+check("„Upravit tohoto Pokémona“ vypadá stejně jako ostatní příkazy",
+  dHl.stejnyVzhled === true, JSON.stringify(dHl.styly));
+check("strop ligy stojí v řádku s cenou, ne na vlastním",
+  dHl.vRadku === true && /je strop ligy/.test(dHl.strop) && /hotový · L32 je strop ligy → /.test(dHl.radekCely),
+  JSON.stringify({ strop: dHl.strop, radek: dHl.radekCely }));
+check("…a nečouhá z něj větším písmem", dHl.stejnePismo === true, String(dHl.stejnePismo));
+
+const pPl = await otevri(820, [{ pokemon: "Eevee", cp: 536, level: 20, ivAtk: 8, ivDef: 0, ivSta: 12 }]);
+const dPl = await pPl.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  await new Promise((r) => setTimeout(r, 300));
+  A.openDetail(P.getRows()[0].id);
+  await new Promise((r) => setTimeout(r, 1600));
+  const vic = document.querySelector("#atlasDetailContent .dv-vic");
+  if (!vic || vic.hidden) return { text: "(bez +N)" };
+  const pom = document.createElement("div");
+  pom.innerHTML = vic.getAttribute("data-tip") || "";
+  return { text: vic.textContent, seznamu: pom.querySelectorAll(".tip-seznam").length,
+    obsah: pom.textContent.replace(/\s+/g, " ") };
+});
+await pPl.close();
+check("bublina „+N“ ukáže celé bubliny schovaných štítků",
+  /^\+\d+$/.test(dPl.text) && dPl.seznamu >= 1 && /drží \(1 z \d/.test(dPl.obsah || ""),
+  JSON.stringify({ text: dPl.text, seznamu: dPl.seznamu }) + " " + (dPl.obsah || "").slice(0, 150));
+
+const pPos = await otevri(1400);
+const dPos = await pPos.evaluate(async () => {
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const btn = [...document.querySelectorAll("button")].filter((x) => /Přidat pokémona/i.test(x.textContent))[0];
+  btn.click();
+  await cekej(600);
+  const jm = document.getElementById("rbName");
+  jm.value = "Machamp";
+  jm.dispatchEvent(new Event("change", { bubbles: true }));
+  await cekej(900);
+  const pole = document.querySelector("#rucniBox .uv-pole");
+  if (!pole) return { chyba: "okno nemá výběr útoků" };
+  pole.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  pole.click();
+  await cekej(450);
+  const seznam = document.querySelector(".uv-seznam");
+  if (!seznam) return { chyba: "nabídka se neotevřela" };
+  const c = getComputedStyle(seznam);
+  return { sirka: c.scrollbarWidth, barva: c.scrollbarColor };
+});
+await pPos.close();
+check("nabídka útoků má tenký posuvník appky, ne systémový",
+  dPos.sirka === "thin" && /rgba\(0, 0, 0, 0\)|transparent/.test(dPos.barva || ""),
+  JSON.stringify(dPos));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

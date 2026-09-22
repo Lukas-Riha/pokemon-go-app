@@ -475,7 +475,18 @@ globalThis.AtlasBudget = (() => {
 (() => {
   const tip=document.createElement('div');tip.className='atlas-evo-tooltip tip-bublina vidno';tip.id='atlasEvoTooltip';tip.setAttribute('role','tooltip');tip.hidden=true;document.body.append(tip);let target=null;
   function hide(){tip.hidden=true;target?.removeAttribute('aria-describedby');target=null;document.body.classList.remove('atlas-evo-tip-open')}
-  function show(el){target=el;const template=document.createElement('template');template.innerHTML=el.dataset.tip||'';template.content.querySelectorAll('*').forEach(node=>{if(!['DIV','SPAN','B','STRONG','EM','I','BR','P','SMALL','UL','LI'].includes(node.tagName)){node.replaceWith(document.createTextNode(node.textContent));return}for(const attr of [...node.attributes]){if(attr.name!=='class'&&!(attr.name==='style'&&/^\s*(font-size|margin-top|padding-top|border-top|color)\s*:/i.test(attr.value)))node.removeAttribute(attr.name)}});tip.replaceChildren(template.content.cloneNode(true));tip.style.left='0px';tip.style.top='0px';tip.hidden=false;document.body.classList.add('atlas-evo-tip-open');el.setAttribute('aria-describedby',tip.id);const rect=el.getBoundingClientRect(),box=tip.getBoundingClientRect();let right=document.documentElement.clientWidth;for(let s=el.parentElement;s&&s!==document.body;s=s.parentElement){const cs=getComputedStyle(s);if(/(auto|scroll)/.test(cs.overflowY)&&s.scrollHeight>s.clientHeight){const sr=s.getBoundingClientRect();right=Math.min(right,sr.left+s.clientLeft+s.clientWidth);break}}tip.style.left=Math.max(12,Math.min(right-box.width-16,rect.left+rect.width/2-box.width/2))+'px';tip.style.top=Math.max(12,Math.min(innerHeight-box.height-12,rect.top>=box.height+12?rect.top-box.height-8:rect.bottom+8))+'px';}
+  function show(el){target=el;const template=document.createElement('template');template.innerHTML=el.dataset.tip||'';template.content.querySelectorAll('*').forEach(node=>{if(!['DIV','SPAN','B','STRONG','EM','I','BR','P','SMALL','UL','LI'].includes(node.tagName)){node.replaceWith(document.createTextNode(node.textContent));return}for(const attr of [...node.attributes]){if(attr.name!=='class'&&!(attr.name==='style'&&/^\s*(font-size|margin-top|padding-top|border-top|color)\s*:/i.test(attr.value)))node.removeAttribute(attr.name)}});tip.replaceChildren(template.content.cloneNode(true));tip.style.left='0px';tip.style.top='0px';tip.hidden=false;document.body.classList.add('atlas-evo-tip-open');el.setAttribute('aria-describedby',tip.id);const rect=el.getBoundingClientRect(),box=tip.getBoundingClientRect();let right=document.documentElement.clientWidth;for(let s=el.parentElement;s&&s!==document.body;s=s.parentElement){const cs=getComputedStyle(s);if(/(auto|scroll)/.test(cs.overflowY)&&s.scrollHeight>s.clientHeight){const sr=s.getBoundingClientRect();right=Math.min(right,sr.left+s.clientLeft+s.clientWidth);break}}// Bublina evolucni rady stoji VEDLE sloupce, ne nad nim a pod nim.
+  // Bublina si bere kliky (da se v ni rolovat), takze kdyz prekryla
+  // sousedni stupen, nesel uz kliknout ani najet — mys se k nemu nedostala.
+  const sloupec=el.closest('.atlas-evolution-column');
+  if(sloupec){
+    const sr=sloupec.getBoundingClientRect();
+    tip.style.left=Math.max(12,sr.left-box.width-14)+'px';
+    tip.style.top=Math.max(12,Math.min(innerHeight-box.height-12,
+      rect.top+rect.height/2-box.height/2))+'px';
+    return;
+  }
+  tip.style.left=Math.max(12,Math.min(right-box.width-16,rect.left+rect.width/2-box.width/2))+'px';tip.style.top=Math.max(12,Math.min(innerHeight-box.height-12,rect.top>=box.height+12?rect.top-box.height-8:rect.bottom+8))+'px';}
   document.addEventListener('pointerover',e=>{const el=e.target.closest('#atlasModal .d-evo-kus[data-tip]');if(el&&el!==target)show(el)});
   document.addEventListener('pointerout',e=>{if(target&&target.contains(e.target)&&!target.contains(e.relatedTarget)&&!tip.contains(e.relatedTarget))hide()});
   document.addEventListener('focusin',e=>{const el=e.target.closest('#atlasModal .d-evo-kus[data-tip]');if(el)show(el)});
@@ -539,6 +550,8 @@ globalThis.AtlasBudget = (() => {
  const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  $('.atlas-drawer>div:last-child button[data-atlas-action="edit"]')?.parentElement.remove();
  const close=$('.atlas-drawer-header [data-atlas-action="close"]'),edit=document.createElement('button');edit.id='atlasEditPokemon';edit.dataset.atlasAction='edit';edit.textContent='Upravit tohoto Pokémona';edit.className='atlas-mini-btn';close.before(edit);
+ // Krizek patri za prikazy, ne pred ne — jinak si bral vlastni radek.
+ close.parentElement.append(close);
  {const smaz=document.createElement('button');smaz.id='atlasSmazatPokemona';smaz.dataset.atlasAction='smazat';
   smaz.textContent='Odstranit';smaz.className='atlas-mini-btn atlas-smazat-btn';close.before(smaz);}
  const dialog=$('#atlasImportDialog'),box=$('#importBox');let approved=false;
