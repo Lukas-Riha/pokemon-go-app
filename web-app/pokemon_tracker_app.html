@@ -14395,7 +14395,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // odhad", i u kusu, který přesná IV má. Ručně přidaný kus se doskenovává
     // z úplně jiného důvodu (nezná útoky, CP mohlo být z gymu podstřelené),
     // takže se tu ukazuje skutečná hodnota i skutečný důvod.
-    if (c.rescan !== "Ne") {
+    // U ručně přidaného kusu („Až se vrátí") kartu neukazujeme: že u něj
+    // appka nezná útoky, je vidět rovnou v hlavičce u nadpisu ÚTOKY —
+    // a karta jen zabírala místo pro věci, se kterými se dá něco udělat.
+    // Ve sloupci „Sken?" i ve filtru hodnota zůstává.
+    if (c.rescan !== "Ne" && c.rescan !== "Až se vrátí") {
       akce.push(roleCardHtml("Doskenovat", c.rescan, c.rescanTone || "warning",
         c.rescanTitle || "Bez přesných IV je zbytek jen odhad."));
     }

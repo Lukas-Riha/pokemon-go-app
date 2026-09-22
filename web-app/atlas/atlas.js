@@ -564,7 +564,18 @@ globalThis.AtlasBudget = (() => {
   if(utokySekce&&identita){
     identita.querySelector('.atlas-ident-utoky')?.remove();
     const box=document.createElement('section');box.className='atlas-ident-utoky';
-    const nadpis=document.createElement('div');nadpis.className='d-box-h';nadpis.textContent='Útoky';box.append(nadpis);
+    const nadpis=document.createElement('div');nadpis.className='d-box-h';nadpis.textContent='Útoky';
+    // Kus bez vyplněných útoků: u nadpisu se rozsvítí vykřičník. Bez něj se
+    // dalo snadno přehlédnout, že appka u toho kusu nic nezná — a rady se
+    // pak počítaly z nejlepší možné sestavy, ne z jeho skutečné.
+    if(!row.fastMove||!row.charged1){
+      const vykricnik=document.createElement('span');vykricnik.className='atlas-utoky-chybi';
+      vykricnik.textContent='!';
+      vykricnik.title='Útoky nemáš vyplněné — appka počítá z nejlepší možné sestavy druhu.'
+        +' Doplň je v úpravě kusu nebo naskenuj Calcy.';
+      nadpis.append(vykricnik);
+    }
+    box.append(nadpis);
     const stav=utokySekce.querySelector('.atlas-move-status'),moves=utokySekce.querySelector('.d-moves');
     const cisteJmeno=s=>String(s).replace(/\s*\(Elite TM\)\s*/i,'').trim();
     const chipUtoku=(jmeno,rychly)=>{const cist=cisteJmeno(jmeno);const m=rychly?(P.fastByNameOf?P.fastByNameOf(cist):null):(P.chargedByNameOf?P.chargedByNameOf(cist):null);
