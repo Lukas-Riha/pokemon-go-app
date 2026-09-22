@@ -46,6 +46,37 @@ Produkce tak nemůže omylem dostat rozdělaný vzhled. Build to vypíše řádk
 
 Nasazení je zamčené (`PRODUKCE_ZAMCENA.txt`); odemyká se jen na pokyn.
 
+## Produkce SE vzhledem (`--vzhled`)
+
+```
+python tools/sync_reference.py --vzhled
+```
+
+Tohle je přepnutí produkce na Atlas. Proti `--test` se liší jen tím, co se
+přilepí: úložiště se **nepřejmenovává** (produkce musí číst svoje `pgo_`),
+obrázky se nezapékají a testovací popisky zůstanou schované. Před zápisem
+běží kontrola: kdyby v souboru zůstalo `pgo_test_`, `LOKÁLNÍ TEST`,
+`TESTOVACÍ VERZE` nebo `[TEST]` (název záložky), build se zastaví.
+
+**Dvě věci, které se snadno přehlédnou:**
+
+1. `--vzhled` zapisuje do `web-app/pokemon_tracker_app.html`, tedy do
+   zdrojového souboru enginu, a vpichuje do něj funkční můstky
+   (`atlas_import_hooks`, `atlas_ui_hooks`). Ty **nejsou idempotentní** —
+   druhý build nad stejným souborem skončí hláškou
+   `Missing Atlas import integration point`. Po nasazení se proto engine
+   musí vrátit:
+
+   ```
+   git checkout web-app/pokemon_tracker_app.html
+   ```
+
+   Bez toho neprojde ani další `--test`.
+
+2. `tools/deploy.ps1` volá `sync_reference.py` **bez** `--vzhled`. Dokud se
+   to nezmění, nasadí se produkce v původním vzhledu, i kdyby se předtím
+   ručně pustil `--vzhled` — deploy si appku přepeče znovu.
+
 ## Kde je hranice
 
 Vrstva engine **neupravuje**. Co potřebuje, dostane jako pojmenované pole:
