@@ -42,7 +42,8 @@ window.AtlasVerdict=c=>({
   label:c.validationIssues?.length?'Ověřit data':c.cuteOnly?'CUTE · sbírka':c.keep||'K posouzení',
   tone:c.validationIssues?.length||c.lucky?'warning':c.cuteOnly?'collection':['good','warning','critical'].includes(c.keepTone)?c.keepTone:c.keepGood?'good':'critical'
 });
-window.AtlasTags=(c,r={})=>String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+[['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],['D','DMAX',c.dynamax],['C','CUTE',c.cute],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky],['SKEN','POSLEDNÍ SKEN',c.posledniSken]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('');
+window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+[['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],['D','DMAX',c.dynamax],['C','CUTE',c.cute],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky],['SKEN','POSLEDNÍ SKEN',c.posledniSken]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
+  .replace(/^(.+)$/,'<span class="atlas-tag-vlastni">$1</span>');
 
 window.AtlasRole=function(c){if(c.cuteOnly)return 'Osobní sbírka · bez investičního cíle';const roles=[];if(c.pvpRec&&!['Ne','–'].includes(c.pvpRec))roles.push(c.pvpRec);if(c.raidRec&&!['Ne','Slabý','Slabý útok','–'].includes(c.raidRec))roles.push('Raid · '+c.raidRec);if(c.gymRec&&!['Ne','Slabý','–'].includes(c.gymRec))roles.push('Gym · '+c.gymRec);return roles.join(' / ')||(c.megaKandidat?'Mega evoluce':'Sbírka a další využití');};
 window.AtlasJourney=(c,r)=>{
@@ -67,7 +68,9 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const monImage=(r,extra='')=>{
     // Shiny a samice mají u PokeMiners vlastní soubor; zapečený obrázek druhu
     // variantu nezná, takže se u nich vezme značka přímo z enginu.
-    if((r.shiny==='Ano'||String(r.pohlavi||'').toLowerCase()==='samice')&&P.atlasObrazek){
+    // Zapečený obrázek druhu nezná varianty: shiny, samice ani brněného
+    // Mewtwa. Pro ně se bere značka přímo z enginu.
+    if((r.shiny==='Ano'||String(r.pohlavi||'').toLowerCase()==='samice'||/armored/i.test(r.pokemon||''))&&P.atlasObrazek){
       const html=P.atlasObrazek(r);
       if(html){const t=document.createElement('template');t.innerHTML=html;const im=t.content.querySelector('img');
         if(im){im.setAttribute('alt',r.pokemon||'');im.dataset.atlasPokemon=r.pokemon||'';if(extra)im.setAttribute('data-extra','1');return im.outerHTML}}
@@ -294,7 +297,8 @@ globalThis.AtlasBudget = (() => {
     const verdict=main.querySelector('.d-verdict-row');if(verdict){verdict.classList.add('atlas-verdict-first');container.prepend(verdict);const potize=computed.validationIssues||[];if(potize.length){const box=verdict.querySelector('.d-verdict')||verdict;box.setAttribute('data-tip','<div class="tip-hlava">Ověřit data</div>'+potize.map(x=>'<div class="tip-radek">'+String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>').join('')+'<div class="tip-pozn">Dokud údaje nesedí, je zbytek rozboru jen odhad.</div>');}}
     if(verdict){const v=window.AtlasVerdict(computed);verdict.dataset.verdict=v.tone;const label=verdict.querySelector('.d-verdict>b');if(label)label.textContent=v.label;}
     const evo=container.querySelector(':scope > :not(.atlas-plan-summary):not(.detail-main):not(.atlas-verdict-first)');
-    if(evo){const group=document.createElement('details');group.className='atlas-detail-section atlas-evolution-column';group.open=true;group.innerHTML='<summary>Evoluční řada</summary>';evo.before(group);group.append(evo);evo.querySelectorAll('.d-evo-kus').forEach(kus=>{const im=kus.querySelector('img');if(im&&!(im.parentElement&&im.parentElement.classList.contains('atlas-evo-ram'))){const ram=document.createElement('span');ram.className='atlas-evo-ram';im.replaceWith(ram);ram.append(im)}if(kus.querySelector('.atlas-evo-popis'))return;const popis=document.createElement('span');popis.className='atlas-evo-popis';const zbytek=[...kus.childNodes].filter(n=>!(n.nodeType===1&&n.classList&&n.classList.contains('atlas-evo-ram')));zbytek.forEach(n=>popis.append(n));kus.append(popis)});const grid=document.createElement('div');grid.className='atlas-detail-columns';const column=document.createElement('div');column.className='atlas-detail-column';const children=[...container.children];container.prepend(grid);grid.append(column,group);children.filter(el=>el!==group).forEach(el=>column.append(el));}
+    if(evo){const group=document.createElement('details');group.className='atlas-detail-section atlas-evolution-column';group.open=true;
+      group.addEventListener('toggle',()=>{if(!group.open)group.open=true});group.innerHTML='<summary>Evoluční řada</summary>';evo.before(group);group.append(evo);evo.querySelectorAll('.d-evo-kus').forEach(kus=>{const im=kus.querySelector('img');if(im&&!(im.parentElement&&im.parentElement.classList.contains('atlas-evo-ram'))){const ram=document.createElement('span');ram.className='atlas-evo-ram';im.replaceWith(ram);ram.append(im)}if(kus.querySelector('.atlas-evo-popis'))return;const popis=document.createElement('span');popis.className='atlas-evo-popis';const zbytek=[...kus.childNodes].filter(n=>!(n.nodeType===1&&n.classList&&n.classList.contains('atlas-evo-ram')));zbytek.forEach(n=>popis.append(n));kus.append(popis)});const grid=document.createElement('div');grid.className='atlas-detail-columns';const column=document.createElement('div');column.className='atlas-detail-column';const children=[...container.children];container.prepend(grid);grid.append(column,group);children.filter(el=>el!==group).forEach(el=>column.append(el));}
     container.querySelectorAll('.d-evo-kus[data-tip]').forEach(el=>{el.tabIndex=0;const image=el.querySelector('img'),art=window.ATLAS_ART[window.__pgo.dexKeyOf(el.dataset.druh)];if(image&&art&&!/^(shellos|gastrodon)/i.test(el.dataset.druh)){image.removeAttribute('onerror');image.src=art;image.style.display=''};});
   };
 })();
@@ -347,6 +351,18 @@ globalThis.AtlasBudget = (() => {
   };
   document.addEventListener('click',e=>{const button=e.target.closest('[data-atlas-action="edit"]');if(!button)return;const id=window.__atlasTest.getState().dialogId;if(!id)return;e.preventDefault();e.stopImmediatePropagation();window.AtlasEditRow(id);},true);
   const footer=document.querySelector('.atlas-drawer>div:last-child button[data-atlas-action="edit"]');if(footer)footer.textContent='Upravit tohoto Pokémona →';
+  // Odstranit kus jde i ručně — ale jen přes potvrzení, je to nevratné
+  // (kus se zapíše mezi smazané, aby ho import nevrátil).
+  window.AtlasSmazatKus=(id)=>{
+    const row=P.getRows().find(r=>r.id===id);if(!row)return;
+    P.potvrdit('Odstranit '+row.pokemon+(row.cp?' ('+row.cp+' CP)':'')+' z rosteru?'
+      +'\n\nKus se zapíše mezi smazané, takže se při dalším importu nevrátí.',
+      ()=>{if(P.smazatKus(id)){document.querySelector('.atlas-drawer-header button')?.click();
+        window.dispatchEvent(new CustomEvent('atlas:refresh'))}},'Odstranit');
+  };
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-atlas-action="smazat"]');if(!b)return;
+    const id=window.__atlasTest.getState().dialogId;if(!id)return;
+    e.preventDefault();e.stopImmediatePropagation();window.AtlasSmazatKus(id);},true);
 })();
 
 (() => {
@@ -438,6 +454,8 @@ globalThis.AtlasBudget = (() => {
  const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  $('.atlas-drawer>div:last-child button[data-atlas-action="edit"]')?.parentElement.remove();
  const close=$('.atlas-drawer-header [data-atlas-action="close"]'),edit=document.createElement('button');edit.id='atlasEditPokemon';edit.dataset.atlasAction='edit';edit.textContent='Upravit tohoto Pokémona';edit.className='atlas-mini-btn';close.before(edit);
+ {const smaz=document.createElement('button');smaz.id='atlasSmazatPokemona';smaz.dataset.atlasAction='smazat';
+  smaz.textContent='Odstranit';smaz.className='atlas-mini-btn atlas-smazat-btn';smaz.title='Odstranit tenhle kus z rosteru';close.before(smaz);}
  const dialog=$('#atlasImportDialog'),box=$('#importBox');let approved=false;
  window.AtlasReplaceApproved=()=>{const result=approved;approved=false;return result};
  window.AtlasAskReplace=()=>{if(dialog.querySelector('.atlas-replace-confirm'))return;const panel=document.createElement('section');panel.className='atlas-replace-confirm';panel.innerHTML='<h3>Nahradit současný roster?</h3><p>Roster bude nahrazen vybraným skenem podle nastavených voleb ochrany vzácných kusů. Předchozí stav zůstane v historii aplikace.</p><div class="atlas-result-actions"><button data-confirm-replace>Nahradit roster</button><button data-cancel-replace>Zpět k importu</button></div>';box.before(panel);box.hidden=true;panel.querySelector('[data-cancel-replace]').onclick=()=>{panel.remove();box.hidden=false};panel.querySelector('[data-confirm-replace]').onclick=()=>{panel.remove();box.hidden=false;approved=true;$('#mapReplaceBtn').click()};panel.querySelector('[data-cancel-replace]').focus()};
@@ -455,6 +473,14 @@ globalThis.AtlasBudget = (() => {
  const $=s=>document.querySelector(s),P=window.__pgo,old=window.AtlasEnhanceDetail;
  window.AtlasEnhanceDetail=(container,row,c)=>{
   old(container,row,c);const vPlachte=!!container.closest('#atlasModal');
+  // Obrázky sousedních kusů se přednačtou — při rychlém listování se pak
+  // kreslí hned, ne až po stažení.
+  try{
+    const vsechny=P.getRows(),i=vsechny.findIndex(x=>x.id===row.id);
+    [i-1,i+1,i+2].forEach(j=>{const r2=vsechny[j];if(!r2)return;
+      const html=P.atlasObrazek?P.atlasObrazek(r2):'';const m=/src="([^"]+)"/.exec(html||'');
+      if(m){const im=new Image();im.decoding='async';im.src=m[1]}});
+  }catch(e){}
   // Obrázek v hlavičce kreslí vrstva sama, takže se o vystředění v rámečku
   // musí říct — jinak sedí ikona nakřivo (u Machopa dole, u Abry nahoře).
   try{const hl=document.querySelector(vPlachte?'.atlas-drawer .atlas-detail-identity':'#boxMode .atlas-detail-identity');if(hl&&P.vystreditSprity)P.vystreditSprity(hl)}catch(e){}if(vPlachte)$('.atlas-drawer-header .hra-pruh')?.remove();const bar=container.querySelector('.hra-pruh');
@@ -535,11 +561,13 @@ globalThis.AtlasBudget = (() => {
       if(tip)radek.setAttribute('data-tip',tip);
       const popisek=document.createElement('small');popisek.className='atlas-sestava-kdy';popisek.textContent=kdy;radek.append(popisek);
       const sloupec=document.createElement('div');sloupec.className='atlas-sestava-utoky';
+      const sTeckou=kdy==='má';
       jmena.forEach((jm,i)=>{const radek=document.createElement('div');radek.className='atlas-utok-radek';
-        const tecka=document.createElement('i');tecka.className='atlas-utok-tecka';
-        const stav=stavUtoku(String(jm).trim());tecka.dataset.stav=stav;
-        tecka.title={nej:'Nejlepší útok, jaký tenhle druh má.',dobry:'Použitelný, ale nejlepší to není.',preucit:'Slabý útok — stojí za přeučení.',nezna:'Kvalita útoku se nedá posoudit.'}[stav]||'';
-        radek.append(tecka,chipUtoku(String(jm).trim(),i===0));sloupec.append(radek)});
+        if(sTeckou){const tecka=document.createElement('i');tecka.className='atlas-utok-tecka';
+          const stav=stavUtoku(String(jm).trim());tecka.dataset.stav=stav;
+          tecka.title={nej:'Nejlepší útok, jaký tenhle druh má.',dobry:'Použitelný, ale nejlepší to není.',preucit:'Slabý útok — stojí za přeučení.',nezna:'Kvalita útoku se nedá posoudit.'}[stav]||'';
+          radek.append(tecka)}
+        radek.append(chipUtoku(String(jm).trim(),i===0));sloupec.append(radek)});
       radek.append(sloupec);box.append(radek);
     };
     // Mapa „jméno útoku → jak je dobrý" z útoků, které engine vypsal v detailu.

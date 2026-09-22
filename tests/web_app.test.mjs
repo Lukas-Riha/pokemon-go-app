@@ -3335,7 +3335,7 @@ try {
       { pokemon: "Magikarp", cp: 152, level: 20, ivAtk: 14, ivDef: 14, ivSta: 15 },
     ]);
     const out = {};
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const bm = document.getElementById("boxMode");
     out.otevreno = !bm.hidden;
     out.poradi = window.__pgo.boxStav().poradi.map((x) => x.split(":")[0]);
@@ -3397,7 +3397,7 @@ try {
     th.click(); th.click();                       // vzestupně -> sestupně
     const vTabulce = Array.from(document.querySelectorAll("#tbody tr td.col-pokemon"))
       .map((td) => (td.querySelector("input") || td).value || td.textContent);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const vRezimu = window.__pgo.boxStav().poradi.map((x) => x.split(":")[0]);
     return { vTabulce: vTabulce.join(","), vRezimu: vRezimu.join(",") };
   });
@@ -3595,7 +3595,7 @@ try {
       { pokemon: "Magikarp", cp: 110, level: 11, ivAtk: 2, ivDef: 1, ivSta: 1 },
       { pokemon: "Rattata", cp: 200, level: 15, ivAtk: 4, ivDef: 3, ivSta: 5 },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const key = (k) => document.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));
     for (let i = 0; i < 5; i++) {
       if (window.__pgo.boxStav().aktualni === null) break;
@@ -3737,7 +3737,7 @@ try {
         fastMove: "Fire Spin", charged1: "Blast Burn" },
       { pokemon: "Rattata", cp: 200, level: 15, ivAtk: 4, ivDef: 3, ivSta: 5 },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const key = (k) => document.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));
     const snimek = () => {
       const v = document.querySelector(".bm-verdikt");
@@ -3833,7 +3833,7 @@ try {
       { pokemon: "Rattata", cp: 200, level: 15, ivAtk: 4, ivDef: 3, ivSta: 5 },
       { pokemon: "Pidgey", cp: 300, level: 12, ivAtk: 5, ivDef: 5, ivSta: 5 },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const key = (k) => document.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));
     const kde = () => window.__pgo.boxStav().index;
     const out = {};
@@ -3903,13 +3903,13 @@ try {
     const out = {};
 
     // 1) zavření BEZ rozhodnutí se ptát nemá
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     P.boxZavrit();
     out.bezPraceZavre = document.getElementById("boxMode").hidden;
     out.bezPraceNeptaSe = !P.boxPotvrzeniViditelne();
 
     // 2) s rozděláním se zeptá — křížkem
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     key("ArrowDown");                                  // jeden pustit
     document.getElementById("bmClose").click();
     out.ptaSe = P.boxPotvrzeniViditelne();
@@ -3975,7 +3975,7 @@ try {
       { pokemon: "Azumarill", cp: 1400, level: 24, ivAtk: 0, ivDef: 15, ivSta: 15,
         fastMove: "Bubble", charged1: "Play Rough" },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const vic = document.getElementById("bmVic");
     const out = { predOtevrenim: document.getElementById("bmDetail").innerHTML.length };
     vic.open = true;
@@ -4000,7 +4000,7 @@ try {
       { pokemon: "Azumarill", cp: 1400, level: 24, ivAtk: 0, ivDef: 15, ivSta: 15,
         fastMove: "Bubble", charged1: "Play Rough" },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const panel = document.querySelector(".bm-panel");
     const vic = document.getElementById("bmVic");
     // rozbalení si drží stav mezi kusy, takže se pro měření nejdřív zavře
@@ -5033,7 +5033,7 @@ try {
       { pokemon: "Rattata", cp: 200, level: 10, ivAtk: 2, ivDef: 3, ivSta: 4 },
       { pokemon: "Rattata", cp: 210, level: 11, ivAtk: 3, ivDef: 3, ivSta: 4 },
     ]);
-    P.boxOtevrit();
+    P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const delka = P.boxStav().delka;
     for (let i = 0; i < delka; i++) P.boxRozhodnout("keep");
     P.boxUlozit(false);
@@ -5343,7 +5343,7 @@ try {
       { pokemon: "Ferroseed", cp: 495, level: 22, ivAtk: 2, ivDef: 10, ivSta: 10 },
       { pokemon: "Rattata", cp: 120, level: 8, ivAtk: 3, ivDef: 3, ivSta: 3 },
     ]);
-    P.boxOtevrit();
+    P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     // Měří se sbalená karta: jen tam jsou tlačítka hned pod ligami a jen tam
     // může rozdíl výšky poskočit. V širokém režimu drží výšku samo okno.
     document.getElementById("bmVic").open = false;
@@ -6564,7 +6564,7 @@ try {
   check("…a je vidět, čím se stane", jenPoEvo.sub.indexOf("Azumarill") > -1, jenPoEvo.sub);
 
   // Čištění boxu: evoluční řada nesmí ukrojit půlku panelu pro rozbor.
-  const bmLayout = await page.evaluate(() => {
+  const bmLayout = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setRows([{ pokemon: "Primeape", cp: 1007, level: 17, ivAtk: 3, ivDef: 10, ivSta: 6 }]);
     // Rozbor se plní při kreslení karty podle toho, jestli je <details> otevřené,
@@ -6572,6 +6572,11 @@ try {
     // nastaví sama — test ji nesmí předstírat.
     document.getElementById("bmVic").open = true;
     document.getElementById("boxModeBtn").click();
+    { const o = document.getElementById("appOknoOk");
+      if (o && !document.getElementById("appOkno").hidden) o.click(); }
+    // Panel se do široka roztahuje přechodem (transition: width .12s) —
+    // měřit hned po přepnutí třídy znamená chytit ho v půlce cesty.
+    await new Promise((r) => setTimeout(r, 260));
     const det = document.getElementById("bmDetail");
     const main = det.querySelector(".detail-main");
     const evo = det.querySelector(".d-evo-side");
@@ -6672,7 +6677,7 @@ try {
       { pokemon: "Gyarados", cp: 1442, level: 16, ivAtk: 2, ivDef: 9, ivSta: 13, forma: "Shiny" },
       { pokemon: "Mew", cp: 3000, level: 30, ivAtk: 15, ivDef: 15, ivSta: 15 },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const list = P.bmSeznam ? P.bmSeznam() : null;
     const pos = document.getElementById("bmPos").textContent;
     const blok = (document.querySelector(".bm-blok") || {}).textContent || "";
@@ -7471,7 +7476,7 @@ try {
   // to, co má rozhodnutí zastavit. Proto se u něj v kartě ukazuje odznáček.
   const cuteBm = await page.evaluate(() => {
     const P = window.__pgo;
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const seznam = P.bmSeznam().map((x) => x.row.pokemon + " " + x.row.cp);
     // proklikat na kus s CUTE
     let chipy = [], verdikt = "";
@@ -7599,7 +7604,7 @@ try {
     const c = P.getComputed(), rows = P.getRows();
     const v = (i) => ({ keep: c[rows[i].id].keep, tone: c[rows[i].id].keepTone,
       sub: c[rows[i].id].keepSub || "", shiny: !!c[rows[i].id].shiny });
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const sekce = P.bmSeznam().map((x) => x.row.pokemon + " " + x.row.cp
       + " → sekce " + x.sekce);
     return { bez: v(0), sh: v(1), sekce };
@@ -7622,7 +7627,7 @@ try {
       { pokemon: "Pidgey", cp: 210, level: 15, ivAtk: 4, ivDef: 3, ivSta: 6 },
       { pokemon: "Zubat", cp: 220, level: 15, ivAtk: 4, ivDef: 3, ivSta: 7 },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const pred = P.bmSeznam().map((x) => x.row.pokemon + ":" + x.sekce);
     // označit prostřední kus jako shiny přímo za běhu
     const r = P.getRows().filter((x) => x.pokemon === "Pidgey")[0];
@@ -7705,7 +7710,7 @@ try {
       { pokemon: "Charizard", cp: 1485, level: 18.5, ivAtk: 11, ivDef: 11,
         ivSta: 15, shiny: "Ano" },
     ]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const out = [];
     for (let i = 0; i < 4; i++) {
       const r = document.querySelector(".bm-panel").getBoundingClientRect();
@@ -7733,7 +7738,7 @@ try {
     P.setDiscarded([]);
     P.setRows([{ pokemon: "Dewpider", cp: 323, level: 18, ivAtk: 10, ivDef: 7,
       ivSta: 6 }]);
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     document.getElementById("bmVicBtn").click();
   });
   // rozbor se dokresluje až po překreslení, jinak je tabulka lig ještě prázdná
@@ -7765,7 +7770,7 @@ try {
     P.setDiscarded([]);
     P.setRows([{ pokemon: "Foongus", cp: 12, level: 1, ivAtk: 3, ivDef: 14, ivSta: 7 }]);
     document.getElementById("bmVic").open = true;
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const panel = document.querySelector(".bm-panel");
     const krizek = panel.querySelector(".d-ligy-tab td.d-lg-ne");
     const moves = panel.querySelector(".d-moves .d-why");
@@ -9433,7 +9438,7 @@ try {
     P.setDiscarded([]);
     P.setRows(kusy);
     document.getElementById("bmVic").open = otevrit;
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const mereni = [];
     for (let i = 0; i < kusy.length; i++) {
       await new Promise((r) => setTimeout(r, 350));
@@ -9522,7 +9527,7 @@ try {
     P.setDiscarded([]);
     P.setRows(kusy);
     document.getElementById("bmVic").open = false;
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const mereni = [];
     for (let i = 0; i < kusy.length; i++) {
       await new Promise((r) => setTimeout(r, 300));
@@ -9788,7 +9793,7 @@ try {
       { pokemon: "Bidoof", cp: 400, level: 20, ivAtk: 5, ivDef: 5, ivSta: 5 },
     ]);
     document.getElementById("bmVic").open = true;
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 300));
     for (let i = 0; i < 2; i++) {
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
@@ -9817,7 +9822,7 @@ try {
     const P = window.__pgo;
     P.setRows([{ pokemon: "Totodile", cp: 190, level: 7, ivAtk: 3, ivDef: 10, ivSta: 6 }]);
     document.getElementById("bmVic").open = true;
-    document.getElementById("boxModeBtn").click();
+    document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 400));
     const det = document.getElementById("bmDetail");
     // Karty rolí jsou od 17. 9. bez textu (jeden řádek), vysvětlení je
@@ -10580,7 +10585,7 @@ try {
       { id: "b2", pokemon: "Gyarados", cp: 2600, level: 29, ivAtk: 14, ivDef: 14, ivSta: 14,
         fastMove: "Dragon Breath", charged1: "Aqua Tail" }
     ]);
-    window.__pgo.boxOtevrit();
+    window.__pgo.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 250));
     const role = () => Array.from(document.querySelectorAll(".box-mode .bm-role"))
       .map((e) => e.innerText.replace(/\n/g, " ")).join(" | ");
@@ -10788,7 +10793,7 @@ try {
     // dalo SESTUPNĚ (u čísel je to první směr), takže se směr říká rovnou.
     window.__pgo.atlasSort("cp", 1);
     await new Promise((r) => setTimeout(r, 200));
-    window.__pgo.boxOtevrit();
+    window.__pgo.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 350));
     const panel = document.querySelector(".bm-panel");
     const rozmer = () => Math.round(panel.getBoundingClientRect().width) + "x"
@@ -10910,7 +10915,7 @@ try {
     Array.from(document.querySelectorAll("#headerRow th"))
       .filter((x) => x.textContent.indexOf("CP") === 0)[0].click();
     await new Promise((r) => setTimeout(r, 200));
-    window.__pgo.boxOtevrit();
+    window.__pgo.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 350));
     const out = {};
     // Ruční zapnutí DMAX změní verdikt — ale příčinou je uživatel, ne
@@ -11944,7 +11949,7 @@ try {
       title: c[prazdnyId].keepTitle || "",
       upozorneni: (document.getElementById("unknownWarn") || {}).textContent || ""
     };
-    window.__pgo.boxOtevrit();
+    window.__pgo.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 600));
     out.vBoxu = window.__pgo.bmSeznam().length;
     out.jmenaVBoxu = window.__pgo.bmSeznam().map((x) => x.row.pokemon || "?").join(",");
@@ -14947,7 +14952,7 @@ try {
       });
     P.setRows(rows);
     await new Promise((r) => setTimeout(r, 900));
-    P.boxOtevrit();
+    P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 400));
     const rr = P.getRows();
     const kroky = [];
@@ -15392,7 +15397,7 @@ try {
     });
 
     // cisteni boxu: projit vsechny karty
-    P.boxOtevrit();
+    P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await cekej(400);
     const box = {};
     for (let i = 0; i < 3; i++) {
@@ -16022,7 +16027,7 @@ try {
       await cekej(900);
       out.detailGym = [...document.querySelectorAll(".d-role[data-tip]")]
         .map((e) => e.getAttribute("data-tip")).filter((t) => /Obránce gymu drží/.test(t))[0] || "";
-      P.boxOtevrit();
+      P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
       await cekej(400);
       for (let i = 0; i < rows.length; i++) {
         if (P.boxStav().aktualni === drziGym.pokemon) break;
@@ -16739,7 +16744,7 @@ try {
       box.remove();
     });
     // klávesa F v čištění boxu přepne rozbalení i ikonu
-    P.boxOtevrit();
+    P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 400));
     const btn = document.getElementById("bmVicBtn");
     const pred = btn ? btn.innerHTML : "";
@@ -16902,7 +16907,7 @@ try {
     }
     P.setRows(rows);
     await new Promise((r) => setTimeout(r, 900));
-    P.boxOtevrit();
+    P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 500));
     for (let i = 0; i < 6; i++) {
       document.getElementById("bmDrop").click();
@@ -17550,7 +17555,7 @@ try {
     });
     P.setRows(rows);
     await new Promise((r) => setTimeout(r, 2000));
-    P.boxOtevrit();
+    P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 1000));
     const nalezy = [];
     let nabidek = 0;
@@ -17609,7 +17614,7 @@ try {
     await new Promise((r) => setTimeout(r, 1800));
     const zmer = async (rezim) => {
       document.getElementById("boxSekce").value = String(rezim);
-      P.boxOtevrit();
+      P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
       await new Promise((r) => setTimeout(r, 700));
       const seznam = P.bmSeznam();
       const sekce = {};

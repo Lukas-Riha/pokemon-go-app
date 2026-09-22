@@ -708,6 +708,9 @@ async function boxKontrola(page) {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
     document.getElementById("boxModeBtn").click();
+    await cekej(350);
+    { const ok = document.getElementById("appOknoOk");
+      if (ok && !document.getElementById("appOkno").hidden) ok.click(); }
     await cekej(900);
     // „vidět" = má výšku a není průhledné (sbalené bloky se schovávají přes max-height)
     const vidno = (s) => { const e = document.querySelector(s); if (!e || e.offsetParent === null) return false;
@@ -817,6 +820,9 @@ async function boxKontrola(page) {
     P.boxZavritNatvrdo();
     await cekej(250);
     document.getElementById("boxModeBtn").click();
+    await cekej(350);
+    { const ok = document.getElementById("appOknoOk");
+      if (ok && !document.getElementById("appOkno").hidden) ok.click(); }
     await cekej(800);
     document.getElementById("bmVicBtn").click();
     await cekej(800);
@@ -940,6 +946,10 @@ const dBlik = await pBlik.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
   document.getElementById("boxModeBtn").click();
   await cekej(900);
+  // předěl sekce drží ruku — v testu ho odklikneme
+  { const ok = document.getElementById("appOknoOk");
+    if (ok && !document.getElementById("appOkno").hidden) ok.click(); }
+  await cekej(250);
   const znacka = () => document.querySelector("#bmBody .atlas-evolution-column");
   const prvni = znacka();
   if (!prvni) return { chyba: "bez evoluční řady" };

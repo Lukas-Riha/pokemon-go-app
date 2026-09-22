@@ -11948,7 +11948,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   var HERNI_URL = "https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/"
     + "Images/Pokemon%20-%20256x256/Addressable%20Assets/";
   var FORMA_PRIPONA = { alola: "ALOLA", galar: "GALARIAN", hisui: "HISUIAN",
-    paldea: "PALDEA", armored: "A" };
+    paldea: "PALDEA", armored: "A",
+    // Zygarde: v klíči druhu je „tenpercent", v mirroru „TEN_PERCENT".
+    tenpercent: "TEN_PERCENT", fiftypercent: "FIFTY_PERCENT", complete: "COMPLETE" };
 
   /* Formy, které NEJSOU v klíči druhu, jen v zobrazeném jméně. Shellos a
      Gastrodon mají východní a západní moře a herní ikona bez té přípony
@@ -11969,7 +11971,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     [/^(?=.*\bgalar)(?=.*darmanitan)/i, "GALARIAN_STANDARD"],
     [/\bzen\b/i, "ZEN"],
     [/therian/i, "THERIAN"],
-    [/incarnate/i, "INCARNATE"]
+    [/incarnate/i, "INCARNATE"],
+    // „Armored" se z klíče druhu vytratí (je to pořád Mewtwo), takže se
+    // hledá ve jménu kusu — jinak má brněný Mewtwo ikonu obyčejného.
+    [/armored/i, "A"]
   ];
 
   /* Druhy, u kterých PokeMiners ikonu BEZ přípony nemá. Když kus formu ve
@@ -25213,7 +25218,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     bmVolby = {};
     bmVerzeRosteru = 0;
     bmVerzeRozhodnuti = {};
-    bmSekceOhlasene = {};
+    bmSekceNaposled = 0;
     if (!bmList.length) {
       appHlaska("Není co čistit — pod aktivním filtrem není ani jeden kus.");
       return;
@@ -25339,8 +25344,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return d.innerHTML;
   }
 
-  /* Které sekce už se ohlásily. Zpátky po ← se ohlašovat znovu nemusí. */
-  var bmSekceOhlasene = {};
+  /* Ve které sekci fronta právě je. Předěl se ohlásí při každé změně —
+     i při návratu zpátky, jinak se člověk v sekcích ztratí. */
+  var bmSekceNaposled = 0;
   var BM_SEKCE_POPIS = {
     1: "Tyhle pustíš ve hře jedním výběrem — appka ti je pak najde"
        + " podle jmen a CP.",
@@ -25353,11 +25359,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   /** Než se začne nová sekce, řekne se to. Včetně té první — jinak není
    *  poznat, podle čeho je fronta vlastně seřazená. */
   function bmOhlasitSekci(x) {
-    if (!x || bmSekceOhlasene[x.sekce]) return;
+    if (!x || x.sekce === bmSekceNaposled) return;
     var nazvy = bmNazvySekci(bmRezimSekci());
     var nazev = nazvy[x.sekce];
+    bmSekceNaposled = x.sekce;
     if (!nazev) return;                       // jedna sekce = není co ohlašovat
-    bmSekceOhlasene[x.sekce] = true;
     var kolik = bmList.filter(function (y) { return y.sekce === x.sekce; }).length;
     appHlaska(x.sekce + ". sekce — " + nazev + " · " + kusu(kolik)
       + "\n\n" + (BM_SEKCE_POPIS[x.sekce] || ""));
@@ -25398,7 +25404,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       ? x.sekce + ". sekce" + (nazev ? " (" + nazev + ")" : "")
         + " · " + poradiVSekci + " / " + vSekci.length
       : (bmIndex + 1) + " / " + bmList.length;
-    bar.style.width = Math.round(bmIndex / bmList.length * 100) + "%";
+    bar.style.width = Math.round((vSekci.length
+      ? (poradiVSekci - 1) / vSekci.length
+      : bmIndex / bmList.length) * 100) + "%";
 
     var iv = c.ivPct === null ? "IV neznámé" : Math.round(c.ivPct * 100) + " % IV";
     var staty = [r.ivAtk, r.ivDef, r.ivSta].map(function (v) {
@@ -26133,8 +26141,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   document.getElementById("boxMode").addEventListener("mousedown", function (e) {
     if (e.target === this) bmZavrit();
   });
-  document.getElementById("bmDrop").addEventListener("click", function () { bmRozhodnout("drop"); });
-  document.getElementById("bmKeep").addEventListener("click", function () { bmRozhodnout("keep"); });
+  /* Dokud visí hláška (předěl sekcí), tlačítka čištění nereagují — modál má
+     zastavit ruku, ne jen zakrýt obrazovku. Test volá API přímo, tam to
+     nevadí: tam žádná ruka není. */
+  function bmHlaskaVisi() {
+    var o = document.getElementById("appOkno");
+    return !!(o && !o.hidden);
+  }
+  document.getElementById("bmDrop").addEventListener("click", function () { if (!bmHlaskaVisi()) bmRozhodnout("drop"); });
+  document.getElementById("bmKeep").addEventListener("click", function () { if (!bmHlaskaVisi()) bmRozhodnout("keep"); });
 
   // Šipky vodorovně = pohyb po seznamu (vlevo zpátky, vpravo dál) — tak to
   // funguje všude jinde a ruka to čeká. Původně pouštěla vlevo a nechávala
@@ -26143,6 +26158,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // „nechat" splývá s posunem dál, protože to je ta častější odpověď.
   document.addEventListener("keydown", function (e) {
     if (document.getElementById("boxMode").hidden) return;
+    // Otevřená hláška (předěl sekcí, potvrzení) drží ruku: dokud ji člověk
+    // neodklikne, nejde se posunout dál ani zpátky.
+    var okno = document.getElementById("appOkno");
+    if (okno && !okno.hidden) return;
     // Psaní do políčka nesmí spouštět zkratky čištění. Backspace se jinak
     // chytil jako „o jednoho zpět" a v poli „Nové CP" nešlo nic smazat.
     var cilKl = e.target;
@@ -26442,6 +26461,24 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     renderCheatSheet: renderCheatSheet,
     // Seznam v čištění boxu — testy potřebují vidět rozdělení na sekce.
     bmSeznam: function () { return bmList; },
+    /** Smaže jeden kus i se zápisem mezi smazané (aby se při importu
+     *  nevrátil). Vrací true, když se opravdu smazal. */
+    /** Potvrzovací okno v podobě appky — pro vzhledovou vrstvu. */
+    potvrdit: function (text, akce, okText) { appPotvrdit(text, akce, okText); },
+    hlaska: function (text, po) { appHlaska(text, po); },
+    smazatKus: function (id) {
+      var kus = null;
+      rows.forEach(function (r) { if (r.id === id) kus = r; });
+      if (!kus) return false;
+      if (kus.cp) {
+        discarded.push({ k: scanKey(kus), at: parseScanDate(kus.scanDate),
+          n: kus.pokemon || "", del: Date.now(), r: rowSnapshot(kus) });
+      }
+      rows = rows.filter(function (x) { return x.id !== id; });
+      if (!rows.length) povolPrazdnyZapis();
+      renderBody(); persist(true); renderDiscardBtn();
+      return true;
+    },
     /* Vystředění spritu v rámečku — obrázky, které kreslí vzhledová vrstva
        sama (hlavička detailu, čištění boxu), o něj jinak přijdou a ikona
        pak v rámečku sedí nakřivo. */

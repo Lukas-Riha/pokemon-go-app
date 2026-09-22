@@ -940,3 +940,13 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats>.d-box{min-width:0}
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-utoky{flex:1 1 280px;margin-left:0}
+/* Claude 22. 9. (3): dlaždice, odstranění kusu, sekce v čištění. */
+/* V dlaždici jsou typy na svém řádku a osobní značky pod nimi — i u kusu
+   s jedním typem, kde to dřív rozhodovala délka štítku. */
+.atlas-test .atlas-roster-tile .atlas-tag-typy,
+.atlas-test .atlas-roster-tile .atlas-tag-vlastni{display:flex;flex-wrap:wrap;gap:5px;flex-basis:100%}
+.atlas-test .atlas-roster-tile .atlas-tag-vlastni{margin-top:4px}
+/* Odstranění kusu je nevratné, tak ať tlačítko nevypadá jako ostatní. */
+.atlas-test .atlas-smazat-btn{border-color:color-mix(in srgb,var(--status-critical) 55%,var(--border));
+  color:var(--status-critical)}
+.atlas-test .atlas-smazat-btn:hover{background:color-mix(in srgb,var(--status-critical) 14%,transparent)}
