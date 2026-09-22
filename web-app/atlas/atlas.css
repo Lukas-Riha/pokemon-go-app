@@ -950,3 +950,39 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 .atlas-test .atlas-smazat-btn{border-color:color-mix(in srgb,var(--status-critical) 55%,var(--border));
   color:var(--status-critical)}
 .atlas-test .atlas-smazat-btn:hover{background:color-mix(in srgb,var(--status-critical) 14%,transparent)}
+/* Claude 22. 9. (4): útoky pod sebou, nadpis evoluční řady, odstranění. */
+/* Bez tečky zůstane její místo prázdné, ať útoky začínají na všech řádcích
+   na stejné svislici. */
+.atlas-utok-tecka.atlas-utok-mezera{background:none;box-shadow:none}
+/* Evoluční řada je nadpis, ne přihrádka — šipka i klikání pryč. */
+.atlas-test .atlas-evolution-column>summary{pointer-events:none;cursor:default;list-style:none}
+.atlas-test .atlas-evolution-column>summary::-webkit-details-marker{display:none}
+.atlas-test .atlas-evolution-column>summary::marker{content:""}
+.atlas-test .atlas-evolution-column>summary::before{display:none!important}
+/* Tlačítka v hlavičce detailu se musí vejít i s „Odstranit". */
+.atlas-test .atlas-drawer-header{flex-wrap:wrap;gap:6px}
+.atlas-test .atlas-drawer-header .atlas-mini-btn{padding:8px 11px;font-size:12px;white-space:nowrap}
+.atlas-test .atlas-drawer-header .hra-pruh{flex-wrap:wrap;gap:6px}
+/* Claude 22. 9. (5): detail bez rámečků. Místo krabic linky a barevné
+   proužky — u různě dlouhého obsahu vypadal poloprázdný box jako chyba. */
+#atlasDetailContent .atlas-detail-section[data-detail-section=ligy]{border:0;background:none;padding:0}
+#atlasDetailContent .atlas-detail-section[data-detail-section=ligy] .atlas-sekce-nadpis{display:none}
+#atlasDetailContent .d-ligy-tab{background:none}
+/* Linka patří pod hlavičku sloupců, ne nad celou tabulku. */
+#atlasDetailContent .d-ligy-tab tr:first-child>th{border-bottom:1px solid var(--border);padding-bottom:8px}
+#atlasDetailContent .d-roles.atlas-vyuziti{gap:0;border-top:0;padding-top:0;margin-top:22px}
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role{background:none;border:0;border-left:2px solid var(--border);
+  border-radius:0;padding:2px 14px;min-height:0}
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role.good{border-left-color:var(--status-good)}
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role.warning{border-left-color:var(--status-warning)}
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role.muted{border-left-color:var(--border)}
+#atlasDetailContent .atlas-krok .d-roles-akce>.d-role{background:none;border:0;border-left:3px solid var(--border);
+  border-radius:0;padding-left:14px}
+/* Evoluční řada: popisek zůstává jako orientace, linka pod ním ne. */
+#atlasDetailContent .atlas-evolution-column>summary{border-bottom:0;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text-muted);padding-bottom:2px}
+/* Po zrušení rámečků skončily čtyři buňky výš než evoluční řada — teď je
+   levý sloupec roztažený a buňky sedí na jeho spodku. */
+#atlasDetailContent .atlas-detail-column{display:flex;flex-direction:column}
+#atlasDetailContent .atlas-detail-column>.detail-main{display:flex;flex-direction:column;flex:1}
+#atlasDetailContent .detail-main>.d-roles.atlas-vyuziti{margin-top:auto}

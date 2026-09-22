@@ -563,6 +563,7 @@ globalThis.AtlasBudget = (() => {
       const sloupec=document.createElement('div');sloupec.className='atlas-sestava-utoky';
       const sTeckou=kdy==='má';
       jmena.forEach((jm,i)=>{const radek=document.createElement('div');radek.className='atlas-utok-radek';
+        if(!sTeckou){const mezera=document.createElement('i');mezera.className='atlas-utok-tecka atlas-utok-mezera';radek.append(mezera)}
         if(sTeckou){const tecka=document.createElement('i');tecka.className='atlas-utok-tecka';
           const stav=stavUtoku(String(jm).trim());tecka.dataset.stav=stav;
           tecka.title={nej:'Nejlepší útok, jaký tenhle druh má.',dobry:'Použitelný, ale nejlepší to není.',preucit:'Slabý útok — stojí za přeučení.',nezna:'Kvalita útoku se nedá posoudit.'}[stav]||'';
@@ -597,14 +598,14 @@ globalThis.AtlasBudget = (() => {
         if(!v)return;
         // U větvené řady (Eevee) „po evo" neřeklo, o kterou formu jde.
         const cil=/^Po evoluci na\s+(.+?)\s*$/.exec(h);
-        pridej(/^Po evoluci/.test(h)?(cil?cil[1]:'po evo'):'teď',v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
+        pridej(/^Po evoluci/.test(h)?(cil?cil[1]:'po evo'):(row.pokemon||'teď'),v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
       });
     }
     if(!box.querySelector('.d-move')&&moves){
       // Kus bez útoků a bez ligové sestavy: engine nabízí nejlepší možnou
       // sestavu jedním chipem („Force Palm + Aura Sphere (Elite TM)").
       const text=[...moves.querySelectorAll('.d-move-jm')].map(e=>e.textContent).find(x=>/\s\+\s/.test(x));
-      if(text)pridej('teď',text.split(' + '),'Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
+      if(text)pridej(row.pokemon||'teď',text.split(' + '),'Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
       else box.append(moves);
     }
     if(veta)box.setAttribute('data-tip',veta);

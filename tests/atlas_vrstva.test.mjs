@@ -1014,7 +1014,11 @@ const dDet = await pDet.evaluate(async () => {
     verdikt: r(".atlas-verdict-radek"),
     bunky: r("#atlasDetailContent .d-roles.atlas-vyuziti"),
     evo: r("#atlasDetailContent .atlas-evolution-column"),
-    ligySpodni: ligy ? parseFloat(getComputedStyle(ligy).borderBottomWidth) : -1,
+    // Sekce lig je bez rámečku (22. 9.) — linka patří pod hlavičku sloupců.
+    ligySpodni: (function () {
+      const th = ligy ? ligy.querySelector(".d-ligy-tab tr:first-child > th") : null;
+      return th ? parseFloat(getComputedStyle(th).borderBottomWidth) : -1;
+    })(),
     ligy: r(ligy),
     evoVnitrniLinka: [...document.querySelectorAll("#atlasDetailContent .atlas-evolution-column .d-evo")]
       .some((e) => parseFloat(getComputedStyle(e).borderTopWidth) > 0
@@ -1028,7 +1032,7 @@ const dDet = await pDet.evaluate(async () => {
   };
 });
 await pDet.close();
-check("ligy v detailu jsou uzavřené spodní linkou", dDet.ligySpodni >= 1, JSON.stringify(dDet.ligySpodni));
+check("tabulka lig má linku pod hlavičkou sloupců", dDet.ligySpodni >= 1, JSON.stringify(dDet.ligySpodni));
 check("…a čtyři buňky pod nimi nejsou nalepené",
   dDet.bunky && dDet.ligy && dDet.bunky.t - dDet.ligy.b >= 18,
   JSON.stringify({ ligy: dDet.ligy, bunky: dDet.bunky }));

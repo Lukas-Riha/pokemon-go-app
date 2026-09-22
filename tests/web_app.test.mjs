@@ -847,10 +847,10 @@ try {
 
   check("stránka nemá vodorovný posuvník", !layout.pageOverflow);
   // Sloupec „Forma“ už není — Shadow/Purified jsou značka u jména.
-  eq("v režimu Rozhodnutí je 19 sloupců", layout.verdict.cols, 19);
+  eq("v režimu Rozhodnutí je 20 sloupců", layout.verdict.cols, 20);
   check("…a na 1920 px se vejdou bez scrollování", layout.verdict.fits, String(layout.verdict.width));
   check("je vidět, proti jakým typům je pokémon silný", layout.strongCol, layout.strongCol);
-  eq("v režimu Vše je sloupců 40", layout.all.cols, 40);
+  eq("v režimu Vše je sloupců 41", layout.all.cols, 41);
   eq("sloupec se jménem je přišpendlený", layout.sticky, "sticky");
   check("nastavení prahů je sbalené, roster je hned pod souhrnem", layout.settingsClosed);
   check("tabulka zdrojů se neroztahuje přes celou šířku", layout.srcTableWidth <= 800, String(layout.srcTableWidth));
@@ -14338,7 +14338,12 @@ try {
     };
     return { vychod: vem("Shellos East Sea"), zapad: vem("Shellos West Sea"),
       bezMore: vem("Shellos"), gastrodon: vem("Gastrodon East Sea"),
-      bezny: vem("Machamp") };
+      // Pro test průhlednosti se paměť měření vyprázdní — u známého obrázku
+      // se průhlednost schválně vynechává (jinak blikal při listování).
+      bezny: (function () {
+        window.__pgo.zapomenoutRamecky();
+        return vem("Machamp");
+      })() };
   });
   check("Shellos East Sea ma v adrese vychodni more",
     /EAST_SEA/.test(obrazkyForem.vychod.src), obrazkyForem.vychod.src);
@@ -14349,8 +14354,10 @@ try {
     obrazkyForem.gastrodon.src);
   check("bezny druh zadnou priponu nedostane",
     !/_SEA/.test(obrazkyForem.bezny.src), obrazkyForem.bezny.src);
-  // Pojistka proti probliknuti: obrazek je do nacteni pruhledny.
-  check("obrazek je do nacteni pruhledny", /opacity:0/.test(obrazkyForem.bezny.styl),
+  // Pojistka proti probliknuti: NEZNAMY obrazek je do nacteni pruhledny.
+  // U znameho (uz zmereneho) se pruhlednost vynechava — jinak pri listovani
+  // mezi kusy blikal kazdy obrazek z cache.
+  check("neznámý obrázek je do načtení průhledný", /opacity:0/.test(obrazkyForem.bezny.styl),
     obrazkyForem.bezny.styl);
   check("…a po nacteni se ukaze", /opacity=1/.test(obrazkyForem.bezny.load),
     obrazkyForem.bezny.load);

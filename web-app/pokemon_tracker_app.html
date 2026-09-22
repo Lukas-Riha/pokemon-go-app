@@ -5356,6 +5356,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     { key: "mlRank", label: "ML Rank", type: "number", num: true, w: 78 },
     { key: "buddy", label: "Buddy", type: "select", options: ["Ano", "Ne"], w: 84 },
     { key: "note", label: "Poznámka", type: "text", cls: "col-note", w: 170 },
+    /* Pohlaví mění jen obrázek (samec a samice se u části druhů liší).
+       Do rozhodování nevstupuje — appka podle něj nic nepočítá. */
+    { key: "pohlavi", label: "Pohlaví", type: "select", options: ["", "Samec", "Samice"], w: 96 },
     { key: "copies", label: "Kopie", readonly: true, wv: 52, w: 92 },
     { key: "raid", label: "Raid útočník", readonly: true, w: 150 },
     { key: "gym", label: "Gym obránce", readonly: true, w: 100 },
@@ -5672,6 +5675,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     INPUT_KEYS.forEach(function (k) { r[k] = ""; });
     if (vals) Object.keys(vals).forEach(function (k) { if (vals[k] !== undefined) r[k] = vals[k]; });
 
+    // Značka pohlaví ve jméně („Jellicent ♂", „Frillish (Female)") je údaj
+    // o KUSU, ne o druhu: patří do vlastního sloupce, odkud si ji vezme
+    // obrázek. Ve jméně jen rozbíjela vyhledávání i nadpis.
+    if (typeof r.pokemon === "string" && /[♀♂]|\((?:fe)?male\)/i.test(r.pokemon)) {
+      var zena = /♀/.test(r.pokemon) || /\(female\)/i.test(r.pokemon);
+      if (!r.pohlavi) r.pohlavi = zena ? "Samice" : "Samec";
+      r.pokemon = r.pokemon.replace(/[♀♂]/g, "")
+        .replace(/\((?:fe)?male\)/ig, "")
+        .replace(/\s+/g, " ").trim();
+    }
+
     // ID se dřív přidělilo z čítače a HNED se přepsalo tím, co přišlo v datech.
     // Čítač se přitom posunul jen o počet řádků — takže v rosteru, kde se
     // mazalo (zbylo třeba r1, r5, r9), skončil na třech a další nový řádek
@@ -5711,7 +5725,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // kusy i vlastní připojené soubory (záloha, sdílení) — viz klicHandle níž.
   var PROFILES_ENABLED = true;
 
-  /* Pohlaví se ve skenech nevyskytuje; je to ruční údaj kvůli obrázku. */
+  /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
+     kusu. Používá se jen pro obrázek — samec a samice mají u některých
+     druhů jinou ikonu. */
   var SETTING_IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
@@ -12216,8 +12232,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var plna = src;
     try { plna = new URL(src, location.href).href; } catch (e) { /* nevadí */ }
     var ram = ramecekProUrl(plna) || ramecekProUrl(src);
+    // Průhlednost do načtení má smysl jen u obrázku, který appka vidí poprvé:
+    // u známého (změřeného) je v cache prohlížeče a každé skrytí je vidět
+    // jako bliknutí při listování mezi kusy.
     var styl = ram
-      ? "opacity:0;transform:translate(" + ram.x + "%, " + ram.y + "%) scale(" + ram.s + ")"
+      ? "transform:translate(" + ram.x + "%, " + ram.y + "%) scale(" + ram.s + ")"
       : "opacity:0";
     return '<img class="' + (trida || "") + '" loading="lazy" alt="" src="' + src + '"'
       + ' style="' + styl + '"'
@@ -21785,6 +21804,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       taken.push(target);
       poradiZeSkenu.push(target);
       updated++;
+      // Kus změnil FORMU, ne druh: Zygarde 10 % → 50 %, Shellos z východního
+      // moře na západní. Otisk kusu (druh + výška + váha) sedí dál, takže se
+      // spároval správně — ale jméno se dosud nepřepsalo a v rosteru zůstala
+      // stará forma i s její ikonou.
+      if (imp.pokemon && target.pokemon
+          && dexKey(imp.pokemon) !== dexKey(target.pokemon)
+          && speciesKey(imp.pokemon) === speciesKey(target.pokemon)) {
+        target.pokemon = imp.pokemon;
+      }
       // Kus se vrátil z gymu a Calcy ho konečně vidí: značka „doskenovat"
       // i dopočítaný level můžou pryč, teď jsou to skutečná data.
       if (target.zGymu) { delete target.zGymu; delete target.levelZCP; }
@@ -26413,6 +26441,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      */
     atlasImage: function (jmeno, trida) {
       return obrazekHtml(jmeno, dexEntry(jmeno), trida || "");
+    },
+    /** Zapomene změřené posazení spritů (jen pro testy — v provozu se paměť
+     *  zahazuje sama, když dojde místo). */
+    zapomenoutRamecky: function () {
+      spriteRamecky = {};
+      try { localStorage.removeItem("pgo_sprite_ramecek"); } catch (e) { /* nevadí */ }
     },
     /** Obrázek pro konkrétní KUS — zná shiny i pohlaví, takže vrátí variantu,
      *  kterou zapečený obrázek druhu nemá. */
