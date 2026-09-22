@@ -1261,7 +1261,8 @@ const dVz = await pVz.evaluate(async () => {
     return m ? m[1] : "";
   };
   out.shiny = /\.s\.icon\.png$/.test(adresa("Azumarill"));
-  out.zena = /\.g2\.icon\.png$/.test(adresa("Pyroar"));
+  // Samice se jmenuje dvěma způsoby: „…g2…" (gen 1–5) a „…fFEMALE…" (gen 6+).
+  out.zena = /\.(g2|fFEMALE)\.icon\.png$/.test(adresa("Pyroar"));
   // útoky po očištění
   A.openDetail(P.getRows().find((r) => r.pokemon === "Machamp").id);
   await cekej(1300);

@@ -157,7 +157,22 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const ivKusu=id=>{const c=(P.getComputed()||{})[id]||{};const t=c.ivUncertain&&c.ivRange?c.ivRange:(c.ivPct==null?'':Math.round(c.ivPct*100)+' %');return t?' · '+esc(t):''};
   // Hlavička kusu (obrázek, jméno, CP, IV) — stejná v detailu i v čištění boxu.
   window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}${r.star?' · OZNAČENO ★':''}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}${String(r.pokemon||'').length>13?' class="atlas-jmeno-dlouhe"':''}>${esc(r.pokemon)}</h2><p class="atlas-ident-radek">${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}${ivKusu(r.id)}</p></div></div>`;
-  function openDetail(id,retain=false){const r=P.getRows().find(r=>r.id===id);if(!r)return;if(!retain)previousFocus=document.activeElement;dialogId=id;$('#atlasIdentity').innerHTML=window.AtlasIdentitaHTML(r);$('#atlasModal').hidden=false;P.atlasDetail(id,$('#atlasDetailContent'),closeDetail);document.body.style.overflow='hidden';if(!retain)$('.atlas-drawer-header button').focus();}
+  /* Hlavička se při listování překresluje celá, takže i obrázek dostal nový
+     uzel — a ten problikne, i když je to ten samý druh. Když se adresa
+     obrázku nemění, původní <img> se do nové hlavičky přesune. */
+  function nahradIdentitu(r){
+    const cil=$('#atlasIdentity');
+    const stary=cil.querySelector('img');
+    const sablona=document.createElement('div');
+    sablona.innerHTML=window.AtlasIdentitaHTML(r);
+    const novy=sablona.querySelector('img');
+    if(stary&&novy&&stary.getAttribute('src')===novy.getAttribute('src')){
+      novy.replaceWith(stary);
+    }
+    cil.replaceChildren(...sablona.childNodes);
+  }
+
+  function openDetail(id,retain=false){const r=P.getRows().find(r=>r.id===id);if(!r)return;if(!retain)previousFocus=document.activeElement;dialogId=id;nahradIdentitu(r);$('#atlasModal').hidden=false;P.atlasDetail(id,$('#atlasDetailContent'),closeDetail);document.body.style.overflow='hidden';if(!retain)$('.atlas-drawer-header button').focus();}
   function closeDetail(){if(!dialogId)return;dialogId=null;$('#atlasModal').hidden=true;$('#atlasDetailContent').innerHTML='';document.body.style.overflow='';previousFocus?.focus({preventScroll:true});}
   window.addEventListener('atlas:refresh-detail',()=>{refresh();if(dialogId)openDetail(dialogId,true)});
   function setCompact(value){compact=value;document.body.classList.toggle('atlas-compact',value);try{localStorage.setItem('pgo_test_atlas_compact',value?'1':'0')}catch{}renderRoster();}
@@ -311,8 +326,11 @@ globalThis.AtlasBudget = (() => {
     const form=document.createElement('form');form.id='atlasRowEditor';form.className='atlas-row-editor';
     const fields=[['pokemon','Pokémon','text'],['cp','CP','number',10,99999,1],['level','Level','number',1,50,.5],['ivAtk','IV útok','number',0,15,1],['ivDef','IV obrana','number',0,15,1],['ivSta','IV HP','number',0,15,1],['fastMove','Rychlý útok','text'],['charged1','Nabitý útok 1','text'],['charged2','Nabitý útok 2','text']];
     const forms=[...new Set([row.forma||'Normal','Normal','Lucky','Shadow','Purified'])];
+    // Pohlaví se nabízí jen u druhů, kde se samec a samice liší vzhledem —
+    // jinde by to byl údaj, který nic nezmění.
+    const maPohlavi=P.maPohlaviRozdil?P.maPohlaviRozdil(row.pokemon):true;
     const pohlavi=[...new Set([row.pohlavi||'—','—','Samec','Samice'])];
-    form.innerHTML='<div class="atlas-eyebrow">UPRAVUJEŠ JEDEN KUS</div><h3>'+esc(row.pokemon)+'</h3><div class="atlas-editor-grid">'+fields.map(([key,label,type,min,max,step])=>`<label>${label}<input name="${key}" type="${type}" value="${esc(row[key])}" ${min!=null?`min="${min}" max="${max}" step="${step}"`:''} ${key==='pokemon'?'required':''}></label>`).join('')+'<label>Stav / forma<select name="forma">'+forms.map(f=>`<option value="${esc(f)}" ${f===(row.forma||'Normal')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+'<label>Pohlaví<select name="pohlavi">'+pohlavi.map(f=>`<option value="${f==='—'?'':esc(f)}" ${f===(row.pohlavi||'—')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+'<label class="atlas-editor-note">Poznámka<textarea name="note">'+esc(row.note)+'</textarea></label></div>'+'<div class="atlas-editor-actions"><button type="submit" class="atlas-cta">Uložit</button><button type="button" class="atlas-mini-btn" data-editor-cancel>Zrušit</button><p role="status" id="atlasEditorStatus"></p></div>';
+    form.innerHTML='<div class="atlas-eyebrow">UPRAVUJEŠ JEDEN KUS</div><h3>'+esc(row.pokemon)+'</h3><div class="atlas-editor-grid">'+fields.map(([key,label,type,min,max,step])=>`<label>${label}<input name="${key}" type="${type}" value="${esc(row[key])}" ${min!=null?`min="${min}" max="${max}" step="${step}"`:''} ${key==='pokemon'?'required':''}></label>`).join('')+'<label>Stav / forma<select name="forma">'+forms.map(f=>`<option value="${esc(f)}" ${f===(row.forma||'Normal')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+(maPohlavi?'<label>Pohlaví<select name="pohlavi">'+pohlavi.map(f=>`<option value="${f==='—'?'':esc(f)}" ${f===(row.pohlavi||'—')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>':'')+'<label class="atlas-editor-note">Poznámka<textarea name="note">'+esc(row.note)+'</textarea></label></div>'+'<div class="atlas-editor-actions"><button type="submit" class="atlas-cta">Uložit</button><button type="button" class="atlas-mini-btn" data-editor-cancel>Zrušit</button><p role="status" id="atlasEditorStatus"></p></div>';
     // Útoky se vybírají stejným výběrem jako ve Vyhledávání (typ, síla, ★ elitní) — engine __pgoUtoky.vyber na dočasném objektu; hodnota jde do skrytého pole formuláře. Při změně druhu se výběr postaví znovu.
     const utoky={pokemon:row.pokemon,fastMove:row.fastMove||'',charged1:row.charged1||'',charged2:row.charged2||'',__docasny:true};const vyberUtoku=()=>{if(!window.__pgoUtoky)return;utoky.pokemon=form.elements.pokemon.value;['fastMove','charged1','charged2'].forEach(k=>{const input=form.elements[k];let obal=form.querySelector('[data-utok-obal="'+k+'"]');if(!obal){obal=document.createElement('div');obal.className='atlas-utok-vyber';obal.dataset.utokObal=k;input.after(obal);input.type='hidden'}obal.innerHTML='';window.__pgoUtoky.vyber(obal,utoky,k,()=>{input.value=utoky[k]||''})})};vyberUtoku();form.elements.pokemon.addEventListener('change',vyberUtoku);
     const baseline=new Map([...form.elements].filter(e=>e.name).map(e=>[e.name,e.type==='checkbox'?e.checked:e.value]));
@@ -573,10 +591,17 @@ globalThis.AtlasBudget = (() => {
     };
     // Mapa „jméno útoku → jak je dobrý" z útoků, které engine vypsal v detailu.
     const stavy=new Map();
+    // Bere se jen skutečné hodnocení útoku (engine značí čtyřmi stavy).
+    // Dřív sem propadaly i jiné třídy (`d-move-poEvoluci`) a z tečky byl šedý
+    // puntík bez významu. První nález vyhrává — ten patří kusu, ne jeho evoluci.
+    const ZNAME=['nej','dobry','preucit','nezna'];
     (moves?moves.querySelectorAll('.d-move'):[]).forEach(el=>{
       const jm=(el.querySelector('.d-move-jm')||{}).textContent||'';
-      const tr=[...el.classList].find(c=>c.startsWith('d-move-')&&c!=='d-move-jm'&&c!=='d-move-elit');
-      if(jm)stavy.set(cisteJmeno(jm).toLowerCase(),(tr||'d-move-nezna').replace('d-move-',''));
+      if(!jm)return;
+      const klic=cisteJmeno(jm).toLowerCase();
+      if(stavy.has(klic))return;
+      const tr=[...el.classList].map(c=>c.replace('d-move-','')).find(c=>ZNAME.indexOf(c)!==-1);
+      if(tr)stavy.set(klic,tr);
     });
     const stavUtoku=jm=>stavy.get(cisteJmeno(jm).toLowerCase())||'nej';
     const why=moves?moves.querySelector('.d-why'):null;

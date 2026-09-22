@@ -11963,6 +11963,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      v mirroru není, `onerror` spadne zpátky na PokeAPI. */
   var HERNI_URL = "https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/"
     + "Images/Pokemon%20-%20256x256/Addressable%20Assets/";
+  /* Druhy, u kterých se samec a samice liší VZHLEDEM — a jen u nich má smysl
+     pohlaví vyplňovat. Seznam není odhad: jsou to čísla druhů, pro které má
+     mirror PokeMiners vlastní obrázek samice. Hodnota říká, jak se ten
+     soubor jmenuje: 1 = „…g2…" (gen 1–5), 2 = „…fFEMALE…" (gen 6+, kde je
+     samice vedená jako forma). Obnovuje ho tools/refresh_pohlavi.py. */
+  var POHLAVI_ROZDIL = {"3":1,"12":1,"19":1,"20":1,"25":1,"26":1,"41":1,"42":1,"44":1,"45":1,"64":1,"65":1,"84":1,"85":1,"97":1,"111":1,"112":1,"118":1,"119":1,"123":1,"129":1,"130":1,"133":1,"154":1,"165":1,"166":1,"178":1,"185":1,"186":1,"190":1,"194":1,"195":1,"198":1,"202":1,"203":1,"207":1,"208":1,"212":1,"214":1,"215":1,"217":1,"221":1,"224":1,"229":1,"232":1,"255":1,"256":1,"257":1,"267":1,"269":1,"272":1,"274":1,"275":1,"307":1,"308":1,"315":1,"316":1,"317":1,"322":1,"323":1,"332":1,"350":1,"369":1,"396":1,"397":1,"398":1,"399":1,"400":1,"401":1,"402":1,"403":1,"404":1,"405":1,"407":1,"415":1,"417":1,"418":1,"419":1,"424":1,"443":1,"444":1,"445":1,"449":1,"450":1,"453":1,"454":1,"456":1,"457":1,"459":1,"460":1,"461":1,"464":1,"465":1,"473":1,"521":1,"592":2,"593":2,"668":2,"678":2,"876":2,"916":2};
+
   var FORMA_PRIPONA = { alola: "ALOLA", galar: "GALARIAN", hisui: "HISUIAN",
     paldea: "PALDEA", armored: "A",
     // Zygarde: v klíči druhu je „tenpercent", v mirroru „TEN_PERCENT".
@@ -12215,9 +12222,22 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var jeShiny = shiny && typeof shiny === "object" ? !!shiny.shiny : !!shiny;
     var varianty = [];
     if (herni) {
-      if (zena && jeShiny) varianty.push(herni.replace(".icon.png", ".g2.s.icon.png"));
-      if (jeShiny) varianty.push(herni.replace(".icon.png", ".s.icon.png"));
-      if (zena) varianty.push(herni.replace(".icon.png", ".g2.icon.png"));
+      // Samice se jmenuje dvěma způsoby: „…g2…" (gen 1–5) nebo „…fFEMALE…"
+      // (gen 6+). Zkusí se to podle seznamu, a když druh v seznamu není,
+      // zkusí se obojí — chybná adresa spadne na běžnou ikonu.
+      var schema = dex && dex.id ? POHLAVI_ROZDIL[String(dex.id)] : 0;
+      var zenske = [];
+      if (zena) {
+        if (schema !== 2) zenske.push(herni.replace(".icon.png", ".g2.icon.png"));
+        if (schema !== 1 && herni.indexOf(".f") === -1) {
+          zenske.push(herni.replace(".icon.png", ".fFEMALE.icon.png"));
+        }
+      }
+      if (jeShiny) {
+        zenske.forEach(function (u) { varianty.push(u.replace(".icon.png", ".s.icon.png")); });
+        varianty.push(herni.replace(".icon.png", ".s.icon.png"));
+      }
+      zenske.forEach(function (u) { varianty.push(u); });
       varianty.push(herni);
     }
     if (pixel) varianty.push(pixel);
@@ -26441,6 +26461,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      */
     atlasImage: function (jmeno, trida) {
       return obrazekHtml(jmeno, dexEntry(jmeno), trida || "");
+    },
+    /** Liší se u tohohle druhu samec a samice vzhledem? Jen tam má smysl
+     *  pohlaví vyplňovat — jinde by to byl údaj, který nic nemění. */
+    maPohlaviRozdil: function (jmeno) {
+      var dex = dexEntry(jmeno);
+      return !!(dex && dex.id && POHLAVI_ROZDIL[String(dex.id)]);
     },
     /** Zapomene změřené posazení spritů (jen pro testy — v provozu se paměť
      *  zahazuje sama, když dojde místo). */
