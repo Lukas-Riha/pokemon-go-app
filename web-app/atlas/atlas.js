@@ -604,7 +604,8 @@ globalThis.AtlasBudget = (() => {
           if(stav!=='nej'&&lepsi){
             const sip=document.createElement('em');sip.className='atlas-utok-lepsi';
             sip.textContent='→ '+lepsi;
-            sip.title='Lepší volba pro tenhle kus: '+lepsi+'. Přeučení stojí TM.';
+            const proc=duvody.get(cist)||'';
+            sip.title=(proc?proc+' ':'')+'Lepší volba: '+lepsi+' — přeučení stojí TM.';
             radek.append(sip);
           }
         }
@@ -612,7 +613,15 @@ globalThis.AtlasBudget = (() => {
       radek.append(sloupec);box.append(radek);
     };
     // Mapa „jméno útoku → jak je dobrý" z útoků, které engine vypsal v detailu.
-    const stavy=new Map();
+    const stavy=new Map(),duvody=new Map();
+    // Hodnocení i důvod má engine přímo v datech kusu — spolehlivější než
+    // číst je ze značek, které si vrstva vzápětí přestavuje.
+    if(c&&Array.isArray(c.utoky))c.utoky.forEach(u=>{
+      const k=cisteJmeno(u.jm||'').toLowerCase();
+      if(!k)return;
+      if(u.stav&&!stavy.has(k))stavy.set(k,u.stav);
+      if(u.proc&&!duvody.has(k))duvody.set(k,u.proc);
+    });
     // Bere se jen skutečné hodnocení útoku (engine značí čtyřmi stavy).
     // Dřív sem propadaly i jiné třídy (`d-move-poEvoluci`) a z tečky byl šedý
     // puntík bez významu. První nález vyhrává — ten patří kusu, ne jeho evoluci.
@@ -624,6 +633,8 @@ globalThis.AtlasBudget = (() => {
       if(stavy.has(klic))return;
       const tr=[...el.classList].map(c=>c.replace('d-move-','')).find(c=>ZNAME.indexOf(c)!==-1);
       if(tr)stavy.set(klic,tr);
+      const proc=el.getAttribute('title')||'';
+      if(proc&&!duvody.has(klic))duvody.set(klic,proc);
     });
     const stavUtoku=jm=>stavy.get(cisteJmeno(jm).toLowerCase())||'nej';
     // Nejlepší sestava pro TEĎEJŠÍ formu — z ní se bere, na co přeučit.
@@ -689,6 +700,11 @@ globalThis.AtlasBudget = (() => {
   if(utokyBox&&identita)identita.append(utokyBox);
   if(vPlachte)document.querySelectorAll('.atlas-detail-paging [data-detail-step]').forEach(b=>{b.title=b.dataset.detailStep==='1'?'Další kus (→ nebo D)':'Předchozí kus (← nebo A)'});
   // Doporučený krok vedle verdiktu místo vlastní sekce dole.
+  // Štítky důvodů drží jeden řádek: co se nevejde, schová engine pod „+N"
+  // (stejná mechanika jako v dlaždicích rosteru).
+  container.querySelectorAll('.atlas-verdict-first .d-duvody,.d-verdict .d-duvody')
+    .forEach(el=>{el.dataset.radku='1'});
+  if(P.srovnejDuvody)requestAnimationFrame(()=>P.srovnejDuvody(container));
   const verd=container.querySelector('.atlas-verdict-first'),coted=container.querySelector('[data-detail-section=coted]');if(verd){const radek=document.createElement('div');radek.className='atlas-verdict-radek';verd.before(radek);radek.append(verd);const akce=coted&&coted.querySelector('.d-roles-akce');if(akce){const krok=document.createElement('section');krok.className='atlas-krok';krok.setAttribute('aria-label','Doporučený krok');krok.append(akce);radek.append(krok)}}coted?.remove();
   const why=container.querySelector('.atlas-verdict-first .d-why');if(why){const hlava=container.querySelector('.atlas-verdict-first .d-verdict>b');if(hlava&&why.textContent.trim())hlava.setAttribute('data-tip',why.textContent.trim());why.remove();}
  };

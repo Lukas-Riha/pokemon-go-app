@@ -1027,3 +1027,13 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 #atlasDetailContent .d-roles.atlas-vyuziti{gap:12px}
 #atlasDetailContent .d-roles.atlas-vyuziti>.d-role{background:var(--input-bg);border:1px solid var(--border);
   border-left-width:3px;border-radius:12px;padding:12px 14px}
+/* Claude 22. 9. (8): ještě těsnější staty a víc vzduchu mezi sloupci. */
+.atlas-test .atlas-drawer .atlas-ident-stats{gap:34px}
+.atlas-test .atlas-drawer .atlas-ident-stats .d-box{gap:2px}
+.atlas-test .atlas-drawer .atlas-ident-stats .d-bar{height:20px}
+/* Číslo se nesmí lepit na další sloupec — má svoje místo a odstup. */
+.atlas-test .atlas-drawer .atlas-ident-stats .d-bar>span:last-child,
+.atlas-test .atlas-drawer .atlas-ident-stats .d-bar>b:last-child{min-width:34px;text-align:right;padding-right:2px}
+/* Štítky verdiktu se drží na jednom řádku (zbytek schová „+N"). */
+#atlasDetailContent .atlas-verdict-first .d-duvody,
+#atlasDetailContent .d-verdict .d-duvody{max-height:30px;overflow:hidden}

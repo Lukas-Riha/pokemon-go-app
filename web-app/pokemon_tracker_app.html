@@ -12805,8 +12805,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         d.filtr = "Mega";
         d.stitek = "Mega";
       }
-      if (d.poEvoluci && sl.druh !== "pvp") d.stitek += " po evo";
       d.proc = velkym(sl.popis) + "."
+        + (d.poEvoluci && sl.druh !== "pvp"
+          ? " Platí až po evoluci — dokud ho nevyvineš, do téhle role nejde." : "")
         + (sl.mezera && !sl.rezerva
           ? " Jen náplast — lepší kus na tohle nemáš, drží místo, než ho chytíš." : "");
       return d;
