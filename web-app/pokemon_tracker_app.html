@@ -1326,6 +1326,9 @@
   .d-bar-fill { display: block; height: 100%; border-radius: 6px; }
   .d-bar-v { width: 36px; text-align: right; font-variant-numeric: tabular-nums;
     font-weight: 600; color: var(--text-primary); }
+  /* Pevna sirka drzi pruhy stejne dlouhe ve vsech bunkach, zarovnani doleva
+     drzi cislo u pruhu. Zbytek te sirky je mezera k dalsi bunce. */
+  .atlas-test .d-bar-v { width: 30px; text-align: left; }
 
   .d-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 8px;
     margin-bottom: 12px; }
@@ -3072,7 +3075,7 @@
         PvP potenciál 96 % se slevou 5 bodů, elitní rank 100,
         <b>pořadí druhu v lize do #50</b>, práh užitečnosti role 50 %,
         50 tis. prachu za bod IV, 2 Dynamax kusy druhu a 3 na roli,
-        dotahovat na L40, paměť smazaných 30 dní. O ponechání ale rozhoduje <b>rozpočet rolí</b> —
+        dotahovat na L40, paměť smazaných 3 dny. O ponechání ale rozhoduje <b>rozpočet rolí</b> —
         prahy jen určují, kdo se o roli uchází a kdo ji drží jen jako náplast.</span>
     </div>
   </details>
@@ -3517,9 +3520,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         <input type="search" id="discardSearch" placeholder="Hledat mezi smazanými…" autocomplete="off" />
         <label for="discardKeepDays">Paměť držet</label>
         <select id="discardKeepDays" title="Jak dlouho si pamatovat, žes kus smazal. Čím kratší, tím menší šance, že blokace sedne na nově chycený kus.">
+          <option value="3" selected>3 dny</option>
           <option value="7">7 dní</option>
           <option value="14">14 dní</option>
-          <option value="30" selected>30 dní</option>
+          <option value="30">30 dní</option>
           <option value="60">60 dní</option>
           <option value="90">90 dní</option>
           <option value="0">navždy</option>
@@ -7328,6 +7332,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     } catch (e) { /* aspoň to nespadne */ }
   }
   var zapisNejde = "";
+  /* Uz se doba pameti smazanych jednou zkratila z 30 na 3 dny? */
+  var pametZkracena = false;
 
   function currentSnapshot() {
     var settings = {};
@@ -7338,7 +7344,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       settings[id] = el.type === "checkbox" ? (el.checked ? "1" : "0") : el.value;
     });
     return { v: 2, rows: rows, settings: settings, filterMode: filterMode, sortKey: sortKey,
-      sortDir: sortDir, discarded: discarded, rucniUtoky: rucniUtoky, historie: historie };
+      sortDir: sortDir, discarded: discarded, rucniUtoky: rucniUtoky, historie: historie,
+      pametZkracena: pametZkracena };
   }
 
   /* Prázdný roster se přes uložený neprázdný NIKDY nepřepíše sám od sebe.
@@ -7580,6 +7587,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       }
       else nastavVychozi(el);
     });
+    pametZkracena = !!(snap && snap.pametZkracena);
+    if (!pametZkracena) {
+      var pamet = document.getElementById("discardKeepDays");
+      if (pamet && pamet.value === "30") pamet.value = "3";
+      pametZkracena = true;
+    }
     discarded = normalizeDiscarded(snap && snap.discarded);
     rucniUtoky = (snap && snap.rucniUtoky && typeof snap.rucniUtoky === "object")
       ? snap.rucniUtoky : {};
@@ -12806,7 +12819,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         d.stitek = "Mega";
       }
       d.proc = velkym(sl.popis) + "."
-        + (d.poEvoluci && sl.druh !== "pvp"
+        // Popis slotu uz casto rika sam („ale az jako Glaceon; dokud ho
+        // nevyvines…"). Pridavat k tomu druhou vetu o tomtez je opakovani.
+        + (d.poEvoluci && sl.druh !== "pvp" && !/nevyvin/i.test(sl.popis || "")
           ? " Platí až po evoluci — dokud ho nevyvineš, do téhle role nejde." : "")
         + (sl.mezera && !sl.rezerva
           ? " Jen náplast — lepší kus na tohle nemáš, drží místo, než ho chytíš." : "");
@@ -13199,8 +13214,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       vic.textContent = "+" + skryte.length;
       vic.setAttribute("data-tip", '<div class="tip-hlava">Další důvody</div><ul class="tip-seznam">'
         + skryte.map(function (e) {
-          return "<li><b>" + escHtml(e.textContent) + "</b> — " + escHtml(e.getAttribute("data-proc") || "")
-            + "</li>";
+          var proc = e.getAttribute("data-proc") || "";
+          // Stitek uz pojmenovani nese sam (,,Grass 14/3"). Kdyz k nemu
+          // appka nema vetu navic, pomlcka by visela v prazdnu.
+          return "<li><b>" + escHtml(e.textContent) + "</b>"
+            + (proc ? " — " + escHtml(proc) : "") + "</li>";
         }).join("") + "</ul>");
     });
   }
@@ -27631,6 +27649,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      *  `r` je obyčejný objekt s `pokemon`, `fastMove`, `charged1`, `charged2`;
      *  s příznakem `__docasny` se nikam neukládá. */
     window.__pgoUtoky = {
+      /* Je nejaka nabidka rozbalena? A zavri ji. Vrstva to potrebuje,
+         aby po zavreni okna nezustala viset nad strankou. */
+      jeOtevreno: function () { return !!otevrenySeznam; },
+      zavritSeznam: function () { zavritSeznam(); },
       vyber: function (obal, r, klic, poZmene) {
         var klicDruhu = window.__pgo.dexKeyOf(r.pokemon || "");
         return vyber(obal, r, klic, klicDruhu, {}, poZmene);

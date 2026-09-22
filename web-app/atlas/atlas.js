@@ -375,12 +375,34 @@ globalThis.AtlasBudget = (() => {
     if(!form.classList.contains('atlas-editor-vedle'))form.scrollIntoView({block:'start'});
     form.querySelector('[name="'+(field||'pokemon')+'"]').focus({preventScroll:true});
   };
+  // Rozbalena nabidka utoku zije mimo okno (position:fixed na <body>), takze
+  // se zavrenim okna sama nezmizi — musi se zavrit rucne.
+  function zavritNabidkuUtoku(){
+    const U=window.__pgoUtoky;
+    if(U&&U.jeOtevreno&&U.jeOtevreno()){U.zavritSeznam();return true}
+    const zbytek=document.querySelector('.uv-seznam');
+    if(zbytek){zbytek.remove();document.querySelectorAll('.uv-pole.otevreno')
+      .forEach(el=>el.classList.remove('otevreno'));return true}
+    return false;
+  }
+  window.AtlasZavritNabidkuUtoku=zavritNabidkuUtoku;
+  // Pojistka pro vsechny ostatni cesty (Zrusit, Ulozit, krizek, prepnuti
+  // kusu): kdyz pole, ze ktereho se nabidka rozbalila, zmizi ze stranky,
+  // zavre se i nabidka. Jinak zustala viset nad prazdnym mistem.
+  (function hlidatNabidku(){
+    let cekani=0;
+    new MutationObserver(()=>{
+      if(!document.querySelector('.uv-seznam'))return;
+      clearTimeout(cekani);
+      cekani=setTimeout(()=>{
+        const pole=document.querySelector('.uv-pole.otevreno');
+        if(!pole||!pole.isConnected||!pole.getClientRects().length)zavritNabidkuUtoku();
+      },0);
+    }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class','style']});
+  })();
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
-    const nabidka=document.querySelector('.uv-nabidka:not([hidden]),.utok-vyber-otevreny,.uv-pole[aria-expanded="true"]');
-    if(nabidka){e.preventDefault();e.stopImmediatePropagation();
-      (nabidka.closest('.atlas-utok-vyber')||nabidka).querySelectorAll('[aria-expanded="true"]').forEach(b=>b.click&&b.click());
-      document.body.click();return;}
+    if(zavritNabidkuUtoku()){e.preventDefault();e.stopImmediatePropagation();return}
     const editor=document.getElementById('atlasRowEditor');
     if(editor){e.preventDefault();e.stopImmediatePropagation();
       editor.querySelector('[data-editor-cancel]')?.click();return;}
@@ -518,7 +540,7 @@ globalThis.AtlasBudget = (() => {
  $('.atlas-drawer>div:last-child button[data-atlas-action="edit"]')?.parentElement.remove();
  const close=$('.atlas-drawer-header [data-atlas-action="close"]'),edit=document.createElement('button');edit.id='atlasEditPokemon';edit.dataset.atlasAction='edit';edit.textContent='Upravit tohoto Pokémona';edit.className='atlas-mini-btn';close.before(edit);
  {const smaz=document.createElement('button');smaz.id='atlasSmazatPokemona';smaz.dataset.atlasAction='smazat';
-  smaz.textContent='Odstranit';smaz.className='atlas-mini-btn atlas-smazat-btn';smaz.title='Odstranit tenhle kus z rosteru';close.before(smaz);}
+  smaz.textContent='Odstranit';smaz.className='atlas-mini-btn atlas-smazat-btn';close.before(smaz);}
  const dialog=$('#atlasImportDialog'),box=$('#importBox');let approved=false;
  window.AtlasReplaceApproved=()=>{const result=approved;approved=false;return result};
  window.AtlasAskReplace=()=>{if(dialog.querySelector('.atlas-replace-confirm'))return;const panel=document.createElement('section');panel.className='atlas-replace-confirm';panel.innerHTML='<h3>Nahradit současný roster?</h3><p>Roster bude nahrazen vybraným skenem podle nastavených voleb ochrany vzácných kusů. Předchozí stav zůstane v historii aplikace.</p><div class="atlas-result-actions"><button data-confirm-replace>Nahradit roster</button><button data-cancel-replace>Zpět k importu</button></div>';box.before(panel);box.hidden=true;panel.querySelector('[data-cancel-replace]').onclick=()=>{panel.remove();box.hidden=false};panel.querySelector('[data-confirm-replace]').onclick=()=>{panel.remove();box.hidden=false;approved=true;$('#mapReplaceBtn').click()};panel.querySelector('[data-cancel-replace]').focus()};

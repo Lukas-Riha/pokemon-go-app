@@ -1448,6 +1448,123 @@ check("po odstranění kusu se detail zavře",
 check("„Přidat pokémona“ má stejný výběr útoků a nemá pole o gymu",
   dDr.pridat.vyberu === 3 && dDr.pridat.gymSkryty === true, JSON.stringify(dDr.pridat));
 
+// ------------------------- staty, nabídky a paměť smazaných
+// Pruhy statů a IV musí být stejně dlouhé (s `width:auto` u čísla si délku
+// určoval počet cifer), nabídka útoků nesmí skončit pod oknem ani přežít
+// okno, ze kterého vzešla, a příkazy nemají bubliny.
+console.log("\n8) Staty, nabídky útoků a paměť smazaných");
+const pSt = await otevri(1500);
+const dSt = await pSt.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  out.pamet = document.getElementById("discardKeepDays").value;
+  out.moznosti = [...document.getElementById("discardKeepDays").options].map((o) => o.value);
+
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1500);
+  const zmer = (box) => {
+    const bar = box.querySelector(".d-bar");
+    const tr = bar.querySelector(".d-bar-track").getBoundingClientRect();
+    const v = bar.querySelector(".d-bar-v").getBoundingClientRect();
+    return { pruh: Math.round(tr.width), kPruhu: Math.round(v.left - tr.right),
+      zaCislem: Math.round(bar.getBoundingClientRect().right - v.right) };
+  };
+  const boxy = [...document.querySelectorAll(".atlas-drawer .atlas-ident-stats .d-box")]
+    .filter((b) => b.querySelector(".d-bar"));
+  out.staty = zmer(boxy[0]);
+  out.iv = zmer(boxy[1]);
+
+  const sum = document.querySelector("#atlasDetailContent .atlas-evolution-column>summary");
+  const kus = document.querySelector("#atlasDetailContent .d-evo-kus");
+  const a = sum.getBoundingClientRect(), b = kus.getBoundingClientRect();
+  out.nadpisOd = Math.round((a.left + a.width / 2) - (b.left + b.width / 2));
+
+  out.titulky = [...document.querySelectorAll(".atlas-drawer-header button")]
+    .map((x) => x.title || "").filter(Boolean);
+
+  // Escape: rozbalená nabídka útoků padá první, okno pod ní zůstává
+  window.AtlasEditRow(P.getRows()[0].id);
+  await cekej(600);
+  const pole = document.querySelector("#atlasRowEditor .uv-pole");
+  pole.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  pole.click();
+  await cekej(400);
+  out.nabidkaOtevrena = !!document.querySelector(".uv-seznam");
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(350);
+  out.poEsc = { nabidka: !!document.querySelector(".uv-seznam"),
+    editor: !!document.getElementById("atlasRowEditor") };
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(350);
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(350);
+
+  // „Přidat pokémona": nabídka útoků nad oknem, po zavření nezůstane viset
+  const btn = [...document.querySelectorAll("button")].filter((x) => /Přidat pokémona/i.test(x.textContent))[0];
+  btn.click();
+  await cekej(600);
+  const jm = document.getElementById("rbName");
+  jm.value = "Machamp";
+  jm.dispatchEvent(new Event("change", { bubbles: true }));
+  await cekej(900);
+  const pole2 = document.querySelector("#rucniBox .uv-pole");
+  if (!pole2) { out.pridat = { chyba: "okno nemá výběr útoků" }; return out; }
+  pole2.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  pole2.click();
+  await cekej(450);
+  const seznam = document.querySelector(".uv-seznam");
+  if (!seznam) { out.pridat = { chyba: "nabídka se neotevřela" }; return out; }
+  const r = seznam.getBoundingClientRect();
+  const nahore = document.elementFromPoint(Math.round(r.left + r.width / 2), Math.round(r.top + 12));
+  out.pridat = { nadOknem: !!(nahore && nahore.closest && nahore.closest(".uv-seznam")) };
+  const zrusit = [...document.querySelectorAll("#rucniBox button")].filter((x) => /Zrušit/.test(x.textContent))[0];
+  zrusit.click();
+  await cekej(450);
+  out.pridat.zbylaNabidka = !!document.querySelector(".uv-seznam");
+  return out;
+});
+await pSt.close();
+check("paměť smazaných drží 3 dny, ne měsíc",
+  dSt.pamet === "3" && dSt.moznosti.indexOf("3") === 0, JSON.stringify(dSt.moznosti));
+check("pruh statů a IV je stejně dlouhý",
+  dSt.staty.pruh === dSt.iv.pruh && dSt.staty.pruh >= 70,
+  JSON.stringify({ staty: dSt.staty, iv: dSt.iv }));
+check("číslo sedí u pruhu stejně u statů i IV a mezera za ním je větší",
+  dSt.staty.kPruhu === dSt.iv.kPruhu && dSt.staty.zaCislem >= dSt.staty.kPruhu * 2,
+  JSON.stringify({ staty: dSt.staty, iv: dSt.iv }));
+check("nadpis evoluční řady stojí nad ní", Math.abs(dSt.nadpisOd) <= 6, String(dSt.nadpisOd));
+check("příkazy v hlavičce detailu nemají bubliny",
+  dSt.titulky.length === 0, JSON.stringify(dSt.titulky));
+check("Escape zavře nejdřív rozbalenou nabídku útoků",
+  dSt.nabidkaOtevrena === true && dSt.poEsc.nabidka === false && dSt.poEsc.editor === true,
+  JSON.stringify(dSt.poEsc));
+check("nabídka útoků v „Přidat pokémona“ je nad oknem a nepřežije ho",
+  dSt.pridat.nadOknem === true && dSt.pridat.zbylaNabidka === false,
+  JSON.stringify(dSt.pridat));
+
+// „+N" v úzkém detailu: seznam bez visící pomlčky a bez opakované věty
+const pPlus = await otevri(820);
+const dPlus = await pPlus.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1500);
+  const vic = document.querySelector("#atlasDetailContent .dv-vic");
+  const tip = vic && !vic.hidden ? (vic.getAttribute("data-tip") || "") : "";
+  const pom = document.createElement("div");
+  pom.innerHTML = tip;
+  return { text: vic ? vic.textContent : "", tip,
+    polozky: [...pom.querySelectorAll("li")].map((li) => li.textContent.trim()) };
+});
+await pPlus.close();
+check("seznam pod „+N“ nekončí visící pomlčkou",
+  dPlus.polozky.length > 0 && dPlus.polozky.every((x) => !/[—-]\s*$/.test(x)),
+  JSON.stringify(dPlus.polozky).slice(0, 220));
+check("…a neopakuje tutéž větu o evoluci dvakrát",
+  dPlus.polozky.every((x) => (x.match(/nevyvineš/g) || []).length <= 1),
+  JSON.stringify(dPlus.polozky).slice(0, 260));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

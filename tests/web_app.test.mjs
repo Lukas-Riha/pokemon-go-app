@@ -2069,7 +2069,7 @@ try {
   eq("výchozí práh IV je 90 %", cfg.po.ivThresh, "90");
   eq("výchozí elitní rank je 100", cfg.po.rankThresh, "100");
   eq("výchozí práh užitečnosti role je 50 %", cfg.po.roleThresh, "50");
-  eq("select se vrátí na 30 dní, ne na prázdno", cfg.po.discardKeepDays, "30");
+  eq("select se vrátí na 3 dny, ne na prázdno", cfg.po.discardKeepDays, "3");
   check("…a předtím to opravdu bylo rozhozené", cfg.rozhozene.keepCopies === "7", JSON.stringify(cfg.rozhozene));
 
   console.log("\n47) prahy nastavené tak, že nic neprojde, appka pojmenuje");

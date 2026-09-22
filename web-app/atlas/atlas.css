@@ -1066,3 +1066,27 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 /* Claude 22. 9. (11): jeden řádek štítků verdiktu je opravdu jeden. */
 .atlas-test .d-duvody .dv-radek[data-radku="1"],
 .atlas-test .dv-radek[data-radku="1"]{flex-wrap:nowrap;overflow:hidden;row-gap:0}
+/* Claude 22. 9. (12): delsi pruhy statu, nadpis evoluce nad radou,
+   rozbalena nabidka utoku nad oknem. */
+/* Popisek uzsi a bunka sirsi = delsi barevny pruh, lepe je videt kolik chybi. */
+.atlas-test .atlas-ident-stats .d-bar-l{width:44px}
+/* Sirsi podil pro staty jen na okne, kde se hlavicka porad vejde na jeden
+   radek. Uzsi okno by si blok utoku zalomilo dolu a nechalo v hlavicce diru. */
+@media(min-width:1460px){
+  .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{flex:0 1 50%;min-width:0}
+  .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-text{flex:1 1 190px;min-width:0}
+}
+/* Mezi 1330 a 1459 px uz hlavicka tolik mista nema, ale pruhy se daly
+   prodlouzit aspon o sloupec se jmenem — utoky pritom zustanou na radku. */
+@media(min-width:1330px) and (max-width:1459px){
+  .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{flex:0 1 46%;min-width:0}
+  .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-text{flex:1 1 150px;min-width:0}
+}
+.atlas-test .atlas-drawer .atlas-ident-stats .d-box{padding:10px}
+.atlas-test .atlas-ident-stats .d-bar{gap:7px;padding-right:26px}
+.atlas-test .atlas-ident-stats .d-bar-v{width:28px}
+/* Nadpis patri nad radu, ne k levemu okraji sloupce. */
+#atlasDetailContent .atlas-evolution-column>summary{text-align:center}
+/* Nabidka utoku je nad vsim krome hlasek appky: okno ,,Pridat pokemona"
+   sedi na 2500, drivejsi pravidlo drzelo nabidku !important na 1600. */
+.atlas-test .uv-seznam{z-index:2600!important}
