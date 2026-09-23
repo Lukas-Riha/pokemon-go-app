@@ -801,8 +801,17 @@ async function boxKontrola(page) {
             return [Math.round(r.left), Math.round(r.width)]; }) };
     };
     const out = { sbalene: [], rozbalene: [],
+      // Rozbor je vzdy cely, takze na nizkem okne muze presahnout. Co
+      // presahnout NESMI, jsou tlacitka Pustit/Nechat pod nim.
+      tlacitkaVidet: (function () {
+        const d = document.getElementById("bmDrop"), k = document.getElementById("bmKeep");
+        if (!d || !k) return false;
+        const rd = d.getBoundingClientRect(), rk = k.getBoundingClientRect();
+        return rd.bottom <= window.innerHeight + 1 && rk.bottom <= window.innerHeight + 1
+          && rd.height > 10 && rk.height > 10;
+      })(),
       zamek: getComputedStyle(document.body).overflow === "hidden",
-      schovane: ["#bmBody > .bm-head", "#bmBody > .bm-verdikt", "#bmBody > .bm-why", "#bmBody > .bm-roles", "#bmBody > .bm-ligy", "#bmVic"].filter((s) => vidno(s)),
+      schovane: ["#bmBody > .bm-head", "#bmBody > .bm-verdikt", "#bmBody > .bm-why", "#bmBody > .bm-roles", "#bmBody > .bm-ligy"].filter((s) => vidno(s)),
       // Lišta „ve hře jsem s ním něco udělal" patří nad evoluční řadu:
       // v pruhu postupu měnila jeho šířku podle počtu tlačítek.
       hraPruh: (function () {
@@ -828,7 +837,7 @@ async function boxKontrola(page) {
     { const ok = document.getElementById("appOknoOk");
       if (ok && !document.getElementById("appOkno").hidden) ok.click(); }
     await cekej(800);
-    document.getElementById("bmVicBtn").click();
+    document.getElementById("bmVicBtn")?.click();
     await cekej(800);
     for (let i = 0; i < 4; i++) {
       out.rozbalene.push({ r: rozbor(), prebytek: prebytek() });
@@ -854,12 +863,11 @@ check("…a po rozhodnutí se přepne na další kus se stejným rozborem",
   !!d10.druhy && d10.druhy.jmeno !== d10.prvni.jmeno && d10.druhy.staty === 3 && d10.druhy.utoky
     && d10.pozice2 !== d10.pozice,
   JSON.stringify({ prvni: d10.prvni.jmeno, druhy: d10.druhy && d10.druhy.jmeno }));
-check("hned vidět je rozhodování i evoluční řada, rozbaluje se jen tabulka Lig",
-  d10.sbalene.every((x) => x.r && x.r.vyuzitiVidet && x.r.verdikt && x.r.evoluceVidet && !x.r.ligyVidet)
-    && d10.rozbalene.every((x) => x.r && x.r.ligyVidet && x.r.evoluceVidet && x.r.vyuzitiVidet
-      && x.r.verdikt && x.r.utoky && x.r.staty === 3 && x.r.ligyTag === "SECTION"),
-  JSON.stringify({ sbalene: d10.sbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet]),
-    rozbalene: d10.rozbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet, x.r.utoky]) }));
+// Rozbor uz se nesbaluje: hned je videt vsechno vcetne tabulky lig.
+check("rozbor je hned cely — rozhodování, evoluční řada i tabulka Lig",
+  [...d10.sbalene, ...d10.rozbalene].every((x) => x.r && x.r.vyuzitiVidet && x.r.verdikt
+    && x.r.evoluceVidet && x.r.ligyVidet && x.r.utoky && x.r.staty === 3 && x.r.ligyTag === "SECTION"),
+  JSON.stringify(d10.sbalene.map((x) => x.r && [x.r.vyuzitiVidet, x.r.ligyVidet, x.r.evoluceVidet, x.r.utoky])));
 // Hlavička se rozbalením nesmí hnout ani zmenšit (pár pixelů z centrování panelu tolerujeme).
 check("…a hlavička zůstane v obou stavech na stejném místě a ve stejné velikosti",
   d10.sbalene.every((x, i) => x.r.hlavicka.every((v, k) =>
@@ -880,9 +888,8 @@ const p10b = await otevri(1400, ROSTER10);
 await p10b.setViewportSize({ width: 1400, height: 900 });
 const d10b = await boxKontrola(p10b);
 await p10b.close();
-check("…a rozhodovací část se vejde i na nižší okno (1400×900)",
-  d10b.sbalene.every((x) => x.prebytek === 0),
-  JSON.stringify({ sbalene: d10b.sbalene.map((x) => x.prebytek), rozbalene: d10b.rozbalene.map((x) => x.prebytek) }));
+check("…a na nižším okně (1400×900) zůstanou vidět rozhodovací tlačítka",
+  d10b.tlacitkaVidet === true, JSON.stringify(d10b.tlacitkaVidet));
 // Čtyři boxy hlavičky (staty, IV, strop, útoky) musí mít pořád stejnou výšku
 // a útoky nesmí být nikdy prázdné — doporučené útoky má každý kus.
 // Nadpisy čtyř sloupců i popisek formy stojí na jednom řádku a mezi kusy se
@@ -899,9 +906,8 @@ check("…box útoků má vždycky obsah, nepřetéká a rozlišuje současné �
     && [...d10.sbalene, ...d10.rozbalene].some((x) =>
       x.r.utokyKdy.some((k) => k !== "teď" && k !== "má")),
   JSON.stringify([...d10.sbalene, ...d10.rozbalene].map((x) => [x.r.jmeno, x.r.utokuChipu, x.r.utokyPretek, x.r.utokyKdy])));
-check("evoluční řada je vystředěná a po rozbalení má větší šipky",
-  d10.sbalene.every((x) => x.r.evoStred <= 2) && d10.rozbalene.every((x) => x.r.evoStred <= 2)
-    && d10.rozbalene[0].r.sipka > d10.sbalene[0].r.sipka,
+check("evoluční řada je vystředěná",
+  d10.sbalene.every((x) => x.r.evoStred <= 2) && d10.rozbalene.every((x) => x.r.evoStred <= 2),
   JSON.stringify({ sbalene: d10.sbalene.map((x) => [x.r.jmeno, x.r.evoStred, x.r.sipka]),
     rozbalene: d10.rozbalene.map((x) => [x.r.jmeno, x.r.evoStred, x.r.sipka]) }));
 check("v rozbalené tabulce lig má slabá liga podbarvení a poslední řádek nemá linku",
@@ -1733,13 +1739,17 @@ const dSi = await pSi.evaluate(async () => {
   if (ok && !document.getElementById("appOkno").hidden) ok.click();
   await cekej(900);
   const sirka = () => Math.round(document.querySelector(".bm-progress").getBoundingClientRect().width);
+  // Rozbor uz se neprepina; ukazatel postupu musi drzet delku i pri
+  // prechodu na dalsi kus.
   const pred = sirka();
-  document.getElementById("bmVicBtn").click();
-  await cekej(700);
+  window.__pgo.boxRozhodnout("keep");
+  await cekej(800);
   const po = sirka();
-  document.getElementById("bmVicBtn").click();
-  await cekej(700);
+  window.__pgo.boxZpet();
+  await cekej(800);
   out.pruh = [pred, po, sirka()];
+  out.rozborVzdy = !!(document.getElementById("bmVic") || {}).open
+    && !document.getElementById("bmVicBtn");
   const st = (s) => { const e = document.querySelector(".atlas-box-rozbor " + s);
     if (!e) return null; const c = getComputedStyle(e);
     return { border: c.borderTopWidth, bg: c.backgroundColor, zarovnani: c.textAlign }; };
@@ -1765,8 +1775,10 @@ check("křížek sedí uprostřed tlačítka",
   Math.abs(dSi.krizek.dx) <= 1 && Math.abs(dSi.krizek.dy) <= 1, JSON.stringify(dSi.krizek));
 check("Escape zavře i okno „Přidat pokémona“",
   dSi.rucni.otevreno === true && dSi.rucni.poEsc === false, JSON.stringify(dSi.rucni));
-check("ukazatel postupu nemění délku při rozbalení rozboru",
+check("ukazatel postupu nemění délku mezi kusy",
   new Set(dSi.pruh).size === 1, JSON.stringify(dSi.pruh));
+check("rozbor v čištění je vždy celý a nejde sbalit",
+  dSi.rozborVzdy === true, String(dSi.rozborVzdy));
 check("rozbor v boxu je bez rámečků jako detail",
   dSi.evoSloupec && dSi.evoSloupec.border === "0px"
     && dSi.evoNadpis && dSi.evoNadpis.zarovnani === "center",
@@ -1790,9 +1802,10 @@ for (const sirkaBox of [1600, 1280, 950]) {
     const ok = document.getElementById("appOknoOk");
     if (ok && !document.getElementById("appOkno").hidden) ok.click();
     await cekej(900);
+    // Sprity evolucni rady se mezi druhy lisi (jina delka rady), to neni posun.
     const SEL = [".bm-top", ".bm-progress", ".atlas-detail-identity", ".atlas-verdict-radek",
       ".atlas-vyuziti", ".atlas-vyuziti>.d-role", ".bm-actions", "#bmDrop",
-      ".atlas-evolution-column", ".atlas-evolution-column .d-evo-kus img", ".d-ligy-tab"];
+      ".atlas-evolution-column", ".d-ligy-tab"];
     const snap = () => {
       const o = {};
       SEL.forEach((s) => { const e = document.querySelector(".box-mode " + s);
@@ -1805,7 +1818,9 @@ for (const sirkaBox of [1600, 1280, 950]) {
     const roleTop = () => { const e = document.querySelector(".box-mode .atlas-vyuziti>.d-role");
       return e ? [...e.children].map((x) => Math.round(x.getBoundingClientRect().top)) : []; };
     const roleSbaleno = roleTop();
-    document.getElementById("bmVicBtn").click();
+    // Rozbor se uz neprepina; hlavicka a ukazatel musi drzet misto i pri
+    // prechodu na dalsi kus.
+    window.__pgo.boxRozhodnout("keep");
     await cekej(900);
     const rozbaleno = snap();
     // Vodorovne se nesmi hnout nic. Svisle smi klesnout jen to, co je POD
@@ -1824,7 +1839,7 @@ for (const sirkaBox of [1600, 1280, 950]) {
       krok: kr ? { bg: kr.backgroundColor, bt: kr.borderTopWidth, bl: kr.borderLeftWidth } : null };
   });
   await pBox.close();
-  check(`rozbalení rozboru nic neposune (${sirkaBox} px)`,
+  check(`přechod na další kus nic neposune (${sirkaBox} px)`,
     dBox.posunute.length === 0, JSON.stringify(dBox.posunute));
   if (sirkaBox === 1600) {
     check("čtyři buňky mají nadpis nad hodnotou i ve sbaleném stavu",
@@ -1852,6 +1867,95 @@ check("příkaz se jmenuje „Projít pokémony“",
     && dNaz.starky === false, JSON.stringify(dNaz.tlacitka));
 check("nadpis tabulky je jen „Roster“",
   dNaz.roster.length === 1 && dNaz.roster[0] === "Roster", JSON.stringify(dNaz.roster));
+
+// ------------- „Ne" červeně, sjednocené příkazy a značky bez posunu
+console.log("\n12) Červená u „Ne“, sjednocené příkazy a stabilní značky");
+const pCer = await otevri(1700, [
+  { pokemon: "Gardevoir", cp: 2209, level: 25.5, ivAtk: 12, ivDef: 14, ivSta: 13,
+    fastMove: "Confusion", charged1: "Psychic" },
+  { pokemon: "Sawk", cp: 1500, level: 25, ivAtk: 10, ivDef: 10, ivSta: 10,
+    fastMove: "Low Kick", charged1: "Close Combat" },
+  { pokemon: "Charizard", cp: 2813, level: 40, ivAtk: 12, ivDef: 12, ivSta: 12,
+    fastMove: "Fire Spin", charged1: "Blast Burn" },
+]);
+const dCer = await pCer.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+
+  // příkazy nad rosterem mají stejné písmo i tvar
+  out.prikazy = [...document.querySelectorAll("button, summary")]
+    .filter((b) => /Přidat pokémona|Projít pokémony|Zrušit filtry|Doplnit útoky|Správa rosteru/.test(b.textContent)
+      && b.getBoundingClientRect().height > 5)
+    .map((b) => { const c = getComputedStyle(b);
+      return c.fontSize + "/" + c.fontWeight + "/" + c.borderRadius; });
+
+  // čtyři buňky: „Ne" má červený proužek
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1500);
+  out.bunky = [...document.querySelectorAll("#atlasDetailContent .d-roles.atlas-vyuziti>.d-role")]
+    .map((e) => ({ ne: /(muted|critical)/.test(e.className), bar: getComputedStyle(e).borderLeftColor }));
+  document.querySelector('.atlas-drawer-header [data-atlas-action="close"]').click();
+  await cekej(500);
+
+  // čištění: rozbor je vždy celý a vlastní značky drží místo
+  A.go("home"); A.refresh(); await cekej(700);
+  document.querySelector('[data-click="boxModeBtn"]').click();
+  await cekej(1500);
+  const ok = document.getElementById("appOknoOk");
+  if (ok && !document.getElementById("appOkno").hidden) ok.click();
+  await cekej(900);
+  out.rozborVzdy = { tlacitko: !!document.getElementById("bmVicBtn"),
+    otevreno: !!(document.getElementById("bmVic") || {}).open,
+    ligyVidet: (() => { const e = document.querySelector(".box-mode [data-detail-section=ligy]");
+      return !!e && e.getBoundingClientRect().height > 2 && getComputedStyle(e).opacity !== "0"; })() };
+  out.znacky = [];
+  out.bunkyBox = [];
+  for (let i = 0; i < 3; i++) {
+    const chip = document.querySelector(".box-mode .detail-title .rarity-chip");
+    out.znacky.push(chip ? Math.round(chip.getBoundingClientRect().left) : null);
+    out.bunkyBox.push([...document.querySelectorAll(".box-mode .d-roles.atlas-vyuziti>.d-role")]
+      .filter((e) => /(muted|critical)/.test(e.className))
+      .map((e) => getComputedStyle(e).borderLeftColor));
+    P.boxRozhodnout("keep");
+    await cekej(800);
+  }
+
+  // okno při odchodu: všechny tři příkazy vypadají stejně
+  P.boxZavritNatvrdo();
+  await cekej(300);
+  document.querySelector('[data-click="boxModeBtn"]').click();
+  await cekej(1400);
+  const ok2 = document.getElementById("appOknoOk");
+  if (ok2 && !document.getElementById("appOkno").hidden) ok2.click();
+  await cekej(800);
+  P.boxRozhodnout("keep");
+  await cekej(700);
+  document.getElementById("bmClose").click();
+  await cekej(700);
+  out.odchod = [...document.querySelectorAll(".bm-zeptat .actions button")]
+    .map((b) => { const c = getComputedStyle(b); return c.backgroundColor + "/" + c.color; });
+  P.boxZavritNatvrdo();
+  return out;
+});
+await pCer.close();
+check("příkazy nad rosterem mají stejné písmo i tvar",
+  dCer.prikazy.length >= 4 && new Set(dCer.prikazy).size === 1, JSON.stringify(dCer.prikazy));
+check("„Ne“ má v detailu červený proužek",
+  dCer.bunky.filter((x) => x.ne).length > 0
+    && dCer.bunky.filter((x) => x.ne).every((x) => /208, 59, 59|var\(--status-critical\)/.test(x.bar)),
+  JSON.stringify(dCer.bunky));
+check("…a stejně tak v čištění boxu",
+  dCer.bunkyBox.flat().length > 0
+    && dCer.bunkyBox.flat().every((b) => /208, 59, 59/.test(b)), JSON.stringify(dCer.bunkyBox));
+check("rozbor v čištění je celý hned a nejde sbalit",
+  dCer.rozborVzdy.tlacitko === false && dCer.rozborVzdy.otevreno === true
+    && dCer.rozborVzdy.ligyVidet === true, JSON.stringify(dCer.rozborVzdy));
+check("vlastní značky začínají u každého kusu na stejném místě",
+  dCer.znacky.every((x) => x !== null) && new Set(dCer.znacky).size === 1,
+  JSON.stringify(dCer.znacky));
+check("okno při odchodu z čištění má tři rovnocenné příkazy",
+  dCer.odchod.length === 3 && new Set(dCer.odchod).size === 1, JSON.stringify(dCer.odchod));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

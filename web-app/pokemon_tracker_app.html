@@ -3669,7 +3669,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       <div class="bm-top">
         <span class="bm-pos" id="bmPos"></span>
         <div class="bm-progress"><span id="bmBar"></span></div>
-        <button class="bm-x" id="bmVicBtn" title="Celý rozbor">&#9707;</button>
         <button class="bm-x" id="bmClose" title="Konec (Esc)">&#10005;</button>
       </div>
       <div class="bm-scroll">
@@ -3689,7 +3688,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         &middot; &#8595; nebo <kbd>S</kbd> pustit
         &middot; &#8592; nebo <kbd>A</kbd> o jednoho zpět
         &middot; mezerník nebo <kbd>W</kbd> přeskočit
-        &middot; <kbd>F</kbd> rozbor &middot; Esc konec<br>
+        &middot; Esc konec<br>
         <span id="bmOrder"></span></div>
     </div>
   </div>
@@ -12069,11 +12068,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     mer.crossOrigin = "anonymous";
     mer.onload = function () {
       try {
+        if (!mer.naturalWidth || !mer.naturalHeight) return;
+        // Měří se na zmenšené kopii. Výsledek jsou samé poměry (podíly
+        // šířky a výšky), takže se zmenšením nezmění — jen se čte
+        // čtyřikrát míň pixelů. Na plném 256px spritu byl `getImageData`
+        // a průchod polem nejdražší věc při přepínání kusů v čištění.
+        var STROP_MERENI = 128;
+        var delsi = Math.max(mer.naturalWidth, mer.naturalHeight);
+        var pomer = delsi > STROP_MERENI ? STROP_MERENI / delsi : 1;
         var cv = document.createElement("canvas");
-        cv.width = mer.naturalWidth; cv.height = mer.naturalHeight;
-        if (!cv.width || !cv.height) return;
-        var cx = cv.getContext("2d");
-        cx.drawImage(mer, 0, 0);
+        cv.width = Math.max(1, Math.round(mer.naturalWidth * pomer));
+        cv.height = Math.max(1, Math.round(mer.naturalHeight * pomer));
+        var cx = cv.getContext("2d", { willReadFrequently: true });
+        cx.drawImage(mer, 0, 0, cv.width, cv.height);
         var d = cx.getImageData(0, 0, cv.width, cv.height).data;
         var t = -1, b2 = -1, l = cv.width, r2 = -1;
         for (var y = 0; y < cv.height; y++) {
@@ -13892,6 +13899,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + " .d-role-p:not(.slozeno),"
       + " .dust-jak:not(.slozeno),"
       + " .type-note:not(.slozeno), .cover-what:not(.slozeno)");
+    /* Čtení a zápis jdou v oddělených průchodech. Dřív se u každého prvku
+       střídalo měření (`getClientRects`, `scrollHeight`) se zápisem třídy,
+       takže prohlížeč musel přepočítat rozložení stránky pro KAŽDÝ prvek
+       zvlášť. Při přepínání kusů v čištění to byla nejdražší věc na celé
+       obrazovce. Takhle se rozložení přepočítá dvakrát, ne dvakrát za kus. */
+    // 1) čtení: co je vůbec vidět a co má uvnitř ovládací prvek
+    var vybrane = [];
     Array.prototype.forEach.call(prvky, function (el) {
       // Na SKRYTÉM prvku se nerozhoduje nic — ani „nech celý". Text schovaný
       // stylem (na telefonu se výklad neukazuje) by tím dostal `slozeno`,
@@ -13899,13 +13913,24 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (!el.getClientRects().length) return;
       // V odstavci může být tlačítko (Tahák má uvnitř „Stáhnout"). Složit ho
       // znamená schovat ovládací prvek — takový text zůstává celý.
-      if (el.querySelector("button, input, select, textarea, a")) {
-        el.classList.add("slozeno", "cely");
-        return;
-      }
-      el.classList.add("slozeno");
-      // krátký text skládat nemá cenu
-      if (el.scrollHeight <= el.clientHeight + 4) { el.classList.add("cely"); return; }
+      vybrane.push({ el: el,
+        ovladaci: !!el.querySelector("button, input, select, textarea, a") });
+    });
+    // 2) zápis: `slozeno` na všechny naráz, teprve pak se dá měřit přetečení
+    vybrane.forEach(function (x) {
+      if (x.ovladaci) x.el.classList.add("slozeno", "cely");
+      else x.el.classList.add("slozeno");
+    });
+    // 3) čtení: krátký text skládat nemá cenu
+    vybrane.forEach(function (x) {
+      if (x.ovladaci) return;
+      x.kratky = x.el.scrollHeight <= x.el.clientHeight + 4;
+    });
+    // 4) zápis: doplnit `cely` nebo přidat tlačítko „víc"
+    vybrane.forEach(function (x) {
+      if (x.ovladaci) return;
+      var el = x.el;
+      if (x.kratky) { el.classList.add("cely"); return; }
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "vic-btn";
@@ -25620,47 +25645,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var det = document.getElementById("bmDetail");
     if (vic && det) {
       // Verdikt je o kus výš v nerozbalené kartě — v rozboru by byl podruhé.
-      det.innerHTML = vic.open ? bezVerdiktu(detailHtml(b, c)) : "";
-      // Pořadí je důležité: rozbalený rozbor panel rozšiřuje a sklápění
-      // popisů se rozhoduje podle skutečné šířky. Kdyby se měřilo dřív,
-      // měřilo by se v úzkém panelu.
-      document.getElementById("boxMode").classList.toggle("siroky", vic.open);
+      vic.open = true;
+      det.innerHTML = bezVerdiktu(detailHtml(b, c));
+      // Pořadí je důležité: rozbor panel rozšiřuje a sklápění popisů se
+      // rozhoduje podle skutečné šířky. Kdyby se měřilo dřív, měřilo by
+      // se v úzkém panelu.
+      document.getElementById("boxMode").classList.add("siroky");
       doSloupcu(det);
       vystreditVse(det);
       slozitVysvetlivky(det);
       pokrytiNaJedenRadek(det);
       napojitDetail(det, r, { zmena: bmPrepocitat });
-      // Ikona vedle křížku místo řádku s textem: stejné místo, líp vidět.
-      // Mění tvar podle stavu jako zvětšení okna v prohlížeči.
-      var vicBtn = document.getElementById("bmVicBtn");
-      if (vicBtn) {
-        vicBtn.innerHTML = vic.open ? "&#10696;" : "&#9974;";
-        vicBtn.title = vic.open ? "Sbalit rozbor" : "Celý rozbor — staty, ligy, na co se hodí";
-        vicBtn.classList.toggle("otevreno", vic.open);
-        if (!vicBtn.dataset.napojeno) {
-          vicBtn.dataset.napojeno = "1";
-          vicBtn.addEventListener("click", function () {
-            vic.open = !vic.open;
-            // Překreslení karty přijde až po `toggle`; ikona se musí změnit
-            // hned při kliku, jinak to vypadá, že tlačítko nereaguje.
-            vicBtn.innerHTML = vic.open ? "&#10696;" : "&#9974;";
-            vicBtn.classList.toggle("otevreno", vic.open);
-          });
-        }
-      }
+      // Rozbor se uz nesbaluje, takze tlacitko na prepinani nema co delat.
       if (!vic.dataset.napojeno) {
         vic.dataset.napojeno = "1";
-        vic.addEventListener("toggle", function () {
-          document.getElementById("boxMode").classList.toggle("siroky", vic.open);
-          if (bmIndex >= bmList.length) return;
-          var x = bmList[bmIndex];
-          det.innerHTML = vic.open ? bezVerdiktu(detailHtml(x.b, x.c)) : "";
-          doSloupcu(det);
-          vystreditVse(det);
-          slozitVysvetlivky(det);
-          pokrytiNaJedenRadek(det);
-          napojitDetail(det, x.row, { zmena: bmPrepocitat });
-        });
+        vic.addEventListener("toggle", function () { vic.open = true; });
       }
     }
   }
@@ -26089,7 +26088,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (vic) vic.style.display = "none";
       var bm = document.getElementById("boxMode");
       // Panel se vrátí na normální šířku, jinak by souhrn plaval v prázdnu.
-      if (bm) bm.classList.remove("siroky");
+      if (bm) bm.classList.add("siroky");
     })();
     var rozpory = rozporyHistorie();
     var radyText = rozpory.vety.length
@@ -26326,22 +26325,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // WASD jede souběžně se šipkami — při čištění dvou set kusů má ruka
     // zůstat tam, kde je, a nepřejíždět přes celou klávesnici.
     var k = (e.key || "").toLowerCase();
-    // F jako fullscreen: rozbalí i sbalí celý rozbor. Ruka zůstává u WASD.
-    if (k === "f") {
-      e.preventDefault();
-      var vicEl = document.getElementById("bmVic");
-      if (vicEl) {
-        vicEl.open = !vicEl.open;
-        // Ikona se dřív měnila jen při kliku na tlačítko — po F zůstávala
-        // v předchozím stavu a vypadalo to, že se nic nestalo.
-        var vicBtnF = document.getElementById("bmVicBtn");
-        if (vicBtnF) {
-          vicBtnF.innerHTML = vicEl.open ? "&#10696;" : "&#9974;";
-          vicBtnF.classList.toggle("otevreno", vicEl.open);
-        }
-      }
-      return;
-    }
     var vlevo = e.key === "ArrowLeft" || e.key === "Backspace" || k === "a";
     var vpravo = e.key === "ArrowRight" || k === "d";
     var dolu = e.key === "ArrowDown" || e.key === "Delete" || k === "s" || k === "p";

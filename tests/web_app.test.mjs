@@ -3989,7 +3989,9 @@ try {
     window.__pgo.boxZavritNatvrdo();
     return out;
   });
-  eq("dokud si to nerozbalíš, rozbor se ani nepočítá", rozbor.predOtevrenim, 0);
+  // Rozbor uz se nesbaluje: je spocitany a vykresleny hned pri otevreni.
+  check("rozbor je spočítaný hned při otevření", rozbor.predOtevrenim > 100,
+    String(rozbor.predOtevrenim));
 
   // Rozbalený rozbor je stejný obsah jako v tabulce, kde má celou šířku
   // stránky. V úzkém sloupci se z něj stal nekonečný had, který se do okna
@@ -4035,8 +4037,9 @@ try {
     window.__pgo.boxZavritNatvrdo();
     return out;
   });
-  check("po rozbalení se panel roztáhne do šířky",
-    rozborLayout.siroky > rozborLayout.uzky, rozborLayout.uzky + " -> " + rozborLayout.siroky);
+  check("panel je široký od začátku (rozbor se nesbaluje)",
+    rozborLayout.siroky === rozborLayout.uzky && rozborLayout.siroky > 900,
+    rozborLayout.uzky + " -> " + rozborLayout.siroky);
   check("…a rozbor běží do dvou sloupců", rozborLayout.sloupce === "2", rozborLayout.sloupce);
   check("karta pokémona nezmizí", rozborLayout.kartaVidet && !!rozborLayout.jmeno,
     rozborLayout.jmeno);
@@ -5344,16 +5347,16 @@ try {
       { pokemon: "Rattata", cp: 120, level: 8, ivAtk: 3, ivDef: 3, ivSta: 3 },
     ]);
     P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
-    // Měří se sbalená karta: jen tam jsou tlačítka hned pod ligami a jen tam
-    // může rozdíl výšky poskočit. V širokém režimu drží výšku samo okno.
-    document.getElementById("bmVic").open = false;
-    document.getElementById("boxMode").classList.remove("siroky");
+    // Rozbor je vzdy cely, takze se meri cely panel: ten musi drzet vysku
+    // bez ohledu na to, kolik lig kus hraje — jinak pod nim poskakuji
+    // tlacitka Pustit / Nechat.
     const najdi = () => {
       const box = document.getElementById("bmBody");
+      const panel = document.querySelector(".bm-panel");
       return { text: box.textContent, chipy: box.querySelectorAll(".bm-ligy .lg-chip").length,
         bubliny: [...box.querySelectorAll(".bm-ligy .lg-chip")]
           .map((x) => x.getAttribute("data-tip") || x.getAttribute("title") || "").join(" | "),
-        vyska: Math.round(box.getBoundingClientRect().height),
+        vyska: Math.round(panel.getBoundingClientRect().height),
         aktualni: P.boxStav().aktualni };
     };
     const prvni = najdi();
@@ -5364,7 +5367,7 @@ try {
   });
   // Karta musí mít stejnou výšku bez ohledu na to, kolik lig kus hraje —
   // jinak pod ní poskakují tlačítka Pustit / Nechat.
-  check("karta má stejnou výšku u kusu s ligou i bez ní",
+  check("panel čištění má stejnou výšku u kusu s ligou i bez ní",
     Math.abs(boxLigy.prvni.vyska - boxLigy.druhy.vyska) <= 2,
     boxLigy.prvni.vyska + " vs " + boxLigy.druhy.vyska);
   const sLigou = [boxLigy.prvni, boxLigy.druhy].filter((x) => x.chipy > 0);
@@ -6570,7 +6573,6 @@ try {
     // Rozbor se plní při kreslení karty podle toho, jestli je <details> otevřené,
     // takže se musí otevřít DŘÍV, než se box otevře. Třídu „siroky" si appka
     // nastaví sama — test ji nesmí předstírat.
-    document.getElementById("bmVic").open = true;
     document.getElementById("boxModeBtn").click();
     { const o = document.getElementById("appOknoOk");
       if (o && !document.getElementById("appOkno").hidden) o.click(); }
@@ -7632,7 +7634,8 @@ try {
     // označit prostřední kus jako shiny přímo za běhu
     const r = P.getRows().filter((x) => x.pokemon === "Pidgey")[0];
     r.shiny = "Ano";
-    document.querySelector("#bmVicBtn").click();   // vyvolá překreslení
+    // Překreslení bez změny fronty: rozhodnout a hned vzít zpátky.
+    P.boxRozhodnout("keep"); P.boxZpet();
     const po = P.bmSeznam().map((x) => x.row.pokemon + ":" + x.sekce);
     return { pred, po };
   });
@@ -7739,7 +7742,6 @@ try {
     P.setRows([{ pokemon: "Dewpider", cp: 323, level: 18, ivAtk: 10, ivDef: 7,
       ivSta: 6 }]);
     document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
-    document.getElementById("bmVicBtn").click();
   });
   // rozbor se dokresluje až po překreslení, jinak je tabulka lig ještě prázdná
   await page.waitForTimeout(400);
@@ -7769,7 +7771,6 @@ try {
     const P = window.__pgo;
     P.setDiscarded([]);
     P.setRows([{ pokemon: "Foongus", cp: 12, level: 1, ivAtk: 3, ivDef: 14, ivSta: 7 }]);
-    document.getElementById("bmVic").open = true;
     document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const panel = document.querySelector(".bm-panel");
     const krizek = panel.querySelector(".d-ligy-tab td.d-lg-ne");
@@ -9437,7 +9438,6 @@ try {
     ];
     P.setDiscarded([]);
     P.setRows(kusy);
-    document.getElementById("bmVic").open = otevrit;
     document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const mereni = [];
     for (let i = 0; i < kusy.length; i++) {
@@ -9526,7 +9526,6 @@ try {
     ];
     P.setDiscarded([]);
     P.setRows(kusy);
-    document.getElementById("bmVic").open = false;
     document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     const mereni = [];
     for (let i = 0; i < kusy.length; i++) {
@@ -9792,7 +9791,6 @@ try {
       { pokemon: "Magikarp", cp: 120, level: 12, ivAtk: 3, ivDef: 3, ivSta: 3 },
       { pokemon: "Bidoof", cp: 400, level: 20, ivAtk: 5, ivDef: 5, ivSta: 5 },
     ]);
-    document.getElementById("bmVic").open = true;
     document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 300));
     for (let i = 0; i < 2; i++) {
@@ -9814,14 +9812,13 @@ try {
     JSON.stringify(konecBoxu));
   check("…a rozbor posledního kusu tam nezůstane",
     konecBoxu.detailPrazdny && konecBoxu.vicSkryty, JSON.stringify(konecBoxu));
-  check("…a panel se vrátí na normální šířku", konecBoxu.siroky === false,
+  check("…a souhrn stojí v tomtéž panelu jako rozbor", konecBoxu.siroky === true,
     JSON.stringify(konecBoxu));
 
   // „víc" u role v čištění boxu musí opravdu rozbalit.
   const vicVBoxu = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setRows([{ pokemon: "Totodile", cp: 190, level: 7, ivAtk: 3, ivDef: 10, ivSta: 6 }]);
-    document.getElementById("bmVic").open = true;
     document.getElementById("boxModeBtn").click(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 400));
     const det = document.getElementById("bmDetail");
@@ -16762,14 +16759,12 @@ try {
           return k ? { popis: !!k.querySelector(".d-role-p"), tone: k.className, tip: (k.getAttribute("data-tip") || "").slice(0, 40) } : null; })() });
       box.remove();
     });
-    // klávesa F v čištění boxu přepne rozbalení i ikonu
+    // Rozbor v cisteni boxu je vzdy cely: neni co prepinat ani klavesou F.
     P.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await new Promise((r) => setTimeout(r, 400));
-    const btn = document.getElementById("bmVicBtn");
-    const pred = btn ? btn.innerHTML : "";
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "f", bubbles: true }));
     await new Promise((r) => setTimeout(r, 400));
-    out.ikona = { pred, po: btn ? btn.innerHTML : "", otevreno: !!(btn && btn.classList.contains("otevreno")),
+    out.ikona = { tlacitko: !!document.getElementById("bmVicBtn"),
       vic: !!(document.getElementById("bmVic") || {}).open };
     P.boxZavritNatvrdo();
     return out;
@@ -16781,8 +16776,8 @@ try {
   check("…a čtvrtá akce (Tradovat) se u kusu se třemi akcemi nekreslí",
     s259.karty.every((k) => k.akce.length <= 3 && !(k.akce.length === 3 && k.akce.indexOf("Tradovat") > -1)),
     JSON.stringify(s259.karty.map((k) => k.jm + ": " + k.akce.join(", "))));
-  check("klávesa F přepne rozbalení i ikonu",
-    s259.ikona.pred !== s259.ikona.po && s259.ikona.vic && s259.ikona.otevreno,
+  check("rozbor v čištění je vždy celý a nejde sbalit ani klávesou F",
+    s259.ikona.vic === true && s259.ikona.tlacitko === false,
     JSON.stringify(s259.ikona));
 
   // ---------------------------------------------------------------- 260
