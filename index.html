@@ -4311,6 +4311,7 @@ body.atlas-test[data-atlas-view="events"][data-atlas-current-route="eventsCard"]
 #atlasHome .atlas-overview-calendar .atlas-event-copy{min-height:144px;background:linear-gradient(transparent,#031226 42%)}
 html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=events]) .atlas-nav button.active{background:linear-gradient(110deg,#0065dc,#083367);box-shadow:inset 3px 0 #40bdff,0 0 20px #026eff20;color:#e7f5ff}
 @media(max-width:650px){#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-copy .atlas-event-status{font-size:9px;padding:4px 7px;margin-bottom:5px}}
+@media(min-width:701px) and (max-width:1099px){#atlasCalendar[data-mode=week] .ac-desktop-view{display:none}#atlasCalendar[data-mode=week] .ac-mobile-view{display:block}#atlasCalendar .ac-mobile-view .ac-days{border:1px solid var(--border);border-radius:8px;overflow:hidden}#atlasCalendar .ac-mobile-view .ac-agenda-day>.ac-event{width:min(330px,100%)}#atlasCalendar .ac-mobile-view .ac-agenda-day>.ac-event .ac-art{height:200px}#atlasCalendar .ac-mobile-view .ac-event-text{padding:14px 14px 15px 33px}#atlasCalendar .ac-mobile-view .ac-event-text b{font-size:18px}#atlasCalendar .ac-mobile-view .ac-event-text small{font-size:13px}#atlasCalendar .ac-mobile-view .ac-tile-kind{left:12px;top:14px}#atlasCalendar .ac-also .ac-event-text b{font-size:13px}}
   /* === ATLAS CSS END === */
 </style>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0d0d0d"><link rel="apple-touch-icon" href="ikona-192.png"><script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js");});}</script></head>
@@ -5160,7 +5161,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === SPRITES END ===
 
   // === BUILD START
-  var BUILD = "2026-09-23 20:01";
+  var BUILD = "2026-09-23 21:06";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -28055,6 +28056,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
        sama (hlavička detailu, čištění boxu), o něj jinak přijdou a ikona
        pak v rámečku sedí nakřivo. */
     vystreditSprity: function (kontejner) { vystreditVse(kontejner || document); },
+    /* Změřené posazení ikony pro danou adresu. Vzhledová vrstva si skládá
+       vlastní <img> a bez tohohle by ho vykreslila nevystředěný — sprite
+       pak při každém překreslení poskočil, jakmile doběhlo měření. */
+    atlasRamecek: function (src) {
+      if (!src) return null;
+      var plna = src;
+      try { plna = new URL(src, location.href).href; } catch (e) { /* nevadí */ }
+      return ramecekProUrl(plna) || ramecekProUrl(src);
+    },
     // Rotace lig — testy si ověřují, že se promítá do pořadí v rozpočtu.
     ligyStav: ligyStav,
     megaPriority: megaPriority,
@@ -29318,7 +29328,13 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
       if(html){const t=document.createElement('template');t.innerHTML=html;const im=t.content.querySelector('img');
         if(im){im.setAttribute('alt',r.pokemon||'');im.dataset.atlasPokemon=r.pokemon||'';if(extra)im.setAttribute('data-extra','1');return im.outerHTML}}
     }
-    return `<img src="${art(r)}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy" ${extra}>`;
+    // Uz zmerene posazeni se vlozi rovnou do znacky. Bez toho se sprite
+    // vykreslil nevystredeny a poskocil, jakmile dobehlo mereni — pri
+    // prepinani kusu v cisteni to bylo videt u kazdeho.
+    const adresa=art(r);
+    const ram=P.atlasRamecek?P.atlasRamecek(adresa):null;
+    const styl=ram?` style="transform:translate(${ram.x}%, ${ram.y}%) scale(${ram.s})"`:'';
+    return `<img src="${adresa}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy"${styl} ${extra}>`;
   };
   window.AtlasMonImage=monImage;
   const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář'],['catchCard','Co chytat']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
@@ -30191,7 +30207,7 @@ globalThis.AtlasBudget = (() => {
  const modal=document.createElement('dialog');modal.id='atlasEventDialog';modal.className='atlas-event-dialog';modal.setAttribute('aria-labelledby','atlasEventTitle');document.body.append(modal);
  function overlap(e,start,finish){const a=date(e[3]),b=end(e[4]);return !!(a&&b&&a<finish&&b>start)}
  function live(e){return overlap(e,new Date(),new Date(Date.now()+1))}
- function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))];if(!names.length&&/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).forEach(name=>{if(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name))names.push(name)})}return names.slice(0,3)}
+ function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))];if(/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).reverse().forEach(name=>{if(!names.includes(name)&&(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name)))names.unshift(name)})}return names.slice(0,3)}
  function bossCards(es){return es.flatMap(e=>{const names=eventNames(e);return (names.length?names:[null]).map(name=>`<button class="atlas-boss" data-event-index="${events.indexOf(e)}"><span class="atlas-boss-art">${name?image(name):'<span aria-hidden="true">◇</span>'}</span><b>${esc(name&&/^Shadow /.test(e[0])&&!/^Shadow /.test(name)?'Shadow '+name:name||e[0])}</b><small>${/^max-/.test(e[1])?'Max souboj':'Raid'} · ${format(e[4])}</small></button>`)}).join('')}
  function card(e){
  const a=date(e[3]),b=end(e[4]),now=new Date(),tomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1),afterTomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+2);
@@ -30273,7 +30289,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  function week(){const ds=Array.from({length:7},(_,i)=>add(anchor,i)),es=dated().filter(e=>matches(e)&&overlap(e,anchor,add(anchor,7)));return `<div class="ac-week"><div class="ac-days">${ds.map(dayButton).join('')}</div><div class="ac-section-label">Vícedenní akce</div><div class="ac-spans">${es.filter(multi).slice(0,allSpans?undefined:3).map((e,row)=>{const visible=ds.map((d,i)=>overlap(e,d,add(d,1))?i:-1).filter(i=>i>=0);return `<button class="ac-span" data-kind="${kind(e)}" data-ac-event="${eventId(e)}" style="grid-column:${visible[0]+1}/${visible[visible.length-1]+2};grid-row:${row+1}" title="${esc(e[0])}"><span>${symbol[kind(e)]}</span> ${esc(title(e))}<span aria-hidden="true">→</span></button>`}).join('')||'<p class="ac-empty">Bez vícedenní akce.</p>'}</div>${es.filter(multi).length>3?`<button class="ac-expand-spans" data-ac-spans>${allSpans?'Sbalit vícedenní akce':'Další vícedenní akce · '+(es.filter(multi).length-3)} <span>${allSpans?'−':'+'}</span></button>`:''}<div class="ac-section-label">Akce v konkrétní čas</div><div class="ac-columns">${ds.map(d=>{const items=es.filter(e=>!multi(e)&&overlap(e,d,add(d,1))),show=expandedDay===key(d)?items:items.slice(0,3);return `<section class="ac-column" aria-label="${esc(fullDate(d))}">${show.map(e=>tile(e,true)).join('')||'<span class="ac-no-event">—</span>'}${items.length>3&&expandedDay!==key(d)?`<button class="ac-more" data-ac-expand="${key(d)}">Další ${items.length-3}</button>`:''}</section>`}).join('')}</div></div>`}
  function month(){const start=new Date(anchor.getFullYear(),anchor.getMonth(),1),first=monday(start);return `<div class="ac-month-labels">${['po','út','st','čt','pá','so','ne'].map(x=>`<span>${x}</span>`).join('')}</div><div class="ac-month">${Array.from({length:42},(_,i)=>{const d=add(first,i),es=eventsFor(d);return `<section class="ac-month-day ${d.getMonth()!==start.getMonth()?'ac-outside':''}">${dayButton(d)}${es.slice(0,2).map(e=>`<button class="ac-month-event" data-kind="${kind(e)}" data-ac-event="${eventId(e)}">${esc(title(e))}</button>`).join('')}${es.length>2?`<button class="ac-more" data-ac-show-day="${key(d)}">+${es.length-2} další</button>`:''}</section>`}).join('')}</div>`}
  function side(){const e=all()[selectedIndex];return `<aside class="ac-detail" aria-label="Detail události"><div class="ac-detail-heading"><h2>${esc(fullDate(selected))}</h2>${e?'<button data-ac-close aria-label="Zavřít náhled události">×</button>':''}</div>${e?`${art(e)}<span class="ac-category" data-kind="${kind(e)}">${symbol[kind(e)]} ${categories[kind(e)]}</span><h3>${esc(title(e))}</h3>${U.names(e).length?`<p class="ac-detail-species">${esc(U.names(e).join(' · '))}</p>`:''}<p class="ac-detail-time">◷ ${esc(time(e))}</p><p>${['raid','max'].includes(kind(e))?'Otevři přehled bossů a připrav tým.':'Prohlédni si dostupné Pokémony, bonusy a podmínky akce.'}</p><button class="ac-primary" ${['raid','max'].includes(kind(e))?'data-ac-teams':`data-ac-full="${selectedIndex}"`}>${['raid','max'].includes(kind(e))?'Připravit tým':'Prohlédnout událost'} →</button><button class="ac-text-link" data-ac-full="${selectedIndex}">Detail události →</button>`:`<p>Vyber událost v kalendáři.</p>${eventsFor(selected).map(e=>tile(e,true)).join('')}`}</aside>`}
- function render(){const stamp=data()._meta?.stazeno||P.dataInfo?.events,stale=!parse(stamp)||Date.now()-parse(stamp)>172800000,unknown=all().filter(e=>!parse(e[3])||!finish(e)||finish(e)<=parse(e[3]));const range=mode==='month'?anchor.toLocaleDateString('cs-CZ',{month:'long',year:'numeric'}):`${anchor.getDate()}.–${add(anchor,6).toLocaleDateString('cs-CZ',{day:'numeric',month:'long',year:'numeric'})}`;
+ function render(){root.dataset.mode=mode;const stamp=data()._meta?.stazeno||P.dataInfo?.events,stale=!parse(stamp)||Date.now()-parse(stamp)>172800000,unknown=all().filter(e=>!parse(e[3])||!finish(e)||finish(e)<=parse(e[3]));const range=mode==='month'?anchor.toLocaleDateString('cs-CZ',{month:'long',year:'numeric'}):`${anchor.getDate()}.–${add(anchor,6).toLocaleDateString('cs-CZ',{day:'numeric',month:'long',year:'numeric'})}`;
  root.innerHTML=`<div class="ac-layout"><div class="ac-content"><div class="ac-toolbar"><h2>Kalendář událostí</h2><div class="ac-controls"><button data-ac-today>Dnes</button><button data-ac-shift="-1" aria-label="Předchozí období">‹</button><button data-ac-shift="1" aria-label="Další období">›</button><b>${esc(range)}</b><div class="ac-views" aria-label="Zobrazení kalendáře">${[['week','Týden'],['month','Měsíc'],['list','Seznam']].map(([k,v])=>`<button data-ac-mode="${k}" aria-pressed="${mode===k}">${v}</button>`).join('')}</div></div></div><div class="ac-filters" aria-label="Kategorie událostí">${Object.entries(categories).map(([k,v])=>`<button data-ac-filter="${k}" data-kind="${k}" aria-pressed="${filter===k}">${k==='all'?'':'<span class="ac-dot"></span>'}${v}</button>`).join('')}</div><div class="ac-desktop-view">${mode==='week'?week():mode==='month'?month():Array.from({length:7},(_,i)=>agenda(add(anchor,i))).join('')}</div><div class="ac-mobile-view"><div class="ac-days">${Array.from({length:7},(_,i)=>dayButton(add(anchor,i))).join('')}</div>${agenda(selected)}${agenda(add(selected,1))}</div></div>${side()}</div>${unknown.length?`<details class="ac-unconfirmed"><summary>Termín nepotvrzen · ${unknown.length}</summary>${unknown.filter(matches).map(e=>tile(e,true)).join('')}</details>`:''}<p class="ac-source">Data: ${esc(stamp||'datum neznámé')}${stale?' · Aktualitu ověř ve zdroji.':''} · Časy podle údajů zdroje${Intl.DateTimeFormat().resolvedOptions().timeZone?' · '+esc(Intl.DateTimeFormat().resolvedOptions().timeZone):''}</p>`;
  }
  function selectDefault(){const es=eventsFor(selected);selectedIndex=eventId(es.find(e=>!multi(e))||es[0]);if(selectedIndex<0)selectedIndex=null}
