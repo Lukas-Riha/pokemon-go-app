@@ -2016,6 +2016,7 @@ const dTab = await pTab.evaluate(async () => {
   // misto nej je cislo verze.
   out.pata = document.querySelector(".atlas-side-foot").textContent;
   out.verze = P.verze ? P.verze() : null;
+  out.znacka = (document.getElementById("atlasCrumbVerze") || {}).textContent;
 
   // Přepnutí na klasickou tabulku řádky dostaví.
   document.body.classList.remove("atlas-compact");
@@ -2037,6 +2038,8 @@ check("přepnutí na klasickou tabulku řádky dostaví", dTab.poPrepnuti === dT
   JSON.stringify(dTab));
 check("v patě už není popisek o oddělených profilech",
   dTab.pata.indexOf("Oddělené profily") === -1, dTab.pata);
+check("číslo verze je i nahoře v záhlaví",
+  dTab.znacka === "v" + dTab.verze, dTab.znacka + " vs " + dTab.verze);
 check("…zato je tam číslo verze",
   /^\d+\.\d+$/.test(String(dTab.verze)) && dTab.pata.indexOf("verze " + dTab.verze) > -1,
   dTab.verze + " | " + dTab.pata);
