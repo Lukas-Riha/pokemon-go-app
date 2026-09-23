@@ -2041,6 +2041,30 @@ check("…zato je tam číslo verze",
   /^\d+\.\d+$/.test(String(dTab.verze)) && dTab.pata.indexOf("verze " + dTab.verze) > -1,
   dTab.verze + " | " + dTab.pata);
 
+// ------------------------------- karta události neroste s oknem
+console.log("\n22) karta události na Přehledu neroste s širokým oknem");
+async function kartaUdalosti(sirka) {
+  const page = await otevri(sirka);
+  const v = await page.evaluate(async () => {
+    window.__atlasTest.go("home");
+    await new Promise((r) => setTimeout(r, 1200));
+    const karta = document.querySelector("#atlasHome .atlas-event-card");
+    const art = document.querySelector("#atlasHome .atlas-event-art");
+    return { karta: karta ? Math.round(karta.getBoundingClientRect().height) : null,
+      art: art ? Math.round(art.getBoundingClientRect().height) : null };
+  });
+  await page.close();
+  return v;
+}
+const k1600 = await kartaUdalosti(1600);
+const k2400 = await kartaUdalosti(2400);
+check("karta má na 1600 i 2400 px stejnou výšku",
+  k1600.karta !== null && k1600.karta === k2400.karta,
+  JSON.stringify({ px1600: k1600, px2400: k2400 }));
+check("…a obrázek v ní taky",
+  k1600.art !== null && k1600.art === k2400.art,
+  JSON.stringify({ px1600: k1600, px2400: k2400 }));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

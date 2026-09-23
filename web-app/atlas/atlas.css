@@ -1430,3 +1430,14 @@ body.atlas-test[data-atlas-view="events"][data-atlas-current-route="eventsCard"]
 html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=events]) .atlas-nav button.active{background:linear-gradient(110deg,#0065dc,#083367);box-shadow:inset 3px 0 #40bdff,0 0 20px #026eff20;color:#e7f5ff}
 @media(max-width:650px){#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-copy .atlas-event-status{font-size:9px;padding:4px 7px;margin-bottom:5px}}
 @media(min-width:701px) and (max-width:1099px){#atlasCalendar[data-mode=week] .ac-desktop-view{display:none}#atlasCalendar[data-mode=week] .ac-mobile-view{display:block}#atlasCalendar .ac-mobile-view .ac-days{border:1px solid var(--border);border-radius:8px;overflow:hidden}#atlasCalendar .ac-mobile-view .ac-agenda-day>.ac-event{width:min(330px,100%)}#atlasCalendar .ac-mobile-view .ac-agenda-day>.ac-event .ac-art{height:200px}#atlasCalendar .ac-mobile-view .ac-event-text{padding:14px 14px 15px 33px}#atlasCalendar .ac-mobile-view .ac-event-text b{font-size:18px}#atlasCalendar .ac-mobile-view .ac-event-text small{font-size:13px}#atlasCalendar .ac-mobile-view .ac-tile-kind{left:12px;top:14px}#atlasCalendar .ac-also .ac-event-text b{font-size:13px}}
+
+/* Claude 23. 9. (17): karta udalosti na Prehledu uz neroste s oknem.
+   Vyska karty byla `clamp(330px,24vw,460px)` a obrazek v ni sedi na 65 %,
+   takze na sirokem monitoru vysel art o tretinu vetsi nez na notebooku
+   (248 -> 298 px) a pokemon kartu skoro vyplnil. Drzi se ted na te
+   velikosti, kterou mela tesne pod 1600 px — na kazde sirce stejne.
+   Pousti se jen jedna paka, vyska karty; obrazek si svych 65 % dopocita. */
+@media(min-width:1600px){
+  #atlasHome .atlas-event-card,
+  #atlasHome .atlas-overview-calendar .atlas-event-card{min-height:384px}
+}
