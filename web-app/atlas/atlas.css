@@ -1153,3 +1153,54 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 .atlas-test .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role.good{border-left-color:var(--status-good)}
 .atlas-test .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role.warning{border-left-color:var(--status-warning)}
 .atlas-test .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role.muted{border-left-color:var(--border)}
+/* Claude 23. 9. (15): rozbaleni rozboru uz nic neposouva a druhy verdikt
+   v boxu vypada jako v detailu. */
+/* Sbaleny a rozbaleny stav se lisily v odsazenich, takze se pri prepnuti
+   cela tabulka lig i tlacitka posunula. Ted plati jedny rozmery v obou
+   stavech; rozbaleni uz jen odkryje tabulku lig. Specificita (.box-mode
+   dvakrat) musi prebit pravidla psana pro .box-mode.siroky. */
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-identity{padding:8px 12px;margin-bottom:2px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-verdict-radek{margin-bottom:8px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-vyuziti>.d-role{padding:5px 10px}
+.atlas-test .box-mode.box-mode .bm-actions{padding-top:6px}
+.atlas-test .box-mode.box-mode .bm-actions .bm-btn{padding:10px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-evolution-column{margin:4px 0}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-section>div,
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-section>table{margin:8px}
+/* Sprity v evolucni rade maji stejnou velikost v obou stavech. Bere se ta
+   mensi: u druhu s dlouhou radou (Eevee) se ta vetsi do panelu nevejde. */
+.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-ram,
+.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:68px;height:68px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .atlas-evo-ram,
+.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:46px;height:46px}
+/* Ctyri bunky dole: nadpis nad hodnotou i ve sbalenem stavu. Sloupec se
+   pri nizsi bunce zalamoval vedle sebe a vypadal jako jeden radek. */
+.atlas-test .box-mode .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role{flex-wrap:nowrap}
+/* Hlavicka kusu byla o 8 px sirsi nez verdikt pod ni — odsazeni sloupce. */
+.atlas-test .box-mode .atlas-box-rozbor .atlas-detail-columns{padding-right:0}
+/* Doporuceny krok (Vylepsit, Purifikovat, Tradovat) neni v detailu cely
+   barevny — jen prouzek vlevo. V boxu to bylo cele zelene pole. */
+.atlas-test .atlas-box-rozbor .atlas-krok .d-roles-akce>.d-role{background:none;border:0;
+  border-left:3px solid var(--border);border-radius:0;padding:12px 14px}
+.atlas-test .atlas-box-rozbor .atlas-krok .d-roles-akce>.d-role.good{border-left-color:var(--status-good)}
+.atlas-test .atlas-box-rozbor .atlas-krok .d-roles-akce>.d-role.warning{border-left-color:var(--status-warning)}
+.atlas-test .atlas-box-rozbor .atlas-krok .d-roles-akce>.d-role.muted{border-left-color:var(--border)}
+/* Zbylé dva rozdíly mezi sbaleným a rozbaleným: odsazení sekcí a hustota
+   tabulky lig. Obojí posouvalo obsah o pár pixelů nahoru a dolů. */
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-section{margin:4px 0}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .d-ligy-tab th,
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .d-ligy-tab td{padding:3px 8px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-sekce-nadpis{padding:6px 12px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-vyuziti{margin-top:2px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor [data-detail-section=ligy]{margin:2px 0}
+/* Sipka mezi stupni menila velikost, a tim posouvala sprity pod sebou. */
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .d-evo-sip{font-size:26px;margin:6px 0}
+/* Posledni dva rozdily: mezera mezi sloupci a vyska popisku u stupnu. */
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-columns{gap:10px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-popis{height:auto;min-height:46px}
+/* Verdikt byl nalepeny primo na hlavicku kusu; v detailu je mezi nimi
+   mezera. Rozestup je stejny v obou stavech, takze nic neposouva. */
+.atlas-test .box-mode.box-mode .atlas-box-rozbor{row-gap:10px}
+/* Panel si drzi stejnou vysku v obou stavech. Bez toho se pri rozbaleni
+   prepocitalo svisle vystredeni a posunulo se uplne vsechno. */
+.atlas-test .box-mode.box-mode .bm-panel{height:min(980px,100%)}

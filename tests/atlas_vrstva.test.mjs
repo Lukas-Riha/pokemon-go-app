@@ -1117,7 +1117,7 @@ const dUpr = await pUpr.evaluate(async () => {
   return out;
 });
 await pUpr.close();
-check("v liště příkazů je „Projít box“", /Projít box/.test(dUpr.tlacitko), dUpr.tlacitko);
+check("v liště příkazů je „Projít pokémony“", /Projít pokémony/.test(dUpr.tlacitko), dUpr.tlacitko);
 check("nabídka „Správa rosteru“ stojí nad rosterem a nedělá posuvník",
   dUpr.panelFixed === "fixed" && dUpr.nadRosterem === "BUTTON" && dUpr.posuv === 0,
   JSON.stringify(dUpr));
@@ -1168,7 +1168,7 @@ const dMix = await pMix.evaluate(async () => {
 await pMix.close();
 check("„GO ATLAS · TESTOVACÍ VERZE“ nad nadpisem už není",
   dMix.eyebrowRoster === 0 && dMix.eyebrowHome === 0, JSON.stringify(dMix));
-check("tlačítko „Projít box“ u nadpisu je jen na Přehledu",
+check("tlačítko „Projít pokémony“ u nadpisu je jen na Přehledu",
   dMix.ctaHome === 1 && dMix.ctaRoster === 0, JSON.stringify(dMix));
 check("u útoku svítí tečka podle jeho kvality",
   dMix.tecky.some((x) => x.startsWith("dobry|")) && dMix.tecky.some((x) => x.startsWith("preucit|")),
@@ -1773,6 +1773,85 @@ check("rozbor v boxu je bez rámečků jako detail",
   JSON.stringify({ sloupec: dSi.evoSloupec, nadpis: dSi.evoNadpis }));
 check("…a příkazy zůstaly nad evoluční řadou",
   dSi.prikazyNadRadou === true, String(dSi.prikazyNadRadou));
+
+// ------------------ čištění boxu: nic se při rozbalení neposouvá
+// Sbalený a rozbalený stav měly jiná odsazení, takže se při přepnutí
+// posunula tabulka lig i tlačítka. Čtyři buňky dole se ve sbaleném stavu
+// zalamovaly vedle sebe a doporučený krok byl celý barevný.
+console.log("\n11) Čištění boxu: stabilní rozložení a vzhled jako v detailu");
+for (const sirkaBox of [1600, 1280, 950]) {
+  const pBox = await otevri(sirkaBox);
+  const dBox = await pBox.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const A = window.__atlasTest;
+    A.go("home"); A.refresh(); await cekej(700);
+    document.querySelector('[data-click="boxModeBtn"]').click();
+    await cekej(1500);
+    const ok = document.getElementById("appOknoOk");
+    if (ok && !document.getElementById("appOkno").hidden) ok.click();
+    await cekej(900);
+    const SEL = [".bm-top", ".bm-progress", ".atlas-detail-identity", ".atlas-verdict-radek",
+      ".atlas-vyuziti", ".atlas-vyuziti>.d-role", ".bm-actions", "#bmDrop",
+      ".atlas-evolution-column", ".atlas-evolution-column .d-evo-kus img", ".d-ligy-tab"];
+    const snap = () => {
+      const o = {};
+      SEL.forEach((s) => { const e = document.querySelector(".box-mode " + s);
+        if (!e) { o[s] = "(není)"; return; }
+        const r = e.getBoundingClientRect();
+        o[s] = [Math.round(r.left), Math.round(r.top), Math.round(r.width)].join(","); });
+      return o;
+    };
+    const sbaleno = snap();
+    const roleTop = () => { const e = document.querySelector(".box-mode .atlas-vyuziti>.d-role");
+      return e ? [...e.children].map((x) => Math.round(x.getBoundingClientRect().top)) : []; };
+    const roleSbaleno = roleTop();
+    document.getElementById("bmVicBtn").click();
+    await cekej(900);
+    const rozbaleno = snap();
+    // Vodorovne se nesmi hnout nic. Svisle smi klesnout jen to, co je POD
+    // tabulkou lig — tim, ze se tabulka objevi (o to prave jde).
+    const vodorovne = SEL.filter((s) => {
+      const a = String(sbaleno[s]).split(","), b = String(rozbaleno[s]).split(",");
+      return a[0] !== b[0] || a[2] !== b[2];
+    });
+    const NAD = [".bm-top", ".bm-progress", ".atlas-detail-identity", ".atlas-verdict-radek"];
+    const svisle = NAD.filter((s) => sbaleno[s] !== rozbaleno[s]);
+    const posunute = vodorovne.concat(svisle);
+    const krok = document.querySelector(".box-mode .atlas-krok .d-roles-akce>.d-role");
+    const kr = krok ? getComputedStyle(krok) : null;
+    window.__pgo.boxZavritNatvrdo();
+    return { posunute, roleSbaleno,
+      krok: kr ? { bg: kr.backgroundColor, bt: kr.borderTopWidth, bl: kr.borderLeftWidth } : null };
+  });
+  await pBox.close();
+  check(`rozbalení rozboru nic neposune (${sirkaBox} px)`,
+    dBox.posunute.length === 0, JSON.stringify(dBox.posunute));
+  if (sirkaBox === 1600) {
+    check("čtyři buňky mají nadpis nad hodnotou i ve sbaleném stavu",
+      dBox.roleSbaleno.length === 2 && dBox.roleSbaleno[0] !== dBox.roleSbaleno[1],
+      JSON.stringify(dBox.roleSbaleno));
+    check("doporučený krok není celý barevný, jen proužek vlevo",
+      !!dBox.krok && /rgba\(0, 0, 0, 0\)|transparent/.test(dBox.krok.bg)
+        && dBox.krok.bt === "0px" && dBox.krok.bl === "3px",
+      JSON.stringify(dBox.krok));
+  }
+}
+
+// přejmenování příkazů
+const pNaz = await otevri(1400);
+const dNaz = await pNaz.evaluate(() => ({
+  tlacitka: [...document.querySelectorAll("button")].map((b) => b.textContent.trim())
+    .filter((t) => /Projít/.test(t)),
+  roster: [...document.querySelectorAll("h2")].map((e) => e.textContent.trim())
+    .filter((t) => /Roster/.test(t)),
+  starky: /Projít box|co s kterým pokémonem/.test(document.body.innerText),
+}));
+await pNaz.close();
+check("příkaz se jmenuje „Projít pokémony“",
+  dNaz.tlacitka.length > 0 && dNaz.tlacitka.every((t) => t === "Projít pokémony")
+    && dNaz.starky === false, JSON.stringify(dNaz.tlacitka));
+check("nadpis tabulky je jen „Roster“",
+  dNaz.roster.length === 1 && dNaz.roster[0] === "Roster", JSON.stringify(dNaz.roster));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
