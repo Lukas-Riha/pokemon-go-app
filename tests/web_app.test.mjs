@@ -4599,7 +4599,9 @@ try {
       zalohaVListe: !!document.getElementById("backupState").closest(".toolbar"),
     };
   });
-  check("verze je vyplněná", /^Verze \d{4}-/.test(verzeStamp.text), verzeStamp.text);
+  // Číslo verze appky (test má vždycky vyšší než produkce) a za ním
+  // ražítko sestavení.
+  check("verze je vyplněná", /^Verze \d+\.\d+ · \d{4}-/.test(verzeStamp.text), verzeStamp.text);
   check("…ale není v přilepené liště", verzeStamp.vPrilepeneListe === false, verzeStamp.rodic);
   eq("…má vlastní řádek pod lištou", verzeStamp.rodic, "build-line");
   eq("lišta s tlačítky se nelepí — přišpendlené je jen záhlaví tabulky",

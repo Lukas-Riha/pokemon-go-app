@@ -2012,6 +2012,11 @@ const dTab = await pTab.evaluate(async () => {
   hledat.dispatchEvent(new Event("input", { bubbles: true }));
   await cekej(500);
 
+  // Pata postranni listy: popisek o oddelenych profilech uz tam neni,
+  // misto nej je cislo verze.
+  out.pata = document.querySelector(".atlas-side-foot").textContent;
+  out.verze = P.verze ? P.verze() : null;
+
   // Přepnutí na klasickou tabulku řádky dostaví.
   document.body.classList.remove("atlas-compact");
   await cekej(400);
@@ -2030,6 +2035,11 @@ check("hledání taky", dTab.poHledani > 0 && dTab.poHledani < dTab.kusu && dTab
   JSON.stringify(dTab));
 check("přepnutí na klasickou tabulku řádky dostaví", dTab.poPrepnuti === dTab.kusu,
   JSON.stringify(dTab));
+check("v patě už není popisek o oddělených profilech",
+  dTab.pata.indexOf("Oddělené profily") === -1, dTab.pata);
+check("…zato je tam číslo verze",
+  /^\d+\.\d+$/.test(String(dTab.verze)) && dTab.pata.indexOf("verze " + dTab.verze) > -1,
+  dTab.verze + " | " + dTab.pata);
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

@@ -116,6 +116,13 @@ if ($LASTEXITCODE -ne 0) { "  (nepodarilo se stahnout, jedu s tim, co je v data/
 
 # 2) Data v appce musí být čerstvá — jinak bychom sdíleli starý pokédex.
 
+# Nasazeni posune obe cisla: produkce dostane cislo, ktere mel test,
+# a test jde o jednu vys. Deje se to PRED zapecenim, aby produkce dostala
+# uz nove cislo.
+"Posouvam verzi..."
+& $python (Join-Path $root "tools\verze.py") "--povysit"
+if ($LASTEXITCODE -ne 0) { throw "verze.py selhal - nic se nekopirovalo." }
+
 "Zapékám data do appky..."
 
 # --vzhled = produkce se vzhledovou vrstvou (GO Atlas). Bez nej by se

@@ -1,0 +1,9 @@
+{
+  "_meta": {
+    "popis": "Cislo verze appky. Produkce je vzdy o krok pozadu za testem.",
+    "pravidlo": "Nasazeni do produkce posune obe: produkce dostane cislo testu a test jde o jednu vys.",
+    "meni": "python tools/verze.py --povysit (dela deploy.ps1 sam)"
+  },
+  "produkce": "2.0",
+  "test": "2.1"
+}

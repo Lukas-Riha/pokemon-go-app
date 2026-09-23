@@ -90,6 +90,13 @@ data_info = {
 # člověk poslední verzi, nebo si otevírá starou kopii.
 build = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
+# Číslo verze. Test má vždycky vyšší než produkce, aby se na první pohled
+# poznalo, která sestava je ta rozpracovaná. Posouvá `tools/verze.py`
+# při nasazení.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import verze as verze_modul
+app_verze = verze_modul.verze("--test" in sys.argv)
+
 BLOCKS = [
     ("// === REFERENCE DATA START", "// === REFERENCE DATA END ===", "REFERENCE", reference),
     ("// === POKEDEX START", "// === POKEDEX END ===", "POKEDEX", pokedex),
@@ -101,6 +108,7 @@ BLOCKS = [
     ("// === TYPE ICONS START", "// === TYPE ICONS END ===", "TYPE_ICONS", type_icons),
     ("// === DATA INFO START", "// === DATA INFO END ===", "DATA_INFO", data_info),
     ("// === BUILD START", "// === BUILD END ===", "BUILD", build),
+    ("// === VERZE START", "// === VERZE END ===", "VERZE", app_verze),
 ]
 
 # Vzhledová vrstva. Drží ji někdo jiný a má vlastní soubory, aby se
@@ -218,7 +226,8 @@ else:
         atlas_stav.append("zapečeno DO PRODUKCE")
     APP.write_text(text, encoding="utf-8")
 
-print("verze:     " + build)
+print("verze:     %s (%s), sestaveno %s" % (
+    app_verze, "test" if TEST_BUILD else "produkce", build))
 print("reference: raid={} gym={} mega={}".format(
     len(reference["raidAttackers"]), len(reference_all["gymDefenders"]),
     len(reference["megaEvolutions"])))

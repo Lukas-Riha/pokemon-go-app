@@ -100,6 +100,25 @@ Vrstva se edituje v `web-app/atlas/`. Původní ruční kopie už není zdroj �
 vyrábí ji build. Kdyby přece jen bylo potřeba vytáhnout vrstvu z ručně
 upravené kopie znovu, je na to `python tools/slouc_test.py --znovu`.
 
+## Číslo verze
+
+`data/verze.json` drží dvě čísla a **test je vždycky o krok napřed**:
+co je v testu, to produkce teprve dostane.
+
+```
+produkce  2.0
+test      2.1
+```
+
+Nasazení posune obě: produkce dostane číslo, které měl test, a test jde
+o jednu výš (2.0/2.1 → 2.1/2.2). Deje se to samo — `tools/deploy.ps1`
+volá `python tools/verze.py --povysit` ještě před zapečením, takže
+produkce už odejde s novým číslem. Ručně není potřeba dělat nic.
+
+Číslo je vidět na dvou místech: v patě postranní lišty (`verze 2.1`)
+a u ražítka sestavení dole pod tabulkou (`Verze 2.1 · 2026-09-23 22:47`).
+Když si nejsi jistý, kterou sestavu máš otevřenou, stačí se podívat tam.
+
 ## Kontrola
 
 ```
@@ -109,3 +128,29 @@ node tests/audit_app.test.mjs
 
 Testy běží proti **produkčnímu** souboru, tedy proti enginu. Když projdou,
 projde i test, protože engine je tentýž.
+
+### Důkaz, že v produkci leží to, co se do ní poslalo
+
+```
+python tools/porovnej_produkci.py
+```
+
+Stáhne živou appku z Pages soubor po souboru a porovná ji s `publish/`.
+Konce řádků se před porovnáním srovnají (Git na Windows drží `publish/`
+v CRLF, na Pages leží LF — je to týž obsah). Chytí právě to, co okem
+nejde poznat: že se některý soubor vůbec nenahrál. Když složka
+`atlas/assets` ještě nechodíla do `publish/`, měla produkce jinou grafiku
+než test a nikdo o tom nevěděl.
+
+### Důkaz, že se změnou vykreslování nezměnila čísla
+
+```
+git show HEAD~1:web-app/pokemon_tracker_app.html > web-app/_pred.html
+node tools/porovnej_vypocty.mjs
+```
+
+Nasype do obou sestavení tentýž pestrý roster (půl druhé stovky kusů:
+neznámá IV, shadow, lucky, bez útoků, kopie, půlleveley) a porovná
+položku po položce všechno, co engine spočítá — verdikty, ceny, procenta,
+plány, tahák, seznam k chytání i frontu čištění boxu. Použij vždycky,
+když se sáhne na vykreslování: že appka vypadá stejně, není důkaz.

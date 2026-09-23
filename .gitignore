@@ -38,6 +38,9 @@ xlsx-tracker/
 # Balík obrázků od vzhledové vrstvy: 30 MB, které by v historii zůstaly
 # navždy. Do testovacího buildu se vkládá z disku, ne odsud.
 web-app/atlas/atlas-art.json
+# Stará sestavení vytažená z historie kvůli `tools/porovnej_vypocty.mjs`.
+web-app/_pred.html
+web-app/_kontrola.html
 # Zkompilovaný Python.
 __pycache__/
 *.pyc
