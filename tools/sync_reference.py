@@ -160,6 +160,8 @@ for start_mark, end_mark, cesta in RAW_BLOCKS:
         lines = lines[:start] + [lines[start], lines[end]] + lines[end + 1:]
         continue
     telo = cesta.read_text(encoding="utf-8").rstrip("\n").split("\n")
+    if cesta.name == "atlas.js" and (ATLAS / "calendar.js").exists():
+        telo += ["", "// Atlas calendar module"] + (ATLAS / "calendar.js").read_text(encoding="utf-8").split("\n")
     # Obrázky do JS slotu před vrstvu. Do produkce nejdou nikdy — třicet
     # megabajtů by z appky udělalo něco, co se v mobilu neotevře. V testu
     # se přidají na `--s-obrazky`; bez nich je build rychlý a appka funguje,

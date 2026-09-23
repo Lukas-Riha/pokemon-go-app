@@ -1,0 +1,51 @@
+import {createRequire} from 'node:module';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+const root=process.cwd(),web=path.join(root,'web-app');
+const require=createRequire(import.meta.url);
+const {chromium}=require(path.resolve(root,'../playwright-day2/node_modules/playwright'));
+const server=http.createServer((req,res)=>{const f=path.resolve(web,'.'+decodeURIComponent(req.url.split('?')[0]));if(!f.startsWith(web+path.sep)||!fs.existsSync(f)){res.writeHead(404).end();return}res.setHeader('Content-Type',f.endsWith('.png')?'image/png':'text/html; charset=utf-8');res.end(fs.readFileSync(f))});
+await new Promise(r=>server.listen(8783,'127.0.0.1',r));
+let browser,passed=0;
+const check=(name,ok)=>{assert.ok(ok,name);console.log('ok '+(++passed)+' '+name)};
+try{
+ browser=await chromium.launch({headless:true});
+ const context=await browser.newContext({viewport:{width:1920,height:1080},timezoneId:'Europe/Prague'});
+ const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.clock.install({time:new Date('2026-09-23T12:00:00+02:00')});
+ await page.goto('http://127.0.0.1:8783/pokemon_tracker_TEST.html');
+ await page.waitForFunction(()=>window.AtlasCalendar);
+ await page.evaluate(()=>window.__atlasTest.go('events','eventsCard'));
+ check('calendar visible',await page.locator('#atlasCalendar').isVisible());
+ check('one visible heading',await page.getByRole('heading',{name:'Kalendář událostí',exact:true}).count()===1 || !(await page.locator('#atlasHeading').isVisible()));
+ check('inspector has initial event',await page.locator('.ac-detail h3').count()===1);
+ check('raid hour illustrations recognized from explicit name',await page.locator('.ac-detail .ac-art img').count()===2);
+ check('three multi-day bars initially',await page.locator('.ac-span').count()===3);
+ await page.locator('[data-ac-spans]').click();check('all multi-day bars available',await page.locator('.ac-span').count()>3);
+ await page.locator('[data-ac-spans]').click();
+ await page.locator('[data-ac-mode="month"]').click();check('month grid',await page.locator('.ac-month-day').count()===42);
+ await page.locator('[data-ac-mode="week"]').click();check('week begins Monday',await page.evaluate(()=>new Date(AtlasCalendar.getState().anchor+'T12:00').getDay()===1));
+ await page.locator('[data-ac-filter="max"]').click();check('filter excludes raids',await page.locator('.ac-desktop-view [data-kind="raid"]').count()===0);
+ await page.locator('[data-ac-filter="all"]').click();
+ const edges=await page.evaluate(()=>{const e=(a,b)=>['Fixture','event','',a,b];const a=new Date('2026-09-23T00:00'),b=new Date('2026-09-24T00:00');return [AtlasCalendar.overlap(e('2026-09-22T18:00','2026-09-23T00:00'),a,b)===false,AtlasCalendar.overlap(e('2026-09-23','2026-09-23'),a,b),!AtlasCalendar.overlap(e('',''),a,b),!AtlasCalendar.overlap(e('2026-09-24','2026-09-22'),a,b),!AtlasCalendar.multi(e('2026-09-23','2026-09-23')),AtlasCalendar.multi(e('2026-09-23','2026-09-24'))]});
+ edges.forEach((ok,i)=>check('date boundary '+i,ok));
+ await page.evaluate(()=>window.__atlasTest.go('home'));
+ check('home heading restored',await page.locator('#atlasHeading').isVisible());
+ const cards=await page.locator('.atlas-event-card').evaluateAll(es=>es.map(e=>e.dataset.eventIndex));
+ check('three unique homepage events',cards.length===3&&new Set(cards).size===3);
+ await page.locator('[data-ac-home-day="2026-09-24"]').click();
+ check('day click preserves feature cards',JSON.stringify(cards)===JSON.stringify(await page.locator('.atlas-event-card').evaluateAll(es=>es.map(e=>e.dataset.eventIndex))));
+ check('day program expands',await page.locator('.ac-home-program').innerText().then(t=>t.includes('čtvrtek')));
+ await page.locator('[data-ac-open-calendar]').click();check('selected day carried to calendar',await page.evaluate(()=>AtlasCalendar.getState().selected==='2026-09-24'));
+ for(const width of [1920,820,390]){
+  await page.setViewportSize({width,height:900});
+  check('no horizontal overflow '+width,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+ }
+ check('mobile agenda visible',await page.locator('.ac-mobile-view').isVisible());
+ await page.locator('.ac-mobile-view .ac-agenda-day > .ac-event').first().click();
+ check('mobile opens event dialog',await page.locator('#atlasEventDialog').evaluate(e=>e.open));
+ check('no runtime errors',errors.length===0);
+ console.log('Calendar checks passed: '+passed);
+}finally{await browser?.close();server.close()}

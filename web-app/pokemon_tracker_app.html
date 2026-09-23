@@ -12047,17 +12047,27 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   var spriteRamecky = null;
   /* Kolik znaků JSONu si měření ikon smí nechat (~1500 ikon). */
   var SPRITE_STROP = 300000;
+  /* Verze výpočtu. Změní-li se způsob měření, stará měření se zahodí —
+     jinak by v prohlížeči zůstala napořád a část ikon by seděla jinak
+     než zbytek. */
+  var SPRITE_VERZE = "3";
+  function nactiRamecky() {
+    if (spriteRamecky !== null) return;
+    try {
+      if (localStorage.getItem("pgo_sprite_verze") !== SPRITE_VERZE) {
+        localStorage.removeItem("pgo_sprite_ramecek");
+        localStorage.setItem("pgo_sprite_verze", SPRITE_VERZE);
+      }
+      var ulozene = localStorage.getItem("pgo_sprite_ramecek") || "{}";
+      // Strop: přerostlá vyrovnávací paměť umí zabrat celé úložiště
+      // (na file:// ho sdílí všechny stránky z disku) a sebrat místo
+      // rosteru. Měření ikon se dopočítá, roster ne.
+      spriteRamecky = ulozene.length > SPRITE_STROP ? {} : JSON.parse(ulozene);
+    } catch (e) { spriteRamecky = {}; }
+  }
   function vystredSprite(img) {
     if (!img || !img.src) return;
-    if (spriteRamecky === null) {
-      try {
-        var ulozene = localStorage.getItem("pgo_sprite_ramecek") || "{}";
-        // Strop: přerostlá vyrovnávací paměť umí zabrat celé úložiště
-        // (na file:// ho sdílí všechny stránky z disku) a sebrat místo
-        // rosteru. Měření ikon se dopočítá, roster ne.
-        spriteRamecky = ulozene.length > SPRITE_STROP ? {} : JSON.parse(ulozene);
-      } catch (e) { spriteRamecky = {}; }
-    }
+    nactiRamecky();
     var url = img.src;
     var pouzij = function (v) {
       img.style.transform = "translate(" + v.x + "%, " + v.y + "%) scale(" + v.s + ")";
@@ -12080,6 +12090,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         cv.width = Math.max(1, Math.round(mer.naturalWidth * pomer));
         cv.height = Math.max(1, Math.round(mer.naturalHeight * pomer));
         var cx = cv.getContext("2d", { willReadFrequently: true });
+        cx.imageSmoothingEnabled = false;
         cx.drawImage(mer, 0, 0, cv.width, cv.height);
         var d = cx.getImageData(0, 0, cv.width, cv.height).data;
         var t = -1, b2 = -1, l = cv.width, r2 = -1;
@@ -12102,9 +12113,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // Posun se počítá po zvětšení: střed spritu se odsune s ním.
         var dY = ((t + b2) / 2 - cv.height / 2) / cv.height * 100;
         var dX = ((l + r2) / 2 - cv.width / 2) / cv.width * 100;
+        /* Posun smí být nejvýš takový, aby obrázek nevylezl z rámečku.
+           Volné místo kolem spritu je `1 - podíl * měřítko` z výšky (šířky)
+           rámečku, půlka na každou stranu. Bez tohohle stropu se u spritu,
+           který rámeček vyplňuje skoro celý (měřítko zůstalo na 1), ustřihl
+           kus hlavy: appka ho vystředila, jenže nebylo kam uhnout. */
+        var stropY = Math.max(0, (1 - podilV * mer2) / 2 * 100);
+        var stropX = Math.max(0, (1 - podilS * mer2) / 2 * 100);
+        var omez = function (hodnota, strop) {
+          return Math.max(-strop, Math.min(strop, hodnota));
+        };
         var v = { s: mer2,
-          y: Math.max(-35, Math.min(35, Math.round(-mer2 * dY * 10) / 10)),
-          x: Math.max(-35, Math.min(35, Math.round(-mer2 * dX * 10) / 10)) };
+          y: omez(Math.round(-mer2 * dY * 10) / 10, Math.min(35, stropY)),
+          x: omez(Math.round(-mer2 * dX * 10) / 10, Math.min(35, stropX)) };
         // Vložené obrázky (`data:`) se neukládají — adresa je sama o sobě
         // dlouhá jako celý obrázek a v úložišti by zabrala nesmyslně moc.
         if (url.indexOf("data:") !== 0 && url.indexOf("blob:") !== 0) {
@@ -12223,12 +12244,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   /** Změřené posazení spritu pro danou adresu, pokud ho už appka zná. */
   function ramecekProUrl(url) {
     if (!url) return null;
-    if (spriteRamecky === null) {
-      try {
-        var ulozene = localStorage.getItem("pgo_sprite_ramecek") || "{}";
-        spriteRamecky = ulozene.length > SPRITE_STROP ? {} : JSON.parse(ulozene);
-      } catch (e) { spriteRamecky = {}; }
-    }
+    nactiRamecky();
     return spriteRamecky[url] || null;
   }
 
@@ -14275,7 +14291,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     h += '<div class="d-box"><div class="d-box-h">Strop</div>'
       + '<div class="d-big">' + (c.cpMax ? (c.cpMax.evolved || c.cpMax.cp) : "?") + " CP</div>"
       + '<div class="d-note">' + (c.cpMax && c.cpMax.evolved
-        ? "po evoluci na " + c.cpMax.evolvedName + " a dotažení na L40"
+        ? "na levelu 40 po evo"
         : "na levelu 40") + "</div>"
       + '<div class="d-note">' + (c.copies || "")
       + (c.procKopie ? '<br><span class="d-proc">' + c.procKopie + "</span>" : "")

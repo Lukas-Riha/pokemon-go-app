@@ -336,7 +336,7 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:84px;height:84px}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:46px;height:46px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:104px;height:104px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:58px;height:58px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:62px;height:62px}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus b{font-size:13px}
 .atlas-test .atlas-box-rozbor .d-ligy-tab td,.atlas-test .atlas-box-rozbor .d-ligy-tab th{text-align:center;vertical-align:middle}
 .atlas-test .atlas-box-rozbor .d-ligy-tab .d-lg-in{justify-content:center;align-items:center;text-align:center}
@@ -511,10 +511,10 @@ body.atlas-compact[data-atlas-view=roster] #atlasRoster .atlas-roster-tile{min-h
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus i{font-size:9px;line-height:1.25;padding:1px 4px}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-ram{width:68px;height:68px}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:68px;height:68px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-ram{width:92px;height:92px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:92px;height:92px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-ram{width:112px;height:112px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:112px;height:112px}
 .atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .atlas-evo-ram{width:46px;height:46px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .atlas-evo-ram{width:58px;height:58px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .atlas-evo-ram{width:62px;height:62px}
 /* Nadpisy čtyř sloupců musí začínat na jedné výšce — staty měly navíc
    vlastní horní odsazení z doby, kdy byly v bublině. */
 .atlas-test .atlas-box-rozbor .atlas-ident-stats>.d-box{padding:0}
@@ -806,7 +806,7 @@ html[data-theme=dark] .atlas-test[data-atlas-view=home]{--page:#040f20;--surface
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:56px;height:56px}
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:46px;height:46px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:72px;height:72px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:58px;height:58px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:62px;height:62px}
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus{padding-top:2px;padding-bottom:2px}
 /* Claude 21. 9. (5): rozložení panelu čištění, štítky, nadpisy, tečky u útoků. */
 /* Lišta akcí patří nad evoluční řadu, ale nesmí jí ubrat výšku: sedí ve
@@ -819,7 +819,7 @@ html[data-theme=dark] .atlas-test[data-atlas-view=home]{--page:#040f20;--surface
 /* Ikony v řadě se tím pádem nemusí zmenšovat — sloupec je zase přes celý panel. */
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:68px;height:68px}
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:56px;height:56px}
-.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:92px;height:92px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(5)) .atlas-evo-ram{width:112px;height:112px}
 .atlas-test .box-mode.siroky .atlas-box-rozbor>.atlas-evolution-column .d-evo:has(.d-evo-stupen:nth-child(7)) .atlas-evo-ram{width:72px;height:72px}
 /* Typ má pevnou šířku, takže osobní značky začínají u jednoho i dvou typů
    na stejné svislici. Dřív to řešila mezera, jenže ta byla užší než štítek. */
@@ -1165,14 +1165,17 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 .atlas-test .box-mode.box-mode .bm-actions{padding-top:6px}
 .atlas-test .box-mode.box-mode .bm-actions .bm-btn{padding:10px}
 .atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-evolution-column{margin:4px 0}
+/* Vodorovne odsazeni zadne: tabulka lig ma zacinat i koncit tam, kde
+   hlavicka kusu a ctyri bunky pod ni. Drive byla o 8 px zataZena dovnitr. */
 .atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-section>div,
-.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-section>table{margin:8px}
-/* Sprity v evolucni rade maji stejnou velikost v obou stavech. Bere se ta
-   mensi: u druhu s dlouhou radou (Eevee) se ta vetsi do panelu nevejde. */
+.atlas-test .box-mode.box-mode .atlas-box-rozbor .atlas-detail-section>table{margin:8px 0;
+  width:100%;max-width:100%!important}
+/* Sprity v evolucni rade jsou stejne velke jako v detailu kusu — jedna
+   velikost na obou mistech, at je to k poznani stejna vec. */
 .atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .atlas-evo-ram,
-.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:68px;height:68px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo-kus img{width:70px;height:70px}
 .atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .atlas-evo-ram,
-.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:46px;height:46px}
+.atlas-test .box-mode.box-mode .atlas-box-rozbor>.atlas-evolution-column .d-evo.husty .d-evo-kus img{width:48px;height:48px}
 /* Ctyri bunky dole: nadpis nad hodnotou i ve sbalenem stavu. Sloupec se
    pri nizsi bunce zalamoval vedle sebe a vypadal jako jeden radek. */
 .atlas-test .box-mode .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role{flex-wrap:nowrap}
@@ -1204,3 +1207,213 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 /* Panel si drzi stejnou vysku v obou stavech. Bez toho se pri rozbaleni
    prepocitalo svisle vystredeni a posunulo se uplne vsechno. */
 .atlas-test .box-mode.box-mode .bm-panel{height:min(980px,100%)}
+/* Claude 23. 9. (16): rozbor v boxu je vzdy cely, cervena u „Ne",
+   sjednocene prikazy v rosteru a znacky, ktere neposkakuji. */
+/* Typy maji pevne misto, takze vlastni znacky za nimi zacinaji u kazdeho
+   kusu na stejnem miste. */
+.atlas-test .atlas-typy-slot{display:inline-flex;gap:8px;align-items:center;
+  flex:0 0 auto;min-width:230px}
+/* Ctyri bunky dole: „Ne" ma cerveny text, tak ma mit i cerveny prouzek.
+   Drive byl sedy jako u nerozhodnuteho stavu. */
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role.muted,
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role.critical,
+.atlas-test .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role.muted,
+.atlas-test .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role.critical{
+  border-left-color:var(--status-critical)}
+#atlasDetailContent .d-roles.atlas-vyuziti>.d-role.evo,
+.atlas-test .atlas-box-rozbor .d-roles.atlas-vyuziti>.d-role.evo{border-left-color:var(--series-1)}
+/* Prikazy nad rosterem: stejna velikost, rez i tvar. „Projit pokemony"
+   bylo tucnejsi a „Sprava rosteru" vetsi a lehci nez zbytek rady. */
+.atlas-test .atlas-roster-commands>summary,
+.atlas-test #atlasRoster ~ * .atlas-mini-btn{font-size:12px;font-weight:600}
+.atlas-test .atlas-roster-commands>summary{padding:9px 11px;border-radius:8px;
+  font-size:12px;font-weight:600;min-height:42px;display:inline-flex;align-items:center}
+.atlas-test .atlas-cta,
+.atlas-test .atlas-roster-commandbar #boxModeBtn{font-size:12px;font-weight:600}
+/* Okno pri odchodu z cisteni: prvni prikaz vypadal jako jediny „spravny".
+   Vsechny tri jsou rovnocenne volby. */
+.atlas-test .bm-zeptat .actions button,
+.atlas-test .bm-zeptat .actions button.primary{background:var(--surface-1);
+  color:var(--text-primary);border:1px solid var(--border);font-weight:600}
+.atlas-test .bm-zeptat .actions button:hover{
+  background:color-mix(in srgb,var(--series-1) 16%,var(--surface-1));
+  border-color:color-mix(in srgb,var(--series-1) 60%,var(--border))}
+/* Sloupce statu maji spodni hranici, aby se pri uzsim okne neslily do sebe.
+   Blok utoku roste do zbytku radku (jako v detailu), takze zacina vzdycky
+   na stejnem miste — s `flex:0 1 auto` se lepil doprava a posouval se
+   podle delky nazvu utoku. */
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-stats{
+  grid-template-columns:repeat(3,minmax(96px,1fr));gap:10px}
+.atlas-test .atlas-box-rozbor .atlas-ident-stats .d-box{min-width:0}
+.atlas-test .atlas-box-rozbor .atlas-detail-identity .atlas-ident-utoky{flex:1 1 200px;min-width:0}
+/* Panel drzi stejnou vysku u kazdeho kusu. Bez toho byl kus s tabulkou lig
+   o stovky pixelu vyssi nez kus bez ni a panel mezi kusy poskakoval. */
+.atlas-test .box-mode.box-mode .bm-panel{height:min(980px,100%)}
+/* Calendar — week + event inspector, matching the September design. */
+.atlas-test #eventsCard.atlas-calendar-host{padding:0;background:transparent;border:0}
+.atlas-test #eventsCard.atlas-calendar-host>*:not(#atlasCalendar){display:none!important}
+body:has(#eventsCard.atlas-active) #atlasHeading{display:none}
+#atlasCalendar{--ac-bg:#061629;--ac-line:#243e59;--ac-blue:#0784ff;--ac-muted:#aac6e4;color:var(--text-primary);font-size:14px}
+html[data-theme=dark] body:has(#atlasCalendar) [data-atlas-view=events]{background:#040f20}
+#atlasCalendar button{cursor:pointer;color:inherit;font:inherit}
+#atlasCalendar button:focus-visible{outline:3px solid #80d4ff;outline-offset:2px}
+#atlasCalendar [data-kind=raid]{--ac-kind:#ff637f}
+#atlasCalendar [data-kind=max]{--ac-kind:#c36df2}
+#atlasCalendar [data-kind=catch]{--ac-kind:#6edf9a}
+#atlasCalendar [data-kind=research]{--ac-kind:#ffcc66}
+.ac-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.ac-toolbar h2{font-size:clamp(24px,2vw,34px);letter-spacing:-.7px;margin:0;text-transform:none;color:var(--text-primary)}
+.ac-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ac-controls>button,.ac-views button{padding:9px 12px;min-height:40px;background:var(--surface-1);border:1px solid var(--border);border-radius:8px}
+.ac-controls>b{font-size:13px;margin:0 8px}
+.ac-views{display:flex;gap:0}
+.ac-views button{border-radius:0}
+.ac-views button:first-child{border-radius:8px 0 0 8px}
+.ac-views button:last-child{border-radius:0 8px 8px 0}
+#atlasCalendar [aria-pressed=true]{background:#056ee8;color:#fff;border-color:#1c9aff}
+.ac-filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.ac-filters button{display:flex;gap:7px;align-items:center;background:var(--surface-1);border:1px solid var(--border);padding:7px 13px;border-radius:20px;min-height:36px;font-size:12px!important}
+.ac-dot{width:9px;height:9px;border-radius:50%;background:var(--ac-kind)}
+.ac-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,23%);gap:18px;align-items:start}
+.ac-content{min-width:0}
+.ac-week{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface-1)}
+.ac-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0}
+.ac-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-right:1px solid var(--border);border-radius:0!important;background:transparent;padding:11px 4px;min-width:0}
+.ac-day span{font-size:12px}.ac-day b{font-size:17px}.ac-day small{font-size:10px;color:inherit}
+.ac-day[aria-current=date]{box-shadow:inset 0 -2px #0a94ff}
+.ac-section-label{padding:13px 12px 8px;font-size:12px;color:var(--text-secondary);border-top:1px solid var(--border)}
+.ac-spans{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px 0;padding:3px 8px 12px}
+.ac-span{min-height:30px!important;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:color-mix(in srgb,var(--ac-kind) 32%,var(--surface-1));border:1px solid color-mix(in srgb,var(--ac-kind) 75%,var(--border));border-radius:8px;padding:5px 10px;font-size:12px!important}
+.ac-span>span:last-child{float:right}
+.ac-columns{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-height:240px}
+.ac-column{min-width:0;padding:6px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.ac-column:last-child{border:0}
+.ac-no-event{color:var(--text-muted);text-align:center;margin-top:15px;font-size:12px}
+.ac-event{display:flex;flex-direction:column;align-items:stretch;min-width:0;padding:0;overflow:hidden;text-align:left;background:var(--surface-1);border:1px solid var(--border);border-radius:9px;transition:border-color .15s}
+.ac-event:hover{border-color:var(--ac-kind)}
+.ac-art{display:flex;align-items:center;justify-content:center;position:relative;isolation:isolate;overflow:hidden;height:110px;flex-shrink:0;background:#122542;container-type:size}
+.ac-art:before{content:'';position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at center,transparent,#051122aa)}
+.ac-art:after{content:'';position:absolute;z-index:-2;width:max(100cqw,50cqh);height:max(100cqh,200cqw);left:calc((100cqw - max(100cqw,50cqh))/2);top:calc((100cqh - max(100cqh,200cqw))*.4);background:url('atlas/assets/event-scenes-v2.png') 100% center/300% 100%}
+.ac-art[data-kind=raid]:after,.ac-art[data-kind=max]:after{background-position:0 center}
+.ac-art[data-kind=research]:after{background-position:50% center;top:calc((100cqh - max(100cqh,200cqw))*.62)}
+.ac-art img{object-fit:contain;width:65%;height:100%;margin:0 -8%;filter:drop-shadow(0 6px 10px #0007)}
+.ac-art img:only-child{width:95%;margin:0}
+.ac-event-text{display:flex;flex-direction:column;gap:7px;padding:10px;min-width:0}
+.ac-event-text b{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.ac-event-text small{font-size:10px;color:var(--text-secondary)}
+.ac-event-small .ac-art{height:85px}
+.ac-event-small .ac-event-text{padding:8px 5px}
+.ac-event-small .ac-event-text b{font-size:11px}
+.ac-event-small .ac-event-text small{font-size:10px}
+.ac-detail{position:sticky;top:90px;border:1px solid var(--border);border-radius:13px;padding:16px;background:linear-gradient(140deg,var(--surface-1),var(--page));min-width:0}
+.ac-detail-heading{display:flex;align-items:start;justify-content:space-between;gap:10px;margin-bottom:14px}
+.ac-detail-heading h2{font-size:17px;margin:0;text-transform:none;color:var(--text-primary);line-height:1.4}
+.ac-detail-heading button{border:0;background:transparent;font-size:23px!important;min-height:30px;padding:0 5px}
+.ac-detail>.ac-art{height:200px;border-radius:10px;margin-bottom:15px}
+.ac-detail h3{font-size:23px;line-height:1.3;margin:10px 0;overflow-wrap:anywhere}
+.ac-detail p{font-size:13px;line-height:1.6;color:var(--text-secondary)}
+.ac-detail .ac-detail-time{font-size:15px;color:var(--text-primary)}
+.ac-category{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ac-kind)}
+.ac-primary{background:linear-gradient(#148fff,#0063e9);border:1px solid #259bff;color:#fff!important;border-radius:9px;width:100%;padding:12px;min-height:44px;margin-top:10px;font-weight:700!important}
+.ac-text-link{border:0;background:transparent;color:var(--series-1)!important;padding:10px 0;font-size:12px;cursor:pointer}
+.ac-detail>.ac-text-link{width:100%}
+.ac-detail .ac-event{margin:8px 0}
+.ac-more{border:0;background:var(--atlas-soft);padding:7px;color:var(--series-1)!important;border-radius:7px;min-height:36px;font-size:11px!important}
+.ac-empty{padding:12px;font-size:12px;color:var(--text-secondary);grid-column:1/-1}
+.ac-source{font-size:11px;color:var(--text-muted);margin-top:18px}
+.ac-unconfirmed{border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:15px}
+.ac-unconfirmed summary,.ac-also summary{cursor:pointer;font-size:13px}
+.ac-unconfirmed .ac-event{display:inline-flex;width:180px;margin:10px 10px 0 0;vertical-align:top}
+.ac-mobile-view{display:none}
+.ac-month-labels,.ac-month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.ac-month-labels span{text-align:center;padding:10px;font-size:12px}
+.ac-month-day{min-height:130px;border:1px solid var(--border);padding:5px;min-width:0}
+.ac-month-day .ac-day{width:100%;padding:4px;min-height:28px;flex-direction:row}
+.ac-month-day .ac-day span,.ac-month-day .ac-day small{display:none}
+.ac-month-event{display:block;width:100%;text-align:left;background:color-mix(in srgb,var(--ac-kind) 17%,var(--surface-1));border:0;border-left:3px solid var(--ac-kind);font-size:10px!important;min-height:26px;margin:4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:5px}
+.ac-outside{opacity:.55}
+.ac-agenda-day{padding:10px 0 20px}
+.ac-agenda-day h3{font-size:18px;margin:8px 0 13px}
+.ac-agenda-day>.ac-event{display:inline-flex;width:min(240px,100%);margin:0 10px 10px 0;vertical-align:top}
+.ac-also{padding:13px;border:1px solid var(--border);border-radius:9px;margin-top:12px}
+.ac-also .ac-event{width:100%;margin:10px 0 0;flex-direction:row}.ac-also .ac-art{width:90px;height:85px}
+#atlasHome .ac-home-week-label{font-size:14px;margin:18px 0 10px}
+#atlasHome .atlas-week{max-width:850px;margin-top:0}
+#atlasHome .atlas-week small{color:#79d5ff}
+.ac-home-program:empty{display:none}
+.ac-home-program{margin-top:14px;padding:16px;background:var(--surface-1);border:1px solid var(--border);border-radius:12px}
+.ac-home-program h3{margin:0 0 10px}
+.ac-home-program button{display:flex;align-items:center;justify-content:space-between;gap:15px;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid var(--border);padding:13px;color:var(--text-primary)}
+.ac-home-program button span{font-size:12px;color:var(--text-secondary)}
+@media(min-width:1700px){.ac-columns{min-height:320px}.ac-event-small .ac-art{height:130px}.ac-event-small .ac-event-text b{font-size:14px}.ac-detail>.ac-art{height:270px}.ac-day{padding:15px 4px}.ac-layout{gap:24px}.ac-detail{padding:22px}}
+@media(max-width:1099px){.ac-layout{grid-template-columns:1fr}.ac-detail{display:none}.ac-toolbar{align-items:start}.ac-controls{width:100%}.ac-columns{min-height:220px}}
+@media(max-width:700px){.ac-desktop-view{display:none}.ac-mobile-view{display:block}.ac-views{display:none}.ac-toolbar h2{font-size:25px}.ac-controls>b{font-size:12px;margin:0 3px}.ac-controls{gap:5px}.ac-controls>button{padding:7px 12px}.ac-filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;gap:6px}.ac-filters button{white-space:nowrap;padding:7px 10px}.ac-days{gap:5px}.ac-day{border:1px solid var(--border);border-radius:8px!important;padding:8px 2px}.ac-day small{display:none}.ac-day b{font-size:16px}.ac-day span{font-size:10px}.ac-agenda-day>.ac-event{width:100%;margin:0 0 10px}.ac-agenda-day>.ac-event .ac-art{height:195px}.ac-event-text b{font-size:19px}.ac-event-text small{font-size:13px}.ac-event-text{padding:15px}.ac-also .ac-event-text b{font-size:13px}.ac-home-program button{align-items:start;flex-direction:column;gap:5px}.ac-source{line-height:1.6}}
+@media(prefers-reduced-motion:reduce){.ac-event{transition:none}}
+/* Calendar fidelity pass: compact chrome, continuous day columns, illustrated inspector. */
+body.atlas-test[data-atlas-view="events"][data-atlas-current-route="eventsCard"] #atlasHeading{display:none}
+#atlasCalendar{--page:#031426;--surface-1:#061b30;--border:#1c3d59;--text-primary:#f0f6ff;--text-secondary:#abc7e5;--text-muted:#7e9dbc;--series-1:#62bdff;--atlas-soft:#0b3053;color:var(--text-primary);background:radial-gradient(ellipse at 45% 85%,#0b2f4b66,transparent 70%),#031426;border:1px solid #224768;border-radius:16px;padding:22px;box-shadow:0 15px 60px #0002}
+#atlasCalendar .ac-layout{grid-template-columns:minmax(0,1fr) minmax(250px,24%);gap:20px}
+#atlasCalendar .ac-toolbar{gap:12px;margin:0 0 18px;align-items:center}
+#atlasCalendar .ac-toolbar h2{font-size:clamp(23px,1.7vw,34px);font-weight:750;letter-spacing:-.6px}
+#atlasCalendar .ac-controls{gap:5px}
+#atlasCalendar .ac-controls>b{font-size:12px;margin:0 7px;color:#e3edff}
+#atlasCalendar .ac-controls>button,#atlasCalendar .ac-views button{min-height:34px;padding:7px 10px;font-size:12px;background:linear-gradient(#0b2843,#06172b);border-color:#244967}
+#atlasCalendar .ac-views [aria-pressed=true]{background:linear-gradient(#0789ff,#0059d8);box-shadow:inset 0 1px #55b1ff}
+#atlasCalendar .ac-filters{margin-bottom:18px}
+#atlasCalendar .ac-filters button{min-height:32px;font-size:12px;background:#041a2e;border-color:#294b65;padding:6px 13px}
+#atlasCalendar .ac-filters [aria-pressed=true]{background:linear-gradient(#0789ff,#0062e6)}
+#atlasCalendar .ac-week{border-radius:9px;background:repeating-linear-gradient(to right,transparent 0,transparent calc(100% / 7 - 1px),#183a53 calc(100% / 7 - 1px),#183a53 calc(100% / 7));border-color:#20425d}
+#atlasCalendar .ac-day{min-height:67px;padding:10px 4px;display:grid;grid-template-columns:auto auto;gap:3px 4px;align-content:center;justify-content:center}
+#atlasCalendar .ac-day span{grid-column:1/-1;font-size:12px;font-weight:600;text-transform:capitalize}
+#atlasCalendar .ac-day b,#atlasCalendar .ac-day small{font-size:12px;font-weight:400;line-height:18px}
+#atlasCalendar .ac-day[aria-pressed=true]{background:linear-gradient(#0750a0,#003874);box-shadow:inset 0 -2px #008dff}
+#atlasCalendar .ac-section-label{padding:12px 8px 8px;color:#accfff;font-size:12px;background:#04172ba8}
+#atlasCalendar .ac-spans{gap:6px 0;padding:2px 7px 9px}
+#atlasCalendar .ac-span{height:29px;min-height:29px!important;padding:4px 9px;line-height:19px;border-radius:6px;display:block;white-space:nowrap;text-overflow:ellipsis;font-weight:650;background:linear-gradient(90deg,color-mix(in srgb,var(--ac-kind) 45%,#092240),color-mix(in srgb,var(--ac-kind) 26%,#092240));font-size:11px!important;color:#fff}
+#atlasCalendar .ac-span:hover{filter:brightness(1.25)}
+#atlasCalendar .ac-expand-spans{display:flex;width:100%;justify-content:space-between;background:#071b2e;border:0;border-top:1px solid #173b57;color:#8dc9ff;padding:7px 12px;font-size:11px}
+#atlasCalendar .ac-columns{min-height:260px}
+#atlasCalendar .ac-column{padding:7px 5px;border:0;gap:9px}
+#atlasCalendar .ac-event{width:100%;border-color:#264c67;background:linear-gradient(#0a2942,#031528);border-radius:7px;box-shadow:0 5px 16px #0002}
+#atlasCalendar .ac-event[aria-pressed=true]{background:#061d38;outline:2px solid #078bff;outline-offset:-1px;box-shadow:0 0 15px #006bff35}
+#atlasCalendar .ac-event-small .ac-art{height:auto;aspect-ratio:1.25}
+#atlasCalendar .ac-art img{width:75%;height:112%;max-height:none;align-self:center;margin:0 -12%;filter:drop-shadow(0 5px 12px #080616aa)}
+#atlasCalendar .ac-art img:only-child{width:110%;height:115%;margin:0}
+#atlasCalendar .ac-event-text{position:relative;gap:5px;padding:9px 7px 10px 25px}
+#atlasCalendar .ac-event-text b{font-size:11px;line-height:1.4;font-weight:650}
+#atlasCalendar .ac-event-text small{font-size:10px;line-height:1.4}
+#atlasCalendar .ac-tile-kind{position:absolute;left:7px;top:8px;color:var(--ac-kind);font-size:16px}
+#atlasCalendar .ac-detail{top:85px;padding:16px 14px;min-height:100%;background:radial-gradient(ellipse at bottom right,#12406845,transparent 60%),linear-gradient(140deg,#09233b,#031426);border-color:#2a4b68;border-radius:12px;box-shadow:0 8px 28px #0002}
+#atlasCalendar .ac-detail-heading h2{text-transform:capitalize;font-size:19px}
+#atlasCalendar .ac-detail>.ac-art{height:auto;aspect-ratio:1.4;border-radius:8px;margin-bottom:16px}
+#atlasCalendar .ac-detail h3{font-size:clamp(21px,1.65vw,30px);margin:10px 0}
+#atlasCalendar .ac-detail .ac-primary{margin-top:16px;border-radius:7px;font-size:14px}
+#atlasCalendar .ac-detail>.ac-text-link{margin-top:6px}
+#atlasCalendar .ac-source{margin-bottom:0;line-height:1.6}
+#atlasCalendar .ac-no-event{opacity:.35}
+#atlasCalendar .ac-unconfirmed{background:#06192c}
+#atlasCalendar .ac-unconfirmed .ac-event{width:180px}
+#atlasCalendar .ac-detail .ac-event{width:100%}
+#atlasHome .atlas-overview-calendar .atlas-event-link{background:none;border:0;box-shadow:none;border-radius:0;padding:0;min-height:20px;font-size:0;position:absolute;right:18px;bottom:21px}
+#atlasHome .atlas-overview-calendar .atlas-event-link>span{font-size:22px;color:#9ed5ff}
+#atlasHome .atlas-overview-calendar .atlas-event-copy{padding:20px;min-height:140px}
+#atlasHome .atlas-overview-calendar .atlas-event-card{border-radius:12px;min-height:clamp(330px,24vw,460px);text-align:left}
+#atlasHome .atlas-overview-calendar .atlas-event-card h3{font-size:clamp(20px,1.6vw,29px);line-height:1.2;padding-right:12px}
+#atlasHome .atlas-overview-calendar .atlas-event-date{font-size:13px;padding-right:22px}
+#atlasHome .atlas-overview-calendar .atlas-event-art{inset:10px 0 auto;height:68%}
+#atlasHome .atlas-overview-calendar .atlas-event-art img{height:100%;object-fit:contain;max-height:none}
+#atlasHome .atlas-week{border:0;border-radius:0;gap:8px;max-width:650px;background:none;overflow:visible}
+#atlasHome .atlas-week button{border:1px solid #284969;border-radius:8px;min-height:65px;background:#061b30;color:#dceaff}
+#atlasHome .atlas-week button[aria-pressed=true]{background:linear-gradient(#034080,#002d60);box-shadow:inset 0 0 0 1px #009dff;color:white}
+@media(min-width:1700px){#atlasCalendar{padding:28px}#atlasCalendar .ac-columns{min-height:340px}#atlasCalendar .ac-event-text b{font-size:13px}#atlasCalendar .ac-event-text small{font-size:12px}#atlasCalendar .ac-detail{padding:20px}#atlasCalendar .ac-span{font-size:13px!important;height:32px}#atlasCalendar .ac-day{min-height:78px}#atlasCalendar .ac-day b,#atlasCalendar .ac-day small{font-size:14px}}
+@media(max-width:1099px){#atlasCalendar .ac-layout{grid-template-columns:1fr}#atlasCalendar{padding:16px}#atlasCalendar .ac-controls{width:auto}#atlasCalendar .ac-toolbar{align-items:center}#atlasCalendar .ac-detail{display:none}}
+@media(max-width:700px){#atlasCalendar{padding:15px 10px;border-radius:12px}#atlasCalendar .ac-toolbar h2{font-size:25px}#atlasCalendar .ac-toolbar{justify-content:center}#atlasCalendar .ac-controls{justify-content:center;width:100%}#atlasCalendar .ac-day{display:flex;min-height:58px;gap:4px}#atlasCalendar .ac-day b{font-size:16px;font-weight:650}#atlasCalendar .ac-day small{display:none}#atlasCalendar .ac-filters{gap:5px}#atlasCalendar .ac-filters button{font-size:11px!important;padding:6px 10px}#atlasCalendar .ac-agenda-day>.ac-event .ac-art{height:235px;aspect-ratio:auto}#atlasCalendar .ac-agenda-day>.ac-event .ac-event-text{padding:15px 16px 18px 35px}#atlasCalendar .ac-agenda-day>.ac-event .ac-event-text b{font-size:20px}#atlasCalendar .ac-agenda-day>.ac-event .ac-event-text small{font-size:14px}#atlasCalendar .ac-tile-kind{left:12px;top:15px}#atlasCalendar .ac-also .ac-tile-kind{display:none}#atlasCalendar .ac-also .ac-event-text{padding:10px}#atlasCalendar .ac-also .ac-art{width:90px;height:85px;aspect-ratio:auto}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child){min-height:125px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-art{height:100px;top:14px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-copy{min-height:125px;padding:14px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) h3{font-size:16px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-date{font-size:11px}#atlasHome .atlas-week{gap:5px}#atlasHome .atlas-week button{min-height:58px}}
+#atlasCalendar .ac-art img[data-overview-sprite],#atlasHome .atlas-event-art img[data-overview-sprite]{transform:scale(1.7);transform-origin:50% 55%}
+#atlasCalendar .ac-detail-species{font-size:12px;margin-top:0;color:#afd5ff}
+#atlasCalendar .ac-detail-heading h2{text-transform:none}
+#atlasCalendar .ac-detail-heading h2:first-letter{text-transform:uppercase}
+@media(min-width:1100px) and (max-width:1450px){#atlasCalendar .ac-layout{grid-template-columns:minmax(0,1fr) 245px;gap:14px}#atlasCalendar .ac-event-text{padding:8px 5px}#atlasCalendar .ac-tile-kind{display:none}#atlasCalendar .ac-event-text b{font-size:10px;overflow-wrap:normal;word-break:normal}#atlasCalendar .ac-controls{width:100%}#atlasCalendar .ac-toolbar h2{font-size:26px}}
+/* Okno pri odchodu z cisteni lezi nad VSIM v panelu. Prikazy nad evolucni
+   radou mely stejny z-index, takze zustaly svitit a daly se zmacknout. */
+.atlas-test .box-mode .bm-zeptat{z-index:40}
+.atlas-test .box-mode .atlas-box-rozbor>.hra-pruh{z-index:1}

@@ -313,11 +313,26 @@ const stav = await ui.evaluate(async () => {
   out.jmenoZA = (await vyber("pokemon:-1")).map((x) => x.jmeno);
   out.puvodni = await vyber("");
   out.sortKeyPo = P.snapshot().sortKey;
-  // akce: správný tvar
-  A.go("home");
-  await cekej(900);
-  out.akce = [...document.querySelectorAll("#atlasHome small")].map((e) => e.textContent.trim())
-    .filter((t) => /^\d+ akc/.test(t));
+  // Ceske sklonovani poctu: Prehled uz zadny pocet akci neukazuje (ma ho
+  // Astrin kalendar), stejny pomocnik ale hlida okno pri odchodu z cisteni
+  // („Mas rozdelano 1 kus / 2 kusy / 5 kusu").
+  out.tvary = [];
+  for (const kolik of [1, 2, 5]) {
+    P.boxOtevrit();
+    { const o = document.getElementById("appOknoOk");
+      if (o && !document.getElementById("appOkno").hidden) o.click(); }
+    await cekej(500);
+    for (let i = 0; i < kolik; i++) { P.boxRozhodnout("keep"); await cekej(120); }
+    document.getElementById("bmClose").click();
+    await cekej(400);
+    const h = document.querySelector(".bm-zeptat h3");
+    out.tvary.push(h ? h.textContent.trim() : "(nic)");
+    const zpet = document.getElementById("bmPokracovat");
+    if (zpet) zpet.click();
+    await cekej(200);
+    P.boxZavritNatvrdo();
+    await cekej(200);
+  }
   return out;
 });
 check("„Smazat neoznačené“ je v menu Správa rosteru hned nad „Vymazat vše“",
@@ -358,10 +373,12 @@ check("Great League: nejhorší první — pořadí klesá", sGlD.every((v, i) =
 check("jméno Z–A", stav.jmenoZA.every((j, i) => !i || j.localeCompare(stav.jmenoZA[i - 1], "cs") <= 0),
   JSON.stringify(stav.jmenoZA));
 check("„Původní řazení“ řazení opravdu zruší", !stav.sortKeyPo, String(stav.sortKeyPo));
-const tvar = (n) => n >= 1 && n <= 4 ? "akce" : "akcí";
-check("počet akcí je česky správně (1–4 akce, 0 a 5+ akcí)",
-  stav.akce.length >= 1 && stav.akce.every((t) => { const n = parseInt(t, 10); return t === n + " " + tvar(n); }),
-  JSON.stringify(stav.akce));
+check("počet kusů je česky správně (1 kus, 2 kusy, 5 kusů)",
+  stav.tvary.length === 3
+    && /Máš rozděláno 1 kus$/.test(stav.tvary[0])
+    && /Máš rozděláno 2 kusy$/.test(stav.tvary[1])
+    && /Máš rozděláno 5 kusů$/.test(stav.tvary[2]),
+  JSON.stringify(stav.tvary));
 await ui.close();
 
 // ------------------------------------- tmavý režim, detail kusu, pořadí štítků

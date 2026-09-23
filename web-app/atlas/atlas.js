@@ -599,6 +599,20 @@ globalThis.AtlasBudget = (() => {
   container.querySelectorAll('[data-detail-section=stats] .d-box').forEach(box=>{const h=(box.querySelector('.d-box-h')||{}).textContent||'';if(/^IV/.test(h))box.querySelectorAll('.d-note').forEach(n=>n.remove());if(/^Strop/.test(h))box.querySelectorAll('.d-proc').forEach(n=>{const note=n.parentElement;if(n.textContent.trim())note.setAttribute('data-tip',n.textContent.trim());if(n.previousElementSibling&&n.previousElementSibling.tagName==='BR')n.previousElementSibling.remove();n.remove()})});
   // Typové pokrytí: „Výhoda" jako typy vpravo na řádku značek. V sekci dole
   // zůstane jen to, co se vyruší — zbytek se dal odvodit a jen zabíral místo.
+  // Typy kusu dostanou pevne siroke misto. Druh s jednim typem ma misto
+  // druheho chipu jen pomlcku, ta je uzsi — a vlastni znacky za ni se pri
+  // prechodu na dalsi kus posunuly o par pixelu do strany.
+  const titulekTypy=container.querySelector('.detail-title');
+  if(titulekTypy&&!titulekTypy.querySelector('.atlas-typy-slot')){
+    const typy=[];
+    for(const el of titulekTypy.children){
+      if(el.classList.contains('d-type'))typy.push(el);else break;
+    }
+    if(typy.length){
+      const slot=document.createElement('span');slot.className='atlas-typy-slot';
+      typy[0].before(slot);typy.forEach(el=>slot.append(el));
+    }
+  }
   const pokryti=container.querySelector('.d-pokryti'),titulek=container.querySelector('.detail-title');
   if(pokryti&&titulek){
     const typy=[];
@@ -880,8 +894,11 @@ globalThis.AtlasBudget = (() => {
  // vpravo svítil posuvník celé stránky.
  const boxPrepinac=document.getElementById('boxMode');
  if(boxPrepinac){
-   const zamek=()=>{const otevreno=!boxPrepinac.hidden&&getComputedStyle(boxPrepinac).display!=='none';document.body.classList.toggle('atlas-box-otevreno',otevreno)};
-   new MutationObserver(zamek).observe(boxPrepinac,{attributes:true,attributeFilter:['hidden','style','class']});
+   // Hlida se JEN `hidden` a necte se `getComputedStyle`: pri prepinani kusu
+   // se na panelu meni tridy porad dokola a kazda zmena tak vynutila prepocet
+   // stylu cele stranky. Otevreni a zavreni jde vzdycky pres `hidden`.
+   const zamek=()=>{document.body.classList.toggle('atlas-box-otevreno',!boxPrepinac.hidden)};
+   new MutationObserver(zamek).observe(boxPrepinac,{attributes:true,attributeFilter:['hidden']});
    zamek();
  }
  window.AtlasFocusRow=id=>{if(!P.getRows().some(r=>r.id===id))return false;__atlasTest.go('roster');__atlasTest.refresh();__atlasTest.openDetail(id);return true};
@@ -903,13 +920,13 @@ globalThis.AtlasBudget = (() => {
  const end=s=>{const d=date(s);if(d&&/^\d{4}-\d{2}-\d{2}$/.test(s))d.setDate(d.getDate()+1);return d};
  const format=s=>{const d=date(s);return d?d.toLocaleString('cs-CZ',{day:'numeric',month:'numeric',...(/T/.test(s)?{hour:'2-digit',minute:'2-digit'}:{})}):'Termín nepotvrzen'};
  const safeUrl=s=>{try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}};
- const image=name=>{const key=P.dexKeyOf(name),src=window.ATLAS_ART?.[key];return src?`<img src="${esc(src)}" alt="${esc(name)}" loading="lazy">`:P.atlasImage(name)};
+ const image=name=>{const key=P.dexKeyOf(name),src=window.ATLAS_ART?.[key];return src?`<img src="${esc(src)}" alt="${esc(name)}" loading="lazy">`:(P.atlasImage(name)||'').replace('<img ','<img data-overview-sprite="true" ')};
  const sections={spawn:'Ve volné přírodě',raid:'Souboje',vejce:'Z vajec',vyzkum:'Výzkumy a odměny',bonus:'Bonusy',utoky:'Speciální útoky',shiny:'Shiny',novinky:'Další obsah akce'};
  let selected=day(new Date()),lastToday=selected,offset=0,events=[],root;
  const modal=document.createElement('dialog');modal.id='atlasEventDialog';modal.className='atlas-event-dialog';modal.setAttribute('aria-labelledby','atlasEventTitle');document.body.append(modal);
  function overlap(e,start,finish){const a=date(e[3]),b=end(e[4]);return !!(a&&b&&a<finish&&b>start)}
  function live(e){return overlap(e,new Date(),new Date(Date.now()+1))}
- function eventNames(e){return [...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))].slice(0,3)}
+ function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))];if(!names.length&&/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).forEach(name=>{if(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name))names.push(name)})}return names.slice(0,3)}
  function bossCards(es){return es.flatMap(e=>{const names=eventNames(e);return (names.length?names:[null]).map(name=>`<button class="atlas-boss" data-event-index="${events.indexOf(e)}"><span class="atlas-boss-art">${name?image(name):'<span aria-hidden="true">◇</span>'}</span><b>${esc(name&&/^Shadow /.test(e[0])&&!/^Shadow /.test(name)?'Shadow '+name:name||e[0])}</b><small>${/^max-/.test(e[1])?'Max souboj':'Raid'} · ${format(e[4])}</small></button>`)}).join('')}
  function card(e){
  const a=date(e[3]),b=end(e[4]),now=new Date(),tomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1),afterTomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+2);
@@ -938,8 +955,10 @@ globalThis.AtlasBudget = (() => {
  root.innerHTML=`<div class="atlas-overview"><div class="atlas-overview-intro"><span class="atlas-feed-note">Data: ${esc(stamp||'datum neznámé')}${stale?' · Aktualitu ověř ve zdroji':''}</span></div><section class="atlas-panel atlas-overview-calendar"><div class="atlas-panel-head"><h2>Dnes a brzy</h2><div><button class="atlas-mini-btn" data-overview-week="-7" aria-label="Předchozí týden">←</button> <button class="atlas-mini-btn" data-overview-today>Dnes</button> <button class="atlas-mini-btn" data-overview-week="7" aria-label="Další týden">→</button></div></div><div class="atlas-event-grid">${shown.slice(0,3).map(card).join('')||'<p class="atlas-empty">Pro tento den nemáme potvrzenou akci.</p>'}</div><div class="atlas-week">${days}</div>${shown.length>3?`<p class="atlas-small-note">${(n=>n===1?'Další 1 akci':n<=4?'Další '+n+' akce':'Dalších '+n+' akcí')(shown.length-3)} najdeš v úplném kalendáři.</p>`:''}<button class="atlas-mini-btn" data-atlas-nav="events">Celý kalendář →</button></section><div class="atlas-battle-columns">${[[raids,'Raidy'],[max,'Max souboje']].map(([es,title])=>`<section class="atlas-panel"><div class="atlas-panel-head"><h2>${title}</h2></div>${title==='Max souboje'&&!maxLive.length&&max.length?'<p class="atlas-small-note">Nejbližší potvrzená akce · pro dnešek nemáme potvrzený seznam bossů.</p>':''}<div class="atlas-boss-grid">${bossCards(es)||'<p class="atlas-empty">V datech není potvrzené aktuální okno. To neznamená, že žádné souboje neběží.</p>'}</div><p class="atlas-small-note">Dostupnost podle termínů akcí${stale?', data mohou být zastaralá':''}. Sestavu ověř v Taháku.</p><button class="atlas-mini-btn" data-overview-teams>Otevřít Tahák →</button></section>`).join('')}</div><section class="atlas-panel atlas-home-spawns"><div class="atlas-panel-head"><h2>Co teď potkáš</h2></div><p class="atlas-small-note">Platí časová a další omezení u jednotlivých skupin. Nejde o živou mapu okolí.</p>${spawns.map(({e,w})=>`<details class="atlas-spawn-preview"><summary>${esc(e[0])}</summary>${list(w[2].spawn,'spawn')}<button class="atlas-mini-btn" data-event-index="${events.indexOf(e)}">Podmínky a další obsah →</button></details>`).join('')||'<p class="atlas-empty">Nemáme potvrzený seznam spawnů pro právě probíhající časové okno.</p>'}</section><section class="atlas-panel atlas-home-plans"><div class="atlas-panel-head"><div><h2>Co připravit jako první</h2><p>První kroky v pořadí enginu. Dostupnost prachu a bonbónů si ověř.</p></div><button class="atlas-mini-btn" data-atlas-nav="invest">Celý plán →</button></div><div class="atlas-plan-preview">${plans.slice(0,2).map(p=>`<button class="atlas-plan-card" data-atlas-detail="${esc(p.row.id)}">${image(p.row.pokemon)}<div><h3>${esc(p.row.pokemon)}</h3><p>${esc(p.role||c[p.row.id]?.keepSub)}</p><b>${p.evoluce?'Evoluce a další krok':'Vylepšení'}${p.cilJmeno?' → '+esc(p.cilJmeno):''}</b><span class="atlas-plan-open">Otevřít Pokémona →</span></div></button>`).join('')||'<p class="atlas-empty">Engine nyní nenabízí ověřený investiční krok.</p>'}</div></section><section class="atlas-panel"><div class="atlas-panel-head"><h2>Před hraním</h2></div><div class="atlas-preflight"><button class="atlas-mini-btn" data-click="boxModeBtn">Projít pokémony</button><button class="atlas-mini-btn" data-atlas-filter="missing">Doplnit útoky · ${missing} kusů</button><button class="atlas-mini-btn" data-atlas-nav="events">Ověřit termíny a bonusy</button></div></section></div>`;
  const spawnPanel=root.querySelector('.atlas-home-spawns'),planPanel=root.querySelector('.atlas-home-plans');if(spawnPanel&&planPanel)planPanel.after(spawnPanel);
  const heading=document.querySelector('#atlasHeading');if(__atlasTest.getState().view==='home'){heading.querySelector('h1').textContent='Co dnes stojí za to'}
+ window.AtlasDecorateHome?.();
  }
  window.AtlasRenderHome=render;
+ window.AtlasEventUI={card:e=>card(e),image,format,open:i=>openEvent(i),names:eventNames};
  document.querySelector('#atlasHome').addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(el.hasAttribute('data-event-index'))openEvent(Number(el.dataset.eventIndex));if(el.dataset.overviewDay){selected=el.dataset.overviewDay;render(root);root.querySelector(`[data-overview-day="${selected}"]`)?.focus({preventScroll:true})}if(el.dataset.overviewWeek){offset+=Number(el.dataset.overviewWeek);const d=new Date();d.setDate(d.getDate()+offset);selected=day(d);render(root)}if(el.hasAttribute('data-overview-today')){offset=0;selected=day(new Date());render(root)}if(el.hasAttribute('data-overview-teams'))__atlasTest.go('teams','cheatCard')});
  render(document.querySelector('#atlasHome'));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!modal.open&&__atlasTest.getState().view==='home')render(root)});
