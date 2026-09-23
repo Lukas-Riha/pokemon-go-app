@@ -13496,7 +13496,7 @@ try {
       "raidRankIndex", "gymRankIndex", "counterScore", "formatDust",
       // ovladani, ktere si vrstva dela po svem: razeni, detail v cizi
       // plachte a zalozni obrazek druhu
-      "atlasSort", "atlasDetail", "atlasImage"];
+      "atlasSort", "atlasDetail", "atlasImage", "atlasPoradi"];
     const pole = ["keep", "keepGood", "keepSub", "keepTitle", "keepTone", "ivPct",
       "powerup", "powerupSub", "powerupTone", "cost", "costText",
       "raidPct", "raidRec", "gymPct", "gymRec", "pvpRec", "pvpLigy",
@@ -13981,7 +13981,24 @@ try {
     P.atlasSort("");
     const snapZrusene = P.snapshot();
 
+    // `atlasPoradi` je pro vrstvu jediny zdroj poradi kusu (radky tabulky
+    // si sama nekresli), takze musi sedet na to, co je v tabulce.
+    const idsVTabulce = () => Array.prototype.map.call(
+      document.querySelectorAll("#tbody tr[data-row-id]"), (tr) => tr.dataset.rowId);
+    P.atlasSort("cp", -1);
+    await new Promise((r) => setTimeout(r, 300));
+    const poradiSestupne = P.atlasPoradi().join("|") === idsVTabulce().join("|");
+    const f = document.getElementById("filterSelect");
+    f.value = "rare"; f.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 300));
+    const poradiSFiltrem = P.atlasPoradi().join("|") === idsVTabulce().join("|");
+    const poradiKratsi = P.atlasPoradi().length < P.getRows().length;
+    f.value = "all"; f.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 300));
+    P.atlasSort("");
+
     return {
+      poradiSestupne, poradiSFiltrem, poradiKratsi,
       sestupneVratilo: sestupne, vzestupneVratilo: vzestupne, nesmyslVratil: nesmysl,
       poSestupne, poVzestupne,
       klicSestupne: snapSestupne.sortKey, smerSestupne: snapSestupne.sortDir,
@@ -13990,6 +14007,10 @@ try {
       sipkaVHlavicce: (document.getElementById("headerRow") || {}).textContent || "",
     };
   });
+  check("atlasPoradi sedi na poradi radku v tabulce", uiApi.poradiSestupne,
+    String(uiApi.poradiSestupne));
+  check("...a bere i filtr", uiApi.poradiSFiltrem && uiApi.poradiKratsi,
+    JSON.stringify({ sedi: uiApi.poradiSFiltrem, kratsi: uiApi.poradiKratsi }));
   eq("atlasSort potvrdi, ze seradil", uiApi.sestupneVratilo, true);
   check("sestupne razeni opravdu preskladalo tabulku",
     JSON.stringify(uiApi.poSestupne) === JSON.stringify(uiApi.poSestupne.slice().sort((a, b) => b - a)),

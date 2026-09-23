@@ -68,6 +68,7 @@ je obojí jeho veřejnou součástí.
 | --- | --- |
 | `atlasSort(klic, smer)` | seřadí roster; `smer` 1 vzestupně, −1 sestupně |
 | `atlasDetail(id, kontejner, zavrit)` | vykreslí detail kusu do cizího prvku a napojí jeho ovládání |
+| `atlasPoradi()` | pořadí kusů (pole `id`) tak, jak zrovna prochází hledáním, filtrem a řazením |
 | `atlasImage(jmeno, trida)` | obrázek druhu jako hotová značka `<img>` i se záložním zdrojem |
 | `atlasDuvody(id nebo computed)` | štítky k verdiktu jako hotové HTML (`.dv-radek` se štítky a bublinami `data-tip`). Ponechaný kus: důvody. Pouštěný kus: štítky „pod čarou" (`.dv-radek-pod`, `.dv-chip.dv-pod`, kvalita `.dv-kvalita`) — kde se nevešel; `""`, když nemá kde |
 | `srovnejDuvody(kontejner)` | po vložení štítků schová, co se do šířky nevejde, do „+N" s bublinou |
@@ -81,6 +82,25 @@ sloupci. Na neznámý klíč se stav nezmění vůbec a vrátí se `false`. Prá
 klíč řazení zruší. Druhotné řazení (Shift+klik v hlavičce) se ruší vždycky,
 protože rozbalovátko umí zvolit jen jedno kritérium. Zvolené řazení si
 přečteš ze `snapshot()` jako `sortKey` a `sortDir`.
+
+### Klasická tabulka se ve vrstvě nestaví
+
+Vrstva má svůj vlastní seznam kusů a původní tabulku schovává stylem
+(třída `atlas-compact` na `body`). Engine to pozná a řádky tabulky vůbec
+nestaví — u čtyř set kusů to bylo půl vteřiny při každé změně a nejdražší
+věc v celé appce. Výpočet běží dál, mění se jen to, že řádky nevzniknou.
+
+Plyne z toho dvojí:
+
+* **Pořadí se čte z `atlasPoradi()`, ne z řádků.** Dřív si vrstva brala
+  `id` z `#tbody tr[data-row-id]`; to už ve svém zobrazení nenajde.
+* **Změna dat se pozná dál podle těla tabulky.** I když se řádky
+  nestaví, engine do `#tbody` vždycky vloží značku (HTML komentář), takže
+  `MutationObserver` na `childList` funguje přesně jako předtím.
+
+Když se třída `atlas-compact` sundá (klasická tabulka), engine řádky
+dostaví sám. Lišta záložek na úzkém okně se tohohle netýká — tam se
+řádky staví pořád, aby přepnutí záložky ukázalo tabulku hned.
 
 `atlasImage` je to, na co vrstva spadne zpátky, když pro druh nemá vlastní
 art. Je to tentýž obrázek, jaký ukazuje řádek rosteru, takže se obojí

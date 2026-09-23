@@ -14649,6 +14649,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   var cellIndex = {}; // rowId -> { colKey: td }
+  /* Zbývá dokreslit tělo tabulky? Nastaví se, když se řádky přeskočily. */
+  var telaDluh = false;
+  var znacka = 0;   // pořadové číslo překreslení (jen do značky v těle tabulky)
+  /* Vzhledová vrstva má dva pohledy na roster: svůj vlastní seznam
+     (`atlas-compact`, tam je klasická tabulka schovaná stylem) a původní
+     tabulku. Ve svém seznamu nemá cenu stavět stovky řádků, které nikdo
+     neuvidí — u čtyř set kusů to bylo skoro čtvrt vteřiny při každém
+     kliknutí a nejdražší věc v celé appce. Výpočet (`analyze`) běží dál,
+     takže kromě řádků se nemění nic.
+
+     Schování se pozná podle třídy, ne podle rozložení stránky: tabulku
+     schovává i lišta záložek na úzkém okně, a tam řádky být musí —
+     přepnutí záložky je má ukázat hned, ne je teprve začít stavět. */
+  function tabulkaVidet() {
+    return !document.body.classList.contains("atlas-compact");
+  }
+  /* Kdyby se tabulka přece jen ukázala, řádky se dokreslí. */
+  function zajistiTelo() {
+    if (!telaDluh) return;
+    telaDluh = false;
+    renderBody();
+  }
   var otevrenyDetail = null;   // id řádku s rozbaleným popisem
 
   /* Bubliny, které jsou jen návod k ovládání. Do rozboru nepatří — na telefonu
@@ -15163,9 +15185,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var tb = document.getElementById("tbody");
       return tb ? tb.querySelector('tr[data-row-id="' + id + '"]') : null;
     };
+    // Se skrytou tabulkou se řádky nestaví, takže „je vidět?" musí
+    // odpovědět pořadí, ne DOM — jinak by se rušily filtry, které přitom
+    // nic neschovávají.
+    var jeMezi = function () {
+      return !!najdi() || lastVisibleIds.indexOf(id) >= 0;
+    };
     otevrenyDetail = id;
     renderBody();
-    if (!najdi()) {
+    if (!jeMezi()) {
       zrusitVsechnyFiltry();     // překreslí samo
       otevrenyDetail = id;
       renderBody();
@@ -15380,9 +15408,22 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // Pořadí, ve kterém se to teď opravdu vykreslilo — čištění boxu z něj bere
     // svoje pořadí, aby se šlo v appce i ve hře po stejné trase.
     lastVisibleIds = visible.map(function (x) { return x.row.id; });
+    // Kolik kusů projde filtrem. Lišta záložek sedí v jiné uzavřené funkci
+    // a do `lastVisibleIds` nedosáhne — a počet potřebuje i tehdy, když se
+    // řádky tabulky vůbec nestaví.
+    window.__pgoVidetKusu = visible.length;
     document.getElementById("emptyState").style.display = rows.length === 0 ? "block" : "none";
 
-    if (rows.length && !visible.length) {
+    // Schovaná tabulka se nestaví. Pořadí (`lastVisibleIds`) už je
+    // spočítané výš, takže čištění boxu i všechno ostatní má, co potřebuje.
+    var kresli = tabulkaVidet();
+    telaDluh = !kresli;
+    // Vzhledová vrstva pozná změnu dat podle toho, že se tělo tabulky
+    // přestavělo. Když se řádky nestaví, musí se tělo přesto jednou
+    // dotknout — jinak by se seznam kusů ve vrstvě už nikdy nepřekreslil.
+    // Značka je komentář: není vidět a nepočítá se mezi řádky.
+    if (!kresli) tbody.appendChild(document.createComment("pgo " + (++znacka)));
+    if (kresli && rows.length && !visible.length) {
       var trEmpty = document.createElement("tr");
       // Označený, aby se dal odlišit od skutečných řádků — jinak to vypadá,
       // že filtr něco našel, i když nenašel nic.
@@ -15422,7 +15463,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       tbody.appendChild(trEmpty);
     }
 
-    visible.forEach(function (item) {
+    (kresli ? visible : []).forEach(function (item) {
       var r = item.row, c = item.c;
       var tr = document.createElement("tr");
       // Identita řádku přímo v DOMu. Bez toho se dá řádek zpětně najít jen
@@ -15674,6 +15715,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (wrap) { wrap.scrollLeft = wrapX; wrap.scrollTop = wrapY; }
     if ((window.scrollY || window.pageYOffset || 0) !== scrollY) window.scrollTo(0, scrollY);
   }
+
+  /* Přepnutí zpět na klasickou tabulku řádky dostaví. Hlídá to appka
+     sama, aby na tom vzhledová vrstva nemusela nic dělat. */
+  (function hlidatTabulku() {
+    if (typeof MutationObserver !== "function") return;
+    var bylo = tabulkaVidet();
+    new MutationObserver(function () {
+      var ted = tabulkaVidet();
+      if (ted === bylo) return;
+      bylo = ted;
+      if (ted) zajistiTelo();
+    }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  })();
 
   /** Aktualizuje jen dopočítané buňky už vykreslených řádků (bez rušení focusu). */
   function refreshComputed() {
@@ -26478,6 +26532,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * umí zvolit jen jedno kritérium a tiché zbytkové druhé kritérium by
      * vypadalo jako chyba řazení.
      */
+    /**
+     * Pořadí kusů tak, jak zrovna prochází hledáním, filtrem a řazením.
+     *
+     * Vzhledová vrstva si z něj staví svůj seznam. Dřív si ho četla
+     * z řádků tabulky — jenže ta je v jejím zobrazení schovaná a stavět
+     * stovky řádků jen kvůli pořadí byla nejdražší věc na každém
+     * kliknutí. Tohle je taž samá informace přímo od zdroje.
+     */
+    atlasPoradi: function () {
+      return lastVisibleIds.slice();
+    },
+
     atlasSort: function (klic, smer) {
       if (!klic) {
         sortKey = null; sortKey2 = null; sortDir = 1; sortDir2 = 1;
@@ -27215,7 +27281,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // počty do záložek — ať je vidět, kde něco je, bez přepínání
     function doplnitPocty() {
       var m = {
-        roster: document.querySelectorAll("#tbody tr").length,
+        // Počítá se z filtru, ne z řádků: se skrytou tabulkou žádné
+        // řádky nejsou, ale kusy v rosteru pořád ano.
+        roster: window.__pgoVidetKusu != null
+          ? window.__pgoVidetKusu
+          : document.querySelectorAll("#tbody tr").length,
         dustCard: document.querySelectorAll("#dustBody .plan-row").length
       };
       Array.prototype.forEach.call(lista.children, function (b) {

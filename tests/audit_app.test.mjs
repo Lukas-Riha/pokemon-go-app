@@ -401,6 +401,12 @@ try {
   // zápis do paměti smazaných si appka postaví sama (klíč skenu, otisk, kopie)
   const smazano = await page.evaluate(() => {
     const rows = window.__pgo.getRows();
+    // Ve vzhledové vrstvě je klasická tabulka schovaná (má svůj vlastní
+    // seznam) a řádky se kvůli rychlosti vůbec nestaví. Přepnutí na
+    // tabulku je normální stav appky — tím se test dostane ke stejnému
+    // tlačítku v obou sestaveních. V samotném motoru je to prázdný krok.
+    document.body.classList.remove("atlas-compact");
+    window.__pgo.prekreslit();
     let kliknuto = false;
     document.querySelectorAll("#tbody tr").forEach((tr) => {
       if (kliknuto) return;

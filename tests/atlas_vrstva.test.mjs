@@ -1980,6 +1980,57 @@ check("vlastní značky začínají u každého kusu na stejném místě",
 check("okno při odchodu z čištění má tři rovnocenné příkazy",
   dCer.odchod.length === 3 && new Set(dCer.odchod).size === 1, JSON.stringify(dCer.odchod));
 
+// ------------------------------- schovaná tabulka se nestaví
+console.log("\n21) schovaná tabulka se nestaví a pořadí vede motor");
+const pTab = await otevri(1400);
+const dTab = await pTab.evaluate(async () => {
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const idsDlazdic = () => [...document.querySelectorAll(".atlas-row")]
+    .map((el) => el.dataset.atlasDetail).join("|");
+  const out = { kusu: P.getRows().length };
+  out.dlazdic = document.querySelectorAll(".atlas-row").length;
+  out.radku = document.querySelectorAll("#tbody tr").length;
+  out.poradiSedi = P.atlasPoradi ? P.atlasPoradi().join("|") === idsDlazdic() : false;
+
+  // Řazení se musí promítnout do seznamu i bez řádků tabulky.
+  P.atlasSort("cp", -1);
+  await cekej(300);
+  out.poRazeni = P.atlasPoradi().join("|") === idsDlazdic();
+  const cpDlazdic = [...document.querySelectorAll(".atlas-row")]
+    .map((el) => Number(String(el.querySelector(".atlas-num").textContent).replace(/[^0-9]/g, "")));
+  out.sestupne = cpDlazdic.every((v, i) => i === 0 || cpDlazdic[i - 1] >= v);
+
+  // Hledání taky — filtr běží v motoru, seznam ho musí převzít.
+  const hledat = document.getElementById("searchInput");
+  hledat.value = "Pikachu";
+  hledat.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(500);
+  out.poHledani = document.querySelectorAll(".atlas-row").length;
+  out.poHledaniSedi = P.atlasPoradi().join("|") === idsDlazdic();
+  hledat.value = "";
+  hledat.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(500);
+
+  // Přepnutí na klasickou tabulku řádky dostaví.
+  document.body.classList.remove("atlas-compact");
+  await cekej(400);
+  out.poPrepnuti = document.querySelectorAll("#tbody tr[data-row-id]").length;
+  document.body.classList.add("atlas-compact");
+  await cekej(300);
+  return out;
+});
+await pTab.close();
+check("schovaná tabulka se vůbec nestaví", dTab.radku === 0, JSON.stringify(dTab));
+check("…a seznam kusů přesto sedí na pořadí z motoru",
+  dTab.dlazdic === dTab.kusu && dTab.poradiSedi, JSON.stringify(dTab));
+check("řazení se promítne i bez řádků tabulky",
+  dTab.poRazeni && dTab.sestupne, JSON.stringify(dTab));
+check("hledání taky", dTab.poHledani > 0 && dTab.poHledani < dTab.kusu && dTab.poHledaniSedi,
+  JSON.stringify(dTab));
+check("přepnutí na klasickou tabulku řádky dostaví", dTab.poPrepnuti === dTab.kusu,
+  JSON.stringify(dTab));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();
