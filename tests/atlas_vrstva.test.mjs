@@ -2059,6 +2059,27 @@ async function kartaUdalosti(sirka) {
   await page.close();
   return v;
 }
+// Vystredovani spritu (az 1,55x) patri do rosteru, ne na celostrankovou
+// ilustraci — ta uz ramecek vyplnuje sama a jen by se nafoukla. Projevi se
+// to az na skutecnem profilu, takze se to tu vyvola natvrdo.
+const pVys = await otevri(2210);
+const dVys = await pVys.evaluate(async () => {
+  window.__atlasTest.go("home");
+  await new Promise((r) => setTimeout(r, 1200));
+  const vsechny = [...document.querySelectorAll(
+    "#atlasHome .atlas-boss-art img, #atlasHome .atlas-event-art img")];
+  if (!vsechny.length) return { chyba: "zadny obrazek" };
+  const img = vsechny[0];
+  const pred = Math.round(img.getBoundingClientRect().height);
+  vsechny.forEach((i) => { i.style.transform = "translate(2%, -3%) scale(1.55)"; });
+  return { pred, po: Math.round(img.getBoundingClientRect().height),
+    computed: getComputedStyle(img).transform };
+});
+await pVys.close();
+check("vystredovani spritu obrazek na Prehledu nenafoukne",
+  dVys.pred > 0 && dVys.pred === dVys.po && dVys.computed === "none",
+  JSON.stringify(dVys));
+
 const k1600 = await kartaUdalosti(1600);
 const k2400 = await kartaUdalosti(2400);
 check("karta má na 1600 i 2400 px stejnou výšku",

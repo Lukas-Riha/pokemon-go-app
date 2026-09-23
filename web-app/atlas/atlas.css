@@ -1453,3 +1453,18 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-verze-znacka{display:inline-block;margin:0 2px;padding:1px 6px;border-radius:999px;
   border:1px solid var(--border);background:var(--input-bg);color:var(--text-muted);
   font-size:10px;font-weight:700;letter-spacing:.4px;vertical-align:1px}
+
+/* Claude 24. 9. (20): obrazky na Prehledu a v kalendari se nevystreduji.
+
+   Appka umi spritum dopocitat obrys a doplnit jim `transform`, aby v rade
+   kusu sedely stejne vysoko a stejne velke; zvetsit smi az 1,55x. To dava
+   smysl u hernich ikonek v rosteru, ne u celostrankove ilustrace na karte
+   udalosti — ta uz ramecek vyplnuje sama, takze se jen nafoukne a rozmaze.
+   Projevilo se to jen na skutecnem profilu (s hotovymi merenimi), proto to
+   v testech s prazdnym ulozistem nebylo videt: Sobble byl 155 px misto 100.
+
+   `!important` je tu naschval — prebiji `style="transform:..."`, ktery
+   vystredovani zapisuje primo do znacky. */
+#atlasHome .atlas-boss-art img,
+#atlasHome .atlas-event-art img,
+#atlasCalendar .ac-art img{transform:none!important}
