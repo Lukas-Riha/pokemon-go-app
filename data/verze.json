@@ -4,6 +4,6 @@
     "pravidlo": "Nasazeni do produkce posune obe: produkce dostane cislo testu a test jde o jednu vys.",
     "meni": "python tools/verze.py --povysit (dela deploy.ps1 sam)"
   },
-  "produkce": "2.5",
-  "test": "2.6"
+  "produkce": "2.6",
+  "test": "2.7"
 }
