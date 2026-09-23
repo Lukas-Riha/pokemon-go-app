@@ -75,7 +75,13 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
       if(html){const t=document.createElement('template');t.innerHTML=html;const im=t.content.querySelector('img');
         if(im){im.setAttribute('alt',r.pokemon||'');im.dataset.atlasPokemon=r.pokemon||'';if(extra)im.setAttribute('data-extra','1');return im.outerHTML}}
     }
-    return `<img src="${art(r)}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy" ${extra}>`;
+    // Uz zmerene posazeni se vlozi rovnou do znacky. Bez toho se sprite
+    // vykreslil nevystredeny a poskocil, jakmile dobehlo mereni — pri
+    // prepinani kusu v cisteni to bylo videt u kazdeho.
+    const adresa=art(r);
+    const ram=P.atlasRamecek?P.atlasRamecek(adresa):null;
+    const styl=ram?` style="transform:translate(${ram.x}%, ${ram.y}%) scale(${ram.s})"`:'';
+    return `<img src="${adresa}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy"${styl} ${extra}>`;
   };
   window.AtlasMonImage=monImage;
   const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář'],['catchCard','Co chytat']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
@@ -948,12 +954,12 @@ globalThis.AtlasBudget = (() => {
  const modal=document.createElement('dialog');modal.id='atlasEventDialog';modal.className='atlas-event-dialog';modal.setAttribute('aria-labelledby','atlasEventTitle');document.body.append(modal);
  function overlap(e,start,finish){const a=date(e[3]),b=end(e[4]);return !!(a&&b&&a<finish&&b>start)}
  function live(e){return overlap(e,new Date(),new Date(Date.now()+1))}
- function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))];if(!names.length&&/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).forEach(name=>{if(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name))names.push(name)})}return names.slice(0,3)}
+ function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))];if(/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).reverse().forEach(name=>{if(!names.includes(name)&&(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name)))names.unshift(name)})}return names.slice(0,3)}
  function bossCards(es){return es.flatMap(e=>{const names=eventNames(e);return (names.length?names:[null]).map(name=>`<button class="atlas-boss" data-event-index="${events.indexOf(e)}"><span class="atlas-boss-art">${name?image(name):'<span aria-hidden="true">◇</span>'}</span><b>${esc(name&&/^Shadow /.test(e[0])&&!/^Shadow /.test(name)?'Shadow '+name:name||e[0])}</b><small>${/^max-/.test(e[1])?'Max souboj':'Raid'} · ${format(e[4])}</small></button>`)}).join('')}
  function card(e){
  const a=date(e[3]),b=end(e[4]),now=new Date(),tomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1),afterTomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+2);
  const label=!a||!b?'Termín nepotvrzen':b<=now?'Ukončeno':a>now?(a>=tomorrow&&a<afterTomorrow?'Zítra':'Chystá se'):(b<=tomorrow?'Končí dnes':'Probíhá');
- const kind=/^max-/.test(e[1])?'max':/raid/.test(e[1])?'raid':/research/.test(e[1])?'research':'event';
+ const kind=/^max-/.test(e[1])?'max':/raid/.test(e[1])?'raid':/research|choose-your-path/.test(e[1])?'research':'event';
  const names=eventNames(e);
  const title=String(e[0]).replace(/ during Max Monday$/i,'').replace(/ in (?:5-star Raid Battles|Mega Raids|Shadow Raids)$/i,'').replace(/: The Series Celebration Event 2026$/i,'').replace(/Pokémon Horizons Bonus Timed Research/i,'Pokémon Horizons: bonusový výzkum');
  return `<button class="atlas-event-card" data-event-kind="${kind}" data-event-state="${b&&b<=tomorrow?'ending':a&&a>now?'upcoming':'live'}" data-event-index="${events.indexOf(e)}" title="${esc(e[0])}"><span class="atlas-event-visual"><span class="atlas-event-status">${label}</span><span class="atlas-event-art">${names.map(image).join('')}</span></span><span class="atlas-event-copy"><span class="atlas-event-category">${{max:'Max souboje',raid:'Raidy',research:'Výzkum',event:'Událost'}[kind]}</span><h3>${esc(title)}</h3><span class="atlas-event-date">${format(e[3])} → ${format(e[4])}</span><span class="atlas-event-link">Prohlédnout akci <span aria-hidden="true">→</span></span></span></button>`;

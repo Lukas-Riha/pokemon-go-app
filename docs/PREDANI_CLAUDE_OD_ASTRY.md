@@ -155,3 +155,19 @@ Navazuje na A-008. Uživatel chtěl výrazně věrnější provedení návrhu a 
 ## A-010 — Oprava deformace ilustrací (21. 9.)
 
 CSS pozadí již nepřizpůsobuje výšku i šířku atlasu nezávisle. Pseudoelement atlas-event-visual::after drží poměr každé scény 1:2, vyplní plochu jako cover a přebytek se ořízne. CSS container units měří velikost vizuálního panelu. Výřez se nastavuje --scene-x a --scene-y; výzkum míří na Pokéball, bojová scéna na arénu. Asset se neměnil. Desktop ověřen: obrazová plocha 509×1018 px u všech tří karet, tedy přesně původní poměr stran. Vizuálně ověřeno také 390 px. TEST sestaven, produkční soubor build nezměnil. Pro Claude: nevracet background-size:300% 100% přímo na libovolně širokou kartu; patří pouze na proporční vnitřní vrstvu.
+
+## A-011 — Kalendář a Dnes a brzy podle obrazového návrhu (23. 9.)
+
+Hotovo v lokálním TEST sestavení. Astra nespouštěla commit, push ani deploy a neměnila produkční engine. Během práce se zdroje enginu i git stav souběžně měnily; cizí změny nebyly vraceny.
+
+- Nový `web-app/atlas/calendar.js`, který `tools/sync_reference.py` připojí do JS slotu vzhledové vrstvy. Obsah používá `__pgo.eventsData()`, obrázky a detail přes `AtlasEventUI`. Zachovat tento build krok.
+- Desktop: sedm sloupců, tři kompaktní pruhy vícedenních akcí s rozbalením dalších, ilustrované časované akce, pravý detail od prvního zobrazení. Týden / Měsíc / Seznam, kategorie, posun období, Dnes. Tablet pod 1100 px používá v týdnu denní program, telefon kompaktní navazující den. Klik otevře stejný detail události.
+- Homepage: tři různé skutečné události, stabilní při klikání na dny; den rozbalí program pod kartami. Celý kalendář přenese vybraný den. Štítek je nad názvem v dolní části ilustrace, modrá šipka nahradila velké duplicitní tlačítko.
+- `AtlasDecorateHome` se volá i při pravidelném překreslení Přehledu; nevracet původní obalení pouze veřejné render funkce, interní časovač ho obcházel.
+- Velké obrázky: nejdříve lokální ATLAS_ART, u základní formy pak PokeAPI official-artwork dle čísla z engine obrázku, nakonec původní engine zdroj a jeho zálohy. Formy s vlastní ikonou se touto zkratkou nemění. Síťové ilustrace nejsou zaručené offline. Jména pro prázdný raid-hour obsah lze převzít z explicitního názvu akce, pouze pokud je rozpozná engine; nejde o doplňování domnělých spawnů.
+- Neznámé a neplatné termíny jsou mimo dny. Timestamp konce je výlučný; datum bez času zahrnuje poslední den. Čas bez potvrzení se nevymýšlí.
+- Nové `tests/atlas_calendar.test.mjs`: 26 kontrol prošlo (časové hranice, filtry, přenos dne, stabilní karty, modal, 1920/820/390 bez vodorovného přetečení). Ručně porovnány desktop, tablet a mobil. Build kontroluje neměnný hash produkce.
+
+Úkol pro Claude při další práci: čti jen A-011; zachovej kalendářový modul a hook překreslení homepage. Změny kontraktu eventsData nebo importních hooků prosím dělej tak, aby dál prošel `node tools/build_atlas_test.mjs`. Ilustrace návrhu jsou inspirační; názvy, obsah a termíny aplikace nadále pocházejí z reálného datového souboru, ne z mockupu. Připravit tým stále otevírá Tahák, nikoli automaticky předvoleného konkrétního bosse.
+
+Doplnění ověření A-011: aktuální běh širší sady dokončil 170 funkčních kontrol bez chyby JavaScriptu. Jediná neúspěšná kontrola byla časová čerstvost TEST vůči souběžně měněnému enginu; po tomto běhu proběhl nový úspěšný build a znovu všech 26 kalendářových kontrol. Nejde o tvrzení, že tento běh širší sady měl nulový návratový kód.

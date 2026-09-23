@@ -11385,7 +11385,22 @@ try {
       ticku: document.querySelectorAll(".gantt-tick").length,
       caraX: cara ? parseInt(cara.style.left, 10) : -1,
       zoomu: document.querySelectorAll(".gantt-zoom").length,
-      detail: (document.getElementById("ganttDetail") || {}).textContent || ""
+      detail: (document.getElementById("ganttDetail") || {}).textContent || "",
+      // jmena sezon primo z dat — test tak neni zavisly na tom, jak se
+      // zrovna sezona jmenuje
+      // Sezona se pozna podle typu v datech. Jmeno nestaci: sezona
+      // „Twilight Trails" a bezna petidenni akce „Choose Your Path:
+      // Twilight Trails" ho sdileji. Rozezna je konec terminu.
+      sezony: (function () {
+        var zdroj = (window.__pgo.eventsData && window.__pgo.eventsData()) || {};
+        var list = zdroj.events || zdroj || [];
+        return (Array.isArray(list) ? list : [])
+          .filter(function (e) { return Array.isArray(e) && e[1] === "season"; })
+          .map(function (e) {
+            var d = new Date(e[4]);
+            return "do " + d.getDate() + ". " + (d.getMonth() + 1) + ".";
+          });
+      })()
     };
   });
   check("kalendář se vykreslil", gantt.je);
@@ -11401,10 +11416,12 @@ try {
   eq("rozsah osy se dá přepnout", gantt.zoomu, 5);
   // Sezónní okno běží tři měsíce a jeho seznam vajec je delší než všechno
   // ostatní — do „co běží teď“ nepatří, ukáže se až klepnutím na jeho pruh.
+  // Sezona se pozna podle typu v datech, ne podle jmena: jmena se meni
+  // kazdou sezonu a "Twilight Trails" se navic jmenuje i bezna petidenni
+  // akce ("Choose Your Path: Twilight Trails"), ktera do rozpisu patri.
   check("výchozí rozpis neukazuje sezónu",
-    gantt.detail.indexOf("Twilight Trails") === -1
-      && gantt.detail.indexOf("Forever Forward") === -1,
-    gantt.detail.slice(0, 90));
+    gantt.sezony.length > 0 && gantt.sezony.every((konec) => gantt.detail.indexOf(konec) === -1),
+    JSON.stringify(gantt.sezony) + " | " + gantt.detail.slice(0, 120));
 
   const zoom = await page.evaluate(async () => {
     const pred = parseInt(getComputedStyle(document.querySelector(".gantt"))

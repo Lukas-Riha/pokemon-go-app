@@ -87,6 +87,20 @@ def main():
     if STROP.exists():
         shutil.copyfile(STROP, OUT / "strop.html")
 
+    # Obrázky vzhledové vrstvy. Styl na ně odkazuje relativně
+    # (`url('atlas/assets/…')`), takže bez téhle kopie na Pages chybí:
+    # v testu se appka otevírá z web-app/, kde ta složka leží vedle ní,
+    # v produkci vedle index.html nebyla a karty i pozadí zůstaly prázdné.
+    zdroj_assets = APP.parent / "atlas" / "assets"
+    if zdroj_assets.is_dir():
+        cil_assets = OUT / "atlas" / "assets"
+        if cil_assets.exists():
+            shutil.rmtree(cil_assets)
+        shutil.copytree(zdroj_assets, cil_assets)
+        kolik = sum(f.stat().st_size for f in cil_assets.rglob("*") if f.is_file())
+        print("  obrazky vrstvy: %d souboru, %.1f MB"
+              % (len(list(cil_assets.rglob("*"))), kolik / 1048576))
+
     # Ikona na plochu je ozdoba, ne appka. Kreslí ji Pillow, a když ta
     # knihovna v tom Pythonu není, nasazení kvůli tomu padat NESMÍ — appka
     # by se kvůli obrázku vůbec nedostala do mobilu. Když ikony z minulého

@@ -26624,6 +26624,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
        sama (hlavička detailu, čištění boxu), o něj jinak přijdou a ikona
        pak v rámečku sedí nakřivo. */
     vystreditSprity: function (kontejner) { vystreditVse(kontejner || document); },
+    /* Změřené posazení ikony pro danou adresu. Vzhledová vrstva si skládá
+       vlastní <img> a bez tohohle by ho vykreslila nevystředěný — sprite
+       pak při každém překreslení poskočil, jakmile doběhlo měření. */
+    atlasRamecek: function (src) {
+      if (!src) return null;
+      var plna = src;
+      try { plna = new URL(src, location.href).href; } catch (e) { /* nevadí */ }
+      return ramecekProUrl(plna) || ramecekProUrl(src);
+    },
     // Rotace lig — testy si ověřují, že se promítá do pořadí v rozpočtu.
     ligyStav: ligyStav,
     megaPriority: megaPriority,
