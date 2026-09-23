@@ -4313,16 +4313,21 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 @media(max-width:650px){#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-copy .atlas-event-status{font-size:9px;padding:4px 7px;margin-bottom:5px}}
 @media(min-width:701px) and (max-width:1099px){#atlasCalendar[data-mode=week] .ac-desktop-view{display:none}#atlasCalendar[data-mode=week] .ac-mobile-view{display:block}#atlasCalendar .ac-mobile-view .ac-days{border:1px solid var(--border);border-radius:8px;overflow:hidden}#atlasCalendar .ac-mobile-view .ac-agenda-day>.ac-event{width:min(330px,100%)}#atlasCalendar .ac-mobile-view .ac-agenda-day>.ac-event .ac-art{height:200px}#atlasCalendar .ac-mobile-view .ac-event-text{padding:14px 14px 15px 33px}#atlasCalendar .ac-mobile-view .ac-event-text b{font-size:18px}#atlasCalendar .ac-mobile-view .ac-event-text small{font-size:13px}#atlasCalendar .ac-mobile-view .ac-tile-kind{left:12px;top:14px}#atlasCalendar .ac-also .ac-event-text b{font-size:13px}}
 
-/* Claude 23. 9. (17): karta udalosti na Prehledu uz neroste s oknem.
+/* Claude 24. 9. (18): obrazky na Prehledu jsou mensi a nerostou s oknem.
+
    Vyska karty byla `clamp(330px,24vw,460px)` a obrazek v ni sedi na 65 %,
    takze na sirokem monitoru vysel art o tretinu vetsi nez na notebooku
-   (248 -> 298 px) a pokemon kartu skoro vyplnil. Drzi se ted na te
-   velikosti, kterou mela tesne pod 1600 px — na kazde sirce stejne.
-   Pousti se jen jedna paka, vyska karty; obrazek si svych 65 % dopocita. */
-@media(min-width:1600px){
-  #atlasHome .atlas-event-card,
-  #atlasHome .atlas-overview-calendar .atlas-event-card{min-height:384px}
-}
+   (248 -> 298 px) a pokemon scenu skoro vyplnil. Karta ma ted jednu vysku
+   pro vsechny sirky a mensi, takze pokemon ve scene sedi misto aby ji
+   prekryl. Pousti se jen jedna paka, vyska karty; obrazek si svych 65 %
+   dopocita sam.
+
+   Ikony bossu u Raidu a Max souboju rostly stejne (95 -> 125 px) a Sobble
+   pak vedle sousedu pusobil nafouknute; drzi se taky jedne velikosti. */
+#atlasHome .atlas-event-card,
+#atlasHome .atlas-overview-calendar .atlas-event-card{min-height:292px}
+#atlasHome .atlas-boss-art,
+#atlasHome .atlas-boss-art img{height:100px}
   /* === ATLAS CSS END === */
 </style>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0d0d0d"><link rel="apple-touch-icon" href="ikona-192.png"><script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js");});}</script></head>
@@ -5175,10 +5180,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      v testu, to produkce teprve dostane. Zapéká `tools/sync_reference.py`
      z `data/verze.json`, posouvá `tools/verze.py`. */
   // === VERZE START
-  var VERZE = "2.3";
+  var VERZE = "2.4";
   // === VERZE END ===
   // === BUILD START
-  var BUILD = "2026-09-24 00:12";
+  var BUILD = "2026-09-24 00:47";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
