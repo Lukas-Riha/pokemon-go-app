@@ -406,6 +406,14 @@ globalThis.AtlasBudget = (() => {
     const editor=document.getElementById('atlasRowEditor');
     if(editor){e.preventDefault();e.stopImmediatePropagation();
       editor.querySelector('[data-editor-cancel]')?.click();return;}
+    // Okno „Přidat pokémona" se zavírá Escapem jako každé jiné okno.
+    const rucni=document.getElementById('rucniBox');
+    if(rucni&&!rucni.hidden){
+      e.preventDefault();e.stopImmediatePropagation();
+      const zrusit=[...rucni.querySelectorAll('button')].find(b=>/Zrušit/.test(b.textContent));
+      if(zrusit)zrusit.click();else rucni.hidden=true;
+      return;
+    }
   },true);
   document.addEventListener('click',e=>{const button=e.target.closest('[data-atlas-action="edit"]');if(!button)return;const id=window.__atlasTest.getState().dialogId;if(!id)return;e.preventDefault();e.stopImmediatePropagation();window.AtlasEditRow(id);},true);
   // Okno „Přidat pokémona": stejný výběr útoků jako v úpravě kusu.

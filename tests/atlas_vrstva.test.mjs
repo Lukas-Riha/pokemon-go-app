@@ -1667,6 +1667,113 @@ check("nabídka útoků má tenký posuvník appky, ne systémový",
   dPos.sirka === "thin" && /rgba\(0, 0, 0, 0\)|transparent/.test(dPos.barva || ""),
   JSON.stringify(dPos));
 
+// ---------------- široká bublina, křížek, Escape a rozbor v boxu
+// Bublina „+N" se nedá rolovat (jakmile myš sjede ze štítku, zmizí), takže
+// dlouhý seznam musí jít do sloupců, ne pod posuvník. Ukazatel postupu
+// v čištění poskakoval, protože ikona vedle něj mění glyf.
+console.log("\n10) Široká bublina, křížek, Escape a rozbor v boxu");
+const pSi = await otevri(1500);
+const dSi = await pSi.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+
+  // dlouhý seznam: bublina se sází do sloupců a vejde se do okna
+  const vic = document.querySelector("#atlasRoster .dv-vic") || document.createElement("span");
+  let h = '<div class="tip-hlava">Další důvody</div>';
+  for (let i = 0; i < 6; i++) {
+    h += '<div class="tip-skupina"><div class="tip-hlava">Typ ' + i + ' 11/6</div>'
+      + '<ol class="tip-seznam">';
+    for (let j = 1; j <= 6; j++) h += "<li><b>Kus " + j + "</b> 189 CP</li>";
+    h += "</ol></div>";
+  }
+  if (!vic.isConnected) document.body.append(vic);
+  vic.hidden = false;
+  vic.setAttribute("data-tip", h);
+  vic.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  await cekej(500);
+  const b = [...document.querySelectorAll(".tip-bublina")].find((e) => /Další důvody/.test(e.textContent));
+  if (b) {
+    const r = b.getBoundingClientRect(), c = getComputedStyle(b);
+    out.bublina = { siroka: b.classList.contains("tip-siroka"),
+      sloupcu: Math.max(1, Math.round(r.width / 316)),
+      prepad: b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1,
+      posuvnik: c.overflow,
+      vejdeSe: r.top >= -1 && r.bottom <= innerHeight + 1 && r.left >= -1 && r.right <= innerWidth + 1 };
+  } else out.bublina = "(bublina nenalezena)";
+  vic.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body }));
+  await cekej(200);
+
+  // křížek uprostřed tlačítka
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1400);
+  const zav = document.querySelector('.atlas-drawer-header [data-atlas-action="close"]');
+  const ikona = zav.querySelector("svg") || zav.firstElementChild;
+  const rb = zav.getBoundingClientRect(), ri = ikona.getBoundingClientRect();
+  out.krizek = { dx: Math.round((ri.left + ri.width / 2) - (rb.left + rb.width / 2)),
+    dy: Math.round((ri.top + ri.height / 2) - (rb.top + rb.height / 2)) };
+  zav.click();
+  await cekej(500);
+
+  // Escape zavře „Přidat pokémona"
+  const pridat = [...document.querySelectorAll("button")].filter((x) => /Přidat pokémona/i.test(x.textContent))[0];
+  pridat.click();
+  await cekej(600);
+  const otevreno = !document.getElementById("rucniBox").hidden;
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(500);
+  out.rucni = { otevreno, poEsc: !document.getElementById("rucniBox").hidden };
+
+  // čištění boxu: ukazatel postupu a vzhled bez rámečků
+  A.go("home"); A.refresh();
+  await cekej(700);
+  document.querySelector('[data-click="boxModeBtn"]').click();
+  await cekej(1500);
+  const ok = document.getElementById("appOknoOk");
+  if (ok && !document.getElementById("appOkno").hidden) ok.click();
+  await cekej(900);
+  const sirka = () => Math.round(document.querySelector(".bm-progress").getBoundingClientRect().width);
+  const pred = sirka();
+  document.getElementById("bmVicBtn").click();
+  await cekej(700);
+  const po = sirka();
+  document.getElementById("bmVicBtn").click();
+  await cekej(700);
+  out.pruh = [pred, po, sirka()];
+  const st = (s) => { const e = document.querySelector(".atlas-box-rozbor " + s);
+    if (!e) return null; const c = getComputedStyle(e);
+    return { border: c.borderTopWidth, bg: c.backgroundColor, zarovnani: c.textAlign }; };
+  out.evoSloupec = st(".atlas-evolution-column");
+  out.evoNadpis = st(".atlas-evolution-column>summary");
+  out.prikazyNadRadou = (() => {
+    const bar = document.querySelector(".atlas-box-rozbor .hra-pruh");
+    const evo = document.querySelector(".atlas-box-rozbor .atlas-evolution-column");
+    if (!bar || !evo) return null;
+    return bar.getBoundingClientRect().bottom <= evo.getBoundingClientRect().top + 4;
+  })();
+  P.boxZavritNatvrdo();
+  return out;
+});
+await pSi.close();
+check("bublina „+N“ se sází do sloupců a nemá posuvník",
+  dSi.bublina && dSi.bublina.siroka === true && dSi.bublina.sloupcu >= 2
+    && dSi.bublina.prepad === false && dSi.bublina.posuvnik === "hidden",
+  JSON.stringify(dSi.bublina));
+check("…a vejde se celá do okna", dSi.bublina && dSi.bublina.vejdeSe === true,
+  JSON.stringify(dSi.bublina));
+check("křížek sedí uprostřed tlačítka",
+  Math.abs(dSi.krizek.dx) <= 1 && Math.abs(dSi.krizek.dy) <= 1, JSON.stringify(dSi.krizek));
+check("Escape zavře i okno „Přidat pokémona“",
+  dSi.rucni.otevreno === true && dSi.rucni.poEsc === false, JSON.stringify(dSi.rucni));
+check("ukazatel postupu nemění délku při rozbalení rozboru",
+  new Set(dSi.pruh).size === 1, JSON.stringify(dSi.pruh));
+check("rozbor v boxu je bez rámečků jako detail",
+  dSi.evoSloupec && dSi.evoSloupec.border === "0px"
+    && dSi.evoNadpis && dSi.evoNadpis.zarovnani === "center",
+  JSON.stringify({ sloupec: dSi.evoSloupec, nadpis: dSi.evoNadpis }));
+check("…a příkazy zůstaly nad evoluční řadou",
+  dSi.prikazyNadRadou === true, String(dSi.prikazyNadRadou));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

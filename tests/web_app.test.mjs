@@ -10611,6 +10611,12 @@ try {
     boxSlot.po.indexOf("Lepší kopie") === -1, boxSlot.po);
   check("když si první necháš, druhý zůstane druhý",
     /Water 2\/3/.test(boxSlot.poNechani), boxSlot.poNechani);
+  // Hlaska o prepoctu musi pojmenovat KONKRETNI misto. „Uvolnilo se misto"
+  // platilo jen pro jeden smer a nerikalo, o ktere misto slo.
+  check("hlaska o prepoctu pojmenuje misto, ktere se uvolnilo nebo zabralo",
+    !boxSlot.hlaska
+      || /(uvolnilo místo|zabral kus, který jsi nechal|pořadí v rozpočtu)/.test(boxSlot.hlaska),
+    boxSlot.hlaska);
 
   console.log("\n185) kus, který drží roli, se nenabízí na výměnu");
   await page.setViewportSize({ width: 1920, height: 1000 });
