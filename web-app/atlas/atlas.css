@@ -1417,3 +1417,10 @@ body.atlas-test[data-atlas-view="events"][data-atlas-current-route="eventsCard"]
    radou mely stejny z-index, takze zustaly svitit a daly se zmacknout. */
 .atlas-test .box-mode .bm-zeptat{z-index:40}
 .atlas-test .box-mode .atlas-box-rozbor>.hra-pruh{z-index:1}
+/* Large event art uses species artwork; icons remain the final offline fallback. */
+#atlasCalendar .ac-art img{width:62%;height:96%;margin:0 -6%;object-position:center}
+#atlasCalendar .ac-art img:only-child{width:95%;height:98%;margin:0}
+#atlasHome .atlas-overview-calendar .atlas-event-art{inset:10px 12px auto;height:65%;align-items:center;justify-content:center}
+#atlasHome .atlas-overview-calendar .atlas-event-art img{width:48%;margin:0 -6%;height:100%;object-fit:contain;transform:none}
+#atlasHome .atlas-overview-calendar .atlas-event-art img:only-child{width:90%;margin:0;height:100%;object-position:center}
+@media(max-width:700px){#atlasCalendar .ac-filters{scrollbar-width:none}#atlasCalendar .ac-filters::-webkit-scrollbar{display:none}#atlasCalendar .ac-agenda-day+.ac-agenda-day>.ac-event{flex-direction:row}#atlasCalendar .ac-agenda-day+.ac-agenda-day>.ac-event .ac-art{width:92px;height:90px;flex-shrink:0}#atlasCalendar .ac-agenda-day+.ac-agenda-day>.ac-event .ac-event-text{padding:12px}#atlasCalendar .ac-agenda-day+.ac-agenda-day>.ac-event .ac-event-text b{font-size:14px}#atlasCalendar .ac-agenda-day+.ac-agenda-day>.ac-event .ac-event-text small{font-size:12px}#atlasCalendar .ac-agenda-day+.ac-agenda-day .ac-tile-kind{display:none}}

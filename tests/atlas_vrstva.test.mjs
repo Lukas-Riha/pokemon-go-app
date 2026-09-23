@@ -1324,8 +1324,14 @@ const dVz = await pVz.evaluate(async () => {
     const pruh = document.querySelector("#boxMode .atlas-box-rozbor>.hra-pruh");
     const telo = document.getElementById("bmBody");
     if (pruh && telo) {
-      out.pruhCely = Math.round(pruh.getBoundingClientRect().top)
-        >= Math.round(telo.getBoundingClientRect().top) - 1;
+      // Lista lezi nad evolucni radou, tedy nad telem panelu — merit ji
+      // proti `#bmBody` uz nedava smysl. Co platit musi: cela je uvnitr
+      // panelu, nic z ni neni useknute.
+      const panel = document.querySelector(".bm-panel");
+      const rp = pruh.getBoundingClientRect(), rpanel = panel.getBoundingClientRect();
+      out.pruhCely = rp.top >= rpanel.top - 1 && rp.bottom <= rpanel.bottom + 1
+        && rp.left >= rpanel.left - 1 && rp.right <= rpanel.right + 1
+        && rp.height > 10 && !!telo;
     }
     const v = document.querySelector("#boxMode .atlas-verdict-radek");
     if (v) vyska.push(Math.round(v.getBoundingClientRect().height));

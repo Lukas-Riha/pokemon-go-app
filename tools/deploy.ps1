@@ -118,7 +118,11 @@ if ($LASTEXITCODE -ne 0) { "  (nepodarilo se stahnout, jedu s tim, co je v data/
 
 "Zapékám data do appky..."
 
-& $python (Join-Path $root "tools\sync_reference.py")
+# --vzhled = produkce se vzhledovou vrstvou (GO Atlas). Bez nej by se
+# nasadila appka ve starem vzhledu, protoze sloty pro CSS a JS zustanou
+# prazdne. Po nasazeni se engine vraci pres `git checkout` (viz konec
+# skriptu) - vpichovane mustky nejdou aplikovat dvakrat.
+& $python (Join-Path $root "tools\sync_reference.py") "--vzhled"
 
 if ($LASTEXITCODE -ne 0) { throw "sync_reference.py selhal - nic se nekopírovalo." }
 
@@ -370,4 +374,17 @@ try {
 "Do sdílené složky NIKDY nekopíruj svoje CSV exporty z Calcy IV - obsahujou celou historii skenů."
 Write-Host "Slozky Luky roster / Anet roster jsou vyjimka: tam appka sama pise roster na vymenu (jen jmeno, CP, IV, utoky)."
 Write-Host "Zalohy tam nepatri - ty zustavaji na disku jako soukroma historie."
+
+# Engine zpatky do puvodniho stavu. `--vzhled` do nej zapekl vzhledovou
+# vrstvu a vpichl funkcni mustky; ty nejdou aplikovat dvakrat, takze bez
+# tohohle kroku by dalsi build skoncil na "Missing Atlas integration point".
+Write-Host ""
+Write-Host "Vracim engine do puvodniho stavu (git checkout)..."
+& git -C $root checkout -- "web-app/pokemon_tracker_app.html"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "POZOR: engine se nepodarilo vratit. Udelej rucne:" -ForegroundColor Yellow
+    Write-Host "  git checkout -- web-app/pokemon_tracker_app.html" -ForegroundColor Yellow
+} else {
+    Write-Host "Engine vracen."
+}
 

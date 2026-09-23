@@ -156,7 +156,15 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
     karta.querySelector('button').addEventListener('click',()=>{go('roster');setTimeout(()=>openDetail(kus.id),260)});
     home.append(karta);
   }
-  function refresh(){cache={rows:P.getRows(),computed:P.getComputed()};$('#atlasProfile').textContent=P.getProfile();$('#atlasCount').textContent=cache.rows.length+' Pokémonů · lokální profil';renderRoster();if(view==='home')renderHome();}
+  // Behem cisteni boxu lezi panel pres celou stranku a roster pod nim neni
+  // videt. Prekreslovat kvuli jedne znacce ctyri sta dlazdic stalo dlouhe
+  // desetiny vteriny pri kazdem kliknuti — dozene se to pri zavreni panelu.
+  let rosterDluh=false;
+  const cisteniBezi=()=>{const b=document.getElementById('boxMode');return !!b&&!b.hidden};
+  function refresh(){cache={rows:P.getRows(),computed:P.getComputed()};$('#atlasProfile').textContent=P.getProfile();$('#atlasCount').textContent=cache.rows.length+' Pokémonů · lokální profil';
+    if(cisteniBezi()){rosterDluh=true;return}
+    rosterDluh=false;renderRoster();if(view==='home')renderHome();}
+  window.AtlasDoplnitRoster=()=>{if(rosterDluh)refresh()};
   // „48.0“ a „14.0“ ze skenu jako 48 a 14; IV procento (nebo rozsah ze skenu) za hodnotami IV.
   const cisloKusu=v=>v===''||v==null?'?':(isNaN(Number(v))?String(v):String(Number(v)));
   const ivKusu=id=>{const c=(P.getComputed()||{})[id]||{};const t=c.ivUncertain&&c.ivRange?c.ivRange:(c.ivPct==null?'':Math.round(c.ivPct*100)+' %');return t?' · '+esc(t):''};
@@ -850,10 +858,20 @@ globalThis.AtlasBudget = (() => {
    const polozka=stav&&stav.index<seznam.length?seznam[stav.index]:null;
    boxPrestavba=true;
    try{
-     body.querySelector('.atlas-box-rozbor')?.remove();
+     const predchozi=body.querySelector('.atlas-box-rozbor');
+     // Obrazek si necháme, pokud jde o tentyz sprite: novy uzel by se
+     // nacital znovu a ikona pritom probliknout — nejdriv mala, pak
+     // vystredena. Pri kliknuti na znacku se prekresluje cely rozbor,
+     // takze to bylo videt pokazde.
+     const staryObr=predchozi?predchozi.querySelector('.atlas-ident-obr img'):null;
+     predchozi?.remove();
      if(!polozka)return;
      const host=document.createElement('div');host.className='atlas-box-rozbor';
      host.innerHTML=window.AtlasIdentitaHTML(polozka.row,false);
+     const novyObr=host.querySelector('.atlas-ident-obr img');
+     if(staryObr&&novyObr&&staryObr.getAttribute('src')===novyObr.getAttribute('src')){
+       novyObr.replaceWith(staryObr);
+     }
      const obsah=document.createElement('div');obsah.className='atlas-box-obsah';host.append(obsah);
      body.append(host);
      P.atlasDetail(polozka.row.id,obsah);
@@ -897,7 +915,11 @@ globalThis.AtlasBudget = (() => {
    // Hlida se JEN `hidden` a necte se `getComputedStyle`: pri prepinani kusu
    // se na panelu meni tridy porad dokola a kazda zmena tak vynutila prepocet
    // stylu cele stranky. Otevreni a zavreni jde vzdycky pres `hidden`.
-   const zamek=()=>{document.body.classList.toggle('atlas-box-otevreno',!boxPrepinac.hidden)};
+   const zamek=()=>{const otevreno=!boxPrepinac.hidden;
+     document.body.classList.toggle('atlas-box-otevreno',otevreno);
+     // Po zavreni panelu se dozene to, co se pod nim nekreslilo. Hlida se
+     // to tady, protoze `hidden` se meni pri KAZDE ceste ven z cisteni.
+     if(!otevreno)window.AtlasDoplnitRoster?.();};
    new MutationObserver(zamek).observe(boxPrepinac,{attributes:true,attributeFilter:['hidden']});
    zamek();
  }
@@ -920,7 +942,7 @@ globalThis.AtlasBudget = (() => {
  const end=s=>{const d=date(s);if(d&&/^\d{4}-\d{2}-\d{2}$/.test(s))d.setDate(d.getDate()+1);return d};
  const format=s=>{const d=date(s);return d?d.toLocaleString('cs-CZ',{day:'numeric',month:'numeric',...(/T/.test(s)?{hour:'2-digit',minute:'2-digit'}:{})}):'Termín nepotvrzen'};
  const safeUrl=s=>{try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}};
- const image=name=>{const key=P.dexKeyOf(name),src=window.ATLAS_ART?.[key];return src?`<img src="${esc(src)}" alt="${esc(name)}" loading="lazy">`:(P.atlasImage(name)||'').replace('<img ','<img data-overview-sprite="true" ')};
+ const image=name=>{const key=P.dexKeyOf(name),src=window.ATLAS_ART?.[key];if(src)return `<img src="${esc(src)}" alt="${esc(name)}" loading="lazy">`;const fallback=P.atlasImage(name)||'',id=fallback.match(/pm(\d+)\.icon\.png/);if(!id)return fallback;const original=fallback.match(/src="([^"]+)"/)?.[1]||'';return fallback.replace('<img ','<img data-overview-art="true" ').replace(/alt="[^"]*"/,`alt="${esc(name)}"`).replace(/src="[^"]*"/,`src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${Number(id[1])}.png"`).replace(/data-zaloha="([^"]*)"/,`data-zaloha="${original}|$1"`)};
  const sections={spawn:'Ve volné přírodě',raid:'Souboje',vejce:'Z vajec',vyzkum:'Výzkumy a odměny',bonus:'Bonusy',utoky:'Speciální útoky',shiny:'Shiny',novinky:'Další obsah akce'};
  let selected=day(new Date()),lastToday=selected,offset=0,events=[],root;
  const modal=document.createElement('dialog');modal.id='atlasEventDialog';modal.className='atlas-event-dialog';modal.setAttribute('aria-labelledby','atlasEventTitle');document.body.append(modal);
