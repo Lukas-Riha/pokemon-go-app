@@ -170,8 +170,20 @@ self.addEventListener("fetch", function (e) {
   // z Microsoft Graphu, tedy roster stažený z OneDrivu — ten by pak ležel
   // v prohlížeči navíc a přežil by i odhlášení.
   var vlastni = e.request.url.indexOf(self.location.origin) === 0;
+  // Samotnou appku si prohlížeč drží v HTTP mezipaměti (Pages posílají
+  // `Cache-Control: max-age=600`), takže ještě deset minut po nasazení umí
+  // i obnovení stránky vrátit starou verzi — a člověk pak kouká na změnu,
+  // která už dávno je nasazená. `no-cache` žádnou paměť neruší, jen si
+  // pokaždé ověří u serveru, jestli platí (odpověď 304 je prázdná, takže
+  // to nic nestáhne navíc). Týká se jen stránek, ne obrázků.
+  var html = e.request.mode === "navigate"
+    || /\.html($|\?)/.test(e.request.url)
+    || e.request.url === self.location.origin + "/";
+  var pozadavek = vlastni && html
+    ? fetch(e.request, { cache: "no-cache" })
+    : fetch(e.request);
   e.respondWith(
-    fetch(e.request).then(function (odp) {
+    pozadavek.then(function (odp) {
       // Povedlo se stáhnout — ulož a vrať to čerstvé.
       if (vlastni) {
         var kopie = odp.clone();
