@@ -142,6 +142,38 @@ nejde poznat: že se některý soubor vůbec nenahrál. Když složka
 `atlas/assets` ještě nechodíla do `publish/`, měla produkce jinou grafiku
 než test a nikdo o tom nevěděl.
 
+### Důkaz, že produkce je tatáž appka jako test
+
+```
+python tools/porovnej_test_a_produkci.py
+```
+
+Stáhne živou appku a porovná ji s `pokemon_tracker_TEST.html` řádek po
+řádku. Známé rozdíly (prefix úložiště, vlajka testovacího buildu, `[TEST]`
+v názvu, testovací odznaky, číslo verze a ražítko sestavení) před porovnáním
+srovná. Zbýt má jediný rozdíl: řádek s PWA hlavičkou, který do produkce
+patří.
+
+### Důkaz, že to i STEJNĚ VYPADÁ
+
+```
+node tools/porovnej_vzhled.mjs
+node tools/porovnej_vzhled.mjs --sirka 1600
+```
+
+Shodné soubory ještě neznamenají shodný vzhled: appka si část vzhledu
+dopočítá až za běhu. Vystřeďování spritů dopisuje `transform` přímo do
+značky — a to se stane jen tehdy, když má co měřit, tedy na profilu
+s rosterem. Na prázdném profilu (a takový mají všechny testy) ten rozdíl
+vůbec nevznikne. Takže pokud něco „vypadá v produkci jinak“ a soubory
+přitom sedí, hledej tady.
+
+Skript do obou sestavení nasype tentýž roster, projede sedm stránek
+(Přehled, Pokémoni, Týmy, Investice, Události, Data a pravidla, detail kusu),
+u každého viditelného prvku si zapíše rozměr včetně transformace a porovná
+položku po položce — kolem 17 tisíc prvků. Stránky předtím proroluje, aby
+se dotažhly líně načítané obrázky a neporovnával se závod v načítání.
+
 ### Důkaz, že se změnou vykreslování nezměnila čísla
 
 ```
