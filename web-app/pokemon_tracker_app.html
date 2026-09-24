@@ -5418,11 +5418,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // Filtr podle štítků důvodů u verdiktu („GL", „Fire", „Gym", „CUTE",
   // „Rezerva"…). Kus projde, když má aspoň jeden vybraný.
   var duvodFiltr = {};
+  /* Průnik místo sjednocení: „kdo mi drží Fire A ZÁROVEŇ hraje GL“.
+     Bez toho se dal vybrat jen jeden štítek, aby odpověď dávala smysl. */
+  var duvodFiltrVse = false;
   function duvodFiltrAktivni() { return Object.keys(duvodFiltr).length > 0; }
   function duvodFiltrProjde(c) {
     if (!duvodFiltrAktivni()) return true;
     var k = duvodKlice(c.duvody);
-    return Object.keys(duvodFiltr).some(function (x) { return !!k[x]; });
+    var chce = Object.keys(duvodFiltr);
+    return duvodFiltrVse
+      ? chce.every(function (x) { return !!k[x]; })
+      : chce.some(function (x) { return !!k[x]; });
   }
 
   /** Běží na tabulce nějaké omezení? Vyhledávání, typy, PvP, hodnoty sloupců
@@ -5448,7 +5454,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     pvpFiltr.ligy = {}; pvpFiltr.stavy = {};
     znackaFiltr.znacky = {}; znackaFiltr.vse = false;
     hodnotaFiltr = {};
-    duvodFiltr = {};
+    duvodFiltr = {}; duvodFiltrVse = false;
     sortKey = null; sortKey2 = null;
     // Oba výběry nad tabulkou jsou taky filtr — tlačítko je nechávalo stát,
     // takže po „Zrušit filtry“ zůstalo třeba „Jen k puštění“ a vypadalo to,
@@ -26895,6 +26901,55 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     vydrzFaktor: vydrzFaktor, raidScore: raidScore,
     // pro testy: skóre protikusu na bosse daných typů
     counterScore: counterScore,
+
+    /**
+     * Co jde v rosteru filtrovat: značky (pevný seznam) a štítky důvodů
+     * (podle toho, co v rosteru opravdu je, i s počty).
+     *
+     * Vrstva z toho staví nabídku — seznam se bere odtud, aby se nerozešel
+     * s tím, podle čeho se doopravdy filtruje.
+     */
+    atlasStitky: function () {
+      var panel = document.getElementById("znackaFiltrPanel");
+      var znacky = panel
+        ? Array.prototype.map.call(panel.querySelectorAll("input[data-znacka]"), function (i) {
+            return { klic: i.dataset.znacka,
+              popis: String(i.parentNode.textContent || "").trim() };
+          })
+        : [];
+      var computed = analyze();
+      var pocty = {};
+      lastBase.forEach(function (b) {
+        var cc = computed[b.row.id];
+        if (!cc) return;
+        Object.keys(duvodKlice(cc.duvody)).forEach(function (k) {
+          pocty[k] = (pocty[k] || 0) + 1;
+        });
+      });
+      var duvody = Object.keys(pocty).sort(function (a, z) {
+        return a.localeCompare(z, "cs");
+      }).map(function (k) { return { klic: k, pocet: pocty[k] }; });
+      return { znacky: znacky, duvody: duvody,
+        vybrane: { znacky: Object.keys(znackaFiltr.znacky),
+          duvody: Object.keys(duvodFiltr), vse: !!znackaFiltr.vse } };
+    },
+
+    /**
+     * Nastaví filtr podle značek a štítků. `vse` zapne průnik — kus musí
+     * mít všechny vybrané, ne jen některou.
+     */
+    atlasStitkyFiltr: function (znacky, duvody, vse) {
+      znackaFiltr.znacky = {};
+      (znacky || []).forEach(function (k) { znackaFiltr.znacky[k] = true; });
+      duvodFiltr = {};
+      (duvody || []).forEach(function (k) { duvodFiltr[k] = true; });
+      znackaFiltr.vse = !!vse;
+      duvodFiltrVse = !!vse;
+      renderBody();
+      persist(true);
+      return { znacky: Object.keys(znackaFiltr.znacky),
+        duvody: Object.keys(duvodFiltr), vse: !!vse, kusu: lastVisibleIds.length };
+    },
 
     /**
      * Shiny u druhu: je vůbec ve hře, a odkud může padnout.

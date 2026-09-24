@@ -1172,3 +1172,90 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  new MutationObserver(vykresli).observe(vysledek,{childList:true});
  prepni('druh');
 })();
+
+/* Hledání v rosteru podle štítků.
+
+   Engine to uměl odjakživa, jenže nabídka visela v hlavičce klasické
+   tabulky — a tu vzhledová vrstva nezobrazuje, takže se k tomu nedalo
+   dostat. Tohle je tatáž věc dosažitelná: štítky jako odškrtávací
+   seznam a přepínač „musí mít všechny", tedy průnik. */
+(() => {
+ const $=s=>document.querySelector(s),P=window.__pgo;
+ const lista=$('.atlas-roster-commandbar');if(!lista||!P.atlasStitky)return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+ let vybraneZnacky=new Set(),vybraneDuvody=new Set(),vse=false;
+
+ const tlacitko=document.createElement('button');
+ tlacitko.type='button';tlacitko.className='atlas-mini-btn atlas-stitky-btn';
+ tlacitko.setAttribute('aria-expanded','false');
+ lista.append(tlacitko);
+
+ const panel=document.createElement('div');
+ panel.className='atlas-stitky-panel';panel.hidden=true;
+ lista.append(panel);
+
+ function popisek(){
+  const n=vybraneZnacky.size+vybraneDuvody.size;
+  tlacitko.textContent=n?`Štítky · ${n}`:'Štítky';
+  tlacitko.classList.toggle('aktivni',n>0);
+ }
+
+ function pouzij(){
+  const stav=P.atlasStitkyFiltr([...vybraneZnacky],[...vybraneDuvody],vse);
+  popisek();
+  const info=panel.querySelector('[data-stitky-vysledek]');
+  if(info)info.textContent=stav.znacky.length||stav.duvody.length
+   ? `Odpovídá ${stav.kusu} ${stav.kusu===1?'kus':stav.kusu<5?'kusy':'kusů'}`
+   : 'Bez omezení';
+  window.__atlasTest?.refresh?.();
+ }
+
+ function vykresli(){
+  const n=P.atlasStitky();
+  const chip=(klic,popis,pocet,skupina,zapnuto)=>`<label class="atlas-stitek${zapnuto?' zapnuto':''}">
+    <input type="checkbox" data-skupina="${skupina}" value="${esc(klic)}"${zapnuto?' checked':''}>
+    <span>${esc(popis)}</span>${pocet?`<b>${pocet}</b>`:''}</label>`;
+  panel.innerHTML=`<div class="atlas-stitky-h">Značky</div>
+   <div class="atlas-stitky-rada">${n.znacky.map(z=>chip(z.klic,z.popis,0,'znacka',vybraneZnacky.has(z.klic))).join('')}</div>
+   ${n.duvody.length?`<div class="atlas-stitky-h">Štítky u verdiktu</div>
+   <div class="atlas-stitky-rada">${n.duvody.map(d=>chip(d.klic,d.klic,d.pocet,'duvod',vybraneDuvody.has(d.klic))).join('')}</div>`:''}
+   <label class="atlas-stitky-vse"><input type="checkbox" data-stitky-vse${vse?' checked':''}>
+    musí mít <b>všechny</b> vybrané</label>
+   <div class="atlas-stitky-pata">
+    <span data-stitky-vysledek></span>
+    <button type="button" class="atlas-mini-btn" data-stitky-zrus>Zrušit</button>
+   </div>`;
+  pouzij();
+ }
+
+ panel.addEventListener('change',e=>{
+  const i=e.target;
+  if(i.dataset.skupina==='znacka'){i.checked?vybraneZnacky.add(i.value):vybraneZnacky.delete(i.value)}
+  else if(i.dataset.skupina==='duvod'){i.checked?vybraneDuvody.add(i.value):vybraneDuvody.delete(i.value)}
+  else if(i.hasAttribute('data-stitky-vse')){vse=i.checked}
+  else return;
+  i.closest('.atlas-stitek')?.classList.toggle('zapnuto',i.checked);
+  pouzij();
+ });
+ panel.addEventListener('click',e=>{
+  if(!e.target.closest('[data-stitky-zrus]'))return;
+  vybraneZnacky.clear();vybraneDuvody.clear();vse=false;vykresli();
+ });
+
+ tlacitko.addEventListener('click',()=>{
+  const otevrit=panel.hidden;
+  if(otevrit)vykresli();          // nabídka se staví z aktuálního rosteru
+  panel.hidden=!otevrit;
+  tlacitko.setAttribute('aria-expanded',String(otevrit));
+ });
+ document.addEventListener('click',e=>{
+  if(panel.hidden)return;
+  if(panel.contains(e.target)||tlacitko.contains(e.target))return;
+  panel.hidden=true;tlacitko.setAttribute('aria-expanded','false');
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!panel.hidden){panel.hidden=true;tlacitko.setAttribute('aria-expanded','false');tlacitko.focus()}
+ });
+ popisek();
+})();

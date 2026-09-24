@@ -2237,6 +2237,60 @@ check("křížek vyčistí pole i identitu",
   dH.poVymazani.hodnota === "" && dH.poVymazani.identitaSkryta === true,
   JSON.stringify(dH.poVymazani));
 
+// ------------------------------- hledání v rosteru podle štítků
+console.log("\n25) roster: filtr podle štítků včetně průniku");
+const pS = await otevri(1700, [
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Counter", charged1: "Dynamic Punch", shiny: "Ano" },
+  { pokemon: "Machamp", level: 25, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Counter", charged1: "Dynamic Punch" },
+  { pokemon: "Gyarados", level: 30, ivAtk: 10, ivDef: 10, ivSta: 10,
+    fastMove: "Waterfall", charged1: "Hydro Pump", shiny: "Ano" },
+  { pokemon: "Mewtwo", level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Confusion", charged1: "Psystrike" },
+  { pokemon: "Rattata", level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
+]);
+const dS = await pS.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const btn = document.querySelector(".atlas-stitky-btn");
+  if (!btn) return { chyba: "tlačítko štítků není" };
+  btn.click();
+  await cekej(500);
+  const panel = document.querySelector(".atlas-stitky-panel");
+  const dlazdic = () => document.querySelectorAll(".atlas-row").length;
+  const klik = (skupina, hodnota) => panel
+    .querySelector('input[data-skupina="' + skupina + '"][value="' + hodnota + '"]').click();
+  const out = { vse: dlazdic(), duvodu: panel.querySelectorAll('[data-skupina="duvod"]').length };
+  klik("znacka", "S"); await cekej(600); out.shiny = dlazdic();
+  klik("znacka", "H"); await cekej(600); out.sjednoceni = dlazdic();
+  // Prunik: kus musi mit obe znacky, ne jen nekterou.
+  panel.querySelector("[data-stitky-vse]").click(); await cekej(600);
+  out.prunik = dlazdic();
+  out.popisek = btn.textContent.trim();
+  out.vysledek = panel.querySelector("[data-stitky-vysledek]").textContent.trim();
+  panel.querySelector("[data-stitky-zrus]").click(); await cekej(600);
+  out.poZruseni = dlazdic();
+  // Escape panel zavre.
+  btn.click(); await cekej(300);
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(300);
+  out.poEscape = panel.hidden;
+  return out;
+});
+await pS.close();
+check("filtr podle značky ukáže jen kusy, které ji mají",
+  dS.vse === 5 && dS.shiny === 2, JSON.stringify(dS));
+check("dvě značky bez průniku berou obojí",
+  dS.sjednoceni === 4, JSON.stringify(dS));
+check("…a s průnikem jen ty, co mají obě",
+  dS.prunik === 1 && /1 kus/.test(dS.vysledek), JSON.stringify(dS));
+check("tlačítko řekne, kolik štítků je vybraných",
+  /2/.test(dS.popisek), dS.popisek);
+check("nabídka nese i štítky u verdiktu z rosteru",
+  dS.duvodu > 0, String(dS.duvodu));
+check("zrušení vrátí celý roster a Escape zavře nabídku",
+  dS.poZruseni === 5 && dS.poEscape === true, JSON.stringify(dS));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();
