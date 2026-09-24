@@ -8686,8 +8686,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // vždy") čte výpočet přímo z políčka a v tom objektu není. Otisk proto
       // bere celý seznam nastavení podle id.
       var nast = SETTING_IDS.map(function (id) { return id + "=" + nastaveniHodnota(id); }).join(";");
+      // Counter mód a typy bosse patří do otisku taky: skóre proti bossovi
+      // se počítá uvnitř téhož výpočtu. Bez nich se přepnutí módu „schovalo“
+      // za vyrovnávací paměť — tabulka se neseřadila a sloupec hlásil
+      // „Ne“ u všech, dokud se nezměnilo něco jiného.
       return JSON.stringify(rows) + "|" + nast + "|" + JSON.stringify(discarded)
-        + "|" + (soloProhlidka ? "1" : "0");
+        + "|" + (soloProhlidka ? "1" : "0")
+        + "|" + (counterMode ? bossTypes.join(",") : "");
     } catch (e) { return ""; }
   }
   function analyze(list) {
@@ -26885,6 +26890,27 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     vydrzFaktor: vydrzFaktor, raidScore: raidScore,
     // pro testy: skóre protikusu na bosse daných typů
     counterScore: counterScore,
+
+    /**
+     * Seřadí roster podle toho, kdo se hodí na konkrétního bosse.
+     *
+     * Vrstva tím obsluhuje „Připravit tým“ u akce v kalendáři. Funguje
+     * i u akce, která zrovna neběží — počítá se z typů bosse, ne z toho,
+     * jestli je právě teď ve hře. Vrací typy, na které se přepnulo,
+     * nebo `null`, když druh nezná.
+     */
+    atlasProtiBossovi: function (jmeno) {
+      var d = dexEntry(jmeno);
+      var typy = d && Array.isArray(d.types)
+        ? d.types.filter(function (x) { return x && x !== "\u2013"; }) : [];
+      if (!typy.length) return null;
+      counterMode = true;
+      typeFilter = null;
+      // Hra počítá nejvýš se dvěma typy bosse — víc jich druh nemá.
+      bossTypes = typy.slice(0, 2);
+      renderColgroup(); renderHeader(); renderBody(); persist(true);
+      return bossTypes.slice();
+    },
     /** DPS cyklu pro konkrétní dvojici útoků u druhu.
      *
      *  „Síla 95" u útoku sama o sobě nerozhoduje: nezahrnuje, jak dlouho

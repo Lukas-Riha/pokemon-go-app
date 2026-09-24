@@ -13498,7 +13498,7 @@ try {
       "raidRankIndex", "gymRankIndex", "counterScore", "formatDust",
       // ovladani, ktere si vrstva dela po svem: razeni, detail v cizi
       // plachte a zalozni obrazek druhu
-      "atlasSort", "atlasDetail", "atlasImage", "atlasPoradi"];
+      "atlasSort", "atlasDetail", "atlasImage", "atlasPoradi", "atlasProtiBossovi"];
     const pole = ["keep", "keepGood", "keepSub", "keepTitle", "keepTone", "ivPct",
       "powerup", "powerupSub", "powerupTone", "cost", "costText",
       "raidPct", "raidRec", "gymPct", "gymRec", "pvpRec", "pvpLigy",
@@ -13999,7 +13999,22 @@ try {
     await new Promise((r) => setTimeout(r, 300));
     P.atlasSort("");
 
+    // Poradi podle toho, kdo se hodi na konkretniho bosse. Tohle obsluhuje
+    // "Pripravit tym" u akce v kalendari — i u akce, ktera zrovna nebezi.
+    const poradPred = P.atlasPoradi().join("|");
+    const typyBosse = P.atlasProtiBossovi("Buzzwole");
+    await new Promise((r) => setTimeout(r, 300));
+    const poradPo = P.atlasPoradi().join("|");
+    const skore = P.getRows().map((r) => {
+      const c = P.getComputed()[r.id];
+      return c && c.counter ? c.counter.pct : null;
+    }).filter((x) => x !== null);
+    const neznamyBoss = P.atlasProtiBossovi("Tenhle druh neexistuje");
+    P.atlasProtiBossovi("Buzzwole");
+
     return {
+      typyBosse, poradiProtiBossoviSeZmenilo: poradPred !== poradPo,
+      bossSkore: skore.length, neznamyBoss,
       poradiSestupne, poradiSFiltrem, poradiKratsi,
       sestupneVratilo: sestupne, vzestupneVratilo: vzestupne, nesmyslVratil: nesmysl,
       poSestupne, poVzestupne,
@@ -14009,6 +14024,14 @@ try {
       sipkaVHlavicce: (document.getElementById("headerRow") || {}).textContent || "",
     };
   });
+  eq("atlasProtiBossovi vrati typy bosse",
+    JSON.stringify(uiApi.typyBosse), JSON.stringify(["Bug", "Fighting"]));
+  check("...a preskupi roster podle toho, kdo se na nej hodi",
+    uiApi.poradiProtiBossoviSeZmenilo && uiApi.bossSkore > 0,
+    JSON.stringify({ zmena: uiApi.poradiProtiBossoviSeZmenilo, skore: uiApi.bossSkore }));
+  // Drive se skore proti bossovi schovalo za vyrovnavaci pamet vypoctu:
+  // otisk stavu counter mod neobsahoval, takze se nic neprepocitalo.
+  eq("neznamy druh counter mod nezapne", String(uiApi.neznamyBoss), "null");
   check("atlasPoradi sedi na poradi radku v tabulce", uiApi.poradiSestupne,
     String(uiApi.poradiSestupne));
   check("...a bere i filtr", uiApi.poradiSFiltrem && uiApi.poradiKratsi,
