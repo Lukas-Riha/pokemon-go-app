@@ -2513,6 +2513,9 @@
   .tip-posun.nahoru { color: var(--status-good); }
   .tip-posun.dolu { color: var(--status-critical); }
   .tip-seznam { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.55; }
+  /* Kus, který do žádného z těch seznamů nepatří: stejný řádek, ale bez
+     čísla — jeho pořadí je z jiného měřítka (mezi všemi kusy rosteru). */
+  .tip-mimo { list-style: none; padding-left: 18px; }
   .tip-seznam li { margin: 0; }
   .tip-seznam em { font-style: normal; color: var(--text-muted); }
   .tip-znak { font-size: 11px; color: var(--text-muted); }
@@ -12761,9 +12764,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       });
       h += "</ol>";
     }
-    // Když kus není ani mezi držiteli, ani pod čarou, připíše se na konec
-    // seznamu na své skutečné místo. Věta „v celém rosteru je 12. z 76"
-    // říkala totéž, jen se muselo dopočítávat, kam v tom seznamu patří.
+    // Když kus není ani mezi držiteli, ani pod čarou, připíše se na konec.
+    //
+    // Číslovaný už není: seznam nad ním čísluje sloty ligy (1–12) a pod
+    // čarou pokračuje 13, 14…, kdežto tenhle řádek nesl pořadí kusu mezi
+    // VŠEMI kusy rosteru. Dvě různá měřítka v jednom sloupci čísel: pod
+    // položkou 16 se objevila další šestka a vypadalo to jako chyba.
+    // Číslo zůstává ve větě („6. z 182“), kde je jasné, z čeho se počítá.
     if (kusId !== undefined && kusId !== null && !jeMezi && !tenPod) {
       var vse = (poradiVsech["pvp:" + zkr] || {})[kusId];
       var kusB = null;
@@ -12775,14 +12782,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           var lpK = ligovePoradi(dexKey(kusB.row.pokemon), ligaKlic);
           if (lpK && lpK.rank) cesta = { rank: lpK.rank, pct: null };
         }
-        h += '<ol class="tip-seznam tip-pod"><li value="' + vse.poradi + '" class="tip-ten"><b>'
+        h += '<div class="tip-seznam tip-pod tip-ten tip-mimo"><b>'
           + escHtml(kusB.row.pokemon) + "</b>"
           + (kusB.row.cp ? " " + escHtml(String(kusB.row.cp)) + " CP" : "")
           + (cesta && cesta.rank ? " <em>#" + cesta.rank + "</em>" : "")
           + (cesta && typeof cesta.pct === "number"
               ? " " + (Math.round(cesta.pct * 1000) / 10) + "\u00a0%" : "")
           + ' <span class="tip-znak">\u2190 tenhle kus, ' + vse.poradi
-          + ". z " + vse.celkem + "</span></li></ol>";
+          + ". z " + vse.celkem + "</span></div>";
       } else {
         h += '<div class="tip-radek">Tenhle kus mezi nimi není.</div>';
       }

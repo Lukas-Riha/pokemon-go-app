@@ -15895,6 +15895,12 @@ try {
     check("…a zadne procento v ni neni rozdelene na dva radky",
       Array.isArray(podCarou.rozdelene) && podCarou.rozdelene.length === 0,
       JSON.stringify(podCarou.rozdelene));
+    // Seznam nad carou cisluje sloty ligy, pod carou pokracuje 13, 14...
+    // Kus, ktery nepatri ani do jednoho, nesl poradi mezi VSEMI kusy rosteru
+    // — dve ruzna meritka v jednom sloupci cisel. Pod polozkou 16 se pak
+    // objevila druha sestka a vypadalo to jako chyba.
+    check("kus mimo oba seznamy uz nema vlastni cislo polozky",
+      !/<li value=/.test(podCarou.bublina), podCarou.bublina.slice(-260));
     check("cislo a % pod carou drzi nezlomitelna mezera",
       /\d\u00a0%/.test(podCarou.bublina) || /\d&nbsp;%/.test(podCarou.bublina),
       podCarou.bublina.slice(-300));
