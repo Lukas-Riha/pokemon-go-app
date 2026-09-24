@@ -119,10 +119,13 @@ for a in chart:
 bez_typu = 0
 vetvene = []   # druhy s víc než jednou možnou evolucí (Eevee, Ralts, Tyrogue…)
 for k, e in species.items():
-    if len(e) != 10:
-        chyba("species", "%s má %d polí, čekáno 10" % (k, len(e)))
+    if len(e) != 11:
+        chyba("species", "%s má %d polí, čekáno 11" % (k, len(e)))
         continue
-    _id, jmeno, ts, atk, dfn, sta, evolvuje, final, vzacnost, candy = e
+    # Poslední pole je souhrn zdrojů shiny (0 = shiny zatím není).
+    _id, jmeno, ts, atk, dfn, sta, evolvuje, final, vzacnost, candy, shiny = e
+    if not isinstance(shiny, int) or shiny < 0 or shiny > 31:
+        chyba("species", "%s má nesmyslný příznak shiny %r" % (k, shiny))
     if not jmeno:
         chyba("species", "%s nemá jméno" % k)
     if not ts:

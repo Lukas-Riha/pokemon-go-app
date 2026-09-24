@@ -90,6 +90,11 @@ data_info = {
 # člověk poslední verzi, nebo si otevírá starou kopii.
 build = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
+# Počasí, které boostuje jednotlivé typy. Mapa je stabilní od roku 2017,
+# ale drží se v datech, ať je na jednom místě i kdyby se změnila.
+pocasi = json.loads((ROOT / "data" / "raw" / "weather_boosts.json")
+                    .read_text(encoding="utf-8"))
+
 # Číslo verze. Test má vždycky vyšší než produkce, aby se na první pohled
 # poznalo, která sestava je ta rozpracovaná. Posouvá `tools/verze.py`
 # při nasazení.
@@ -107,6 +112,7 @@ BLOCKS = [
     ("// === SPRITES START", "// === SPRITES END ===", "SPRITES", sprites),
     ("// === TYPE ICONS START", "// === TYPE ICONS END ===", "TYPE_ICONS", type_icons),
     ("// === DATA INFO START", "// === DATA INFO END ===", "DATA_INFO", data_info),
+    ("// === POCASI START", "// === POCASI END ===", "POCASI", pocasi),
     ("// === BUILD START", "// === BUILD END ===", "BUILD", build),
     ("// === VERZE START", "// === VERZE END ===", "VERZE", app_verze),
 ]

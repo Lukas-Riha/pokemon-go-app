@@ -29,7 +29,19 @@ GM_URL = "https://raw.githubusercontent.com/PokeMiners/game_masters/master/lates
 GM_CACHE = "game_master_extract"
 FILES = ["pokemon_names", "pokemon_stats", "pokemon_evolutions", "pokemon_types",
          "mega_pokemon", "cp_multiplier", "pokemon_powerup_requirements",
-         "pokemon_rarity", "pokemon_candy_to_evolve"]
+         "pokemon_rarity", "pokemon_candy_to_evolve", "shiny_pokemon"]
+
+# Odkud u druhu může padnout shiny. Ukládá se jako součet příznaků,
+# protože jde o deset řádků dat na devět set druhů — jedno číslo stačí.
+SHINY_ZDROJE = [("found_wild", 1), ("found_raid", 2), ("found_egg", 4),
+                ("found_research", 8), ("found_evolution", 16)]
+
+
+def shiny_priznak(zaznam):
+    """Souhrn zdrojů shiny do jednoho čísla; 0 = shiny zatím není."""
+    if not zaznam:
+        return 0
+    return sum(bit for klic, bit in SHINY_ZDROJE if zaznam.get(klic))
 
 # Formy, které mění staty/typy natolik, že se musí rozlišovat.
 # Kosmetické formy (kostýmy, Fall_2019, barvy Vivillonu…) se ignorují.
@@ -441,6 +453,13 @@ def main():
         "zygarde": "Fifty_percent",
     }
 
+    # Shiny je v datech pod číslem z pokédexu, ne pod klíčem druhu — platí
+    # tedy pro celý druh včetně forem, což odpovídá hře.
+    shiny_podle_id = {}
+    for zaznam in (raw.get("shiny_pokemon") or {}).values():
+        if isinstance(zaznam, dict) and zaznam.get("id"):
+            shiny_podle_id[zaznam["id"]] = shiny_priznak(zaznam)
+
     species = {}
     for s in raw["pokemon_stats"]:
         if not wanted(s["pokemon_name"], s["form"]):
@@ -459,6 +478,7 @@ def main():
             final_of.get(key, ""),
             rarity_of.get(key, ""),
             candy_of.get(key, 0),
+            shiny_podle_id.get(s["pokemon_id"], 0),
         ]
 
     # Dvě díry, na které se přišlo až při hledání obránců gymu:

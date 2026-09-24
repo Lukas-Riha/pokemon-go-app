@@ -13498,7 +13498,8 @@ try {
       "raidRankIndex", "gymRankIndex", "counterScore", "formatDust",
       // ovladani, ktere si vrstva dela po svem: razeni, detail v cizi
       // plachte a zalozni obrazek druhu
-      "atlasSort", "atlasDetail", "atlasImage", "atlasPoradi", "atlasProtiBossovi"];
+      "atlasSort", "atlasDetail", "atlasImage", "atlasPoradi", "atlasProtiBossovi",
+      "atlasShiny", "atlasPocasi", "atlasCP"];
     const pole = ["keep", "keepGood", "keepSub", "keepTitle", "keepTone", "ivPct",
       "powerup", "powerupSub", "powerupTone", "cost", "costText",
       "raidPct", "raidRec", "gymPct", "gymRec", "pvpRec", "pvpLigy",
@@ -14013,6 +14014,14 @@ try {
     P.atlasProtiBossovi("Buzzwole");
 
     return {
+      shinyRattata: P.atlasShiny("Rattata"),
+      shinySobble: P.atlasShiny("Sobble"),
+      shinyNeznamy: P.atlasShiny("Tenhle druh neexistuje"),
+      pocasiBug: P.atlasPocasi("Bug"),
+      pocasiNesmysl: P.atlasPocasi("Neexistuje"),
+      cp20: P.atlasCP("Buzzwole", 20),
+      cp25: P.atlasCP("Buzzwole", 25),
+      cpNesmysl: P.atlasCP("Buzzwole", 99),
       typyBosse, poradiProtiBossoviSeZmenilo: poradPred !== poradPo,
       bossSkore: skore.length, neznamyBoss,
       poradiSestupne, poradiSFiltrem, poradiKratsi,
@@ -14024,6 +14033,21 @@ try {
       sipkaVHlavicce: (document.getElementById("headerRow") || {}).textContent || "",
     };
   });
+  // Tri udaje, ktere chce mit uzivatel u raidoveho bosse ve Vyhledavani.
+  check("atlasShiny rekne, jestli druh shiny ma a odkud",
+    uiApi.shinyRattata && uiApi.shinyRattata.je === true
+      && uiApi.shinyRattata.zdroje.indexOf("raid") > -1, JSON.stringify(uiApi.shinyRattata));
+  check("...a u druhu bez shiny rekne, ze neni",
+    uiApi.shinySobble && uiApi.shinySobble.je === false
+      && uiApi.shinySobble.zdroje.length === 0, JSON.stringify(uiApi.shinySobble));
+  eq("neznamy druh vrati null", String(uiApi.shinyNeznamy), "null");
+  eq("atlasPocasi zna pocasi pro typ", uiApi.pocasiBug, "Rainy");
+  eq("...a u neznameho typu vrati prazdno", uiApi.pocasiNesmysl, "");
+  // CP hunda: L20 je bezny raid, L25 raid v boostujicim pocasi.
+  check("atlasCP spocita CP hunda na L20 i L25",
+    uiApi.cp20 > 0 && uiApi.cp25 > uiApi.cp20,
+    JSON.stringify({ L20: uiApi.cp20, L25: uiApi.cp25 }));
+  eq("...a na nezname urovni vrati null", String(uiApi.cpNesmysl), "null");
   eq("atlasProtiBossovi vrati typy bosse",
     JSON.stringify(uiApi.typyBosse), JSON.stringify(["Bug", "Fighting"]));
   check("...a preskupi roster podle toho, kdo se na nej hodi",
