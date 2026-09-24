@@ -1057,3 +1057,118 @@ globalThis.AtlasBudget = (() => {
 // Keep roster controls still; only the complete tile collection scrolls.
 (() => {const list=document.querySelector('#atlasRoster'),panel=list.parentElement,controls=document.createElement('div');controls.className='atlas-roster-fixed-controls';while(panel.firstChild&&panel.firstChild!==list)controls.append(panel.firstChild);panel.insertBefore(controls,list);list.setAttribute('aria-label','Seznam Pokémonů');list.tabIndex=0;
 const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.classList.contains('atlas-compact'))return;const top=panel.getBoundingClientRect().top;panel.style.setProperty('--atlas-roster-height',Math.max(220,innerHeight-top-(innerWidth<=650?80:18))+'px')};window.addEventListener('resize',fit);window.addEventListener('atlas:route',()=>requestAnimationFrame(fit));new MutationObserver(()=>requestAnimationFrame(fit)).observe(document.body,{attributes:true,attributeFilter:['class','data-atlas-view']});fit();})();
+
+/* Vyhledávání: hledání nahoru, údaje kusu do rozbalovátka, identita druhu
+   s tím, co člověk chce vědět dřív, než se rozhodne jít na raid.
+
+   Původně stránka začínala řadou devíti polí přes celou šířku a velkým
+   prázdným panelem — devět stejně důležitě vypadajících okének, z nichž
+   povinné je jedno. Teď se ptá na jednu věc a zbytek nabídne, až když je
+   o něj zájem. Návrh A-013 od Astry. */
+(() => {
+ const $=s=>document.querySelector(s),P=window.__pgo;
+ const karta=$('#prohlidkaCard');if(!karta)return;
+ const mrizka=karta.querySelector('.proh-grid'),vysledek=$('#prohOut');
+ const jmeno=$('#prohName');if(!mrizka||!vysledek||!jmeno)return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+ // Počasí je v datech anglicky, protože tak se jmenuje v herním souboru.
+ const POCASI_CZ={'Clear':'Jasno','Fog':'Mlha','Overcast':'Zataženo',
+  'Partly Cloudy':'Polojasno','Rainy':'Déšť','Snow':'Sníh','Windy':'Vítr'};
+
+ // --- záhlaví: jedno velké hledání a přepínač režimu ---------------------
+ const hlava=document.createElement('div');hlava.className='atlas-hledani-hlava';
+ hlava.innerHTML=`<div class="atlas-hledani-pole">
+   <svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 15l6 6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0"/></svg>
+   <span data-hledani-slot></span>
+   <button type="button" class="atlas-hledani-zrus" data-hledani-zrus aria-label="Vymazat hledání" hidden>✕</button>
+  </div>
+  <div class="atlas-hledani-rezim" role="group" aria-label="Co chceš zjistit">
+   <button type="button" data-rezim="druh" aria-pressed="true">Prozkoumat druh</button>
+   <button type="button" data-rezim="kus" aria-pressed="false">Posoudit můj kus</button>
+  </div>`;
+ mrizka.before(hlava);
+ // Pole se PŘESOUVÁ, ne kopíruje — engine na něm poslouchá a kopie by
+ // vypadala funkčně, ale nic by nepočítala.
+ const stitekJmena=jmeno.closest('label');
+ hlava.querySelector('[data-hledani-slot]').append(jmeno);
+ if(stitekJmena)stitekJmena.remove();
+ jmeno.setAttribute('placeholder','Napiš druh, třeba Machamp');
+
+ // --- údaje kusu do rozbalovátka ----------------------------------------
+ karta.dataset.atlasHledani='1';
+ const udaje=document.createElement('details');udaje.className='atlas-hledani-udaje';
+ udaje.innerHTML='<summary><b>Údaje mého kusu</b><span>CP, IV a útoky · vyplň jen to, co znáš</span></summary>';
+ mrizka.before(udaje);udaje.append(mrizka);
+ // Tlacitko Vymazat sedi vedle mrizky, ne v ni — patri k udajum kusu,
+ // takze jde do rozbalovatka s nimi.
+ const akce=karta.querySelector('.actions');if(akce)udaje.append(akce);
+
+ // --- identita druhu ----------------------------------------------------
+ const identita=document.createElement('section');identita.className='atlas-hledani-identita';identita.hidden=true;
+ udaje.before(identita);
+
+ const rezim=()=>hlava.querySelector('[data-rezim][aria-pressed=true]').dataset.rezim;
+ function prepni(k){
+  hlava.querySelectorAll('[data-rezim]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rezim===k)));
+  udaje.open=k==='kus';
+  karta.dataset.atlasRezim=k;
+  vykresli();
+ }
+ hlava.addEventListener('click',e=>{
+  const b=e.target.closest('[data-rezim]');if(b){prepni(b.dataset.rezim);return}
+  if(e.target.closest('[data-hledani-zrus]')){
+   jmeno.value='';jmeno.dispatchEvent(new Event('input',{bubbles:true}));
+   jmeno.dispatchEvent(new Event('change',{bubbles:true}));jmeno.focus();
+  }
+ });
+
+ /* Co appka o druhu ví dřív, než se člověk rozhodne jít na raid: jestli
+    z něj může padnout shiny, jaké CP má dokonalý kus (běžně a v boostu)
+    a jaké počasí ho boostuje. */
+ function vykresli(){
+  const hodnota=jmeno.value.trim();
+  hlava.querySelector('[data-hledani-zrus]').hidden=!hodnota;
+  const d=hodnota?P.dexEntry(hodnota):null;
+  if(!d){identita.hidden=true;identita.innerHTML='';return}
+  const typy=(d.types||[]).filter(t=>t&&t!=='–');
+  const barvy=P.typeColors()||{};
+  const shiny=P.atlasShiny?P.atlasShiny(d.name):null;
+  const cp20=P.atlasCP?P.atlasCP(d.name,20):null;
+  const cp25=P.atlasCP?P.atlasCP(d.name,25):null;
+  const pocasi=[...new Set(typy.map(t=>P.atlasPocasi?P.atlasPocasi(t):'').filter(Boolean))]
+   .map(x=>POCASI_CZ[x]||x);
+  const kusovy=rezim()==='kus';
+  identita.hidden=false;
+  identita.innerHTML=`<div class="atlas-hledani-kdo">
+    ${P.atlasImage?P.atlasImage(d.name,'atlas-hledani-obr'):''}
+    <div>
+     <span class="atlas-hledani-rezim-znacka">${kusovy?'Výpočet konkrétního kusu':'Hodnocení druhu'}</span>
+     <h3>${esc(d.name)}</h3>
+     <div class="atlas-hledani-typy">${typy.map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('')}</div>
+    </div>
+   </div>
+   <dl class="atlas-hledani-fakta">
+    <div${shiny&&shiny.je?' data-ano="1"':''}>
+     <dt>Shiny</dt>
+     <dd>${shiny&&shiny.je?'Ano':'Zatím ne'}</dd>
+     <small>${shiny&&shiny.je?esc(shiny.zdroje.join(' · ')):'ve hře se zatím neobjevil'}</small>
+    </div>
+    <div>
+     <dt>CP dokonalého kusu</dt>
+     <dd>${cp20??'—'}${cp25?` <span class="atlas-hledani-boost">${cp25}</span>`:''}</dd>
+     <small>z raidu · v boostu</small>
+    </div>
+    <div>
+     <dt>Boostuje ho</dt>
+     <dd>${pocasi.length?esc(pocasi.join(' / ')):'—'}</dd>
+     <small>${pocasi.length?'chycený kus je o pět levelů výš':'počasí neznáme'}</small>
+    </div>
+   </dl>`;
+ }
+
+ ['input','change'].forEach(u=>jmeno.addEventListener(u,vykresli));
+ // Engine si výsledek překresluje sám; identita se veze s ním.
+ new MutationObserver(vykresli).observe(vysledek,{childList:true});
+ prepni('druh');
+})();

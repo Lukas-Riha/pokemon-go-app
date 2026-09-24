@@ -2183,6 +2183,60 @@ check("v úzkém okně jde formulář úprav použít a není zasedlý",
 check("…zato příkazy nad ním zasedlé jsou",
   dN.filtrHlavicky !== "none", JSON.stringify(dN));
 
+// ------------------------------- Vyhledávání: hledání nahoře, údaje až na vyžádání
+console.log("\n24) Vyhledávání: jedno hledání, identita druhu, údaje v rozbalovátku");
+const pH = await otevri(1800);
+const dH = await pH.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.__pgoZalozka("prohlidkaCard");
+  await cekej(1200);
+  const out = {};
+  const pole = document.getElementById("prohName");
+  out.poleVZahlavi = !!pole.closest(".atlas-hledani-hlava");
+  out.udajeZavrene = !document.querySelector(".atlas-hledani-udaje").open;
+  out.vymazatUvnitr = !!document.getElementById("prohClear").closest(".atlas-hledani-udaje");
+  out.identitaSkryta = document.querySelector(".atlas-hledani-identita").hidden;
+
+  pole.value = "Buzzwole";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  pole.dispatchEvent(new Event("change", { bubbles: true }));
+  await cekej(1500);
+  const id = document.querySelector(".atlas-hledani-identita");
+  out.identita = id.textContent.replace(/\s+/g, " ").trim();
+  out.typuVIdentite = id.querySelectorAll(".d-type").length;
+  // Jmeno a typy uz nese pruh identity; engine je kreslil znovu hned pod nim.
+  out.duplicitniNadpis = [...document.querySelectorAll("#prohOut .detail-title")]
+    .filter((el) => el.getClientRects().length).length;
+
+  // Prepnuti na vlastni kus otevre udaje a prepise znacku rezimu.
+  document.querySelector('[data-rezim="kus"]').click();
+  await cekej(400);
+  out.poPrepnutiOtevrene = document.querySelector(".atlas-hledani-udaje").open;
+  out.znackaRezimu = (document.querySelector(".atlas-hledani-rezim-znacka") || {}).textContent;
+
+  // Krizek vycisti pole i identitu.
+  document.querySelector("[data-hledani-zrus]").click();
+  await cekej(600);
+  out.poVymazani = { hodnota: pole.value,
+    identitaSkryta: document.querySelector(".atlas-hledani-identita").hidden };
+  return out;
+});
+await pH.close();
+check("hledání je nahoře a údaje kusu zavřené",
+  dH.poleVZahlavi && dH.udajeZavrene && dH.vymazatUvnitr && dH.identitaSkryta,
+  JSON.stringify(dH));
+check("identita druhu řekne shiny, CP dokonalého kusu i počasí",
+  /Shiny/.test(dH.identita) && /1977/.test(dH.identita) && /2472/.test(dH.identita)
+    && /Déšť/.test(dH.identita) && dH.typuVIdentite === 2, dH.identita);
+check("…a engine už jméno s typy nekreslí podruhé",
+  dH.duplicitniNadpis === 0, String(dH.duplicitniNadpis));
+check("přepnutí na vlastní kus otevře údaje a změní značku",
+  dH.poPrepnutiOtevrene === true && /kusu/.test(String(dH.znackaRezimu)),
+  JSON.stringify({ otevrene: dH.poPrepnutiOtevrene, znacka: dH.znackaRezimu }));
+check("křížek vyčistí pole i identitu",
+  dH.poVymazani.hodnota === "" && dH.poVymazani.identitaSkryta === true,
+  JSON.stringify(dH.poVymazani));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();
