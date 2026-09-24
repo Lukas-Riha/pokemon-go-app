@@ -7,7 +7,7 @@
  * přidal Claude: štítky důvodů v kartách, detail, hlavička, evoluční řada.
  *
  * Spuštění:
- *   python tools/sync_reference.py --test --s-obrazky
+ *   python tools/sync_reference.py --test
  *   node tests/atlas_vrstva.test.mjs
  */
 import http from "node:http";
@@ -50,7 +50,7 @@ console.log("\n1) TEST verze je sestavená z aktuálních souborů");
 const existuje = fs.existsSync(TEST_APP);
 check("web-app/pokemon_tracker_TEST.html existuje", existuje, TEST_APP);
 if (!existuje) {
-  console.log("\nSpusť: python tools/sync_reference.py --test --s-obrazky");
+  console.log("\nSpusť: python tools/sync_reference.py --test");
   process.exit(1);
 }
 const html = fs.readFileSync(TEST_APP, "utf8");
@@ -1068,8 +1068,12 @@ check("evoluční sloupec začíná u verdiktu a končí se spodkem buněk",
   && Math.abs(dDet.evo.t - dDet.verdikt.t) <= 2 && Math.abs(dDet.evo.b - dDet.bunky.b) <= 2,
   JSON.stringify({ evo: dDet.evo, verdikt: dDet.verdikt, bunky: dDet.bunky }));
 check("…a nemá v sobě linku navíc", dDet.evoVnitrniLinka === false, String(dDet.evoVnitrniLinka));
-check("tři sestavy útoků se vejdou celé (nic se neuřízne)",
-  dDet.utoky && dDet.utoky.sestav >= 3 && dDet.utoky.scroll <= dDet.utoky.klient + 1,
+// Dřív tu byly tři řádky: co kus má, nejlepší sestava jeho druhu a sestava
+// po evoluci. Prostřední zmizel — u kusu s vyplněnými útoky ho nesla už šipka
+// u jeho vlastních útoků a byla to duplikace. Podstatné zůstává: co je tam,
+// se vejde celé.
+check("sestavy útoků se vejdou celé (nic se neuřízne)",
+  dDet.utoky && dDet.utoky.sestav >= 2 && dDet.utoky.scroll <= dDet.utoky.klient + 1,
   JSON.stringify(dDet.utoky));
 check("…a ikona zůstane na střed hlavičky",
   dDet.sprite && dDet.hlavicka
@@ -2087,6 +2091,97 @@ check("karta má na 1600 i 2400 px stejnou výšku",
 check("…a obrázek v ní taky",
   k1600.art !== null && k1600.art === k2400.art,
   JSON.stringify({ px1600: k1600, px2400: k2400 }));
+
+// ------------------------------- útoky v hlavičce, opakované uložení, úprava v úzkém okně
+console.log("\n23) útoky bez duplicit, opakované uložení a úprava v úzkém okně");
+const pU = await otevri(1800, [
+  { pokemon: "Graveler", level: 20, ivAtk: 10, ivDef: 10, ivSta: 10,
+    fastMove: "Mud Shot", charged1: "Rock Blast" },
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
+]);
+const dU = await pU.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const out = {};
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1500);
+  const box = document.querySelector(".atlas-ident-utoky");
+  out.radky = [...box.querySelectorAll(".atlas-sestava")].map((r) => ({
+    kdy: (r.querySelector(".atlas-sestava-kdy") || {}).textContent,
+    utoky: [...r.querySelectorAll(".d-move-jm")].map((e) => e.textContent),
+    sipky: [...r.querySelectorAll(".atlas-utok-lepsi")].map((e) => e.textContent.trim())
+  }));
+  out.utokuCelkem = box.querySelectorAll(".d-move").length;
+  out.tecky = [...box.querySelectorAll(".atlas-utok-tecka:not(.atlas-utok-mezera)")]
+    .map((x) => x.dataset.stav + "=" + getComputedStyle(x).backgroundColor);
+  return out;
+});
+await pU.close();
+check("kus s útoky už nemá pod sebou zopakovanou sestavu téhož druhu",
+  dU.radky.length === 2 && dU.radky[0].kdy === "má" && dU.utokuCelkem === 4,
+  JSON.stringify(dU.radky));
+check("…a zůstala jen sestava po evoluci",
+  /golem/i.test(String(dU.radky[1].kdy)), JSON.stringify(dU.radky[1]));
+check("útok, který se před evolucí nepřeučuje, nemá šipku na lepší",
+  dU.radky[0].sipky.length === 1, JSON.stringify(dU.radky[0]));
+check("…a jeho tečka má vlastní barvu, ne základní",
+  dU.tecky.some((x) => x.indexOf("poEvoluci=") === 0)
+    && !dU.tecky.some((x) => /=rgba\(0, 0, 0, 0\)/.test(x)), JSON.stringify(dU.tecky));
+
+const pE = await otevri(2200, [
+  { pokemon: "Jellicent", level: 25, ivAtk: 12, ivDef: 12, ivSta: 12,
+    fastMove: "Hex", charged1: "Shadow Ball", pohlavi: "Samec" }
+]);
+const dE = await pE.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1200);
+  window.AtlasEditRow(P.getRows()[0].id);
+  await cekej(900);
+  const ulozit = async (v) => {
+    const f = document.getElementById("atlasRowEditor");
+    f.elements.pohlavi.value = v;
+    f.elements.pohlavi.dispatchEvent(new Event("change", { bubbles: true }));
+    f.requestSubmit();
+    await cekej(1200);
+    return P.getRows()[0].pohlavi;
+  };
+  // Tam a zpatky v JEDNOM otevrenem formulari: druhe ulozeni se drive
+  // porovnavalo porad proti stavu pri otevreni a neudelalo nic.
+  return { prvni: await ulozit("Samice"), druhe: await ulozit("Samec") };
+});
+await pE.close();
+check("druhé uložení v témže formuláři taky zapíše",
+  dE.prvni === "Samice" && dE.druhe === "Samec", JSON.stringify(dE));
+
+const pN = await otevri(1000, [
+  { pokemon: "Jellicent", level: 25, ivAtk: 12, ivDef: 12, ivSta: 12,
+    fastMove: "Hex", charged1: "Shadow Ball" }
+]);
+const dN = await pN.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1200);
+  window.AtlasEditRow(P.getRows()[0].id);
+  await cekej(1200);
+  const f = document.getElementById("atlasRowEditor");
+  const cp = f.elements.cp;
+  cp.focus(); cp.value = "1234";
+  cp.dispatchEvent(new Event("input", { bubbles: true }));
+  const hlava = document.querySelector(".atlas-drawer-header");
+  return { vDrawer: !!f.closest(".atlas-drawer"),
+    filtrFormulare: getComputedStyle(f).filter,
+    filtrHlavicky: getComputedStyle(hlava).filter,
+    lzePsat: document.activeElement === cp && cp.value === "1234" };
+});
+await pN.close();
+check("v úzkém okně jde formulář úprav použít a není zasedlý",
+  dN.vDrawer === true && dN.filtrFormulare === "none" && dN.lzePsat === true,
+  JSON.stringify(dN));
+check("…zato příkazy nad ním zasedlé jsou",
+  dN.filtrHlavicky !== "none", JSON.stringify(dN));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

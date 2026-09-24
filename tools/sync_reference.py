@@ -137,7 +137,6 @@ VZHLED_DO_PRODUKCE = "--vzhled" in sys.argv
 SE_VZHLEDEM = TEST_BUILD or VZHLED_DO_PRODUKCE
 TEST_APP = ROOT / "web-app" / "pokemon_tracker_TEST.html"
 ATLAS = ROOT / "web-app" / "atlas"
-ART = ATLAS / "atlas-art.json"
 RAW_BLOCKS = [
     ("/* === ATLAS CSS START === */", "/* === ATLAS CSS END === */", ATLAS / "atlas.css"),
     ("// === ATLAS JS START ===", "// === ATLAS JS END ===", ATLAS / "atlas.js"),
@@ -170,14 +169,10 @@ for start_mark, end_mark, cesta in RAW_BLOCKS:
     telo = cesta.read_text(encoding="utf-8").rstrip("\n").split("\n")
     if cesta.name == "atlas.js" and (ATLAS / "calendar.js").exists():
         telo += ["", "// Atlas calendar module"] + (ATLAS / "calendar.js").read_text(encoding="utf-8").split("\n")
-    # Obrázky do JS slotu před vrstvu. Do produkce nejdou nikdy — třicet
-    # megabajtů by z appky udělalo něco, co se v mobilu neotevře. V testu
-    # se přidají na `--s-obrazky`; bez nich je build rychlý a appka funguje,
-    # jen bez artu u vybraného kusu.
-    if cesta.name == "atlas.js" and ART.exists() and "--s-obrazky" in sys.argv:
-        telo = ["window.ATLAS_ART = "
-                + ART.read_text(encoding="utf-8").strip() + ";"] + telo
-        atlas_stav.append("obrázky %.1f MB" % (ART.stat().st_size / 1048576))
+    # Vlastní art vrstvy (`atlas-art.json`, 30 MB) se už nezapéká nikam.
+    # Do produkce nemůže — appka s ním by se v mobilu neotevřela — a když
+    # ho dostal jen test, byl to zdroj rozdílů mezi testem a produkcí,
+    # které se pak dlouho hledaly. Teď mají obě sestavení týž obrázek.
     lines = lines[:start] + [lines[start]] + telo + [lines[end]] + lines[end + 1:]
     atlas_stav.append("%s: %d řádků" % (cesta.name, len(telo)))
 

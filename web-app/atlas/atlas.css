@@ -1408,7 +1408,7 @@ body.atlas-test[data-atlas-view="events"][data-atlas-current-route="eventsCard"]
 @media(min-width:1700px){#atlasCalendar{padding:28px}#atlasCalendar .ac-columns{min-height:340px}#atlasCalendar .ac-event-text b{font-size:13px}#atlasCalendar .ac-event-text small{font-size:12px}#atlasCalendar .ac-detail{padding:20px}#atlasCalendar .ac-span{font-size:13px!important;height:32px}#atlasCalendar .ac-day{min-height:78px}#atlasCalendar .ac-day b,#atlasCalendar .ac-day small{font-size:14px}}
 @media(max-width:1099px){#atlasCalendar .ac-layout{grid-template-columns:1fr}#atlasCalendar{padding:16px}#atlasCalendar .ac-controls{width:auto}#atlasCalendar .ac-toolbar{align-items:center}#atlasCalendar .ac-detail{display:none}}
 @media(max-width:700px){#atlasCalendar{padding:15px 10px;border-radius:12px}#atlasCalendar .ac-toolbar h2{font-size:25px}#atlasCalendar .ac-toolbar{justify-content:center}#atlasCalendar .ac-controls{justify-content:center;width:100%}#atlasCalendar .ac-day{display:flex;min-height:58px;gap:4px}#atlasCalendar .ac-day b{font-size:16px;font-weight:650}#atlasCalendar .ac-day small{display:none}#atlasCalendar .ac-filters{gap:5px}#atlasCalendar .ac-filters button{font-size:11px!important;padding:6px 10px}#atlasCalendar .ac-agenda-day>.ac-event .ac-art{height:235px;aspect-ratio:auto}#atlasCalendar .ac-agenda-day>.ac-event .ac-event-text{padding:15px 16px 18px 35px}#atlasCalendar .ac-agenda-day>.ac-event .ac-event-text b{font-size:20px}#atlasCalendar .ac-agenda-day>.ac-event .ac-event-text small{font-size:14px}#atlasCalendar .ac-tile-kind{left:12px;top:15px}#atlasCalendar .ac-also .ac-tile-kind{display:none}#atlasCalendar .ac-also .ac-event-text{padding:10px}#atlasCalendar .ac-also .ac-art{width:90px;height:85px;aspect-ratio:auto}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child){min-height:125px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-art{height:100px;top:14px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-copy{min-height:125px;padding:14px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) h3{font-size:16px}#atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child) .atlas-event-date{font-size:11px}#atlasHome .atlas-week{gap:5px}#atlasHome .atlas-week button{min-height:58px}}
-#atlasCalendar .ac-art img[data-overview-sprite],#atlasHome .atlas-event-art img[data-overview-sprite]{transform:scale(1.7);transform-origin:50% 55%}
+
 #atlasCalendar .ac-detail-species{font-size:12px;margin-top:0;color:#afd5ff}
 #atlasCalendar .ac-detail-heading h2{text-transform:none}
 #atlasCalendar .ac-detail-heading h2:first-letter{text-transform:uppercase}
@@ -1476,3 +1476,26 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    vystredovani zapisuje primo do znacky. */
 #atlasHome img,
 #atlasCalendar img{transform:none!important}
+
+/* Claude 24. 9. (21): pata barva tecky u utoku.
+
+   Engine hodnoti utoky peti stavy, vrstva znala jen ctyri — u toho pateho
+   (`poEvoluci`, tedy "ted to neprecuj, evoluci se utoky losuji znovu")
+   zustala tecka v zakladni barve a nedalo se poznat, jestli neco znamena.
+   Modra je na "az po evoluci" zavedena i jinde v appce. */
+.atlas-utok-tecka[data-stav=poEvoluci]{background:var(--series-1)}
+
+/* Claude 24. 9. (22): uprava kusu v uzkem okne.
+
+   Detail se pri upravach zasedl filtrem `brightness(.78)`. Filtr ale plati
+   na cely podstrom — a kdyz se formular nevejde vedle plachty (uzke okno),
+   lezi uvnitr ni. Zasedl se tedy i on sam a vypadal, ze nejde pouzit.
+
+   Misto filtru je tu pritmiveni vrstvou: obsah zustava v puvodnich barvach,
+   formular je nad ni a je plne citelny. Prikazy v hlavicce byly navic pri
+   plne sytosti, prestoze na ne nejde kliknout — ted je pritmiveni prekryje
+   taky, takze je videt, ze se s nimi nedá nic delat. */
+.atlas-test.atlas-edituje .atlas-drawer{filter:none}
+.atlas-test.atlas-edituje .atlas-drawer > *:not(#atlasDetailContent),
+.atlas-test.atlas-edituje #atlasDetailContent > *:not(#atlasRowEditor){
+  filter:brightness(.62) saturate(.7)}

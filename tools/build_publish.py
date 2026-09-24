@@ -66,6 +66,28 @@ def main():
     OUT.mkdir(exist_ok=True)
 
     html = APP.read_text(encoding="utf-8")
+
+    # Pojistka: appka bez vzhledové vrstvy se nezveřejňuje.
+    #
+    # `sync_reference.py` bez `--vzhled` nechává sloty pro CSS a JS
+    # PRÁZDNÉ. Když se pak spustí tenhle skript sám, vyrobí `publish/`
+    # s holým enginem a na Pages odejde appka bez GO Atlasu — stačí
+    # k tomu jedno spuštění mimo pořadí. Stávalo se to.
+    for znacka, jmeno in (("=== ATLAS CSS START ===", "atlas.css"),
+                          ("=== ATLAS JS START ===", "atlas.js")):
+        zacatek = html.find(znacka)
+        if zacatek < 0:
+            raise SystemExit(
+                "STOP: v appce chybi slot %s.\n"
+                "       publish/ se nestavi." % znacka)
+        konec = html.find(znacka.replace("START", "END"), zacatek)
+        if konec - zacatek < 2000:
+            raise SystemExit(
+                "STOP: slot pro %s je prazdny - appka nema vzhledovou vrstvu.\n"
+                "       Nejdriv:  python tools/sync_reference.py --vzhled\n"
+                "       (dela to tools/deploy.ps1 sam; tenhle skript se"
+                " nespousti rucne)." % jmeno)
+
     # Verze = otisk obsahu. Service worker podle ní pozná, že se má
     # aktualizovat; při stejném obsahu se nedělá nic.
     verze = hashlib.sha256(html.encode("utf-8")).hexdigest()[:12]
@@ -140,7 +162,7 @@ def main():
     # Service worker. Nejdřív se sáhne na síť, a když není, vezme se cache —
     # appka je jeden velký soubor, takže „stale-while-revalidate" by
     # znamenalo běhat na staré verzi ještě jedno spuštění.
-    sw = '''/* Generováno tools/build_publish.py — needitovat ručně. */
+    sw = r'''/* Generováno tools/build_publish.py — needitovat ručně. */
 var VERZE = "pgo-%s";
 var SOUBORY = ["./", "index.html", "manifest.webmanifest",
   "ikona-192.png", "ikona-512.png", "strop.html"];

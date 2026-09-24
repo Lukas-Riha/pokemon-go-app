@@ -370,6 +370,12 @@ globalThis.AtlasBudget = (() => {
     form.querySelector('[data-editor-cancel]').addEventListener('click',()=>{form.remove();document.body.classList.remove('atlas-edituje');document.querySelector('.atlas-drawer-header button')?.focus()});
     form.addEventListener('submit',e=>{e.preventDefault();const current=P.getRows().find(r=>r.id===id);if(!current||profile!==P.getProfile()){form.querySelector('[role=status]').textContent='Kus nebo profil se změnil. Zavři detail a zkontroluj roster.';return}if(!form.reportValidity())return;
       for(const input of form.elements){if(!input.name)continue;const value=input.type==='checkbox'?input.checked:input.value;if(value!==baseline.get(input.name))current[input.name]=input.type==='checkbox'?(value?'Ano':'Ne'):value;}
+      // Dalsi ulozeni uz nemelo co zapsat: porovnavalo se porad proti stavu,
+      // ve kterem se formular otevrel. Kdo zmenil pohlavi a hned ho vratil
+      // zpatky, dostal "ulozeno" a nezmenilo se nic. Vychozi stav se proto
+      // posune na to, co se prave zapsalo — pole, ktera clovek nesahnul,
+      // dal nic neprepisuji.
+      [...form.elements].forEach(el=>{if(el.name)baseline.set(el.name,el.type==='checkbox'?el.checked:el.value)});
       P.prekreslit();P.persistNow();document.body.classList.remove('atlas-edituje');window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));document.querySelector('.atlas-drawer').scrollTop=0;
     });
     const plachta=document.getElementById('atlasModal'),plocha=document.querySelector('.atlas-drawer');
@@ -733,7 +739,9 @@ globalThis.AtlasBudget = (() => {
           // Rychlý útok se mění za rychlý, nabitý za nabitý.
           const nabidka=i===0?doporucene.slice(0,1):doporucene.slice(1);
           const lepsi=nabidka.find(x=>x&&x.toLowerCase()!==cist&&!jmena.some(y=>cisteJmeno(String(y)).trim().toLowerCase()===x.toLowerCase()));
-          if(stav!=='nej'&&lepsi){
+          // U `poEvoluci` engine rika "ted neprecuj" — sipka na lepsi utok
+          // by mu primo odporovala.
+          if(stav!=='nej'&&stav!=='poEvoluci'&&lepsi){
             const sip=document.createElement('em');sip.className='atlas-utok-lepsi';
             sip.textContent='→ '+lepsi;
             const proc=duvody.get(cist)||'';
@@ -757,7 +765,7 @@ globalThis.AtlasBudget = (() => {
     // Bere se jen skutečné hodnocení útoku (engine značí čtyřmi stavy).
     // Dřív sem propadaly i jiné třídy (`d-move-poEvoluci`) a z tečky byl šedý
     // puntík bez významu. První nález vyhrává — ten patří kusu, ne jeho evoluci.
-    const ZNAME=['nej','dobry','preucit','nezna'];
+    const ZNAME=['nej','dobry','preucit','nezna','poEvoluci'];
     (moves?moves.querySelectorAll('.d-move'):[]).forEach(el=>{
       const jm=(el.querySelector('.d-move-jm')||{}).textContent||'';
       if(!jm)return;
@@ -800,6 +808,11 @@ globalThis.AtlasBudget = (() => {
       [...sestavySekce.querySelectorAll('.d-sestavy > div')].forEach(d=>{
         const h=(d.querySelector('.d-role-h')||{}).textContent||'',v=(d.querySelector('.d-role-v')||{}).textContent||'',pop=(d.querySelector('.d-role-p')||{}).textContent||'';
         if(!v)return;
+        // Kus, ktery utoky MA, uz doporuceni nese sipkou u svych vlastnich
+        // utoku. Vypisovat pod tim jeste jednou nejlepsi sestavu tehoz druhu
+        // byla cista duplikace — sest utoku misto dvou. Sestavy po evoluci
+        // zustavaji, ty rikaji neco jineho.
+        if(!/^Po evoluci/.test(h)&&row.fastMove&&row.charged1)return;
         // U větvené řady (Eevee) „po evo" neřeklo, o kterou formu jde.
         const cil=/^Po evoluci na\s+(.+?)\s*$/.exec(h);
         pridej(/^Po evoluci/.test(h)?(cil?cil[1]:'po evo'):(row.pokemon||'teď'),v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
