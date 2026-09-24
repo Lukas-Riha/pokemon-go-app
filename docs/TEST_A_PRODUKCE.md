@@ -172,7 +172,7 @@ Skript do obou sestavení nasype tentýž roster, projede sedm stránek
 (Přehled, Pokémoni, Týmy, Investice, Události, Data a pravidla, detail kusu),
 u každého viditelného prvku si zapíše rozměr včetně transformace a porovná
 položku po položce — kolem 17 tisíc prvků. Stránky předtím proroluje, aby
-se dotažhly líně načítané obrázky a neporovnával se závod v načítání.
+se dotáhly líně načítané obrázky a neporovnával se závod v načítání.
 
 ### Důkaz, že se změnou vykreslování nezměnila čísla
 
