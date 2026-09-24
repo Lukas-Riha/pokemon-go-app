@@ -1499,3 +1499,11 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test.atlas-edituje .atlas-drawer > *:not(#atlasDetailContent),
 .atlas-test.atlas-edituje #atlasDetailContent > *:not(#atlasRowEditor){
   filter:brightness(.62) saturate(.7)}
+
+/* Claude 24. 9. (23): dnesek v tydennim pruhu na Prehledu.
+
+   Oznaceny byl jen VYBRANY den (modra plocha). Kdyz clovek vybral jiny den,
+   dnesek zmizel bez stopy a dva modre spodni okraje vedle sebe se nedaly
+   rozlisit bez legendy. Tecka uz nese "tenhle den ma akce", takze dnesek
+   rekne rovnou slovem — cist se to da bez vysvetlivky. */
+#atlasHome .atlas-week button[data-dnes] > span{color:var(--series-1);font-weight:700;letter-spacing:.3px}

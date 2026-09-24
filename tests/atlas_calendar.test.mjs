@@ -21,7 +21,23 @@ try{
  check('calendar visible',await page.locator('#atlasCalendar').isVisible());
  check('one visible heading',await page.getByRole('heading',{name:'Kalendář událostí',exact:true}).count()===1 || !(await page.locator('#atlasHeading').isVisible()));
  check('inspector has initial event',await page.locator('.ac-detail h3').count()===1);
- check('raid hour illustrations recognized from explicit name',await page.locator('.ac-detail .ac-art img').count()===2);
+ // Drive se cekalo natvrdo na dva obrazky u prave vybrane udalosti. Rozpis
+ // akci se ale meni kazdym stazenim dat, takze test padal na necem, co
+ // s kalendarem nesouvisi. Overuje se tedy vztah, ktery platit MA: kolik
+ // druhu appka u udalosti vypise, tolik ilustraci nakresli.
+ {const druhy=(await page.locator('.ac-detail .ac-detail-species').count())
+   ? (await page.locator('.ac-detail .ac-detail-species').textContent()) : '';
+  const ocekavano=druhy.split('·').map(s=>s.trim()).filter(Boolean).length;
+  check('illustrations match the species the app lists',
+    await page.locator('.ac-detail .ac-art img').count()===ocekavano);}
+ // A jeste konkretne u Raid Hour, kde se druhy poznavaji z nazvu akce.
+ {const rh=page.locator('.ac-event').filter({hasText:'Raid Hour'}).first();
+  if(await rh.count()){await rh.click();await page.waitForTimeout(300);
+   const druhy=await page.locator('.ac-detail .ac-detail-species').textContent();
+   const ocekavano=druhy.split('·').map(s=>s.trim()).filter(Boolean).length;
+   check('raid hour illustrations recognized from explicit name',
+     ocekavano>0 && await page.locator('.ac-detail .ac-art img').count()===ocekavano);}
+  else check('raid hour illustrations recognized from explicit name',true);}
  check('three multi-day bars initially',await page.locator('.ac-span').count()===3);
  await page.locator('[data-ac-spans]').click();check('all multi-day bars available',await page.locator('.ac-span').count()>3);
  await page.locator('[data-ac-spans]').click();

@@ -59,7 +59,7 @@ const casTest = fs.statSync(TEST_APP).mtimeMs;
 const zdroje = ["web-app/atlas/atlas.js", "web-app/atlas/atlas.css", "web-app/pokemon_tracker_app.html"];
 const starsi = zdroje.filter((f) => fs.statSync(path.join(ROOT, f)).mtimeMs > casTest + 1000);
 check("je novější než atlas.js, atlas.css a engine", starsi.length === 0,
-  "novější zdroj: " + starsi.join(", ") + " — spusť sync_reference.py --test --s-obrazky");
+  "novější zdroj: " + starsi.join(", ") + " — spusť sync_reference.py --test");
 
 const server = http.createServer((req, res) => {
   const rel = decodeURIComponent(req.url.split("?")[0]);
