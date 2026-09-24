@@ -1463,8 +1463,16 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    Projevilo se to jen na skutecnem profilu (s hotovymi merenimi), proto to
    v testech s prazdnym ulozistem nebylo videt: Sobble byl 155 px misto 100.
 
+   Plati to na CELY Prehled a kalendar, ne jen na karty udalosti: tytez
+   nafouknute sprity vylezly i na dlazdicich "Co pripravit jako prvni".
+   Vystredovani ma smysl tam, kde kusy stoji v rade pod sebou (roster,
+   detail) — tam zustava.
+
+   Jeste horsi na tom bylo, ze vysledek zavisel na vyrovnavaci pameti
+   mereni: v jednom profilu uz mereni bylo a obrazek se zvetsil, v druhem
+   jeste ne a zustal. Tataz appka tak vypadala pokazde jinak.
+
    `!important` je tu naschval — prebiji `style="transform:..."`, ktery
    vystredovani zapisuje primo do znacky. */
-#atlasHome .atlas-boss-art img,
-#atlasHome .atlas-event-art img,
-#atlasCalendar .ac-art img{transform:none!important}
+#atlasHome img,
+#atlasCalendar img{transform:none!important}

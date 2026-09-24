@@ -53,11 +53,22 @@ function rosterSkript() {
     const P = window.__pgo;
     const klice = Object.keys(P.pokedex().species).sort().slice(0, 220);
     const jmena = klice.map(k => P.dexEntry(k) && P.dexEntry(k).name).filter(Boolean);
-    P.setRows(jmena.map((n, i) => ({
-      pokemon: n, cp: 700 + (i * 13) % 3200, level: 10 + (i % 30),
-      ivAtk: (i * 5) % 16, ivDef: (i * 11) % 16, ivSta: (i * 7) % 16,
-      fastMove: "", charged1: ""
-    })));
+    // Útoky se doplňují schválně: bez nich engine nenabídne žádný
+    // investiční krok, dlaždice „Co připravit jako první“ zůstanou prázdné
+    // a nikdy se neporovnají. (Přesně tam se pak našel rozdíl, který tohle
+    // porovnání mělo najít.)
+    P.setRows(jmena.map((n, i) => {
+      const u = P.utokyDruhu ? P.utokyDruhu(n) : null;
+      return {
+        // CP se schvalne nevyplnuje: nesedici CP je "chyba v datech"
+        // a engine takovy kus z planu vyradi, takze by dlazdice opet
+        // zustaly prazdne.
+        pokemon: n, level: 10 + (i % 30),
+        ivAtk: 15, ivDef: 15, ivSta: 15,
+        fastMove: (u && u.fast && u.fast[0]) || "",
+        charged1: (u && u.charged && u.charged[0]) || ""
+      };
+    }));
     return P.getRows().length;
   })()`;
 }
@@ -120,13 +131,28 @@ async function posbirej(kde, zivy) {
       }
       window.scrollTo(0, 0);
     });
-    await page.waitForTimeout(2500);
+    // Vystredovani spritu se spusti az tehdy, kdyz ma appka co merit —
+    // tedy na skutecne pouzivanem profilu. Cerstvy profil ho nikdy
+    // nevyvola, takze by se porovnaval stav, ktery clovek nikdy nevidi.
+    // Proto se vynuti natvrdo, v obou sestavenich stejne.
+    await page.evaluate(() => {
+      if (window.__pgo && window.__pgo.vystreditSprity) {
+        window.__pgo.vystreditSprity(document.body);
+      }
+    });
+    await page.waitForTimeout(3500);
     otisky[pohled] = await page.evaluate(otiskSkript());
   }
   // A ještě detail kusu — tam vystřeďování opravdu běží.
   await page.evaluate(() => {
     window.__atlasTest.go("roster");
     window.__atlasTest.openDetail(window.__pgo.getRows()[0].id);
+  });
+  await page.waitForTimeout(2500);
+  await page.evaluate(() => {
+    if (window.__pgo && window.__pgo.vystreditSprity) {
+      window.__pgo.vystreditSprity(document.body);
+    }
   });
   await page.waitForTimeout(3500);
   otisky.detail = await page.evaluate(otiskSkript());

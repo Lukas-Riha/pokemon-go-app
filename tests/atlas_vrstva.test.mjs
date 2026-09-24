@@ -2066,8 +2066,7 @@ const pVys = await otevri(2210);
 const dVys = await pVys.evaluate(async () => {
   window.__atlasTest.go("home");
   await new Promise((r) => setTimeout(r, 1200));
-  const vsechny = [...document.querySelectorAll(
-    "#atlasHome .atlas-boss-art img, #atlasHome .atlas-event-art img")];
+  const vsechny = [...document.querySelectorAll("#atlasHome img")];
   if (!vsechny.length) return { chyba: "zadny obrazek" };
   const img = vsechny[0];
   const pred = Math.round(img.getBoundingClientRect().height);
