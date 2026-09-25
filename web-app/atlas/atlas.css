@@ -1694,3 +1694,15 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-razeni-rychle .atlas-razeni-role + .atlas-razeni-role{margin-left:0;
   border-left:0!important}
 .atlas-razeni-rychle button[aria-pressed=true].atlas-razeni-role{background:var(--series-1)!important}
+
+/* Claude 25. 9. (32): import ve trech zonach.
+
+   Dialog styluje vsechna tlacitka jako ramecky. Odkazy v nem ale maji
+   vypadat jako odkazy — jinak by vedle "Sloucit s rosterem" stala dalsi
+   dve stejne velka tlacitka a hierarchie rizika by zmizela. */
+.atlas-import-dialog .imp-odkaz{padding:2px 0;border:0;background:none;
+  color:var(--series-1);text-decoration:underline;text-underline-offset:2px;
+  font-size:12px;border-radius:0}
+.atlas-import-dialog .imp-jinak button{font-size:12.5px;padding:7px 11px}
+.atlas-import-dialog .imp-volba{cursor:help}
+.atlas-import-dialog .imp-fakta b{font-size:15px}

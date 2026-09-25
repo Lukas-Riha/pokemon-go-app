@@ -552,7 +552,7 @@ globalThis.AtlasBudget = (() => {
  const profile=$('#profilBtn'),commands=$('.atlas-roster-commands>div');if(profile&&commands)commands.append(profile);
  const view=$('#viewSelect');view.value='all';view.dispatchEvent(new Event('change',{bubbles:true}));view.hidden=true;
  $('#tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-row-id]');if(!row||e.target.closest('input,select,textarea,button,a,label'))return;e.stopImmediatePropagation();__atlasTest.openDetail(row.dataset.rowId)},true);
- const dialog=document.createElement('dialog');dialog.id='atlasImportDialog';dialog.className='atlas-import-dialog';dialog.setAttribute('aria-labelledby','atlasImportTitle');dialog.innerHTML='<header><div><h2 id="atlasImportTitle">Import rosteru</h2><p>Vyber soubor, zkontroluj náhled a rozhodni, jak data přidat.</p></div><button type="button" aria-label="Zavřít import">✕</button></header>';
+ const dialog=document.createElement('dialog');dialog.id='atlasImportDialog';dialog.className='atlas-import-dialog';dialog.setAttribute('aria-labelledby','atlasImportTitle');dialog.innerHTML='<header><div><h2 id="atlasImportTitle">Import rosteru</h2><p>Přetažhni soubor. Ukážu ti, co v něm je a co to s rosterem udělá.</p></div><button type="button" aria-label="Zavřít import">✕</button></header>';
  document.body.append(dialog);const box=$('#importBox');dialog.append(box);
  function close(){ $('#cancelImportBtn').click();if(dialog.open)dialog.close(); }
  dialog.querySelector('header button').addEventListener('click',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close()});
@@ -563,7 +563,7 @@ globalThis.AtlasBudget = (() => {
  const $=s=>document.querySelector(s);
  // Keep the native file-cancel handler: it discards only the pending preview.
  $('#cancelImportBtn').hidden=true;
- const fileCancel=$('#mapCancelBtn');fileCancel.textContent='Zrušit vybraný soubor';fileCancel.addEventListener('click',()=>{$('#fileInput').value=''});
+ const fileCancel=$('#mapCancelBtn');fileCancel.textContent='Zrušit';fileCancel.addEventListener('click',()=>{$('#fileInput').value=''});
  // Souhrnný box Využití/Krok/Cena/Chybí v detailu už není — opakoval verdikt a doporučený krok.
  const warning=$('#zalWarn'),rosterBar=$('#addRowBtn')?.parentElement;if(warning&&rosterBar){rosterBar.after(warning)}
  let editing=false;const edit=document.createElement('button');edit.id='atlasTableEdit';edit.className='atlas-mini-btn';edit.textContent='Zapnout editaci tabulky';$('.atlas-mode-controls').append(edit);

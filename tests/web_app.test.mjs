@@ -974,10 +974,10 @@ try {
     const out = {};
     // Ruční mapování sloupců v importu už není — čte se přímo logika.
     out.mapped = (window.__pgo.automatickeMapovani(csv) || {})["Datum skenu"];
-    out.noteAll = document.getElementById("scanWindowNote").textContent;
+    out.noteAll = document.getElementById("mapTitle").textContent;
     const w = document.getElementById("scanWindow");
     w.value = "24"; w.onchange();
-    out.noteDay = document.getElementById("scanWindowNote").textContent;
+    out.noteDay = document.getElementById("mapTitle").textContent;
     window.__pgo.finishImport("replace");
     out.roster = window.__pgo.getRows().map((r) => r.pokemon);
     out.discardedAfterReplace = window.__pgo.getDiscarded().length;
@@ -985,7 +985,8 @@ try {
   });
   eq("sloupec s datem skenu se namapuje sám", win.mapped, "Scan date");
   check("bez omezení se bere celá historie", win.noteAll.indexOf("5 kusů") > -1, win.noteAll);
-  check("po volbě posledního dne zbydou jen dnešní skeny", win.noteDay.indexOf("3 kusů") > -1, win.noteDay);
+  check("po volbě posledního dne zbydou jen dnešní skeny",
+    win.noteDay.indexOf("5 řádků") > -1 && win.noteDay.indexOf("3 kusy") > -1, win.noteDay);
   eq("nahrazení udělá z posledního skenu celý roster", win.roster.join(","), "Azumarill,Machoke,Blissey");
   eq("…a paměť na smazané se vyprázdní, roster je teď pravda", win.discardedAfterReplace, 0);
 
@@ -1018,15 +1019,17 @@ try {
       "8/20/26 7:03,Rattata,200,15,22,26,31,4,3,5",
     ].join("\n");
     window.__pgo.importText(csv);
-    const all = document.getElementById("scanWindowNote").textContent;
+    const all = document.getElementById("mapTitle").textContent;
     const box = document.getElementById("onlyExact");
     box.checked = true; box.onchange();
-    const filtered = document.getElementById("scanWindowNote").textContent;
+    const filtered = document.getElementById("mapTitle").textContent;
     window.__pgo.finishImport("replace");
     return { all, filtered, roster: window.__pgo.getRows().map((r) => r.pokemon) };
   });
-  check("bez filtru se berou všechny skeny", exact.all.indexOf("4 kusů") > -1, exact.all);
-  check("s filtrem zůstanou jen přesné", exact.filtered.indexOf("2 kusů") > -1, exact.filtered);
+  check("bez filtru se berou všechny skeny", exact.all.indexOf("4 kusy") > -1, exact.all);
+  check("s filtrem zůstanou jen přesné",
+    exact.filtered.indexOf("2 kusy") > -1 && exact.filtered.indexOf("jen přesné IV") > -1,
+    exact.filtered);
   eq("…a jsou to ty doskenované", exact.roster.join(","), "Azumarill,Blissey");
 
 
@@ -1295,16 +1298,16 @@ try {
     window.__pgo.importText(csv);
     const w = document.getElementById("scanWindow");
     w.value = "1"; w.onchange();
-    out.hodina = document.getElementById("scanWindowNote").textContent;
+    out.hodina = document.getElementById("mapTitle").textContent;
     w.value = "24"; w.onchange();
-    out.den = document.getElementById("scanWindowNote").textContent;
+    out.den = document.getElementById("mapTitle").textContent;
     w.value = "1"; w.onchange();
     window.__pgo.finishImport("replace");
     out.roster = window.__pgo.getRows().map((r) => r.pokemon);
     return out;
   });
   check("okno „poslední hodina“ vybere jen večerní průchod boxem",
-    hours.hodina.indexOf("3 kusů") > -1, hours.hodina);
+    hours.hodina.indexOf("3 kusy") > -1, hours.hodina);
   check("…zatímco celý den bere i ranní chytání", hours.den.indexOf("5 kusů") > -1, hours.den);
   eq("po nahrazení sedí roster s tím, co je v boxu", hours.roster.join(","), "Machamp,Azumarill,Blissey");
 
@@ -16299,7 +16302,7 @@ try {
     const mapa = P.automatickeMapovani(csv) || {};
     P.importText(csv);
     await cekej(300);
-    const importNote = ((document.getElementById("scanWindowNote") || {}).textContent || "").replace(/\s+/g, " ");
+    const importNote = ((document.getElementById("mapTitle") || {}).textContent || "").replace(/\s+/g, " ");
     P.finishImport(true);
     await cekej(1000);
     const podle = () => { const o = {}; P.getRows().forEach((r) => { o[r.pokemon] = r; }); return o; };
@@ -16359,7 +16362,7 @@ try {
       ["Mewtwo", "Litten", "Nickit", "Clamperl", "Combee", "Ampharos", "Gyarados"]),
     JSON.stringify(chyceni.chyceniNovejsi));
   check("import hned řekne, kolik kusů má datum chycení",
-    /datum chycení má 1 z 7 řádků \(další 4 jen rok nebo měsíc\)/.test(chyceni.importNote), chyceni.importNote);
+    /datum chycení 1\/7 \(\+4 jen rok\)/.test(chyceni.importNote), chyceni.importNote);
   check("řazení podle skenu: naposledy naskenovaný první",
     chyceni.skenNovejsi[0] === "Ampharos" && chyceni.skenNovejsi[chyceni.skenNovejsi.length - 1] === "Clamperl",
     JSON.stringify(chyceni.skenNovejsi));
@@ -17852,6 +17855,74 @@ try {
     raidRole.kroky.some((x) => x.typu > 1), JSON.stringify(raidRole.kroky));
   check("…a vypnutí role vrátí celý roster",
     raidRole.poVypnuti > raidRole.kusu, raidRole.poVypnuti + " vs " + raidRole.kusu);
+
+  // ---- Import: náhled říká, co se stane — a nic přitom nezmění -------
+  // Dialog náhled slibuje od začátku („zkontroluj náhled"), ale čísla v něm
+  // mluvila jen o souboru. Počítá ho tatáž funkce, která import provádí,
+  // takže se s ním nemůže rozejít — musí ale běžet nanečisto.
+  const impNahled = await page.evaluate(async () => {
+    const P = window.__pgo;
+    window.alert = () => {};
+    P.setRows([
+      { pokemon: "Snorlax", cp: 2477, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { pokemon: "Lapras", cp: 1539, level: 25, ivAtk: 10, ivDef: 12, ivSta: 14 },
+      { pokemon: "Machamp", cp: 2100, level: 28, ivAtk: 12, ivDef: 12, ivSta: 12 }
+    ]);
+    await new Promise((r) => setTimeout(r, 1000));
+    const pred = P.getRows().map((r) => r.pokemon + " " + r.cp).join("|");
+    const csv = ["Name,CP,Level,ATT IV,DEF IV,HP IV,Scan Date",
+      "Snorlax,2477,30,15,14,13,9/25/26 08:00:00",
+      "Lapras,1700,27,10,12,14,9/25/26 08:01:00",
+      "Gyarados,2686,30,14,13,15,9/25/26 08:02:00",
+      "Metagross,3050,32,15,15,14,9/25/26 08:03:00",
+      "Metagross,3050,32,15,15,14,9/25/26 08:04:00"].join("\n");
+    P.importText(csv);
+    await new Promise((r) => setTimeout(r, 900));
+    const text = (id) => (document.getElementById(id) || {}).textContent || "";
+    const out = {
+      pred: pred,
+      fakta: text("mapTitle").replace(/\s+/g, " ").trim(),
+      plan: text("impPlan").replace(/\s+/g, " ").trim(),
+      jinakSkryto: getComputedStyle(document.getElementById("impJinak")).display === "none",
+      slov: text("mapBox").trim().split(/\s+/).length,
+      poNahledu: P.getRows().map((r) => r.pokemon + " " + r.cp).join("|")
+    };
+    const prepni = async (zap) => {
+      const c = document.getElementById("celyBox");
+      c.checked = zap;
+      c.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 600));
+    };
+    await prepni(true);
+    out.planCelyBox = text("impPlan").replace(/\s+/g, " ").trim();
+    out.poCelemBoxu = P.getRows().map((r) => r.pokemon + " " + r.cp).join("|");
+    await prepni(false);
+    document.getElementById("mapMergeBtn").click();
+    await new Promise((r) => setTimeout(r, 900));
+    out.poSlouceni = P.getRows().map((r) => r.pokemon + " " + r.cp).join("|");
+    return out;
+  });
+  check("náhled importu roster nezmění",
+    impNahled.poNahledu === impNahled.pred && impNahled.poCelemBoxu === impNahled.pred,
+    impNahled.pred + " → " + impNahled.poNahledu + " / " + impNahled.poCelemBoxu);
+  check("proužek řekne, kolik je řádků a kolik z nich kusů",
+    /5 řádků/.test(impNahled.fakta) && /4 kusy/.test(impNahled.fakta), impNahled.fakta);
+  check("plán řekne, kolik přibude a kolik se aktualizuje",
+    /\+2\s*přibude/.test(impNahled.plan) && /2\s*se aktualizuje/.test(impNahled.plan),
+    impNahled.plan);
+  check("…a že se dva opakované skeny spojí",
+    /1 opakovaný sken/.test(impNahled.plan), impNahled.plan);
+  check("„celý box“ do plánu připíše, kolik kusů pustí",
+    /1\s*pustím/.test(impNahled.planCelyBox), impNahled.planCelyBox);
+  check("nahrazení a přidání nestojí vedle doporučeného tlačítka",
+    impNahled.jinakSkryto === true, String(impNahled.jinakSkryto));
+  // Dialog měl přes dvě stě slov a rozhodnutí se v nich ztratilo. Tahle
+  // kontrola je tu proto, aby se tam vysvětlování nevrátilo.
+  check("import se vejde do sta slov", impNahled.slov < 110, String(impNahled.slov));
+  check("a náhled sedí s tím, co sloučení opravdu udělá",
+    impNahled.poSlouceni.indexOf("Gyarados 2686") > -1
+      && impNahled.poSlouceni.indexOf("Lapras 1700") > -1
+      && impNahled.poSlouceni.split("|").length === 5, impNahled.poSlouceni);
 
   await page.goto(URL);
   await page.waitForTimeout(700);

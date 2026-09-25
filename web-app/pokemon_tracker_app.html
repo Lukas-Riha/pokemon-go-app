@@ -2796,6 +2796,47 @@
   .map-item.auto label::after { content: " ✓"; color: var(--status-good); }
   .map-dedupe { display: block; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
   .map-dedupe input { margin-right: 6px; }
+  /* Import ve třech zónách: co je v souboru, co to udělá, čím to upřesnit.
+     Dlouhá vysvětlení jsou v bublinách u voleb — na ploše zůstávají čísla,
+     protože rozhodnutí se dělá podle nich, ne podle vět o mechanice. */
+  .imp-odkaz { background: none; border: 0; padding: 2px 0; margin: 0 0 8px;
+    color: var(--series-1); font: inherit; font-size: 12px; cursor: pointer;
+    text-decoration: underline; text-underline-offset: 2px; }
+  .imp-pod { font-size: 12px; color: var(--text-muted); margin: 0 0 10px; max-width: 62ch; }
+  .imp-mriz { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(210px, .7fr);
+    gap: 10px 22px; align-items: start; }
+  .imp-fakta { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12.5px;
+    color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .imp-fakta b { color: var(--text-primary); font-size: 14.5px; font-weight: 650; }
+  .imp-fakta .imp-slabe { color: var(--text-muted); }
+  .imp-plan { margin-top: 14px; }
+  .imp-plan-radek { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px;
+    font-variant-numeric: tabular-nums; }
+  .imp-plan-radek b { font-size: 17px; font-weight: 650; margin-right: 3px; }
+  .imp-plus b { color: var(--status-good); }
+  .imp-zmena b { color: var(--series-1); }
+  .imp-minus b { color: var(--status-critical); }
+  .imp-plan-pozn { margin-top: 6px; font-size: 12px; color: var(--text-muted); max-width: 62ch; }
+  .imp-akce { align-items: center; flex-wrap: wrap; }
+  .imp-akce .imp-odkaz { margin: 0 0 0 4px; }
+  .imp-jinak { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .imp-jinak[hidden] { display: none; }
+  .imp-volby-hlava { font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-muted); margin-bottom: 10px; }
+  .imp-volba { display: flex; align-items: center; gap: 7px; margin-bottom: 9px;
+    font-size: 12.5px; color: var(--text-secondary); cursor: help; }
+  .imp-volba input[type=checkbox] { margin: 0; flex: 0 0 auto; }
+  .imp-volba select { padding: 4px 6px; border: 1px solid var(--input-border);
+    border-radius: 6px; background: var(--input-bg); color: var(--text-primary);
+    font: inherit; font-size: 12.5px; }
+  .imp-volba #boxCount { margin: 0; width: 72px; }
+  .imp-pozn { font-size: 11.5px; color: var(--text-muted); margin: -4px 0 11px; }
+  .imp-pozn:empty { display: none; }
+  /* Po výběru souboru je dropzone jen zpáteční lístek, ne hlavní věc. */
+  .import-box.ma-soubor .dropzone { padding: 9px; font-size: 12px; margin-bottom: 8px; }
+  .import-box.ma-soubor #impNastaveniBtn, .import-box.ma-soubor #impNastaveniText,
+  .import-box.ma-soubor > .actions { display: none; }
+  @media (max-width: 760px) { .imp-mriz { grid-template-columns: 1fr; } }
   #boxCount { width: 78px; margin: 0 6px; padding: 3px 6px; font: inherit;
     background: var(--surface-1); color: var(--text-primary);
     border: 1px solid var(--grid); border-radius: 6px; }
@@ -3546,61 +3587,70 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
     <div class="import-box" id="importBox">
       <div class="dropzone" id="dropzone">
-        Přetáhni sem <strong>CSV/TSV export</strong> z Poké Genie nebo Calcy IV — nebo klikni a vyber soubor.
-        <span class="hint">Sem patří i <code>nastaveni.json</code> ze zálohovací složky —
-          tím se do druhého zařízení (telefonu) přenesou prahy, aby tam vycházely
-          stejné verdikty.</span>
+        Přetáhni sem <strong>CSV/TSV</strong> z Calcy IV nebo Poké Genie — nebo klikni a vyber soubor.
         <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.json" style="display:none" />
       </div>
-      <!-- Ruční vkládání přes Ctrl+V odstraněno: soubor se stejně přetáhne
-           nebo vybere, a text v okně byl jen další cesta k tomu samému. -->
+      <!-- Věta o nastaveni.json se týká jednoho importu z dvaceti, takže
+           nestojí na ploše, ale pod odkazem. -->
+      <button type="button" class="imp-odkaz" id="impNastaveniBtn" aria-expanded="false"
+        aria-controls="impNastaveniText">Přenáším nastavení do telefonu</button>
+      <div class="imp-pod" id="impNastaveniText" hidden>Sem patří i <code>nastaveni.json</code>
+        ze zálohovací složky — přenese do druhého zařízení prahy, aby tam vycházely
+        stejné verdikty.</div>
       <div class="actions">
         <button id="cancelImportBtn">Zrušit</button>
       </div>
+      <!-- Tři zóny: co je v souboru (čísla), co to udělá (plán), čím to
+           upřesnit (vpravo, s vysvětlením v bublině). Dřív to bylo přes dvě
+           stě slov v jednom sloupci a rozhodnutí se v nich ztratilo. -->
       <div class="map-box" id="mapBox" style="display:none;">
-        <strong id="mapTitle"></strong>
-        <!-- Ruční mapování sloupců pryč. Hlavičku appka pozná sama (české
-             i anglické názvy) a třicet rozbalovátek nad importem nikdo nečetl.
-             Kdyby se jméno pokémona nenašlo, řekne to hláška níž. -->
-        <div class="scan-warn" id="mapWarn" style="display:none"></div>
-        <label class="map-dedupe">Použít jen skeny z:
-          <select id="scanWindow">
-            <option value="0">celé historie (vše v souboru)</option>
-            <option value="1">poslední hodiny (po průchodu boxem)</option>
-            <option value="3">posledních 3 hodin</option>
-            <option value="24">posledního dne skenování</option>
-            <option value="168">posledních 7 dní</option>
-            <option value="720">posledních 30 dní</option>
-          </select>
-          <span id="scanWindowNote" class="hint"></span>
-        </label>
-        <label class="map-dedupe"><input type="checkbox" id="keepRare" checked />
-          Při nahrazení nechat <b>legendární a mytické</b>, které sken nezachytil
-          <span class="hint">Lunala, Deoxys a spol. se skenují špatně. Když se naskenují,
-          přepíšou se normálně; když ne, zůstanou stát místo aby zmizely.</span></label>
-        <label class="map-dedupe"><input type="checkbox" id="onlyExact" />
-          Jen kusy s přesnými IV (doskenované s Appraisal) — nepřesné skeny přeskočit</label>
-        <label class="map-dedupe"><input type="checkbox" id="celyBox" />
-          Tenhle sken pokrývá <b>celý box</b> — co v něm není, jsem ve hře pustil
-          (a co v něm je, mám — i kdybych to tu dřív smazal)
-          <span class="hint">Sloučení jinak nechává v rosteru i kusy, které už nemáš,
-            a ty pak straší v rozpočtu rolí i v čištění boxu. Ručně zadané kusy
-            z gymu a Dynamax spotu se nemažou nikdy — ty sken zachytit
-            nemůže.</span></label>
-        <label class="map-dedupe"><input type="checkbox" id="dedupeScans" checked />
-          Sloučit opakované skeny téhož kusu (stejný druh, CP, level i útoky) a nechat ten přesnější</label>
-        <label class="map-dedupe">Kolik pokémonů máš ve hře (číslo z boxu, např. <code>276</code>/325):
-          <input type="number" id="boxCount" min="0" max="9999" step="1" placeholder="276"
-            autocomplete="off" />
-          <span id="boxCountNote" class="hint"></span>
-        </label>
-        <div class="scan-warn" id="scanWindowWarn" style="display:none"></div>
-        <div class="scan-warn scan-miss" id="scanMissWarn" style="display:none"></div>
-        <div class="actions">
-          <button class="primary" id="mapMergeBtn" title="Aktualizuje, co sedí, zbytek přidá. Ruční úpravy (Forma, poznámka) zůstanou.">Sloučit s rosterem (doporučeno)</button>
-          <button id="mapReplaceBtn" title="Zahodí současný roster i ruční úpravy a nahradí ho tímhle souborem.">Nahradit roster</button>
-          <button id="mapAppendBtn" title="Přidá všechny řádky bez ohledu na to, co už v rosteru je.">Přidat vše</button>
-          <button id="mapCancelBtn">Zrušit</button>
+        <div class="imp-mriz">
+          <div class="imp-vlevo">
+            <div class="imp-fakta" id="mapTitle"></div>
+            <div class="scan-warn" id="mapWarn" style="display:none"></div>
+            <div class="imp-plan" id="impPlan"></div>
+            <div class="scan-warn" id="scanWindowWarn" style="display:none"></div>
+            <div class="scan-warn scan-miss" id="scanMissWarn" style="display:none"></div>
+            <div class="actions imp-akce">
+              <button class="primary" id="mapMergeBtn" data-tip="Aktualizuje, co sedí, zbytek přidá. Ruční úpravy (Forma, poznámka) zůstanou.">Sloučit s rosterem</button>
+              <button id="mapCancelBtn">Zrušit</button>
+              <button type="button" class="imp-odkaz" id="impJinakBtn" aria-expanded="false"
+                aria-controls="impJinak">Jiný způsob</button>
+            </div>
+            <!-- Obě zbylá slovesa jsou nevratná po svém: nahrazení zahodí
+                 ruční úpravy, přidání udělá z každého kusu dva. Vedle
+                 doporučeného tlačítka stejně velká být nemají. -->
+            <div class="imp-jinak" id="impJinak" hidden>
+              <button id="mapReplaceBtn" data-tip="Zahodí současný roster i ruční úpravy (Forma, poznámka, hvězdička) a nahradí ho tímhle souborem.">Nahradit roster</button>
+              <button id="mapAppendBtn" data-tip="Přidá všechny řádky bez ohledu na to, co už v rosteru je — z každého kusu, který tam už máš, bude druhý.">Přidat vše</button>
+            </div>
+          </div>
+          <div class="imp-vpravo">
+            <div class="imp-volby-hlava">Upřesnění</div>
+            <label class="imp-volba" data-tip="Z celé historie se naimportuje i to, co už jsi ve hře pustil. Kratší okno vezme jen poslední průchod boxem.">Skeny z
+              <select id="scanWindow">
+                <option value="0">celé historie</option>
+                <option value="1">poslední hodiny</option>
+                <option value="3">posledních 3 hodin</option>
+                <option value="24">posledního dne</option>
+                <option value="168">posledních 7 dní</option>
+                <option value="720">posledních 30 dní</option>
+              </select>
+            </label>
+            <div class="imp-pozn" id="scanWindowNote"></div>
+            <label class="imp-volba" data-tip="Lunala, Deoxys a spol. se skenují špatně — Calcy je v boxu často přeskočí. Když se naskenují, přepíšou se jako všechno ostatní; když ne, zůstanou stát místo aby zmizely.">
+              <input type="checkbox" id="keepRare" checked /> Legendární nemazat</label>
+            <label class="imp-volba" data-tip="Calcy u nenaappraisovaného kusu vrací IV jen jako rozsah. Tohle takové skeny přeskočí a naimportuje jen doskenované kusy.">
+              <input type="checkbox" id="onlyExact" /> Jen přesné IV</label>
+            <label class="imp-volba" data-tip="Sken je pak autoritativní: co v něm není, jsi ve hře pustil — a co v něm je, máš, i kdybys to tady dřív smazal. Bez toho zůstanou v rosteru kusy, které už nemáš, a straší v rozpočtu rolí i v čištění boxu. Ručně zadané kusy z gymu a Dynamax spotu se nemažou nikdy — ty sken zachytit nemůže.">
+              <input type="checkbox" id="celyBox" /> Sken je celý box</label>
+            <label class="imp-volba" data-tip="Appraisal zapíše druhý sken téhož kusu. Tohle je spojí (stejný druh, CP, level i útoky) a nechá ten přesnější.">
+              <input type="checkbox" id="dedupeScans" checked /> Sloučit opakované skeny</label>
+            <label class="imp-volba" data-tip="Číslo z boxu ve hře, například 276/325. Podle něj appka pozná, jestli sken část boxu přeskočil.">Ve hře mám
+              <input type="number" id="boxCount" min="0" max="9999" step="1" placeholder="276"
+                autocomplete="off" /></label>
+            <div class="imp-pozn" id="boxCountNote"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -12851,6 +12901,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var vse = (poradiVsech["pvp:" + zkr] || {})[kusId];
       var kusB = null;
       lastBase.forEach(function (x) { if (x.row.id === kusId) kusB = x; });
+      var rodinaDrzi = null;
+      if (kusB && kusB.groupKey) {
+        (slotyIndex["pvp:" + zkr] || []).forEach(function (x) {
+          if (rodinaDrzi || !x.b || x.b.row.id === kusId) return;
+          if (x.b.groupKey === kusB.groupKey) rodinaDrzi = x.b.row.pokemon;
+        });
+      }
       if (vse && kusB) {
         var cesta = (kusB.cesty || {})[zkr] || null;
         // U Master League se cesta nepočítá — pořadí druhu je v žebříčku.
@@ -12866,6 +12923,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
               ? " " + (Math.round(cesta.pct * 1000) / 10) + "\u00a0%" : "")
           + ' <span class="tip-znak">\u2190 tenhle kus, ' + vse.poradi
           + ". z " + vse.celkem + "</span></div>";
+        // Proc v seznamu neni: bez toho vypada poradi druhu (#2) u verdiktu
+        // "Zahodit - kopie" jako protimluv.
+        if (rodinaDrzi) {
+          h += '<div class="tip-pozn">Místo už drží <b>' + escHtml(rodinaDrzi)
+            + "</b> ze stejné evoluční řady — ta se počítá jako jeden kus,"
+            + " druhý by hrál to samé místo.</div>";
+        }
       } else {
         h += '<div class="tip-radek">Tenhle kus mezi nimi není.</div>';
       }
@@ -22635,9 +22699,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   function renderMapUI() {
     var box = document.getElementById("mapBox");
-    document.getElementById("mapTitle").textContent =
-      "Načteno " + pending.body.length + " řádků, " + pending.headers.length + " sloupců"
-      + (pending.hasHeader ? " (hlavička rozpoznána)" : "");
+    document.getElementById("importBox").classList.add("ma-soubor");
     // Bez sloupce se jménem není co importovat — a protože už se nemapuje
     // ručně, musí to appka říct nahlas.
     var varovani = document.getElementById("mapWarn");
@@ -22648,34 +22710,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         : "V souboru se nenašel sloupec se jménem pokémona — import by nenačetl"
           + " nic. Zkontroluj, že je to export z Calcy IV nebo Poké Genie.";
     }
-    var grid = document.createElement("div");
-
-    FIELD_DEFS.forEach(function (f) {
-      var wrap = document.createElement("div");
-      wrap.className = "map-item" + (pending.auto[f.key] ? " auto" : "");
-      var lbl = document.createElement("label");
-      lbl.textContent = f.label;
-      var sel = document.createElement("select");
-      var none = document.createElement("option");
-      none.value = "-1"; none.textContent = "— ignorovat —";
-      sel.appendChild(none);
-      pending.headers.forEach(function (h, i) {
-        var o = document.createElement("option");
-        o.value = String(i);
-        o.textContent = h || "Sloupec " + (i + 1);
-        if (pending.mapping[f.key] === i) o.selected = true;
-        sel.appendChild(o);
-      });
-      sel.addEventListener("change", function () {
-        var v = parseInt(sel.value, 10);
-        if (v === -1) delete pending.mapping[f.key]; else pending.mapping[f.key] = v;
-        renderMapPreview();
-      });
-      wrap.appendChild(lbl);
-      wrap.appendChild(sel);
-      grid.appendChild(wrap);
-    });
-
     var win = document.getElementById("scanWindow");
     win.value = "0";
     win.onchange = function () { renderMapPreview(); };
@@ -22689,6 +22723,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         bc._t = window.setTimeout(renderMapPreview, 250);
       };
     }
+    // Každá volba mění i plán („co to udělá"), takže se překresluje na všech.
+    ["dedupeScans", "celyBox", "keepRare"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.onchange = function () { renderMapPreview(); };
+    });
+    var jinak = document.getElementById("impJinak");
+    if (jinak) jinak.hidden = true;
+    var jinakBtn = document.getElementById("impJinakBtn");
+    if (jinakBtn) jinakBtn.setAttribute("aria-expanded", "false");
     renderMapPreview();
     box.style.display = "block";
   }
@@ -22716,37 +22759,52 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   function renderMapPreview() {
+    // Volby (okno skenů, „celý box"…) na stránce zůstávají i po dokončeném
+    // importu — bez rozpracovaného souboru ale není co počítat.
+    if (!pending) return;
     var vsechny = buildRowsFromPending();
-    var preview = vsechny.slice(0, 3);
     var note = document.getElementById("scanWindowNote");
-    if (note) {
-      var info = scanWindowInfo(vsechny);
-      var days = selectedWindowHours();
-      if (pending.mapping.scanDate === undefined) note.textContent = "(soubor nemá sloupec s datem skenu)";
-      else {
-        // řádků může být víc než kusů: appraise zapíše druhý sken téhož pokémona
-        var db = document.getElementById("dedupeScans");
-        var kusu = (!db || db.checked) ? dedupeScans(vsechny).rows.length : vsechny.length;
-        var kolik = kusu + " kusů" + (kusu !== vsechny.length
-          ? " (" + vsechny.length + " řádků, opakované skeny se sloučí)" : "");
-        if (!days) note.textContent = "vybráno " + kolik + " z celé historie"
-          + " — je v tom i to, co jsi už pustil";
-        else note.textContent = "vybráno " + kolik + ", nejnovější sken " + dayLabel(info.newest)
-          + " — s „Nahradit roster“ bude roster přesně tohle";
+    var days = selectedWindowHours();
+    // řádků může být víc než kusů: appraise zapíše druhý sken téhož pokémona
+    var db = document.getElementById("dedupeScans");
+    var kusu = (!db || db.checked) ? dedupeScans(vsechny).rows.length : vsechny.length;
+    /* Proužek čísel místo souvětí. Tohle byla jedna věta se čtyřmi fakty
+       a dvěma výhradami; rozhodnutí se dělá podle čísel, tak ať jsou vidět
+       jako čísla. */
+    var fakta = document.getElementById("mapTitle");
+    if (fakta) {
+      var f = [];
+      if (kusu !== pending.body.length) {
+        f.push("<span><b>" + pending.body.length + "</b> řádků</span>");
       }
-      if (onlyExactWanted()) note.textContent += " · jen přesné IV";
-      // Kolik kusů má datum chycení — Calcy ho dá jen někdy, ať je hned vidět,
-      // jestli má smysl podle něj řadit.
+      f.push("<span><b>" + kusu + "</b> "
+        + (kusu === 1 ? "kus" : kusu < 5 ? "kusy" : "kusů") + "</span>");
+      f.push('<span class="imp-slabe">' + pending.headers.length + " sloupců"
+        + (pending.hasHeader ? ", hlavička sedí" : ", bez hlavičky") + "</span>");
+      if (onlyExactWanted()) f.push('<span class="imp-slabe">jen přesné IV</span>');
+      // Calcy dá datum chycení jen někdy — ať je hned vidět, jestli má smysl
+      // podle něj řadit.
       if (pending.mapping.catchDate !== undefined) {
-        var cele = 0, rok = 0;
+        var cele = 0;
+        vsechny.forEach(function (r) { if (presnostChyceni(r.catchDate) === 3) cele++; });
+        var rok = 0;
         vsechny.forEach(function (r) {
           var pr = presnostChyceni(r.catchDate);
-          if (pr === 3) cele++; else if (pr > 0) rok++;
+          if (pr > 0 && pr < 3) rok++;
         });
-        note.textContent += " · datum chycení má " + cele + " z " + vsechny.length + " řádků"
-          + (rok ? " (" + (rok >= 5 ? "dalších " : "další ") + rok + " jen rok nebo měsíc)" : "");
+        f.push('<span class="imp-slabe">datum chycení ' + cele + "/" + vsechny.length
+          + (rok ? " (+" + rok + " jen rok)" : "") + "</span>");
       }
-
+      fakta.innerHTML = f.join("");
+    }
+    if (note) {
+      var info = scanWindowInfo(vsechny);
+      if (pending.mapping.scanDate === undefined) note.textContent = "soubor nemá datum skenu";
+      else if (!days) note.textContent = "je v tom i to, co jsi pustil";
+      else note.textContent = "nejnovější " + dayLabel(info.newest);
+    }
+    renderImportPlan();
+    if (note) {
       // sken proti počtu z boxu
       var miss = document.getElementById("scanMissWarn");
       var mi = scanMissInfo(vsechny);
@@ -22754,7 +22812,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (miss) {
         if (!mi) {
           miss.style.display = "none";
-          if (bn) bn.textContent = "nepovinné — appka pak pozná, jestli sken něco přeskočil";
+          if (bn) bn.textContent = "";
         } else if (mi.chybi > 0 && mi.pct < 60) {
           // Kdo si po každém importu maže historii v Calcy, skenuje pak často jen
           // dnešní úlovky — a to není neúplný průchod boxem, ale jiný způsob práce.
@@ -22808,14 +22866,57 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         }
       }
     }
-    var keys = ["pokemon", "forma", "cp", "level", "ivAtk", "ivDef", "ivSta", "glRank", "ulRank", "mlRank"];
-    var html = "<table><tr>" + keys.map(function (k) { return "<th>" + k + "</th>"; }).join("") + "</tr>";
-    preview.forEach(function (r) {
-      html += "<tr>" + keys.map(function (k) { return "<td>" + (r[k] === undefined || r[k] === "" ? "–" : String(r[k])) + "</td>"; }).join("") + "</tr>";
-    });
-    html += "</table>";
-    // Náhled prvních řádků se už nekreslí — kdo import spouští, ten svůj
-    // export zná; důležité je, kolik řádků a co s nimi udělá tlačítko.
+    // Náhled prvních řádků se nekreslí — kdo import spouští, ten svůj export
+    // zná. Důležité je, kolik toho je a co s tím tlačítko udělá; na to je
+    // proužek čísel nahoře a plán pod ním.
+  }
+
+  /** Co import udělá s rosterem, ještě než se provede.
+   *
+   *  Dialog náhled slibuje od začátku („zkontroluj náhled"), ale neříkal ho
+   *  nikde: čísla mluvila o souboru, ne o tom, co z nich v rosteru bude.
+   *  Počítá se tatáž funkce, která import provádí — jen nanečisto. */
+  function renderImportPlan() {
+    var el = document.getElementById("impPlan");
+    if (!el) return;
+    var plan = null;
+    try { plan = finishImport("merge", true); } catch (e) { plan = null; }
+    if (!plan || plan.prazdny) { el.innerHTML = ""; return; }
+    var kus = function (n) { return n === 1 ? "kus" : (n < 5 ? "kusy" : "kusů"); };
+    var sken = function (n) {
+      return n === 1 ? "opakovaný sken se spojí"
+        : (n < 5 ? "opakované skeny se spojí" : "opakovaných skenů se spojí");
+    };
+    // Nula se nepíše: „+0 přibude" je řádek, který nic neříká.
+    var radek = [];
+    if (plan.pridano) {
+      radek.push('<span class="imp-plus"><b>+' + plan.pridano + "</b>přibude</span>");
+    }
+    if (plan.aktualizovano) {
+      radek.push('<span class="imp-zmena"><b>' + plan.aktualizovano + "</b>se aktualizuje</span>");
+    }
+    if (plan.pusteno) {
+      radek.push('<span class="imp-minus"><b>\u2212' + plan.pusteno + "</b>pustím</span>");
+    }
+    if (!radek.length) radek.push("<span>Nic nového — roster už tenhle sken zná.</span>");
+    // Podrobnosti jedním řádkem: tyhle věci člověk čekat nemusí, ale když
+    // nastanou, má je vidět dřív než po importu v hlášce.
+    var pozn = [];
+    if (plan.vylepseno) pozn.push(plan.vylepseno + " poznám jako vylepšené");
+    if (plan.vyvinuto) pozn.push(plan.vyvinuto + " jako vyvinuté");
+    if (plan.sloucenoSkenu) pozn.push(plan.sloucenoSkenu + " " + sken(plan.sloucenoSkenu));
+    if (plan.nejasnych) pozn.push("u " + plan.nejasnych + " " + kus(plan.nejasnych)
+      + " sedí víc řádků, přidají se jako nové");
+    if (plan.preskoceno) pozn.push(plan.preskoceno + " " + kus(plan.preskoceno)
+      + ", které jsi dřív smazal, se přeskočí");
+    if (plan.vraceno) pozn.push(plan.vraceno + " " + kus(plan.vraceno) + " se vrátí ze smazaných");
+    if (!plan.pusteno && plan.mimoSken) {
+      pozn.push("sken nezahlédl " + plan.mimoSken + " " + kus(plan.mimoSken)
+        + " z rosteru" + (plan.rucnich ? " (" + plan.rucnich + " ruční z gymu)" : "")
+        + " — zůstanou");
+    }
+    el.innerHTML = '<div class="imp-plan-radek">' + radek.join("") + "</div>"
+      + (pozn.length ? '<div class="imp-plan-pozn">' + escHtml(pozn.join(" · ")) + "</div>" : "");
   }
 
   /** Soubor z „nastaveni.json"? Vrátí nastavení, jinak null. */
@@ -22871,13 +22972,42 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   /** mode: "merge" (výchozí, doporučené) | "replace" | "append".
    *  Zpětná kompatibilita: true = replace, false = append. */
-  function finishImport(mode) {
+  /**
+   * Provede import — nebo ho jen spočítá.
+   *
+   * `zkouska` znamená „nanečisto": počítá se na kopii rosteru, nic se
+   * nezapíše a místo hlášky se vrátí plán ({pridano, aktualizovano,
+   * pusteno…}). Je to schválně tatáž funkce, ne druhá kopie výpočtu —
+   * náhled, který se s importem rozejde, je horší než žádný.
+   */
+  function finishImport(mode, zkouska) {
     if (mode === true) mode = "replace";
     else if (mode === false) mode = "append";
     else if (!mode) mode = "merge";
+    if (!pending) return null;
+
+    var zalohaRows = null, zalohaDiscarded = null;
+    if (zkouska) {
+      // Kopie musí být po řádcích: slučování zapisuje do nich, ne jen do pole.
+      zalohaRows = rows; zalohaDiscarded = discarded;
+      rows = rows.map(function (r) {
+        var k = {};
+        for (var q in r) { if (Object.prototype.hasOwnProperty.call(r, q)) k[q] = r[q]; }
+        return k;
+      });
+      discarded = discarded.slice();
+    }
+    var vratZpet = function () {
+      if (!zkouska) return;
+      rows = zalohaRows; discarded = zalohaDiscarded;
+    };
+    var plan = { mode: mode, celkem: 0, pridano: 0, aktualizovano: 0, pusteno: 0,
+      drzeno: 0, vraceno: 0, preskoceno: 0, sloucenoSkenu: 0, vylepseno: 0,
+      vyvinuto: 0, nejasnych: 0, mimoSken: 0, rucnich: 0, doplnenoUtoku: 0 };
 
     var imported = buildRowsFromPending();
     if (!imported.length) {
+      if (zkouska) { vratZpet(); plan.prazdny = true; return plan; }
       var z = zahozenoPriImportu;
       var sloupec = (pending.mapping && pending.mapping.pokemon !== undefined)
         ? "„" + (pending.headers[pending.mapping.pokemon] || "?") + "“"
@@ -22919,7 +23049,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         discarded = discarded.filter(function (d) { return !vracene[d.k]; });
       }
     }
+    plan.preskoceno = skipped;
+    plan.vraceno = vracenych;
     var doplnenoUtoku = doplnitUtokyZPameti(imported);
+    plan.doplnenoUtoku = doplnenoUtoku;
     var mergedCount = 0;
     var dedupeBox = document.getElementById("dedupeScans");
     if (!dedupeBox || dedupeBox.checked) {
@@ -22927,9 +23060,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       imported = res.rows;
       mergedCount = res.merged;
     }
+    plan.sloucenoSkenu = mergedCount;
+    plan.celkem = imported.length;
     var report;
     if (mode === "replace") {
-      snimekPred("nahrazeni");
+      if (!zkouska) snimekPred("nahrazeni");
       // Roster se nahrazuje daty ze skenu, ale co do appky napsal člověk, to
       // ve skenu není a nahrazením by se ztratilo. Týká se to hvězdičky
       // i poznámky — poznámku Calcy neexportuje vůbec, takže by po každém
@@ -22988,6 +23123,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         return !!k && !druhyVeSkenu[k + "|" + (r.forma || "")];
       });
 
+      plan.pridano = imported.length;
+      plan.drzeno = podrzene.length;
+      // Nahrazení zahodí všechno, co ve skenu není — i ruční úpravy.
+      plan.pusteno = Math.max(0, (zalohaRows || rows).length - podrzene.length);
       rows = imported.concat(podrzene);
       discarded = [];   // roster je od téhle chvíle autoritativní
       report = "Roster nahrazen: " + imported.length + " pokémonů."
@@ -22998,9 +23137,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + "). Ty se skenují špatně, takže by se nahrazením ztratily."
           + "\nKdyž je ve hře opravdu nemáš, smaž je v tabulce ručně." : "");
     }
-    else if (mode === "append") { rows = rows.concat(imported); report = "Přidáno: " + imported.length + " pokémonů."; }
+    else if (mode === "append") {
+      plan.pridano = imported.length;
+      rows = rows.concat(imported); report = "Přidáno: " + imported.length + " pokémonů.";
+    }
     else {
       var m = mergeIntoRoster(imported);
+      plan.pridano = m.added; plan.aktualizovano = m.updated;
+      plan.vylepseno = m.poweredUp; plan.vyvinuto = m.evolved; plan.nejasnych = m.nejasnych;
       report = "Sloučeno s rosterem: aktualizováno " + m.updated + ", nově přidáno " + m.added + "."
         + (m.poweredUp ? "\nZ toho " + m.poweredUp + " poznáno jako vylepšených (jiné CP, sedící IV) — "
           + "přepsaly se, nepřidaly znovu." : "")
@@ -23013,14 +23157,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var mimo = (m.mimoSken || []).filter(function (r) { return r.cp; });
       var rucni = mimo.filter(function (r) { return r.zGymu; });
       var kSmazani = mimo.filter(function (r) { return !r.zGymu; });
+      plan.mimoSken = mimo.length;
+      plan.rucnich = rucni.length;
+      if (jeCelyBox) plan.pusteno = kSmazani.length;
       if (kSmazani.length && jeCelyBox) {
-        snimekPred("uklid-po-skenu");
+        if (!zkouska) snimekPred("uklid-po-skenu");
         kSmazani.forEach(function (r) {
           discarded.push({ k: scanKey(r), at: parseScanDate(r.scanDate),
             n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
         });
         rows = rows.filter(function (r) { return kSmazani.indexOf(r) === -1; });
-        if (!rows.length) povolPrazdnyZapis();
+        if (!rows.length && !zkouska) povolPrazdnyZapis();
         report += "\nSken je celý box, takže se odebralo " + kSmazani.length
           + " kusů, které v něm nebyly — ty jsi pustil. Najdeš je mezi smazanými"
           + " a dají se vrátit.";
@@ -23029,13 +23176,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + (rucni.length ? " (" + rucni.length + " z nich jsou ruční zápisy"
             + " z gymu / Dmax spotu — ty sken zachytit nemůže.)" : "")
           + (kSmazani.length ? " Jestli jsi projel celý box, ty ostatní už"
-            + " nejspíš nemáš — zaškrtni při importu „Tenhle sken pokrývá celý"
-            + " box“ a appka je odebere." : "");
+            + " nejspíš nemáš — zaškrtni při importu „Sken je celý box“"
+            + " a appka je odebere." : "");
       }
     }
+    if (zkouska) { vratZpet(); return plan; }
     pending = null;
     document.getElementById("mapBox").style.display = "none";
     document.getElementById("importBox").classList.remove("open");
+    document.getElementById("importBox").classList.remove("ma-soubor");
     renderBody(); persist(true);
     renderDiscardBtn();
     window.alert(report
@@ -24028,7 +24177,25 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     appPotvrdit("Nahradit celý roster? Přijdeš o ruční úpravy (Forma, poznámky).",
       function () { finishImport("replace"); }, "Nahradit");
   });
-  document.getElementById("mapAppendBtn").addEventListener("click", function () { finishImport("append"); });
+  // Z kazdeho kusu, ktery uz v rosteru je, udela tohle druhy. Zpatky to jde
+  // jen rucne, takze se ptame stejne jako u nahrazeni.
+  document.getElementById("mapAppendBtn").addEventListener("click", function () {
+    if (!rows.length) { finishImport("append"); return; }
+    appPotvrdit("Přidat všechny řádky? Co už v rosteru máš, bude tam dvakrát.",
+      function () { finishImport("append"); }, "Přidat");
+  });
+  // Dva prepinace: veta o nastaveni.json a dve zbyla slovesa importu.
+  (function () {
+    var dvojice = [["impNastaveniBtn", "impNastaveniText"], ["impJinakBtn", "impJinak"]];
+    dvojice.forEach(function (par) {
+      var btn = document.getElementById(par[0]), cil = document.getElementById(par[1]);
+      if (!btn || !cil) return;
+      btn.addEventListener("click", function () {
+        cil.hidden = !cil.hidden;
+        btn.setAttribute("aria-expanded", cil.hidden ? "false" : "true");
+      });
+    });
+  })();
   document.getElementById("mapCancelBtn").addEventListener("click", function () {
     pending = null;
     document.getElementById("mapBox").style.display = "none";

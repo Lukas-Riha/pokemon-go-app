@@ -86,6 +86,22 @@ klíč řazení zruší. Druhotné řazení (Shift+klik v hlavičce) se ruší v
 protože rozbalovátko umí zvolit jen jedno kritérium. Zvolené řazení si
 přečteš ze `snapshot()` jako `sortKey` a `sortDir`.
 
+### Import se počítá nanečisto
+
+`finishImport(mode, zkouska)` je jedna funkce ve dvou režimech. S `zkouska`
+běží celý import na **kopii** rosteru, nic nezapíše a místo hlášky vrátí
+plán: `{pridano, aktualizovano, pusteno, vylepseno, vyvinuto, nejasnych,
+sloucenoSkenu, preskoceno, vraceno, mimoSken, rucnich}`. Z toho se kreslí
+řádek „co to udělá" v importním dialogu.
+
+Musí to být tatáž funkce, ne druhý výpočet vedle ní — náhled, který se
+s importem rozejde, je horší než žádný. Na 600 kusech v rosteru a 588
+řádcích ve skenu trvá 17 ms, takže se překresluje při každé změně volby.
+
+Vedlejší účinky jsou uvnitř hlídané příznakem: snímek před nahrazením,
+`povolPrazdnyZapis`, zápis, překreslení a hláška se v režimu zkoušky
+přeskočí a `rows`/`discarded` se na konci vrátí zpátky.
+
 ### Hledání podle štítku najde i to, co je pod čarou
 
 Štítek na kartě znamená dvě různé věci: buď kus roli **drží** („UL #1",
