@@ -1687,7 +1687,8 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 
    Roletka mela pres dvacet voleb a vsechny krome tri uz pokryvaji stitky
    v hledacim poli. "Zrusit filtry" vedle dela totez co volba "vse". */
-.atlas-test #viewSelect{display:none}
+.atlas-test #filterSelect{display:none}
+.atlas-razeni-rychle button[disabled]{opacity:.42;cursor:not-allowed}
 .atlas-razeni-rychle .atlas-razeni-role{margin-left:4px;
   border-left:1px solid var(--border)!important;border-radius:0!important}
 .atlas-razeni-rychle .atlas-razeni-role + .atlas-razeni-role{margin-left:0;

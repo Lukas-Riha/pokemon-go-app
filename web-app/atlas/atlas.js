@@ -1213,8 +1213,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  function pouzij(){
   const znacky=vybrane.filter(x=>x.skupina==='znacka').map(x=>x.klic);
   const duvody=vybrane.filter(x=>x.skupina==='duvod').map(x=>x.klic);
+  /* Stitek ligy nebo typu si nese vlastni poradi ("UL #1", "Fire 2/6"),
+     takze uz sam rika, co je nahore. Razeni to potrebuje vedet: role by
+     to prebila necim jinym a vypadalo by to, ze kliknuti nic nedela. */
+  const radi=vybrane.some(x=>x.kat==='liga'||x.kat==='raid');
   // Razeni se ridi hledanym stitkem, takze o zmene musi vedet.
-  window.dispatchEvent(new CustomEvent('atlas:stitky',{detail:{pocet:vybrane.length}}));
+  window.dispatchEvent(new CustomEvent('atlas:stitky',{detail:{pocet:vybrane.length,radi:radi}}));
   // Víc štítků = průnik. „Ice a zároveň Gym" je otázka, kterou člověk má;
   // „Ice nebo Gym" skoro nikdy.
   P.atlasStitkyFiltr(znacky,duvody,true);
@@ -1245,7 +1249,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      trida:z.trida,pocet:z.pocet})});
   n.duvody.forEach(d=>{if(holy(d.klic).includes(h)&&!mam.has('duvod:'+d.klic))
    ven.push({skupina:'duvod',klic:d.klic,popis:d.klic,stitek:d.stitek,
-    trida:d.trida,barva:d.barva,pocet:d.pocet})});
+    trida:d.trida,barva:d.barva,pocet:d.pocet,kat:d.kat})});
   // Co začíná napsaným textem, patří nahoru.
   // CUTE je zaroven znacka i stitek u verdiktu — v nabidce by byla dvakrat
   // a filtrovala by totez. Znacka je primejsi, takze vyhrava.
@@ -1319,10 +1323,17 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  window.AtlasHledaniPridej=klic=>{
   const n=P.atlasStitky();
   const z=n.znacky.find(x=>x.klic===klic);
-  if(!z)return false;
-  if(vybrane.some(x=>x.skupina==='znacka'&&x.klic===klic))return true;
-  pridej({skupina:'znacka',klic:z.klic,popis:z.popis,stitek:z.stitek,
-   trida:z.trida,pocet:z.pocet});
+  if(z){
+   if(vybrane.some(x=>x.skupina==='znacka'&&x.klic===klic))return true;
+   pridej({skupina:'znacka',klic:z.klic,popis:z.popis,stitek:z.stitek,
+    trida:z.trida,pocet:z.pocet});
+   return true;
+  }
+  const d=n.duvody.find(x=>x.klic===klic);
+  if(!d)return false;
+  if(vybrane.some(x=>x.skupina==='duvod'&&x.klic===klic))return true;
+  pridej({skupina:'duvod',klic:d.klic,popis:d.klic,stitek:d.stitek,
+   trida:d.trida,barva:d.barva,pocet:d.pocet,kat:d.kat});
   return true;
  };
 
@@ -1394,7 +1405,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   // hledaciho pole, at se filtruje jedinym zpusobem.
   +`<button type="button" class="atlas-razeni-sken" data-sken="1"
     data-tip="Ukáže poslední naskenovaný kus — odsud pokračuj">Poslední sken</button>`;
- let role='';
+ let role='',stitekRadi=false;
 
  function nastav(hodnota){
   aktivni=hodnota;
@@ -1410,6 +1421,11 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   });
   rychle.querySelectorAll('[data-role]').forEach(b=>{
    b.setAttribute('aria-pressed',String(b.dataset.role===role));
+   /* Kdyz je v poli stitek ligy nebo typu, uz je serazeno od nejlepsiho
+      a role by to jen prebila. Zasedle je to poctivejsi nez tlacitko,
+      po kterem se zda, ze se nic nestalo. */
+   b.disabled=stitekRadi;
+   b.title=stitekRadi?'Štítek v hledání už řadí od nejlepšího — role by to přebila':'';
   });
   obal.classList.toggle('podle-stitku',podleStitku||!!role);
  }
@@ -1424,8 +1440,10 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    // Druhe kliknuti roli vypne.
    role=role===r.dataset.role?'':r.dataset.role;
    P.atlasRole&&P.atlasRole(role);
-   // Role si nese vlastni poradi, takze zadne jine razeni nema byt aktivni.
-   if(role)nastav(''); else nastav(VYCHOZI);
+   /* Role si nese vlastni poradi, takze zadne jine razeni nema byt
+      aktivni. Po vypnuti se vraci to, co platilo pred ni: kdyz je v poli
+      stitek, radi zas on — ne CP. */
+   if(role)nastav(''); else nastav(podleStitku?'':VYCHOZI);
    window.__atlasTest?.refresh?.();
    return;
   }
@@ -1447,7 +1465,13 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
 
  window.addEventListener('atlas:stitky',e=>{
   const maStitky=!!(e.detail&&e.detail.pocet);
-  if(maStitky===podleStitku)return;
+  const radi=!!(e.detail&&e.detail.radi);
+  if(radi!==stitekRadi){
+   stitekRadi=radi;
+   // Stitek s poradim roli vypina — dve razeni najednou nedavaji smysl.
+   if(radi&&role){role='';P.atlasRole&&P.atlasRole('')}
+  }
+  if(maStitky===podleStitku){sync();return}
   podleStitku=maStitky;
   nastav(maStitky?'':VYCHOZI);
  });

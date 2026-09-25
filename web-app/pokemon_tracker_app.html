@@ -5441,17 +5441,26 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     roleDuvody(c, roleFiltr).forEach(function (d) {
       var s = String(d.stitek || "");
       var m = /(\d+)\s*\/\s*\d+/.exec(s) || /#\s*(\d+)/.exec(s);
-      var poradi = m ? Number(m[1]) : 9999;
-      var skupina = roleFiltr === "pvp"
-        ? (LIGA_PORADI[d.filtr] === undefined ? 9 : LIGA_PORADI[d.filtr])
-        : 0;
-      var kandidat = { skupina: skupina, typ: String(d.filtr || ""), poradi: poradi };
-      if (!nej || kandidat.skupina < nej.skupina
-        || (kandidat.skupina === nej.skupina && kandidat.typ < nej.typ)
-        || (kandidat.skupina === nej.skupina && kandidat.typ === nej.typ
-            && kandidat.poradi < nej.poradi)) nej = kandidat;
+      var kandidat = {
+        skupina: roleFiltr === "pvp"
+          ? (LIGA_PORADI[d.filtr] === undefined ? 9 : LIGA_PORADI[d.filtr])
+          : 0,
+        typ: String(d.filtr || ""),
+        poradi: m ? Number(m[1]) : 9999
+      };
+      if (!nej || lepsiRole(kandidat, nej)) nej = kandidat;
     });
-    return nej || { skupina: 99, typ: "\uffff", poradi: 9999 };
+    return nej || { skupina: 99, typ: "￿", poradi: 9999 };
+  }
+  /* Kus, ktery pokryva vic typu, stoji v seznamu jednou — u toho typu, kde
+     je nejdal vpredu. Moltres je Flying 1/3 a Fire 3/6, takze patri
+     k Flying; drive rozhodovala abeceda a stal u Fire. U lig rozhoduje
+     nejdriv liga (LC -> ML), protoze tak jdou ligy za sebou i v seznamu. */
+  function lepsiRole(a, b) {
+    if (a.skupina !== b.skupina) return a.skupina < b.skupina;
+    if (roleFiltr !== "pvp" && a.poradi !== b.poradi) return a.poradi < b.poradi;
+    if (a.typ !== b.typ) return a.typ < b.typ;
+    return a.poradi < b.poradi;
   }
 
   var duvodFiltr = {};
@@ -5461,7 +5470,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function duvodFiltrAktivni() { return Object.keys(duvodFiltr).length > 0; }
   function duvodFiltrProjde(c) {
     if (!duvodFiltrAktivni()) return true;
-    var k = duvodKlice(c.duvody);
+    var k = stitkyKusu(c);
     var chce = Object.keys(duvodFiltr);
     return duvodFiltrVse
       ? chce.every(function (x) { return !!k[x]; })
@@ -13349,6 +13358,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var m = /(\d+)\s*\/\s*\d+/.exec(s) || /#\s*(\d+)/.exec(s);
       if (m) n = Number(m[1]);
     });
+    if (n !== null) return n;
+    // Pod čarou se řadí až za držiteli slotů — proto ten odstup.
+    (c && c.podCarou || []).forEach(function (d) {
+      if (n !== null || podCarouFiltr(d) !== klic) return;
+      n = 1000 + (d.rank || d.poradi || d.silou || 999);
+    });
     return n;
   }
 
@@ -13358,6 +13373,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       k[d.filtr] = true;
       if (d.rezerva) k["Rezerva"] = true;
       if (d.mezera && !d.rezerva) k["Náplast"] = true;
+    });
+    return k;
+  }
+
+  /** Klíč štítku u toho, co kus NEDRŽÍ — štítky „pod čarou". Kvalita je
+   *  procento, ne štítek k hledání, takový se přeskočí. */
+  function podCarouFiltr(d) {
+    if (!d || d.druh === "kvalita") return "";
+    return d.druh === "gym" ? "Gym" : String(d.typ || "");
+  }
+
+  /** Všechny štítky kusu — držené sloty i to, co je pod čarou.
+   *
+   *  Hledání podle štítku má najít všechno, co je na kartě vidět. Když
+   *  „UL" vracelo jen dvanáct kusů, které v Ultra lize drží slot, zbytek
+   *  se štítkem „UL #45" na kartě z rosteru zmizel — přitom ten štítek má.
+   *  Držitel slotu má `true`, kus pod čarou `"pod"`, aby šlo řadit. */
+  function stitkyKusu(c) {
+    var k = duvodKlice(c && c.duvody);
+    (c && c.podCarou || []).forEach(function (d) {
+      var f = podCarouFiltr(d);
+      if (f && !k[f]) k[f] = "pod";
     });
     return k;
   }
@@ -27020,12 +27057,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       lastBase.forEach(function (b) {
         var cc = computed[b.row.id];
         if (!cc) return;
-        Object.keys(duvodKlice(cc.duvody)).forEach(function (k) {
+        Object.keys(stitkyKusu(cc)).forEach(function (k) {
           pocty[k] = (pocty[k] || 0) + 1;
         });
         // Kategorie štítku (liga / raid / gym…) rozhoduje o jeho vzhledu.
         (cc.duvody || []).forEach(function (d) {
           if (d.filtr && !kategorie[d.filtr]) kategorie[d.filtr] = d.kat || "";
+        });
+        // I štítek, který má jen kus pod čarou, musí mít svou barvu — jinak
+        // by „UL" v nabídce vypadalo jako obecná role.
+        (cc.podCarou || []).forEach(function (d) {
+          var f = podCarouFiltr(d);
+          if (f && !kategorie[f]) {
+            kategorie[f] = d.druh === "pvp" ? "liga" : (d.druh === "raid" ? "raid" : "role");
+          }
         });
         znackyKusu(cc).forEach(function (k) {
           pocetZnacek[k] = (pocetZnacek[k] || 0) + 1;
@@ -27044,6 +27089,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         return a.localeCompare(z, "cs");
       }).map(function (k) {
         return { klic: k, stitek: k, pocet: pocty[k],
+          kat: kategorie[k] || "role",
           trida: "dv-chip dv-" + (kategorie[k] || "role"),
           // Typové štítky mají barvu typu, stejně jako v detailu.
           barva: TYPE_COLORS[k] || "" };
@@ -27053,10 +27099,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           duvody: Object.keys(duvodFiltr), vse: !!znackaFiltr.vse } };
     },
 
-    /**
-     * Nastaví filtr podle značek a štítků. `vse` zapne průnik — kus musí
-     * mít všechny vybrané, ne jen některou.
-     */
     /**
      * Ukáže jen kusy, které mají danou roli, a seřadí je uvnitř ní.
      *
@@ -27071,6 +27113,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return { role: roleFiltr, kusu: lastVisibleIds.length };
     },
 
+    /**
+     * Nastaví filtr podle značek a štítků. `vse` zapne průnik — kus musí
+     * mít všechny vybrané, ne jen některou.
+     */
     atlasStitkyFiltr: function (znacky, duvody, vse) {
       znackaFiltr.znacky = {};
       (znacky || []).forEach(function (k) { znackaFiltr.znacky[k] = true; });

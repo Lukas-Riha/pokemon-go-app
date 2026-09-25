@@ -2304,6 +2304,61 @@ check("backspace v prázdném poli odebere poslední štítek",
   dS.poBackspace && dS.poBackspace.kosticky.length === 1 && dS.poBackspace.dlazdic === 2,
   JSON.stringify(dS.poBackspace));
 
+/* Role jako kostičky a štítek, který si řadí sám.
+
+   Když je v hledacím poli štítek ligy nebo typu, je seřazeno od nejlepšího
+   a role by to jen přebila — kostička proto zašedne. Dřív šla zmáčknout,
+   rozsvítila se a v rosteru se nezměnilo nic. */
+const pR = await otevri(1700, [
+  { pokemon: "Lapras", level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Ice Shard", charged1: "Surf" },
+  { pokemon: "Mamoswine", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13,
+    fastMove: "Powder Snow", charged1: "Avalanche" },
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Counter", charged1: "Dynamic Punch" },
+  { pokemon: "Blissey", level: 30, ivAtk: 10, ivDef: 15, ivSta: 15,
+    fastMove: "Pound", charged1: "Dazzling Gleam" },
+  { pokemon: "Snorlax", level: 30, ivAtk: 12, ivDef: 14, ivSta: 15,
+    fastMove: "Lick", charged1: "Body Slam" }
+]);
+const dR = await pR.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const filtr = document.getElementById("filterSelect");
+  const role = () => [...document.querySelectorAll("[data-role]")].map((b) =>
+    b.dataset.role + (b.disabled ? ":šedá" : "") + (b.getAttribute("aria-pressed") === "true" ? ":zap" : ""));
+  const dlazdic = () => document.querySelectorAll(".atlas-row").length;
+  const out = { filtrVidet: !!filtr && filtr.getClientRects().length > 0,
+    start: role(), vsech: dlazdic() };
+  document.querySelector('[data-role="gym"]').click();
+  await cekej(900);
+  out.poGymu = { role: role(), dlazdic: dlazdic() };
+  document.querySelector('[data-role="gym"]').click();
+  await cekej(900);
+  out.poVypnuti = { role: role(), dlazdic: dlazdic() };
+  out.pridanStitek = window.AtlasHledaniPridej("Ice");
+  await cekej(900);
+  out.seStitkem = { role: role(), dlazdic: dlazdic() };
+  document.querySelector(".atlas-kostka button").click();
+  await cekej(900);
+  out.bezStitku = { role: role(), dlazdic: dlazdic() };
+  return out;
+});
+await pR.close();
+check("rozbalovátko „Zobrazit: vše“ v rosteru není",
+  dR.filtrVidet === false, String(dR.filtrVidet));
+check("role „Gym“ nechá jen gymové obránce",
+  dR.poGymu.dlazdic > 0 && dR.poGymu.dlazdic < dR.vsech
+    && dR.poGymu.role.join() === "pvp,raid,gym:zap", JSON.stringify(dR.poGymu));
+check("druhé kliknutí roli vypne a vrátí celý roster",
+  dR.poVypnuti.dlazdic === dR.vsech && dR.poVypnuti.role.join() === "pvp,raid,gym",
+  JSON.stringify(dR.poVypnuti));
+check("štítek typu role zašedne — sám už řadí od nejlepšího",
+  dR.pridanStitek === true && dR.seStitkem.role.join() === "pvp:šedá,raid:šedá,gym:šedá",
+  JSON.stringify(dR.seStitkem));
+check("…a po odebrání štítku jsou role zase k mání",
+  dR.bezStitku.role.join() === "pvp,raid,gym" && dR.bezStitku.dlazdic === dR.vsech,
+  JSON.stringify(dR.bezStitku));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

@@ -17753,6 +17753,106 @@ try {
   check("nastavení „jedna sekce“ frontu nedělí vůbec",
     s274.jedna.sekci === 1 && !/sekce/.test(s274.jedna.popis), JSON.stringify(s274.jedna));
 
+  // ---- Hledání podle štítku najde i to, co je pod čarou -------------
+  // Štítek na kartě znamená dvě věci: kus roli drží („Fighting 2/6"),
+  // nebo se do ní nevešel („Fighting 9/6"). Hledání musí vrátit obojí —
+  // kus se štítkem na kartě nesmí z rosteru zmizet, když ten štítek zadám.
+  const stitkyPod = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const druhy = ["Machamp", "Machoke", "Conkeldurr", "Lucario", "Blaziken",
+      "Hariyama", "Breloom", "Emboar", "Toxicroak", "Pangoro"];
+    const rows = [];
+    druhy.forEach((n) => {
+      const u = P.utokyDruhu ? P.utokyDruhu(n) : null;
+      for (let k = 0; k < 2; k++) {
+        rows.push({ pokemon: n, level: 25 + k * 5,
+          ivAtk: 15 - k * 6, ivDef: 14 - k * 4, ivSta: 13 - k * 3,
+          fastMove: (u && u.fast && u.fast[0]) || "",
+          charged1: (u && u.charged && u.charged[0]) || "" });
+      }
+    });
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 1500));
+    const zaznam = P.atlasStitky().duvody.filter((d) => d.klic === "Fighting")[0] || null;
+    P.atlasStitkyFiltr([], ["Fighting"], true);
+    const comp = P.getComputed(), jmena = {};
+    P.getRows().forEach((x) => { jmena[x.id] = x.pokemon; });
+    const poradi = P.atlasPoradi().map((id) => {
+      const c = comp[id] || {};
+      const slot = (c.duvody || []).filter((d) => d.filtr === "Fighting")[0];
+      const pod = (c.podCarou || []).filter((d) => d.typ === "Fighting")[0];
+      return { jmeno: jmena[id], slot: !!slot, pod: !!pod };
+    });
+    P.atlasStitkyFiltr([], [], false);
+    return { pocet: zaznam ? zaznam.pocet : 0, kat: zaznam ? zaznam.kat : "",
+      poradi: poradi };
+  });
+  const drziSlot = stitkyPod.poradi.filter((x) => x.slot).length;
+  const podCarouKusu = stitkyPod.poradi.filter((x) => !x.slot && x.pod).length;
+  check("hledání štítku „Fighting“ vrátí i kusy pod čarou",
+    podCarouKusu > 0 && drziSlot > 0, JSON.stringify(stitkyPod.poradi));
+  check("…a nevrátí nikoho, kdo ten štítek nemá vůbec",
+    stitkyPod.poradi.every((x) => x.slot || x.pod), JSON.stringify(stitkyPod.poradi));
+  check("…držitelé slotu stojí nad těmi pod čarou",
+    stitkyPod.poradi.findIndex((x) => !x.slot) === drziSlot,
+    JSON.stringify(stitkyPod.poradi.map((x) => x.jmeno + (x.slot ? "" : " (pod)"))));
+  check("…a počet v nabídce sedí s tím, co hledání ukáže",
+    stitkyPod.pocet === stitkyPod.poradi.length,
+    stitkyPod.pocet + " vs " + stitkyPod.poradi.length);
+  check("štítek ligy a typu se hlásí jako řadící — vrstva podle toho zašedne role",
+    stitkyPod.kat === "raid", stitkyPod.kat);
+
+  // ---- Role „Raid": kus stojí u typu, kde je nejdál vpředu -----------
+  // Kus pokrývající víc typů může v seznamu stát jen jednou. Dřív o tom
+  // rozhodovala abeceda, takže Moltres s „Flying 1/3" stál u Fire 5/6.
+  const raidRole = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const druhy = ["Moltres", "Charizard", "Litwick", "Chandelure", "Blaziken",
+      "Emboar", "Mamoswine", "Lapras", "Metagross", "Gyarados", "Machamp",
+      "Lucario", "Breloom", "Snorlax"];
+    const rows = [];
+    druhy.forEach((n) => {
+      const u = P.utokyDruhu ? P.utokyDruhu(n) : null;
+      rows.push({ pokemon: n, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13,
+        fastMove: (u && u.fast && u.fast[0]) || "",
+        charged1: (u && u.charged && u.charged[0]) || "" });
+    });
+    P.setRows(rows);
+    await new Promise((r) => setTimeout(r, 1500));
+    const vysledek = P.atlasRole("raid");
+    const comp = P.getComputed(), jmena = {};
+    P.getRows().forEach((x) => { jmena[x.id] = x.pokemon; });
+    const kroky = P.atlasPoradi().map((id) => {
+      const c = comp[id] || {};
+      let nej = null;
+      (c.duvody || []).filter((d) => d.druh === "raid").forEach((d) => {
+        const m = /(\d+)\s*\/\s*\d+/.exec(String(d.stitek || ""));
+        const k = { typ: String(d.filtr || ""), poradi: m ? Number(m[1]) : 9999 };
+        if (!nej || k.poradi < nej.poradi
+          || (k.poradi === nej.poradi && k.typ < nej.typ)) nej = k;
+      });
+      return { jmeno: jmena[id], typ: nej ? nej.typ : "", poradi: nej ? nej.poradi : 9999,
+        typu: (c.duvody || []).filter((d) => d.druh === "raid").length };
+    });
+    P.atlasRole("");
+    return { kusu: vysledek.kusu, poVypnuti: P.atlasPoradi().length, kroky: kroky };
+  });
+  const serazeno = raidRole.kroky.every((x, i) => {
+    if (!i) return true;
+    const pred = raidRole.kroky[i - 1];
+    const d = String(pred.typ).localeCompare(String(x.typ), "cs");
+    return d < 0 || (d === 0 && pred.poradi <= x.poradi);
+  });
+  check("role „Raid“ pustí dál jen raidové útočníky",
+    raidRole.kusu === raidRole.kroky.length && raidRole.kroky.every((x) => x.typu > 0),
+    JSON.stringify(raidRole.kroky));
+  check("…typy jdou po abecedě a v typu se řadí podle pořadí",
+    serazeno, JSON.stringify(raidRole.kroky.map((x) => x.jmeno + " " + x.typ + " " + x.poradi)));
+  check("…kus s víc typy stojí u toho, kde je nejdál vpředu",
+    raidRole.kroky.some((x) => x.typu > 1), JSON.stringify(raidRole.kroky));
+  check("…a vypnutí role vrátí celý roster",
+    raidRole.poVypnuti > raidRole.kusu, raidRole.poVypnuti + " vs " + raidRole.kusu);
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

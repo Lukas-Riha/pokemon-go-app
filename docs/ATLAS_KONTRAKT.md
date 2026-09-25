@@ -76,12 +76,29 @@ je obojí jeho veřejnou součástí.
 | `atlasSort("liga:LC"/"liga:GL"/"liga:UL"/"liga:ML", 1/-1)` | řazení podle pořadí druhu v jedné lize; kdo ji nehraje, je na konci v obou směrech |
 | `atlasSort("scanDate"/"catchDate", 1/-1)` | řazení podle data skenu a data chycení (`row.catchDate`: „2022-05-09", jen rok „2026-?-?", prázdné = nevíme); neznámé na konci |
 
+| `atlasStitky()` | co jde v rosteru hledat: `znacky` (Shiny, 100 %, verdikt…) a `duvody` (ligy, typy, Gym, Mega). Každý nese `klic`, `stitek`, `pocet`, `trida`, `barva` a `kat` (`liga` / `raid` / `role`) |
+| `atlasStitkyFiltr(znacky, duvody, vse)` | zapne filtr podle nich; `vse` znamená průnik („Fire A ZÁROVEŇ GL") |
+| `atlasRole("pvp"/"raid"/"gym")` | celá skupina najednou i s vlastním pořadím; prázdná hodnota filtr zruší. Vrací `{role, kusu}` |
 `atlasSort` bere jen ty klíče, které umí řadit i hlavička tabulky. Kdyby si
 vrstva držela vlastní seznam, rozešel by se s enginem při prvním novém
 sloupci. Na neznámý klíč se stav nezmění vůbec a vrátí se `false`. Prázdný
 klíč řazení zruší. Druhotné řazení (Shift+klik v hlavičce) se ruší vždycky,
 protože rozbalovátko umí zvolit jen jedno kritérium. Zvolené řazení si
 přečteš ze `snapshot()` jako `sortKey` a `sortDir`.
+
+### Hledání podle štítku najde i to, co je pod čarou
+
+Štítek na kartě znamená dvě různé věci: buď kus roli **drží** („UL #1",
+„Fire 2/6"), nebo se do ní **nevešel** a stojí pod čarou („UL #45",
+„Fire 9/6"). Hledání bere obojí — kdo štítek na kartě vidí, čeká, že mu ho
+vyhledávání vrátí. Držitelé slotů stojí nahoře, pod čarou až za nimi
+(v pořadí odpovídá `duvodPoradi` číslo pod čarou o tisíc vyšší).
+
+`atlasRole` je proti tomu jen o držených slotech: role odpovídá na otázku
+„koho na tohle mám", ne „kdo se o to ucházel". V roli stojí kus, který
+pokrývá víc typů, **jednou** — u toho typu, kde je nejdál vpředu (Moltres
+s `Flying 1/3` a `Fire 5/6` patří k Flying). Seznam kusů týž kus dvakrát
+obsahovat nemůže; kompletní seznam jednoho typu je štítek toho typu.
 
 ### Klasická tabulka se ve vrstvě nestaví
 
