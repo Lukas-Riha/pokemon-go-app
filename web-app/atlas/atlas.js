@@ -1213,6 +1213,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  function pouzij(){
   const znacky=vybrane.filter(x=>x.skupina==='znacka').map(x=>x.klic);
   const duvody=vybrane.filter(x=>x.skupina==='duvod').map(x=>x.klic);
+  // Razeni se ridi hledanym stitkem, takze o zmene musi vedet.
+  window.dispatchEvent(new CustomEvent('atlas:stitky',{detail:{pocet:vybrane.length}}));
   // Víc štítků = průnik. „Ice a zároveň Gym" je otázka, kterou člověk má;
   // „Ice nebo Gym" skoro nikdy.
   P.atlasStitkyFiltr(znacky,duvody,true);
@@ -1313,6 +1315,17 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  window.addEventListener('scroll',()=>{if(!navrhy.hidden)umisti()},true);
  window.addEventListener('resize',()=>{if(!navrhy.hidden)umisti()});
 
+ /* Stitek jde pridat i odjinud (kosticka "Posledni sken" u razeni). */
+ window.AtlasHledaniPridej=klic=>{
+  const n=P.atlasStitky();
+  const z=n.znacky.find(x=>x.klic===klic);
+  if(!z)return false;
+  if(vybrane.some(x=>x.skupina==='znacka'&&x.klic===klic))return true;
+  pridej({skupina:'znacka',klic:z.klic,popis:z.popis,stitek:z.stitek,
+   trida:z.trida,pocet:z.pocet});
+  return true;
+ };
+
  // „Zrušit filtry" má vyhodit i kostičky, jinak by zůstaly viset nad
  // rosterem, který už podle nich nefiltruje.
  $('#zrusitFiltry')?.addEventListener('click',()=>{
@@ -1335,13 +1348,15 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  const sel=$('#atlasSort');if(!sel)return;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
- // Co ma byt hned po ruce. Klic je hodnota volby v roletce.
+ /* Razeni, ktera stoji za to mit po ruce. Cas a ligy odpadly: ligy nesou
+    stitky v hledacim poli a podle casu se neradilo prakticky nikdy.
+    Vychozi je CP od nejvyssiho — to clovek chce videt nejcasteji. */
+ const VYCHOZI='cp:-1';
  const RYCHLE=[
-  ['','Původní','Pořadí, ve kterém kusy přišly do rosteru'],
-  ['pokemon:1','A–Z','Jméno od A do Z'],
-  ['pokemon:-1','Z–A','Jméno od Z do A'],
   ['cp:-1','CP ↓','CP od nejvyššího'],
   ['cp:1','CP ↑','CP od nejnižšího'],
+  ['pokemon:1','A–Z','Jméno od A do Z'],
+  ['pokemon:-1','Z–A','Jméno od Z do A'],
   ['ivPct:-1','IV ↓','IV od nejvyššího'],
   ['ivPct:1','IV ↑','IV od nejnižšího'],
   ['level:-1','L ↓','Level od nejvyššího'],
@@ -1358,38 +1373,56 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  sel.classList.add('atlas-razeni-vic');
 
  const znam=new Set(RYCHLE.map(x=>x[0]));
- // Co uz je kostickou, nema v roletce co delat.
- [...sel.options].forEach(o=>{if(znam.has(o.value)&&o.value!=='')o.hidden=true});
- // Kdyz radi kosticka, roletka to nema opakovat — rekne jen, ze v ni je
- // zbytek. Vlastni hodnotu si drzi `aktivni`, roletka je pak jen nabidka.
- const zastupce=document.createElement('option');
- zastupce.textContent='Další řazení…';zastupce.value='__vic';zastupce.hidden=true;
- sel.prepend(zastupce);
+ // Roletka zustava zdrojem pravdy, ale uz se neukazuje: vsechno, co
+ // z ni zbylo, maji kosticky nebo stitky v hledacim poli.
+ sel.hidden=true;
  let aktivni=sel.value;
+ let podleStitku=false;
 
  rychle.innerHTML=RYCHLE.map(([val,popis,tip])=>
-  `<button type="button" data-razeni="${esc(val)}" data-tip="${esc(tip)}" aria-pressed="false">${esc(popis)}</button>`).join('');
+  `<button type="button" data-razeni="${esc(val)}" data-tip="${esc(tip)}" aria-pressed="false">${esc(popis)}</button>`).join('')
+  // Posledni sken neni razeni, ale vyber jednoho kusu — prida stitek do
+  // hledaciho pole, at se filtruje jedinym zpusobem.
+  +`<button type="button" class="atlas-razeni-sken" data-sken="1"
+    data-tip="Ukáže poslední naskenovaný kus — odsud pokračuj">Poslední sken</button>`;
+
+ function nastav(hodnota){
+  aktivni=hodnota;
+  sel.value=hodnota;
+  sel.dispatchEvent(new Event('change',{bubbles:true}));
+  sync();
+ }
 
  function sync(){
   rychle.querySelectorAll('[data-razeni]').forEach(b=>{
-   b.setAttribute('aria-pressed',String(b.dataset.razeni===aktivni));
+   // Kdyz radi hledany stitek, nema byt vybrane zadne z techhle razeni.
+   b.setAttribute('aria-pressed',String(!podleStitku&&b.dataset.razeni===aktivni));
   });
-  const vic=!znam.has(aktivni);
-  obal.classList.toggle('vic-aktivni',vic);
-  // Roletka ukazuje svoji volbu jen tehdy, kdyz podle ni opravdu radime.
-  if(!vic)zastupce.selected=true;
+  obal.classList.toggle('podle-stitku',podleStitku);
  }
 
  rychle.addEventListener('click',e=>{
+  if(e.target.closest('[data-sken]')){
+   window.AtlasHledaniPridej&&window.AtlasHledaniPridej('SKEN');
+   return;
+  }
   const b=e.target.closest('[data-razeni]');if(!b)return;
-  aktivni=b.dataset.razeni;
-  sel.value=aktivni;
-  sel.dispatchEvent(new Event('change',{bubbles:true}));
-  sync();
+  // Rucni volba ma prednost pred razenim podle stitku.
+  podleStitku=false;
+  nastav(b.dataset.razeni);
  });
- sel.addEventListener('change',()=>{
-  if(sel.value==='__vic')return;
-  aktivni=sel.value;sync();
+ sel.addEventListener('change',()=>{aktivni=sel.value;sync()});
+
+ /* Kdyz se v hledacim poli objevi stitek, radi se podle nej: engine to
+    dela sam pri "puvodnim razeni", takze se na nej prepne a zadna
+    kosticka neni vybrana. Po odebrani stitku se vrati vychozi CP. */
+ window.addEventListener('atlas:stitky',e=>{
+  const maStitky=!!(e.detail&&e.detail.pocet);
+  if(maStitky===podleStitku)return;
+  podleStitku=maStitky;
+  nastav(maStitky?'':VYCHOZI);
  });
- sync();
+
+ // Vychozi razeni: CP od nejvyssiho. "Puvodni poradi" uz volba neni.
+ if(!znam.has(aktivni))nastav(VYCHOZI); else sync();
 })();

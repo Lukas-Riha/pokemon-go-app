@@ -1661,3 +1661,15 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-razeni .atlas-razeni-vic{max-width:190px}
 .atlas-razeni.vic-aktivni .atlas-razeni-vic{border-color:var(--series-1)!important;
   color:var(--series-1)!important}
+
+/* Claude 25. 9. (29): pata postranni listy pryc a doladeni razeni.
+
+   V pate zbyl jen nazev profilu a pocet kusu — pocet je videt na samotnem
+   rosteru a nazev profilu patri do Nastaveni. */
+.atlas-test .atlas-side-foot{display:none}
+
+/* Posledni sken je vyber jednoho kusu, ne razeni — stoji stranou. */
+.atlas-razeni-rychle .atlas-razeni-sken{margin-left:4px;
+  border-left:1px solid var(--border)!important;border-radius:0 7px 7px 0!important}
+/* Kdyz radi hledany stitek, kosticky jsou jen nabidka, ne stav. */
+.atlas-razeni.podle-stitku .atlas-razeni-rychle{opacity:.72}

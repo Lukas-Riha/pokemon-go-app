@@ -967,7 +967,7 @@ check("…a pruh kvality v úzkém sloupci boxu nezabírá místo",
 const pBlik = await otevri(1500, [
   { pokemon: "Rhydon", cp: 1811, level: 20, ivAtk: 15, ivDef: 14, ivSta: 15 },
   { pokemon: "Rhydon", cp: 1500, level: 18, ivAtk: 10, ivDef: 10, ivSta: 10 },
-  { pokemon: "Garchomp", cp: 4357, level: 48, ivAtk: 14, ivDef: 15, ivSta: 15 }
+  { pokemon: "Garchomp", level: 15, ivAtk: 14, ivDef: 15, ivSta: 15 }
 ]);
 const dBlik = await pBlik.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));

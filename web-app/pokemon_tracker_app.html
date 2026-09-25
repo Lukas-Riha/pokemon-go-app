@@ -3311,6 +3311,9 @@
     <label><input type="checkbox" data-znacka="H" /> 100&nbsp;%</label>
     <label><input type="checkbox" data-znacka="S" /> Shiny</label>
     <label><input type="checkbox" data-znacka="K" /> Lucky</label>
+    <label><input type="checkbox" data-znacka="SH" /> Shadow</label>
+    <label><input type="checkbox" data-znacka="PU" /> Purified</label>
+    <label><input type="checkbox" data-znacka="SKEN" /> Poslední sken</label>
     <label class="typ-filtr-rezim"><input type="checkbox" id="znackaFiltrVse" />
       musí mít <b>všechny</b> zaškrtnuté značky</label>
     <button id="znackaFiltrReset">Zrušit filtr</button>
@@ -5507,6 +5510,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (c.stoProcent) z.push("H");
     if (c.shiny) z.push("S");
     if (c.lucky) z.push("K");
+    if (c.forma === "Shadow") z.push("SH");
+    if (c.forma === "Purified") z.push("PU");
+    // Poslední naskenovaný kus — odsud se pokračuje při dalším skenování.
+    if (c.posledniSken) z.push("SKEN");
     return z;
   }
 
@@ -10695,6 +10702,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         stoProcent: b.stoProcent,
         /* Poslední kus, který prošel skenováním — od něj se pokračuje. */
         posledniSken: b.row === posledniSkenRadek,
+        /* Forma (Shadow / Purified / Lucky) — filtr podle značek na ni
+           dřív nedosáhl, protože ji výsledek výpočtu vůbec nenesl. */
+        forma: (b.row && b.row.forma) || "",
         lucky: !!b.lucky,
         shiny: b.shiny,
         cpMax: b.cpMax,
@@ -26944,7 +26954,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         C: { trida: "rarity-chip r-C", stitek: "CUTE" },
         H: { trida: "rarity-chip r-H", stitek: "100 %" },
         S: { trida: "rarity-chip r-S", stitek: "SHINY" },
-        K: { trida: "rarity-chip r-L2", stitek: "LUCKY" }
+        K: { trida: "rarity-chip r-L2", stitek: "LUCKY" },
+        SH: { trida: "rarity-chip r-SH", stitek: "SHADOW" },
+        PU: { trida: "rarity-chip r-PU", stitek: "PURIFIED" },
+        SKEN: { trida: "rarity-chip r-SKEN", stitek: "POSLEDNÍ SKEN" }
       };
       var computed = analyze();
       var pocty = {}, pocetZnacek = {}, kategorie = {};
