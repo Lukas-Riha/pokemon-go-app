@@ -1345,7 +1345,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    i engine zustavaji jedno misto. */
 (() => {
  const $=s=>document.querySelector(s);
- const sel=$('#atlasSort');if(!sel)return;
+ const sel=$('#atlasSort'),P=window.__pgo;if(!sel)return;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
  /* Razeni, ktera stoji za to mit po ruce. Cas a ligy odpadly: ligy nesou
@@ -1379,12 +1379,22 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  let aktivni=sel.value;
  let podleStitku=false;
 
+ /* Role: cela skupina najednou, vcetne vlastniho poradi. Stitek umi jednu
+    ligu nebo jeden typ; tohle je "ukaz mi vsechny, kdo hraji PvP". */
+ const ROLE=[
+  ['pvp','PvP','Všechny ligy — od Little Cupu po Master, v lize podle pořadí'],
+  ['raid','Raid','Všichni raidoví útočníci — typy podle abecedy, v typu podle pořadí'],
+  ['gym','Gym','Kdo drží místo mezi gymovými obránci']
+ ];
  rychle.innerHTML=RYCHLE.map(([val,popis,tip])=>
   `<button type="button" data-razeni="${esc(val)}" data-tip="${esc(tip)}" aria-pressed="false">${esc(popis)}</button>`).join('')
+  +ROLE.map(([klic,popis,tip])=>
+  `<button type="button" class="atlas-razeni-role" data-role="${esc(klic)}" data-tip="${esc(tip)}" aria-pressed="false">${esc(popis)}</button>`).join('')
   // Posledni sken neni razeni, ale vyber jednoho kusu — prida stitek do
   // hledaciho pole, at se filtruje jedinym zpusobem.
   +`<button type="button" class="atlas-razeni-sken" data-sken="1"
     data-tip="Ukáže poslední naskenovaný kus — odsud pokračuj">Poslední sken</button>`;
+ let role='';
 
  function nastav(hodnota){
   aktivni=hodnota;
@@ -1395,10 +1405,13 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
 
  function sync(){
   rychle.querySelectorAll('[data-razeni]').forEach(b=>{
-   // Kdyz radi hledany stitek, nema byt vybrane zadne z techhle razeni.
-   b.setAttribute('aria-pressed',String(!podleStitku&&b.dataset.razeni===aktivni));
+   // Kdyz radi hledany stitek nebo role, nema byt vybrane zadne z techhle.
+   b.setAttribute('aria-pressed',String(!podleStitku&&!role&&b.dataset.razeni===aktivni));
   });
-  obal.classList.toggle('podle-stitku',podleStitku);
+  rychle.querySelectorAll('[data-role]').forEach(b=>{
+   b.setAttribute('aria-pressed',String(b.dataset.role===role));
+  });
+  obal.classList.toggle('podle-stitku',podleStitku||!!role);
  }
 
  rychle.addEventListener('click',e=>{
@@ -1406,9 +1419,20 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    window.AtlasHledaniPridej&&window.AtlasHledaniPridej('SKEN');
    return;
   }
+  const r=e.target.closest('[data-role]');
+  if(r){
+   // Druhe kliknuti roli vypne.
+   role=role===r.dataset.role?'':r.dataset.role;
+   P.atlasRole&&P.atlasRole(role);
+   // Role si nese vlastni poradi, takze zadne jine razeni nema byt aktivni.
+   if(role)nastav(''); else nastav(VYCHOZI);
+   window.__atlasTest?.refresh?.();
+   return;
+  }
   const b=e.target.closest('[data-razeni]');if(!b)return;
-  // Rucni volba ma prednost pred razenim podle stitku.
+  // Rucni volba ma prednost pred razenim podle stitku i role.
   podleStitku=false;
+  if(role){role='';P.atlasRole&&P.atlasRole('')}
   nastav(b.dataset.razeni);
  });
  sel.addEventListener('change',()=>{aktivni=sel.value;sync()});
@@ -1416,6 +1440,11 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  /* Kdyz se v hledacim poli objevi stitek, radi se podle nej: engine to
     dela sam pri "puvodnim razeni", takze se na nej prepne a zadna
     kosticka neni vybrana. Po odebrani stitku se vrati vychozi CP. */
+ $('#zrusitFiltry')?.addEventListener('click',()=>{
+  if(!role)return;
+  role='';nastav(VYCHOZI);
+ });
+
  window.addEventListener('atlas:stitky',e=>{
   const maStitky=!!(e.detail&&e.detail.pocet);
   if(maStitky===podleStitku)return;

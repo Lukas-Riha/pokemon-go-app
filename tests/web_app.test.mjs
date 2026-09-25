@@ -923,7 +923,7 @@ try {
   // že lepší kus toho druhu už v rosteru je.
   eq("slabý kus meta druhu dostane jasný verdikt, ne vlažné zvážit",
     ui.verdikty["Lanturn"], "Zahodit");
-  eq("kus na trade se nezahazuje", ui.verdikty["Machoke"], "Nechat – trade");
+  eq("kus na trade se nezahazuje", ui.verdikty["Machoke"], "Ponechat – trade");
   check("Charizard má vidět, proti čemu je dobrý",
     ui.strong["Charizard"].indexOf("Grass") > -1 && ui.strong["Charizard"].indexOf("Steel") > -1, ui.strong["Charizard"]);
   check("dvojtypý pokémon pokrývá typy z obou svých typů",
@@ -1770,7 +1770,7 @@ try {
   // které o roli soupeří, ne důvod sám o sobě.
   eq("vysoké IV samo o sobě kus neudrží, když druh nic nehraje",
     dupes.elgyem.filter((e) => e.cp === 640)[0].keep, "Zahodit");
-  eq("nejlepší Marill se nechá kvůli evoluci", dupes.marill.filter((e) => e.cp === 453)[0].keep, "Nechat – evolvovat");
+  eq("nejlepší Marill se nechá kvůli evoluci", dupes.marill.filter((e) => e.cp === 453)[0].keep, "Ponechat – evolvovat");
   check("…a je vidět proč",
     dupes.marill.filter((e) => e.cp === 453)[0].sub.indexOf("Azumarill") > -1,
     dupes.marill.filter((e) => e.cp === 453)[0].sub);
@@ -2406,7 +2406,7 @@ try {
     return out;
   });
 
-  eq("Marill je „Nechat – evolvovat“", vysv.vyvinout.keep, "Nechat – evolvovat");
+  eq("Marill je „Ponechat – evolvovat“", vysv.vyvinout.keep, "Ponechat – evolvovat");
   check("…a bublina řekne na co se vyvine", vysv.vyvinout.keepT.indexOf("Azumarill") > -1, vysv.vyvinout.keepT);
   check("…i v jaké lize to hraje a na kolikátém místě",
     vysv.vyvinout.keepT.indexOf("Great League") > -1
@@ -2415,7 +2415,7 @@ try {
     vysv.vyvinout.keepT.indexOf("Nízké IV tu nevadí") > -1, vysv.vyvinout.keepT);
   // Poznámka je schválně krátká — v kartě čištění boxu má pevnou výšku,
   // takže se do ní vejdou jen podstatné údaje. Že je evoluce jediný důvod,
-  // stojí ve verdiktu („Nechat – evolvovat") hned nad ní.
+  // stojí ve verdiktu („Ponechat – evolvovat") hned nad ní.
   check("…a drží se do dvou řádků, ne pěti vět",
     vysv.vyvinout.keepT.length < 260, String(vysv.vyvinout.keepT.length));
 
@@ -6551,12 +6551,12 @@ try {
     poEvo.sloty.some((s) => s.indexOf("po evoluci") > -1), poEvo.sloty.join(" | "));
   check("seznam lig po evoluci se plní i u druhu, co ligu hraje sám",
     poEvo.evoVse.length > 0, poEvo.evoVse.join(","));
-  // Verdikt „Nechat – evolvovat" má dál znamenat „sám nehraje nic".
-  check("…ale verdikt „Nechat – evolvovat“ si význam drží",
+  // Verdikt „Ponechat – evolvovat" má dál znamenat „sám nehraje nic".
+  check("…ale verdikt „Ponechat – evolvovat“ si význam drží",
     poEvo.evoMeta === null && poEvo.keep.indexOf("evolvovat") === -1,
     poEvo.evoMeta + " / " + poEvo.keep);
 
-  // Protikus: druh, který sám nehraje nic, musí „Nechat – evolvovat" dostat.
+  // Protikus: druh, který sám nehraje nic, musí „Ponechat – evolvovat" dostat.
   const jenPoEvo = await page.evaluate(() => {
     const P = window.__pgo;
     P.setRows([{ pokemon: "Marill", cp: 195, level: 21, ivAtk: 1, ivDef: 14, ivSta: 4,
@@ -6564,7 +6564,7 @@ try {
     const c = P.getComputed()[P.getRows()[0].id];
     return { keep: c.keep, sub: c.keepSub || "" };
   });
-  check("druh, který sám nehraje nic, má pořád „Nechat – evolvovat“",
+  check("druh, který sám nehraje nic, má pořád „Ponechat – evolvovat“",
     jenPoEvo.keep.indexOf("evolvovat") > -1, jenPoEvo.keep);
   check("…a je vidět, čím se stane", jenPoEvo.sub.indexOf("Azumarill") > -1, jenPoEvo.sub);
 
@@ -10657,7 +10657,7 @@ try {
   check("…ale sleva se připomene, ať to nevypadá, že o ní appka neví",
     rolePredTradem["Pumpkaboo M"].keepTitle.indexOf("zdarma přes výměnu") > -1,
     rolePredTradem["Pumpkaboo M"].keepTitle);
-  eq("kus bez role zůstává na výměnu", rolePredTradem.Machoke.keep, "Nechat – trade");
+  eq("kus bez role zůstává na výměnu", rolePredTradem.Machoke.keep, "Ponechat – trade");
   // Mega slot patří vyvinuté formě — bez toho vypadal Haunter jako kus,
   // co roli plní už teď, a výměna se u něj zablokovala.
   check("mega slot u nevyvinutého kusu je označený jako „až po evoluci“",

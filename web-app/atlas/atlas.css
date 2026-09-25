@@ -1682,3 +1682,14 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .rarity-chip.r-VP{background:var(--status-good)}
 .rarity-chip.r-VN{background:var(--status-warning);color:#241a00}
 .rarity-chip.r-VZ{background:var(--status-critical)}
+
+/* Claude 25. 9. (31): role jako kosticky a pryc s "Zobrazit: vse".
+
+   Roletka mela pres dvacet voleb a vsechny krome tri uz pokryvaji stitky
+   v hledacim poli. "Zrusit filtry" vedle dela totez co volba "vse". */
+.atlas-test #viewSelect{display:none}
+.atlas-razeni-rychle .atlas-razeni-role{margin-left:4px;
+  border-left:1px solid var(--border)!important;border-radius:0!important}
+.atlas-razeni-rychle .atlas-razeni-role + .atlas-razeni-role{margin-left:0;
+  border-left:0!important}
+.atlas-razeni-rychle button[aria-pressed=true].atlas-razeni-role{background:var(--series-1)!important}

@@ -5423,6 +5423,37 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   var hodnotaFiltr = {};
   // Filtr podle štítků důvodů u verdiktu („GL", „Fire", „Gym", „CUTE",
   // „Rezerva"…). Kus projde, když má aspoň jeden vybraný.
+  /* Role: „ukaz mi vsechny, kdo hraji PvP / chodi do raidu / brani gym“.
+     Neni to stitek — stitek je jedna liga nebo jeden typ, tohle je cela
+     skupina najednou a nese si vlastni poradi. */
+  var roleFiltr = "";
+  function roleFiltrAktivni() { return !!roleFiltr; }
+  function roleDuvody(c, role) {
+    return (c && c.duvody || []).filter(function (d) { return d.druh === role; });
+  }
+  function roleFiltrProjde(c) {
+    return !roleFiltr || roleDuvody(c, roleFiltr).length > 0;
+  }
+  /* Klic pro razeni uvnitr role: [skupina, poradi]. U PvP jsou skupiny
+     ligy od nejnizsi po nejvyssi, u raidu typy podle abecedy. */
+  function roleKlic(c) {
+    var nej = null;
+    roleDuvody(c, roleFiltr).forEach(function (d) {
+      var s = String(d.stitek || "");
+      var m = /(\d+)\s*\/\s*\d+/.exec(s) || /#\s*(\d+)/.exec(s);
+      var poradi = m ? Number(m[1]) : 9999;
+      var skupina = roleFiltr === "pvp"
+        ? (LIGA_PORADI[d.filtr] === undefined ? 9 : LIGA_PORADI[d.filtr])
+        : 0;
+      var kandidat = { skupina: skupina, typ: String(d.filtr || ""), poradi: poradi };
+      if (!nej || kandidat.skupina < nej.skupina
+        || (kandidat.skupina === nej.skupina && kandidat.typ < nej.typ)
+        || (kandidat.skupina === nej.skupina && kandidat.typ === nej.typ
+            && kandidat.poradi < nej.poradi)) nej = kandidat;
+    });
+    return nej || { skupina: 99, typ: "\uffff", poradi: 9999 };
+  }
+
   var duvodFiltr = {};
   /* Průnik místo sjednocení: „kdo mi drží Fire A ZÁROVEŇ hraje GL“.
      Bez toho se dal vybrat jen jeden štítek, aby odpověď dávala smysl. */
@@ -5443,6 +5474,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return !!(search || typeFilter || typFiltrAktivni() || silnyFiltrAktivni()
       || pvpFiltrAktivni()
       || hodnotaFiltrAktivni() || znackaFiltrAktivni() || duvodFiltrAktivni()
+      || roleFiltrAktivni()
       // Oba výběry nad tabulkou taky filtrují. Dokud se nepočítaly,
       // zůstávalo tlačítko „Zrušit filtry“ šedé a nedalo se jimi kliknout.
       || (typeof filterMode === "string" && filterMode !== "all")
@@ -5460,7 +5492,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     pvpFiltr.ligy = {}; pvpFiltr.stavy = {};
     znackaFiltr.znacky = {}; znackaFiltr.vse = false;
     hodnotaFiltr = {};
-    duvodFiltr = {}; duvodFiltrVse = false;
+    duvodFiltr = {}; duvodFiltrVse = false; roleFiltr = "";
     sortKey = null; sortKey2 = null;
     // Oba výběry nad tabulkou jsou taky filtr — tlačítko je nechávalo stát,
     // takže po „Zrušit filtry“ zůstalo třeba „Jen k puštění“ a vypadalo to,
@@ -5513,10 +5545,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (c.stoProcent) z.push("H");
     if (c.shiny) z.push("S");
     if (c.lucky) z.push("K");
-    var verdikt = String(c.keep || "");
-    if (/^Ponechat/.test(verdikt)) z.push("VP");
-    else if (/^Nechat/.test(verdikt)) z.push("VN");
-    else if (/^Zahodit/.test(verdikt)) z.push("VZ");
+    if (c.keep) {
+      if (c.keepTone === "good") z.push("VP");
+      else if (c.keepTone === "warning") z.push("VN");
+      else z.push("VZ");
+    }
     if (c.forma === "Shadow") z.push("SH");
     if (c.forma === "Purified") z.push("PU");
     // Poslední naskenovaný kus — odsud se pokračuje při dalším skenování.
@@ -8904,7 +8937,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // liga, kterou ten druh nehraje. Great (#41, 95,3 %) tím prohrála
         // a lepší z dvojice Spoinků pak nedostal roli vůbec, zatímco horší
         // ano. Napřed proto rozhoduje, jestli je druh v té lize vážně braný.
-        // Verdikt „Nechat – evolvovat" má pořád znamenat „sám nehraje nic,
+        // Verdikt „Ponechat – evolvovat" má pořád znamenat „sám nehraje nic,
         // hraje až vyvinutá forma". U druhu, který nějakou ligu hraje i teď,
         // se proto nenastavuje — o toho se postará normální ligový slot.
         if (!metaLC && !metaGL && !metaUL) {
@@ -9430,9 +9463,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // – trade" znamená „dej ho kamarádovi" a výměna IV přehází — u kusu,
         // který drží ligu, by ta rada stála víc než ušetřených 100 bonbónů.
         keepGood = true;
-        keepLabel = "Nechat – trade";
+        keepLabel = "Ponechat – trade";
         keepTone = "good";
-        // Podtitulek musí říct důvod i tady — „Nechat – trade" bez něj
+        // Podtitulek musí říct důvod i tady — „Ponechat – trade" bez něj
         // nechává čtenáře hádat, na co ten trade je.
         keepSubLate = "evoluce zdarma" + (evoTargetName ? " → " + evoTargetName : "");
         keepTitle = "Vyměněný kus se vyvine za nula bonbónů"
@@ -9469,7 +9502,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // ale appka u něj psala „nechat na evoluci do Great League" — mluvila
         // o roli, kterou ten kus vůbec nemá.
         keepGood = true;
-        keepLabel = "Nechat – evolvovat";
+        keepLabel = "Ponechat – evolvovat";
         keepTone = "good";
         // Podstatné je, KAM po evoluci patří a JAK DOBRÝ by tam byl. Že se
         // IV evolucí nemění nebo že sloupec Evolvovat má Ano, uživatel vidí
@@ -10049,7 +10082,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         pvpCesta = popisCesty(potProLigu(b.strongPot.league));
       }
       // Kus, který sám nic nehraje, ale po evoluci ano — verdikt to říká
-      // („Nechat – evolvovat: Greedent UL #120"), tak to musí být i tady.
+      // („Ponechat – evolvovat: Greedent UL #120"), tak to musí být i tady.
       // Holý IV rank je proti tomu bezcenná informace, takže jde až za to.
       else if (b.evoMeta && b.cesty && b.cesty[b.evoMeta.league]) {
         var cEvo = b.cesty[b.evoMeta.league];
@@ -11380,6 +11413,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (!znackaFiltrProjde(c)) return false;
     if (!hodnotaFiltrProjde(c)) return false;
     if (!duvodFiltrProjde(c)) return false;
+    if (!roleFiltrProjde(c)) return false;
     var predpis = FILTRY[filterMode];
     if (predpis) return !!predpis(c, row);
     switch (filterMode) {
@@ -12947,7 +12981,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         ? "Mytický — hra ho profesorovi poslat nedovolí, držet ho není rozhodnutí."
         : "Tenhle druh hra do transferu ani výměny nepustí.");
     }
-    if (x.keepLabel === "Nechat – trade") {
+    if (x.keepLabel === "Ponechat – trade") {
       zn("Trade", "Výměnou se vyvine zdarma — ušetříš 100 bonbónů. Vyvíjí se až po výměně.");
     }
     if (x.keepLabel === "Nechat – doskenuj") {
@@ -15458,7 +15492,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     /* Hledání podle štítku sam o sobě řadí: kdo je ve štítku první, patří
        nahoře. Platí jen při „původním řazení“ — když si člověk řazení zvolí,
        má přednost. Při víc štítcích rozhoduje ten, který zadal jako první. */
-    if (!sortKey && (duvodFiltrAktivni() || znackaFiltrAktivni())) {
+    if (!sortKey && roleFiltrAktivni()) {
+      list.sort(function (a, bb) {
+        var ka = roleKlic(a.c), kb = roleKlic(bb.c);
+        return (ka.skupina - kb.skupina)
+          || String(ka.typ).localeCompare(String(kb.typ), "cs")
+          || (ka.poradi - kb.poradi);
+      });
+    } else if (!sortKey && (duvodFiltrAktivni() || znackaFiltrAktivni())) {
       var hlavniStitek = Object.keys(duvodFiltr)[0] || "";
       var cpKusu = function (x) { return num(x.row.cp) || 0; };
       list.sort(function (a, bb) {
@@ -20174,7 +20215,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   /** Koho evolvovat a v jakém pořadí. Nahoře kusy, které bez evoluce nemají
-   *  smysl (verdikt „Nechat – evolvovat"), pak ty, co roli drží už teď a evoluce
+   *  smysl (verdikt „Ponechat – evolvovat"), pak ty, co roli drží už teď a evoluce
    *  je bonus. V rámci obojího podle toho, co z nich bude. */
   function evolvePlan(base) {
     var out = [];
@@ -27016,6 +27057,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * Nastaví filtr podle značek a štítků. `vse` zapne průnik — kus musí
      * mít všechny vybrané, ne jen některou.
      */
+    /**
+     * Ukáže jen kusy, které mají danou roli, a seřadí je uvnitř ní.
+     *
+     * `role`: `"pvp"` (ligy od LC po ML, v lize podle pořadí), `"raid"`
+     * (typy podle abecedy, v typu podle pořadí), `"gym"`. Prázdná hodnota
+     * filtr zruší. Vrací počet kusů, které zbyly.
+     */
+    atlasRole: function (role) {
+      roleFiltr = role === "pvp" || role === "raid" || role === "gym" ? role : "";
+      renderBody();
+      persist(true);
+      return { role: roleFiltr, kusu: lastVisibleIds.length };
+    },
+
     atlasStitkyFiltr: function (znacky, duvody, vse) {
       znackaFiltr.znacky = {};
       (znacky || []).forEach(function (k) { znackaFiltr.znacky[k] = true; });
