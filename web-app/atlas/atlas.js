@@ -1173,89 +1173,118 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  prepni('druh');
 })();
 
-/* Hledání v rosteru podle štítků.
+/* Hledání v rosteru: štítky se skládají do pole za sebe.
 
-   Engine to uměl odjakživa, jenže nabídka visela v hlavičce klasické
-   tabulky — a tu vzhledová vrstva nezobrazuje, takže se k tomu nedalo
-   dostat. Tohle je tatáž věc dosažitelná: štítky jako odškrtávací
-   seznam a přepínač „musí mít všechny", tedy průnik. */
+   Začneš psát „Ice", pole nabídne štítek Ice, klikneš — a štítek v poli
+   zůstane jako kostička. Pak píšeš dál: další štítek nebo jméno druhu.
+   Víc kostiček znamená PRŮNIK, tedy „tohle a zároveň tamto".
+
+   Filtr samotný engine umí odjakživa, jen nabídka visela v hlavičce
+   klasické tabulky — a tu vzhledová vrstva nezobrazuje. */
 (() => {
  const $=s=>document.querySelector(s),P=window.__pgo;
- const lista=$('.atlas-roster-commandbar');if(!lista||!P.atlasStitky)return;
+ const pole=$('#searchInput');if(!pole||!P.atlasStitky)return;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ // Diakritika se při hledání ignoruje: „legendarni" musí najít „Legendární".
+ const holy=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 
- let vybraneZnacky=new Set(),vybraneDuvody=new Set(),vse=false;
+ const vybrane=[];        // [{skupina:'znacka'|'duvod', klic, popis}]
+ let zvyrazneny=-1;
 
- const tlacitko=document.createElement('button');
- tlacitko.type='button';tlacitko.className='atlas-mini-btn atlas-stitky-btn';
- tlacitko.setAttribute('aria-expanded','false');
- lista.append(tlacitko);
-
- const panel=document.createElement('div');
- panel.className='atlas-stitky-panel';panel.hidden=true;
- lista.append(panel);
-
- function popisek(){
-  const n=vybraneZnacky.size+vybraneDuvody.size;
-  tlacitko.textContent=n?`Štítky · ${n}`:'Štítky';
-  tlacitko.classList.toggle('aktivni',n>0);
- }
+ const obal=document.createElement('div');obal.className='atlas-hledani-roster';
+ pole.replaceWith(obal);
+ const kostky=document.createElement('span');kostky.className='atlas-hledani-kostky';
+ obal.append(kostky,pole);
+ const navrhy=document.createElement('div');
+ navrhy.className='atlas-navrhy';navrhy.hidden=true;navrhy.setAttribute('role','listbox');
+ obal.append(navrhy);
+ pole.setAttribute('placeholder','Hledat druh nebo štítek…');
+ pole.setAttribute('autocomplete','off');
 
  function pouzij(){
-  const stav=P.atlasStitkyFiltr([...vybraneZnacky],[...vybraneDuvody],vse);
-  popisek();
-  const info=panel.querySelector('[data-stitky-vysledek]');
-  if(info)info.textContent=stav.znacky.length||stav.duvody.length
-   ? `Odpovídá ${stav.kusu} ${stav.kusu===1?'kus':stav.kusu<5?'kusy':'kusů'}`
-   : 'Bez omezení';
+  const znacky=vybrane.filter(x=>x.skupina==='znacka').map(x=>x.klic);
+  const duvody=vybrane.filter(x=>x.skupina==='duvod').map(x=>x.klic);
+  // Víc štítků = průnik. „Ice a zároveň Gym" je otázka, kterou člověk má;
+  // „Ice nebo Gym" skoro nikdy.
+  P.atlasStitkyFiltr(znacky,duvody,true);
   window.__atlasTest?.refresh?.();
  }
 
- function vykresli(){
-  const n=P.atlasStitky();
-  const chip=(klic,popis,pocet,skupina,zapnuto)=>`<label class="atlas-stitek${zapnuto?' zapnuto':''}">
-    <input type="checkbox" data-skupina="${skupina}" value="${esc(klic)}"${zapnuto?' checked':''}>
-    <span>${esc(popis)}</span>${pocet?`<b>${pocet}</b>`:''}</label>`;
-  panel.innerHTML=`<div class="atlas-stitky-h">Značky</div>
-   <div class="atlas-stitky-rada">${n.znacky.map(z=>chip(z.klic,z.popis,0,'znacka',vybraneZnacky.has(z.klic))).join('')}</div>
-   ${n.duvody.length?`<div class="atlas-stitky-h">Štítky u verdiktu</div>
-   <div class="atlas-stitky-rada">${n.duvody.map(d=>chip(d.klic,d.klic,d.pocet,'duvod',vybraneDuvody.has(d.klic))).join('')}</div>`:''}
-   <label class="atlas-stitky-vse"><input type="checkbox" data-stitky-vse${vse?' checked':''}>
-    musí mít <b>všechny</b> vybrané</label>
-   <div class="atlas-stitky-pata">
-    <span data-stitky-vysledek></span>
-    <button type="button" class="atlas-mini-btn" data-stitky-zrus>Zrušit</button>
-   </div>`;
-  pouzij();
+ function vykresliKostky(){
+  kostky.innerHTML=vybrane.map((x,i)=>`<span class="atlas-kostka" data-i="${i}">${esc(x.popis)}<button type="button" aria-label="Odebrat ${esc(x.popis)}">✕</button></span>`).join('');
+  obal.classList.toggle('ma-kostky',vybrane.length>0);
  }
 
- panel.addEventListener('change',e=>{
-  const i=e.target;
-  if(i.dataset.skupina==='znacka'){i.checked?vybraneZnacky.add(i.value):vybraneZnacky.delete(i.value)}
-  else if(i.dataset.skupina==='duvod'){i.checked?vybraneDuvody.add(i.value):vybraneDuvody.delete(i.value)}
-  else if(i.hasAttribute('data-stitky-vse')){vse=i.checked}
-  else return;
-  i.closest('.atlas-stitek')?.classList.toggle('zapnuto',i.checked);
-  pouzij();
- });
- panel.addEventListener('click',e=>{
-  if(!e.target.closest('[data-stitky-zrus]'))return;
-  vybraneZnacky.clear();vybraneDuvody.clear();vse=false;vykresli();
- });
+ /** Štítky, které se hodí na napsaný text a ještě nejsou v poli. */
+ function najdi(text){
+  const n=P.atlasStitky(),h=holy(text);
+  if(!h)return [];
+  const mam=new Set(vybrane.map(x=>x.skupina+':'+x.klic));
+  const ven=[];
+  n.znacky.forEach(z=>{if(holy(z.popis).includes(h)&&!mam.has('znacka:'+z.klic))
+   ven.push({skupina:'znacka',klic:z.klic,popis:z.popis,pocet:0})});
+  n.duvody.forEach(d=>{if(holy(d.klic).includes(h)&&!mam.has('duvod:'+d.klic))
+   ven.push({skupina:'duvod',klic:d.klic,popis:d.klic,pocet:d.pocet})});
+  // Co začíná napsaným textem, patří nahoru.
+  ven.sort((a,b)=>(holy(b.popis).startsWith(h)?1:0)-(holy(a.popis).startsWith(h)?1:0));
+  return ven.slice(0,8);
+ }
 
- tlacitko.addEventListener('click',()=>{
-  const otevrit=panel.hidden;
-  if(otevrit)vykresli();          // nabídka se staví z aktuálního rosteru
-  panel.hidden=!otevrit;
-  tlacitko.setAttribute('aria-expanded',String(otevrit));
+ function zavri(){navrhy.hidden=true;zvyrazneny=-1;pole.setAttribute('aria-expanded','false')}
+
+ function nabidni(){
+  const seznam=najdi(pole.value);
+  if(!seznam.length){zavri();return}
+  navrhy.innerHTML=seznam.map((x,i)=>`<button type="button" role="option" data-navrh="${i}" aria-selected="${i===zvyrazneny}">
+    <span class="atlas-navrh-skupina">${x.skupina==='znacka'?'značka':'štítek'}</span>
+    <b>${esc(x.popis)}</b>${x.pocet?`<span class="atlas-navrh-pocet">${x.pocet}</span>`:''}</button>`).join('');
+  navrhy.__seznam=seznam;
+  navrhy.hidden=false;pole.setAttribute('aria-expanded','true');
+ }
+
+ function pridej(x){
+  vybrane.push(x);
+  pole.value='';
+  // Engine poslouchá na `input` — bez toho by mu v hledání zůstal text.
+  pole.dispatchEvent(new Event('input',{bubbles:true}));
+  vykresliKostky();zavri();pouzij();pole.focus();
+ }
+
+ pole.addEventListener('input',()=>{zvyrazneny=-1;nabidni()});
+ pole.addEventListener('focus',nabidni);
+ pole.addEventListener('keydown',e=>{
+  const seznam=navrhy.__seznam||[];
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+   if(navrhy.hidden)nabidni();
+   if(!seznam.length)return;
+   e.preventDefault();
+   zvyrazneny=(zvyrazneny+(e.key==='ArrowDown'?1:seznam.length-1))%seznam.length;
+   nabidni();return;
+  }
+  if(e.key==='Enter'&&!navrhy.hidden&&seznam.length){
+   e.preventDefault();pridej(seznam[Math.max(0,zvyrazneny)]);return;
+  }
+  if(e.key==='Escape'&&!navrhy.hidden){e.preventDefault();zavri();return}
+  // Backspace v prázdném poli odebere poslední kostičku — jako v mailu.
+  if(e.key==='Backspace'&&!pole.value&&vybrane.length){
+   vybrane.pop();vykresliKostky();pouzij();
+  }
  });
- document.addEventListener('click',e=>{
-  if(panel.hidden)return;
-  if(panel.contains(e.target)||tlacitko.contains(e.target))return;
-  panel.hidden=true;tlacitko.setAttribute('aria-expanded','false');
+ navrhy.addEventListener('mousedown',e=>{
+  const b=e.target.closest('[data-navrh]');if(!b)return;
+  e.preventDefault();pridej((navrhy.__seznam||[])[Number(b.dataset.navrh)]);
  });
- document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&!panel.hidden){panel.hidden=true;tlacitko.setAttribute('aria-expanded','false');tlacitko.focus()}
+ kostky.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  vybrane.splice(Number(b.closest('.atlas-kostka').dataset.i),1);
+  vykresliKostky();pouzij();pole.focus();
  });
- popisek();
+ document.addEventListener('click',e=>{if(!obal.contains(e.target))zavri()});
+
+ // „Zrušit filtry" má vyhodit i kostičky, jinak by zůstaly viset nad
+ // rosterem, který už podle nich nefiltruje.
+ $('#zrusitFiltry')?.addEventListener('click',()=>{
+  if(!vybrane.length)return;
+  vybrane.length=0;vykresliKostky();
+ });
 })();

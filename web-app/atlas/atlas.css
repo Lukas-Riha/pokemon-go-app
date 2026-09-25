@@ -1574,34 +1574,41 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   #prohlidkaCard .atlas-hledani-fakta{gap:18px}
 }
 
-/* Claude 24. 9. (25): hledani v rosteru podle stitku.
+/* Claude 25. 9. (25): hledani v rosteru — stitky se skladaji do pole.
 
-   Engine to umel odjakziva, jenze nabidka visela v hlavicce klasicke
-   tabulky — a tu vzhledova vrstva nezobrazuje. Tohle je tataz vec
-   dosazitelna, vcetne pruniku ("musi mit vsechny vybrane"). */
-.atlas-roster-commandbar{position:relative}
-.atlas-stitky-btn.aktivni{background:var(--atlas-soft);color:var(--series-1);
-  border-color:var(--series-1)}
-.atlas-stitky-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:30;
-  width:min(560px,calc(100vw - 32px));max-height:min(60vh,520px);overflow:auto;
-  padding:16px;border:1px solid var(--border);border-radius:14px;
-  background:var(--surface-1);box-shadow:var(--atlas-shadow)}
-.atlas-stitky-panel[hidden]{display:none}
-.atlas-stitky-h{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
-  color:var(--text-muted);margin:0 0 8px}
-.atlas-stitky-h + .atlas-stitky-rada{margin-bottom:14px}
-.atlas-stitky-rada{display:flex;flex-wrap:wrap;gap:7px}
-.atlas-stitek{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;
-  border:1px solid var(--border);border-radius:999px;background:var(--input-bg);
-  color:var(--text-secondary);font-size:12px;cursor:pointer;user-select:none}
-.atlas-stitek input{position:absolute;opacity:0;width:0;height:0}
-.atlas-stitek b{font-variant-numeric:tabular-nums;color:var(--text-muted);font-weight:650}
-.atlas-stitek.zapnuto{background:var(--atlas-soft);border-color:var(--series-1);
-  color:var(--series-1)}
-.atlas-stitek.zapnuto b{color:var(--series-1)}
-.atlas-stitek:has(input:focus-visible){outline:3px solid #69a4ff;outline-offset:2px}
-.atlas-stitky-vse{display:flex;align-items:center;gap:8px;margin:14px 0 0;
-  font-size:12px;color:var(--text-secondary)}
-.atlas-stitky-pata{display:flex;align-items:center;justify-content:space-between;
-  gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);
-  font-size:12px;color:var(--text-secondary)}
+   Zacnes psat "Ice", pole nabidne stitek Ice, kliknes — a zustane v poli
+   jako kosticka. Pak pises dal: dalsi stitek nebo jmeno druhu. Vic
+   kosticek znamena PRUNIK.
+
+   Filtr engine umel odjakziva, jen nabidka visela v hlavicce klasicke
+   tabulky, kterou vzhledova vrstva nezobrazuje. */
+.atlas-hledani-roster{position:relative;display:flex;align-items:center;gap:6px;
+  flex-wrap:wrap;min-width:260px;max-width:520px;padding:4px 8px;
+  border:1px solid var(--input-border,var(--border));border-radius:9px;
+  background:var(--input-bg)}
+.atlas-hledani-roster:focus-within{border-color:var(--series-1);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--series-1) 20%,transparent)}
+.atlas-hledani-roster #searchInput{flex:1;min-width:120px;border:0;background:none;
+  padding:5px 2px;color:var(--text-primary)}
+.atlas-hledani-roster #searchInput:focus{outline:none}
+.atlas-hledani-kostky{display:contents}
+.atlas-kostka{display:inline-flex;align-items:center;gap:5px;padding:3px 4px 3px 9px;
+  border-radius:999px;background:var(--atlas-soft);color:var(--series-1);
+  font-size:12px;font-weight:650;white-space:nowrap}
+.atlas-kostka button{border:0;background:none;color:inherit;cursor:pointer;
+  font-size:11px;line-height:1;padding:3px;min-height:auto;opacity:.75}
+.atlas-kostka button:hover{opacity:1}
+
+.atlas-navrhy{position:absolute;top:calc(100% + 5px);left:0;z-index:40;
+  width:min(340px,100%);max-height:290px;overflow:auto;padding:5px;
+  border:1px solid var(--border);border-radius:11px;background:var(--surface-1);
+  box-shadow:var(--atlas-shadow)}
+.atlas-navrhy[hidden]{display:none}
+.atlas-navrhy button{display:flex;align-items:center;gap:9px;width:100%;
+  padding:8px 10px;border:0;border-radius:8px;background:none;cursor:pointer;
+  color:var(--text-primary);text-align:left;min-height:auto}
+.atlas-navrhy button:hover,.atlas-navrhy button[aria-selected=true]{background:var(--atlas-soft)}
+.atlas-navrh-skupina{font-size:9px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--text-muted);min-width:44px}
+.atlas-navrh-pocet{margin-left:auto;font-size:11px;color:var(--text-muted);
+  font-variant-numeric:tabular-nums}

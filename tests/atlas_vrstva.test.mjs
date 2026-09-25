@@ -2237,59 +2237,72 @@ check("křížek vyčistí pole i identitu",
   dH.poVymazani.hodnota === "" && dH.poVymazani.identitaSkryta === true,
   JSON.stringify(dH.poVymazani));
 
-// ------------------------------- hledání v rosteru podle štítků
-console.log("\n25) roster: filtr podle štítků včetně průniku");
+// ------------------------------- hledání v rosteru: štítky v poli
+console.log("\n25) roster: štítky se skládají do hledacího pole");
 const pS = await otevri(1700, [
+  { pokemon: "Lapras", level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Ice Shard", charged1: "Surf" },
+  { pokemon: "Mamoswine", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13,
+    fastMove: "Powder Snow", charged1: "Avalanche" },
   { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
     fastMove: "Counter", charged1: "Dynamic Punch", shiny: "Ano" },
-  { pokemon: "Machamp", level: 25, ivAtk: 15, ivDef: 15, ivSta: 15,
-    fastMove: "Counter", charged1: "Dynamic Punch" },
-  { pokemon: "Gyarados", level: 30, ivAtk: 10, ivDef: 10, ivSta: 10,
-    fastMove: "Waterfall", charged1: "Hydro Pump", shiny: "Ano" },
-  { pokemon: "Mewtwo", level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
-    fastMove: "Confusion", charged1: "Psystrike" },
+  { pokemon: "Blissey", level: 30, ivAtk: 10, ivDef: 15, ivSta: 15,
+    fastMove: "Pound", charged1: "Dazzling Gleam" },
   { pokemon: "Rattata", level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
 ]);
 const dS = await pS.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-  const btn = document.querySelector(".atlas-stitky-btn");
-  if (!btn) return { chyba: "tlačítko štítků není" };
-  btn.click();
-  await cekej(500);
-  const panel = document.querySelector(".atlas-stitky-panel");
-  const dlazdic = () => document.querySelectorAll(".atlas-row").length;
-  const klik = (skupina, hodnota) => panel
-    .querySelector('input[data-skupina="' + skupina + '"][value="' + hodnota + '"]').click();
-  const out = { vse: dlazdic(), duvodu: panel.querySelectorAll('[data-skupina="duvod"]').length };
-  klik("znacka", "S"); await cekej(600); out.shiny = dlazdic();
-  klik("znacka", "H"); await cekej(600); out.sjednoceni = dlazdic();
-  // Prunik: kus musi mit obe znacky, ne jen nekterou.
-  panel.querySelector("[data-stitky-vse]").click(); await cekej(600);
-  out.prunik = dlazdic();
-  out.popisek = btn.textContent.trim();
-  out.vysledek = panel.querySelector("[data-stitky-vysledek]").textContent.trim();
-  panel.querySelector("[data-stitky-zrus]").click(); await cekej(600);
-  out.poZruseni = dlazdic();
-  // Escape panel zavre.
-  btn.click(); await cekej(300);
-  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-  await cekej(300);
-  out.poEscape = panel.hidden;
+  const pole = document.getElementById("searchInput");
+  const navrhy = document.querySelector(".atlas-navrhy");
+  if (!pole.closest(".atlas-hledani-roster") || !navrhy) return { chyba: "pole není přestavěné" };
+  const stav = () => ({
+    kosticky: [...document.querySelectorAll(".atlas-kostka")]
+      .map((k) => k.textContent.replace("\u2715", "").trim()),
+    text: pole.value, dlazdic: document.querySelectorAll(".atlas-row").length });
+  const napis = async (text) => {
+    pole.focus();
+    pole.value = text;
+    pole.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(500);
+  };
+  const enter = async () => {
+    pole.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await cekej(700);
+  };
+  const out = { start: stav() };
+  await napis("Ice");
+  out.navrhy = [...navrhy.querySelectorAll("button")]
+    .map((b) => b.textContent.replace(/\s+/g, " ").trim());
+  await enter();
+  out.poPrvnim = stav();
+  await napis("100");
+  await enter();
+  out.poDruhem = stav();
+  // Volny text vedle stitku funguje dal.
+  await napis("Lap");
+  out.sTextem = stav();
+  // Backspace v prazdnem poli odebere posledni kosticku.
+  await napis("");
+  pole.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
+  await cekej(700);
+  out.poBackspace = stav();
   return out;
 });
 await pS.close();
-check("filtr podle značky ukáže jen kusy, které ji mají",
-  dS.vse === 5 && dS.shiny === 2, JSON.stringify(dS));
-check("dvě značky bez průniku berou obojí",
-  dS.sjednoceni === 4, JSON.stringify(dS));
-check("…a s průnikem jen ty, co mají obě",
-  dS.prunik === 1 && /1 kus/.test(dS.vysledek), JSON.stringify(dS));
-check("tlačítko řekne, kolik štítků je vybraných",
-  /2/.test(dS.popisek), dS.popisek);
-check("nabídka nese i štítky u verdiktu z rosteru",
-  dS.duvodu > 0, String(dS.duvodu));
-check("zrušení vrátí celý roster a Escape zavře nabídku",
-  dS.poZruseni === 5 && dS.poEscape === true, JSON.stringify(dS));
+check("pole nabídne štítek podle napsaného textu",
+  Array.isArray(dS.navrhy) && dS.navrhy.some((x) => /Ice/.test(x)), JSON.stringify(dS.navrhy));
+check("vybraný štítek zůstane v poli a vyčistí text",
+  dS.poPrvnim && dS.poPrvnim.kosticky.join() === "Ice" && dS.poPrvnim.text === ""
+    && dS.poPrvnim.dlazdic === 2, JSON.stringify(dS.poPrvnim));
+check("druhý štítek se přidá za něj a platí průnik",
+  dS.poDruhem && dS.poDruhem.kosticky.length === 2 && dS.poDruhem.dlazdic === 1,
+  JSON.stringify(dS.poDruhem));
+check("vedle štítků jde dál psát jméno druhu",
+  dS.sTextem && dS.sTextem.text === "Lap" && dS.sTextem.kosticky.length === 2,
+  JSON.stringify(dS.sTextem));
+check("backspace v prázdném poli odebere poslední štítek",
+  dS.poBackspace && dS.poBackspace.kosticky.length === 1 && dS.poBackspace.dlazdic === 2,
+  JSON.stringify(dS.poBackspace));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
