@@ -1584,8 +1584,8 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    tabulky, kterou vzhledova vrstva nezobrazuje. */
 /* Nabidka musi byt NAD rosterem: dlazdice kusu se kresli po ni, takze
    bez vlastniho kontextu prosvitaly skrz. */
-.atlas-hledani-roster{position:relative;z-index:60;display:flex;align-items:center;gap:6px;
-  flex-wrap:wrap;min-width:260px;max-width:520px;padding:4px 8px;
+.atlas-hledani-roster{position:relative;display:flex;align-items:center;gap:6px;
+  flex-wrap:wrap;flex:1 1 260px;min-width:260px;padding:4px 8px;
   border:1px solid var(--input-border,var(--border));border-radius:9px;
   background:var(--input-bg)}
 .atlas-hledani-roster:focus-within{border-color:var(--series-1);
@@ -1594,16 +1594,23 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   padding:5px 2px;color:var(--text-primary)}
 .atlas-hledani-roster #searchInput:focus{outline:none}
 .atlas-hledani-kostky{display:contents}
-/* Kosticka v poli i polozka v nabidce nesou TYZ stitek jako detail. */
+/* Kosticka v poli i polozka v nabidce nesou TYZ stitek jako detail.
+
+   Obe rodiny stitku (dv-chip u verdiktu, rarity-chip u znacek) maji
+   v appce ruzne odsazeni i svisle zarovnani — vedle sebe v jednom
+   sloupci to pak neseldelo na jedne lince. Tady se srovnaji na spolecnou
+   vysku a spolecny levy okraj; barvy a tvar si kazda nechava svoje. */
 .atlas-kostka{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .atlas-kostka .dv-chip,.atlas-kostka .rarity-chip,
-.atlas-navrhy .dv-chip,.atlas-navrhy .rarity-chip{font-size:11px}
+.atlas-navrhy .dv-chip,.atlas-navrhy .rarity-chip{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:20px;padding:0 9px;margin:0;font-size:11px;line-height:1;
+  vertical-align:middle;box-sizing:border-box}
 .atlas-kostka button{border:0;background:none;color:inherit;cursor:pointer;
   font-size:11px;line-height:1;padding:3px;min-height:auto;opacity:.75}
 .atlas-kostka button:hover{opacity:1}
 
-.atlas-navrhy{position:absolute;top:calc(100% + 5px);left:0;z-index:60;
-  width:min(340px,100%);max-height:290px;overflow:auto;padding:5px;
+.atlas-navrhy{position:fixed;z-index:2000;max-height:290px;overflow:auto;padding:5px;
   border:1px solid var(--border);border-radius:11px;background:var(--surface-1);
   box-shadow:var(--atlas-shadow)}
 .atlas-navrhy[hidden]{display:none}

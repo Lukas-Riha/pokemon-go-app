@@ -1195,9 +1195,18 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  pole.replaceWith(obal);
  const kostky=document.createElement('span');kostky.className='atlas-hledani-kostky';
  obal.append(kostky,pole);
+ // Nabidka visi na tele stranky, ne v liste: obal listy ma v rezimu
+ // dlazdic `overflow:auto`, takze by ji orezal. Poloha se dopocitava
+ // z pole, aby sedela pod nim.
  const navrhy=document.createElement('div');
  navrhy.className='atlas-navrhy';navrhy.hidden=true;navrhy.setAttribute('role','listbox');
- obal.append(navrhy);
+ document.body.append(navrhy);
+ function umisti(){
+  const r=obal.getBoundingClientRect();
+  navrhy.style.left=Math.round(r.left)+'px';
+  navrhy.style.top=Math.round(r.bottom+5)+'px';
+  navrhy.style.width=Math.round(Math.max(260,Math.min(r.width,420)))+'px';
+ }
  pole.setAttribute('placeholder','Hledat druh nebo štítek…');
  pole.setAttribute('autocomplete','off');
 
@@ -1236,10 +1245,16 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    ven.push({skupina:'duvod',klic:d.klic,popis:d.klic,stitek:d.stitek,
     trida:d.trida,barva:d.barva,pocet:d.pocet})});
   // Co začíná napsaným textem, patří nahoru.
-  // Co zacina napsanym textem, patri nahoru; pri shode rozhodne, kolik
-  // kusu ten stitek v rosteru ma.
-  ven.sort((a,b)=>((holy(b.popis).startsWith(h)?1:0)-(holy(a.popis).startsWith(h)?1:0))
-   ||(b.pocet-a.pocet));
+  // CUTE je zaroven znacka i stitek u verdiktu — v nabidce by byla dvakrat
+  // a filtrovala by totez. Znacka je primejsi, takze vyhrava.
+  const jmenaZnacek=new Set(ven.filter(x=>x.skupina==='znacka').map(x=>holy(x.stitek)));
+  const bezDvojic=ven.filter(x=>x.skupina==='znacka'||!jmenaZnacek.has(holy(x.stitek)));
+  // Stitek, ktery v rosteru nema ani jeden kus, nabizet nema smysl —
+  // vybrat ho znamena prazdny roster.
+  ven.length=0;bezDvojic.forEach(x=>{if(x.pocet>0)ven.push(x)});
+  // Poradi je proste podle abecedy. Podle poctu to skakalo a neslo
+  // odhadnout, kde co bude; A az Z je predvidatelne.
+  ven.sort((a,b)=>String(a.stitek||a.popis).localeCompare(String(b.stitek||b.popis),'cs'));
   return ven.slice(0,8);
  }
 
@@ -1251,6 +1266,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   navrhy.innerHTML=seznam.map((x,i)=>`<button type="button" role="option" data-navrh="${i}" aria-selected="${i===zvyrazneny}">
     ${stitekHtml(x)}<span class="atlas-navrh-pocet">${x.pocet}</span></button>`).join('');
   navrhy.__seznam=seznam;
+  umisti();
   navrhy.hidden=false;pole.setAttribute('aria-expanded','true');
  }
 
@@ -1291,7 +1307,11 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   vybrane.splice(Number(b.closest('.atlas-kostka').dataset.i),1);
   vykresliKostky();pouzij();pole.focus();
  });
- document.addEventListener('click',e=>{if(!obal.contains(e.target))zavri()});
+ document.addEventListener('click',e=>{
+  if(!obal.contains(e.target)&&!navrhy.contains(e.target))zavri();
+ });
+ window.addEventListener('scroll',()=>{if(!navrhy.hidden)umisti()},true);
+ window.addEventListener('resize',()=>{if(!navrhy.hidden)umisti()});
 
  // „Zrušit filtry" má vyhodit i kostičky, jinak by zůstaly viset nad
  // rosterem, který už podle nich nefiltruje.
