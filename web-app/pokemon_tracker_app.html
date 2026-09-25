@@ -26910,25 +26910,51 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * s tím, podle čeho se doopravdy filtruje.
      */
     atlasStitky: function () {
-      var panel = document.getElementById("znackaFiltrPanel");
-      var znacky = panel
-        ? Array.prototype.map.call(panel.querySelectorAll("input[data-znacka]"), function (i) {
-            return { klic: i.dataset.znacka,
-              popis: String(i.parentNode.textContent || "").trim() };
-          })
-        : [];
+      /* Jak se štítek kreslí v detailu — vrstva ho v nabídce ukáže stejně,
+         aby člověk viděl to, co pak najde. Klíč filtru → třída a popisek. */
+      var ZNACKA_CHIP = {
+        L: { trida: "rarity-chip r-L", stitek: "LEG" },
+        M: { trida: "rarity-chip r-M", stitek: "MYT" },
+        U: { trida: "rarity-chip r-U", stitek: "UB" },
+        D: { trida: "rarity-chip r-D", stitek: "DMAX" },
+        C: { trida: "rarity-chip r-C", stitek: "CUTE" },
+        H: { trida: "rarity-chip r-H", stitek: "100 %" },
+        S: { trida: "rarity-chip r-S", stitek: "SHINY" },
+        K: { trida: "rarity-chip r-L2", stitek: "LUCKY" }
+      };
       var computed = analyze();
-      var pocty = {};
+      var pocty = {}, pocetZnacek = {}, kategorie = {};
       lastBase.forEach(function (b) {
         var cc = computed[b.row.id];
         if (!cc) return;
         Object.keys(duvodKlice(cc.duvody)).forEach(function (k) {
           pocty[k] = (pocty[k] || 0) + 1;
         });
+        // Kategorie štítku (liga / raid / gym…) rozhoduje o jeho vzhledu.
+        (cc.duvody || []).forEach(function (d) {
+          if (d.filtr && !kategorie[d.filtr]) kategorie[d.filtr] = d.kat || "";
+        });
+        znackyKusu(cc).forEach(function (k) {
+          pocetZnacek[k] = (pocetZnacek[k] || 0) + 1;
+        });
       });
+      var panel = document.getElementById("znackaFiltrPanel");
+      var znacky = panel
+        ? Array.prototype.map.call(panel.querySelectorAll("input[data-znacka]"), function (i) {
+            var k = i.dataset.znacka, chip = ZNACKA_CHIP[k] || {};
+            return { klic: k, popis: String(i.parentNode.textContent || "").trim(),
+              stitek: chip.stitek || k, trida: chip.trida || "rarity-chip",
+              pocet: pocetZnacek[k] || 0 };
+          })
+        : [];
       var duvody = Object.keys(pocty).sort(function (a, z) {
         return a.localeCompare(z, "cs");
-      }).map(function (k) { return { klic: k, pocet: pocty[k] }; });
+      }).map(function (k) {
+        return { klic: k, stitek: k, pocet: pocty[k],
+          trida: "dv-chip dv-" + (kategorie[k] || "role"),
+          // Typové štítky mají barvu typu, stejně jako v detailu.
+          barva: TYPE_COLORS[k] || "" };
+      });
       return { znacky: znacky, duvody: duvody,
         vybrane: { znacky: Object.keys(znackaFiltr.znacky),
           duvody: Object.keys(duvodFiltr), vse: !!znackaFiltr.vse } };

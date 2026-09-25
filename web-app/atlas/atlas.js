@@ -1210,8 +1210,14 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   window.__atlasTest?.refresh?.();
  }
 
+ /* Stitek vypada stejne jako v detailu — barevny oval, ne holy text.
+    Clovek tak v nabidce vidi presne to, co pak v rosteru najde. */
+ function stitekHtml(x){
+  const styl=x.barva?` style="border-color:${esc(x.barva)};background:color-mix(in srgb, ${esc(x.barva)} 24%, var(--surface-1))"`:'';
+  return `<span class="${esc(x.trida||'dv-chip dv-role')}"${styl}>${esc(x.stitek||x.popis||x.klic)}</span>`;
+ }
  function vykresliKostky(){
-  kostky.innerHTML=vybrane.map((x,i)=>`<span class="atlas-kostka" data-i="${i}">${esc(x.popis)}<button type="button" aria-label="Odebrat ${esc(x.popis)}">✕</button></span>`).join('');
+  kostky.innerHTML=vybrane.map((x,i)=>`<span class="atlas-kostka" data-i="${i}">${stitekHtml(x)}<button type="button" aria-label="Odebrat ${esc(x.stitek||x.popis)}">✕</button></span>`).join('');
   obal.classList.toggle('ma-kostky',vybrane.length>0);
  }
 
@@ -1221,12 +1227,19 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   if(!h)return [];
   const mam=new Set(vybrane.map(x=>x.skupina+':'+x.klic));
   const ven=[];
-  n.znacky.forEach(z=>{if(holy(z.popis).includes(h)&&!mam.has('znacka:'+z.klic))
-   ven.push({skupina:'znacka',klic:z.klic,popis:z.popis,pocet:0})});
+  n.znacky.forEach(z=>{
+   // Hleda se podle ceskeho popisu i podle toho, co je na stitku videt.
+   if((holy(z.popis).includes(h)||holy(z.stitek).includes(h))&&!mam.has('znacka:'+z.klic))
+    ven.push({skupina:'znacka',klic:z.klic,popis:z.popis,stitek:z.stitek,
+     trida:z.trida,pocet:z.pocet})});
   n.duvody.forEach(d=>{if(holy(d.klic).includes(h)&&!mam.has('duvod:'+d.klic))
-   ven.push({skupina:'duvod',klic:d.klic,popis:d.klic,pocet:d.pocet})});
+   ven.push({skupina:'duvod',klic:d.klic,popis:d.klic,stitek:d.stitek,
+    trida:d.trida,barva:d.barva,pocet:d.pocet})});
   // Co začíná napsaným textem, patří nahoru.
-  ven.sort((a,b)=>(holy(b.popis).startsWith(h)?1:0)-(holy(a.popis).startsWith(h)?1:0));
+  // Co zacina napsanym textem, patri nahoru; pri shode rozhodne, kolik
+  // kusu ten stitek v rosteru ma.
+  ven.sort((a,b)=>((holy(b.popis).startsWith(h)?1:0)-(holy(a.popis).startsWith(h)?1:0))
+   ||(b.pocet-a.pocet));
   return ven.slice(0,8);
  }
 
@@ -1236,8 +1249,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const seznam=najdi(pole.value);
   if(!seznam.length){zavri();return}
   navrhy.innerHTML=seznam.map((x,i)=>`<button type="button" role="option" data-navrh="${i}" aria-selected="${i===zvyrazneny}">
-    <span class="atlas-navrh-skupina">${x.skupina==='znacka'?'značka':'štítek'}</span>
-    <b>${esc(x.popis)}</b>${x.pocet?`<span class="atlas-navrh-pocet">${x.pocet}</span>`:''}</button>`).join('');
+    ${stitekHtml(x)}<span class="atlas-navrh-pocet">${x.pocet}</span></button>`).join('');
   navrhy.__seznam=seznam;
   navrhy.hidden=false;pole.setAttribute('aria-expanded','true');
  }
