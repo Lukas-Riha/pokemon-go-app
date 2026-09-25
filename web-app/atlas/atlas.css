@@ -1673,3 +1673,12 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   border-left:1px solid var(--border)!important;border-radius:0 7px 7px 0!important}
 /* Kdyz radi hledany stitek, kosticky jsou jen nabidka, ne stav. */
 .atlas-razeni.podle-stitku .atlas-razeni-rychle{opacity:.72}
+
+/* Claude 25. 9. (30): verdikt jako stitek k vyhledani.
+
+   Filtr mel na verdikt pet ruznych voleb; ve skutecnosti jsou stavy tri
+   a clovek je zna z barev na karte. Stejne barvy nese i stitek. */
+.rarity-chip.r-verdikt{color:#fff}
+.rarity-chip.r-VP{background:var(--status-good)}
+.rarity-chip.r-VN{background:var(--status-warning);color:#241a00}
+.rarity-chip.r-VZ{background:var(--status-critical)}

@@ -3311,6 +3311,9 @@
     <label><input type="checkbox" data-znacka="H" /> 100&nbsp;%</label>
     <label><input type="checkbox" data-znacka="S" /> Shiny</label>
     <label><input type="checkbox" data-znacka="K" /> Lucky</label>
+    <label><input type="checkbox" data-znacka="VP" /> Ponechat</label>
+    <label><input type="checkbox" data-znacka="VN" /> Nechat</label>
+    <label><input type="checkbox" data-znacka="VZ" /> Zahodit</label>
     <label><input type="checkbox" data-znacka="SH" /> Shadow</label>
     <label><input type="checkbox" data-znacka="PU" /> Purified</label>
     <label><input type="checkbox" data-znacka="SKEN" /> Poslední sken</label>
@@ -5510,6 +5513,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (c.stoProcent) z.push("H");
     if (c.shiny) z.push("S");
     if (c.lucky) z.push("K");
+    var verdikt = String(c.keep || "");
+    if (/^Ponechat/.test(verdikt)) z.push("VP");
+    else if (/^Nechat/.test(verdikt)) z.push("VN");
+    else if (/^Zahodit/.test(verdikt)) z.push("VZ");
     if (c.forma === "Shadow") z.push("SH");
     if (c.forma === "Purified") z.push("PU");
     // Poslední naskenovaný kus — odsud se pokračuje při dalším skenování.
@@ -13299,12 +13306,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   /** Klíče pro filtr „Důvod": štítky + „Rezerva" a „Náplast". */
-  /** Pořadí kusu uvnitř jednoho štítku: „Fire 2/6“ → 2. */
+  /** Pořadí kusu uvnitř jednoho štítku: „Fire 2/6“ i „UL #11“ → 2, resp. 11. */
   function duvodPoradi(c, klic) {
     var n = null;
     (c && c.duvody || []).forEach(function (d) {
       if (d.filtr !== klic || n !== null) return;
-      var m = /(\d+)\s*\/\s*\d+/.exec(String(d.stitek || ""));
+      var s = String(d.stitek || "");
+      var m = /(\d+)\s*\/\s*\d+/.exec(s) || /#\s*(\d+)/.exec(s);
       if (m) n = Number(m[1]);
     });
     return n;
@@ -15450,14 +15458,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     /* Hledání podle štítku sam o sobě řadí: kdo je ve štítku první, patří
        nahoře. Platí jen při „původním řazení“ — když si člověk řazení zvolí,
        má přednost. Při víc štítcích rozhoduje ten, který zadal jako první. */
-    if (!sortKey && duvodFiltrAktivni()) {
-      var hlavniStitek = Object.keys(duvodFiltr)[0];
+    if (!sortKey && (duvodFiltrAktivni() || znackaFiltrAktivni())) {
+      var hlavniStitek = Object.keys(duvodFiltr)[0] || "";
+      var cpKusu = function (x) { return num(x.row.cp) || 0; };
       list.sort(function (a, bb) {
-        var pa = duvodPoradi(a.c, hlavniStitek), pb = duvodPoradi(bb.c, hlavniStitek);
-        if (pa === null && pb === null) return 0;
-        if (pa === null) return 1;
-        if (pb === null) return -1;
-        return pa - pb;
+        var pa = hlavniStitek ? duvodPoradi(a.c, hlavniStitek) : null;
+        var pb = hlavniStitek ? duvodPoradi(bb.c, hlavniStitek) : null;
+        // Kus bez pořadí ve štítku patří za ty s pořadím; mezi sebou
+        // se řadí podle CP od nejvyššího, tedy jako všude jinde.
+        if (pa !== null && pb !== null && pa !== pb) return pa - pb;
+        if (pa !== null && pb === null) return -1;
+        if (pa === null && pb !== null) return 1;
+        return cpKusu(bb) - cpKusu(a);
       });
     }
     if (counterMode && bossTypes.length) {
@@ -26955,6 +26967,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         H: { trida: "rarity-chip r-H", stitek: "100 %" },
         S: { trida: "rarity-chip r-S", stitek: "SHINY" },
         K: { trida: "rarity-chip r-L2", stitek: "LUCKY" },
+        VP: { trida: "rarity-chip r-verdikt r-VP", stitek: "PONECHAT" },
+        VN: { trida: "rarity-chip r-verdikt r-VN", stitek: "NECHAT" },
+        VZ: { trida: "rarity-chip r-verdikt r-VZ", stitek: "ZAHODIT" },
         SH: { trida: "rarity-chip r-SH", stitek: "SHADOW" },
         PU: { trida: "rarity-chip r-PU", stitek: "PURIFIED" },
         SKEN: { trida: "rarity-chip r-SKEN", stitek: "POSLEDNÍ SKEN" }
