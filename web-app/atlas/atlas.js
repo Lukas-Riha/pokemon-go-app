@@ -1207,7 +1207,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   navrhy.style.top=Math.round(r.bottom+5)+'px';
   navrhy.style.width=Math.round(Math.max(260,Math.min(r.width,420)))+'px';
  }
- pole.setAttribute('placeholder','Hledat druh nebo štítek…');
+ pole.setAttribute('placeholder','Hledat pokémona');
  pole.setAttribute('autocomplete','off');
 
  function pouzij(){
@@ -1319,4 +1319,77 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   if(!vybrane.length)return;
   vybrane.length=0;vykresliKostky();
  });
+})();
+
+/* Razeni jako stitky, ne jako roletka o tricet polozkach.
+
+   Vyber razeni mel tri skupiny a pres dvacet radku; devadesat procent
+   casu z nich clovek chce ctyri. Bezne razeni je proto videt rovnou
+   jako kosticky, zbytek (cas, ligy) zustava v roletce vedle.
+
+   Roletka `#atlasSort` zustava v dokumentu a je porad zdrojem pravdy —
+   kosticky do ni jen zapisuji a poslou `change`, takze obsluha vrstvy
+   i engine zustavaji jedno misto. */
+(() => {
+ const $=s=>document.querySelector(s);
+ const sel=$('#atlasSort');if(!sel)return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+ // Co ma byt hned po ruce. Klic je hodnota volby v roletce.
+ const RYCHLE=[
+  ['','Původní','Pořadí, ve kterém kusy přišly do rosteru'],
+  ['pokemon:1','A–Z','Jméno od A do Z'],
+  ['pokemon:-1','Z–A','Jméno od Z do A'],
+  ['cp:-1','CP ↓','CP od nejvyššího'],
+  ['cp:1','CP ↑','CP od nejnižšího'],
+  ['ivPct:-1','IV ↓','IV od nejvyššího'],
+  ['ivPct:1','IV ↑','IV od nejnižšího'],
+  ['level:-1','L ↓','Level od nejvyššího'],
+  ['level:1','L ↑','Level od nejnižšího']
+ ];
+
+ const obal=document.createElement('div');obal.className='atlas-razeni';
+ sel.before(obal);
+ const rychle=document.createElement('div');rychle.className='atlas-razeni-rychle';
+ rychle.setAttribute('role','group');rychle.setAttribute('aria-label','Řazení');
+ obal.append(rychle);
+ // Zbytek (cas, PvP ligy) zustava v roletce — jen zmensene a s popiskem.
+ obal.append(sel);
+ sel.classList.add('atlas-razeni-vic');
+
+ const znam=new Set(RYCHLE.map(x=>x[0]));
+ // Co uz je kostickou, nema v roletce co delat.
+ [...sel.options].forEach(o=>{if(znam.has(o.value)&&o.value!=='')o.hidden=true});
+ // Kdyz radi kosticka, roletka to nema opakovat — rekne jen, ze v ni je
+ // zbytek. Vlastni hodnotu si drzi `aktivni`, roletka je pak jen nabidka.
+ const zastupce=document.createElement('option');
+ zastupce.textContent='Další řazení…';zastupce.value='__vic';zastupce.hidden=true;
+ sel.prepend(zastupce);
+ let aktivni=sel.value;
+
+ rychle.innerHTML=RYCHLE.map(([val,popis,tip])=>
+  `<button type="button" data-razeni="${esc(val)}" data-tip="${esc(tip)}" aria-pressed="false">${esc(popis)}</button>`).join('');
+
+ function sync(){
+  rychle.querySelectorAll('[data-razeni]').forEach(b=>{
+   b.setAttribute('aria-pressed',String(b.dataset.razeni===aktivni));
+  });
+  const vic=!znam.has(aktivni);
+  obal.classList.toggle('vic-aktivni',vic);
+  // Roletka ukazuje svoji volbu jen tehdy, kdyz podle ni opravdu radime.
+  if(!vic)zastupce.selected=true;
+ }
+
+ rychle.addEventListener('click',e=>{
+  const b=e.target.closest('[data-razeni]');if(!b)return;
+  aktivni=b.dataset.razeni;
+  sel.value=aktivni;
+  sel.dispatchEvent(new Event('change',{bubbles:true}));
+  sync();
+ });
+ sel.addEventListener('change',()=>{
+  if(sel.value==='__vic')return;
+  aktivni=sel.value;sync();
+ });
+ sync();
 })();

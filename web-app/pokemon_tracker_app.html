@@ -13289,6 +13289,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   /** Klíče pro filtr „Důvod": štítky + „Rezerva" a „Náplast". */
+  /** Pořadí kusu uvnitř jednoho štítku: „Fire 2/6“ → 2. */
+  function duvodPoradi(c, klic) {
+    var n = null;
+    (c && c.duvody || []).forEach(function (d) {
+      if (d.filtr !== klic || n !== null) return;
+      var m = /(\d+)\s*\/\s*\d+/.exec(String(d.stitek || ""));
+      if (m) n = Number(m[1]);
+    });
+    return n;
+  }
+
   function duvodKlice(duvody) {
     var k = {};
     (duvody || []).forEach(function (d) {
@@ -15426,6 +15437,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       });
     }
 
+    /* Hledání podle štítku sam o sobě řadí: kdo je ve štítku první, patří
+       nahoře. Platí jen při „původním řazení“ — když si člověk řazení zvolí,
+       má přednost. Při víc štítcích rozhoduje ten, který zadal jako první. */
+    if (!sortKey && duvodFiltrAktivni()) {
+      var hlavniStitek = Object.keys(duvodFiltr)[0];
+      list.sort(function (a, bb) {
+        var pa = duvodPoradi(a.c, hlavniStitek), pb = duvodPoradi(bb.c, hlavniStitek);
+        if (pa === null && pb === null) return 0;
+        if (pa === null) return 1;
+        if (pb === null) return -1;
+        return pa - pb;
+      });
+    }
     if (counterMode && bossTypes.length) {
       list.sort(function (a, bb) {
         var pa = a.c.counter ? a.c.counter.pct : -1;

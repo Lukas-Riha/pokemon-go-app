@@ -1620,3 +1620,44 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-navrhy button:hover,.atlas-navrhy button[aria-selected=true]{background:var(--atlas-soft)}
 .atlas-navrh-pocet{margin-left:auto;font-size:11px;color:var(--text-muted);
   font-variant-numeric:tabular-nums}
+
+/* Claude 25. 9. (26): posuvnik appky plati vsude.
+
+   Hezci posuvnik se doted lepil na jednotlive prvky (#atlasRoster,
+   .uv-seznam) a kazdy novy scrollovaci panel na nej zapomnel. Tady je
+   jednou pro celou appku; kdyz se zmeni, zmeni se vsude.
+
+   Selektor je schvalne slaby (`.atlas-test ::-webkit-scrollbar`), takze
+   misto, ktere si posuvnik schovava naschval, si to uhlida vlastnim
+   specifictejsim pravidlem. */
+.atlas-test{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--text-secondary) 30%,transparent) transparent}
+.atlas-test ::-webkit-scrollbar{width:10px;height:10px}
+.atlas-test ::-webkit-scrollbar-track{background:transparent}
+.atlas-test ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text-secondary) 30%,transparent);
+  border-radius:8px;border:2px solid transparent;background-clip:content-box}
+.atlas-test ::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--series-1) 55%,transparent);
+  background-clip:content-box}
+
+/* Claude 25. 9. (27): cislo verze je nahore v zahlavi — dole uz podruhe
+   ani potreti netreba. */
+.atlas-test #atlasVerze,
+.atlas-test #buildStamp,
+.atlas-test .build-line{display:none}
+
+/* Claude 25. 9. (28): razeni jako kosticky.
+
+   Roletka mela tri skupiny a pres dvacet radku; devadesat procent casu
+   z nich clovek chce ctyri. Bezne razeni je proto videt rovnou, zbytek
+   (cas, PvP ligy) zustava v roletce vedle. */
+.atlas-razeni{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.atlas-razeni-rychle{display:flex;gap:4px;flex-wrap:wrap;padding:3px;
+  border:1px solid var(--border);border-radius:10px;background:var(--input-bg)}
+.atlas-razeni-rychle button{min-height:32px!important;padding:5px 10px!important;
+  border:0!important;border-radius:7px!important;background:none!important;
+  color:var(--text-secondary)!important;font-size:12px;font-weight:650;cursor:pointer;
+  white-space:nowrap}
+.atlas-razeni-rychle button:hover{background:var(--atlas-soft)!important}
+.atlas-razeni-rychle button[aria-pressed=true]{background:#195be8!important;color:#fff!important}
+.atlas-razeni .atlas-razeni-vic{max-width:190px}
+.atlas-razeni.vic-aktivni .atlas-razeni-vic{border-color:var(--series-1)!important;
+  color:var(--series-1)!important}
