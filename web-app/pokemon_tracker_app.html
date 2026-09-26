@@ -13930,10 +13930,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
               })[0];
               if (!od) return "";
               var pod = evoPodminky(od, k), bon = evoBonusy(od, k);
+              // Podmínka je věta, ne štítek: v úzké dlaždici se ořízne a pak
+              // se člověk nikde nedočte, co se po něm vlastně chce.
               return (pod.length
-                  ? '<u class="d-evo-podminka">' + escHtml(pod.join(" · ")) + "</u>" : "")
+                  ? '<u class="d-evo-podminka" data-tip="'
+                    + escHtml("Aby šel vyvinout: " + pod.join(" · ") + ".")
+                    + '">' + escHtml(pod.join(" · ")) + "</u>" : "")
                 + (bon.length
-                  ? '<u class="d-evo-bonus">' + escHtml(bon.join(" · ")) + "</u>" : "");
+                  ? '<u class="d-evo-bonus" data-tip="' + escHtml(bon.join(" · "))
+                    + '">' + escHtml(bon.join(" · ")) + "</u>" : "");
             })()
           + (jsemJa ? '<u>tady jsi</u>' : "")
           + "</span>";
@@ -14335,6 +14340,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (!obsah) return;
       cil = t;
       vytvor();
+      /* Modální plachta (detail kusu, import) se kreslí ve „vrstvě navrch",
+         která je nad vším bez ohledu na z-index. Bublina visící na těle
+         stránky se pod ni schovala — u výběru útoků z ní šel vidět jen
+         proužek. Přestěhuje se proto do té plachty. */
+      var plachta = t.closest ? t.closest("dialog[open]") : null;
+      var kam = plachta || document.body;
+      if (el.parentNode !== kam) kam.appendChild(el);
       // Seznam schovanych stitku („+N") byva dlouhy. Dostane vlastni tridu,
       // podle ktere se vysazi do sloupcu misto jednoho dlouheho sloupce.
       el.classList.toggle("tip-siroka",

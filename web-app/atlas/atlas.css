@@ -1713,3 +1713,38 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    z herniho menu. U Nidorana to navic neni kosmetika, ale druh. */
 .rarity-chip.r-f{background:#e75aa8;color:#fff;font-weight:700}
 .rarity-chip.r-m{background:#4a8fe0;color:#fff;font-weight:700}
+
+/* Claude 26. 9. (34): posledni sken rameckem, ne stitkem.
+
+   "POSLEDNI SKEN" byl nejdelsi stitek ze vsech a s druhym uz se na radek
+   nevesel — spadl pod nej a tlacil na verdikt. Pritom je to znacka jednoho
+   jedineho kusu v celem rosteru; ramecek kolem dlazdice ji ukaze lip.
+   Hledat se da dal: stitek SKEN v poli, kosticka u razeni, karta
+   na Prehledu. */
+.atlas-test #atlasRoster .atlas-roster-tile[data-sken]{
+  border-color:var(--series-1);
+  box-shadow:0 0 0 1px var(--series-1) inset,0 3px 10px #00000010}
+.atlas-test #atlasRoster .atlas-roster-tile[data-sken]::after{
+  content:"POSLEDNÍ SKEN";position:absolute;top:0;left:50%;
+  transform:translate(-50%,-50%);background:var(--series-1);color:#fff;
+  font-size:8.5px;font-weight:800;letter-spacing:.06em;padding:2px 8px;
+  border-radius:9px;white-space:nowrap;pointer-events:none}
+
+/* Podminka evoluce je veta, ne stitek: musi se zalomit a docist. Oriznuti
+   po treti radce bralo cast textu a dlouhe slovo navic trcelo ze stran. */
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-podminka,
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-bonus{
+  display:block;-webkit-line-clamp:none;overflow:visible;
+  overflow-wrap:anywhere;word-break:normal}
+/* V cisteni boxu ma karta pevnou vysku, tam oriznuti zustava — cele zneni
+   je v bubline nad stitkem. */
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u.d-evo-podminka,
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u.d-evo-bonus{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* Bublina musi byt nad vsim, co vrstva kresli.
+
+   Engine ji dal z-index 400, coz stacilo v holé tabulce. Vrstva ale ma
+   plachtu, upravy a vyber utoku az na 3000 — bublina "Elitni utok" se pod
+   nimi kreslila a bylo z ni videt jen proužek. */
+.atlas-test .tip-bublina{z-index:4000}

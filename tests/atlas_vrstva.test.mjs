@@ -1222,7 +1222,10 @@ const dEd = await pEd.evaluate(async () => {
   const rows = P.getRows(), c = P.getComputed();
   // poslední naskenovaný kus
   out.posledni = rows.filter((r) => c[r.id].posledniSken).map((r) => r.pokemon);
-  out.znackaVDlazdici = document.querySelectorAll("#atlasRoster .rarity-chip.r-SKEN").length;
+  // Stitek "POSLEDNI SKEN" byl nejdelsi ze vsech a s druhym uz se na radek
+  // nevesel. Ted je to ramecek kolem dlazdice — hledat se da dal.
+  out.znackaVDlazdici = document.querySelectorAll("#atlasRoster .atlas-roster-tile[data-sken]").length;
+  out.stitekVDlazdici = document.querySelectorAll("#atlasRoster .rarity-chip.r-SKEN").length;
   // shiny má vlastní obrázek (a náhrady za ním)
   A.openDetail(rows.filter((r) => r.pokemon === "Azumarill")[0].id);
   await cekej(1200);
@@ -1261,7 +1264,8 @@ const dRadek = await pEd.evaluate(async () => {
 });
 await pEd.close();
 check("poslední naskenovaný kus je označený",
-  dEd.posledni.length === 1 && dEd.posledni[0] === "Azumarill" && dEd.znackaVDlazdici === 1,
+  dEd.posledni.length === 1 && dEd.posledni[0] === "Azumarill"
+    && dEd.znackaVDlazdici === 1 && dEd.stitekVDlazdici === 0,
   JSON.stringify(dEd));
 check("shiny kus má vlastní obrázek i náhrady za ním",
   dEd.shinySrc === true && dEd.shinyZaloha >= 2, JSON.stringify(dEd));
@@ -2137,23 +2141,27 @@ const dE = await pE.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
   A.openDetail(P.getRows()[0].id);
   await cekej(1200);
-  window.AtlasEditRow(P.getRows()[0].id);
-  await cekej(900);
+  // Ulozit znamena hotovo: formular se zavre. Tam a zpatky se proto dela
+  // na dvakrat — drive to slo v jednom otevrenem formulari a druhe ulozeni
+  // se porovnavalo porad proti stavu pri otevreni, takze neudelalo nic.
   const ulozit = async (v) => {
+    window.AtlasEditRow(P.getRows()[0].id);
+    await cekej(900);
     const f = document.getElementById("atlasRowEditor");
     f.elements.pohlavi.value = v;
     f.elements.pohlavi.dispatchEvent(new Event("change", { bubbles: true }));
     f.requestSubmit();
     await cekej(1200);
-    return P.getRows()[0].pohlavi;
+    return { hodnota: P.getRows()[0].pohlavi,
+      zavreno: !document.getElementById("atlasRowEditor") };
   };
-  // Tam a zpatky v JEDNOM otevrenem formulari: druhe ulozeni se drive
-  // porovnavalo porad proti stavu pri otevreni a neudelalo nic.
   return { prvni: await ulozit("Samice"), druhe: await ulozit("Samec") };
 });
 await pE.close();
-check("druhé uložení v témže formuláři taky zapíše",
-  dE.prvni === "Samice" && dE.druhe === "Samec", JSON.stringify(dE));
+check("uložení zapíše a úpravy se zavřou",
+  dE.prvni.hodnota === "Samice" && dE.prvni.zavreno === true, JSON.stringify(dE.prvni));
+check("…a po dalším otevření jde hodnota vrátit zpátky",
+  dE.druhe.hodnota === "Samec" && dE.druhe.zavreno === true, JSON.stringify(dE.druhe));
 
 const pN = await otevri(1000, [
   { pokemon: "Jellicent", level: 25, ivAtk: 12, ivDef: 12, ivSta: 12,
