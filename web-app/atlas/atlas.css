@@ -1706,3 +1706,10 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-import-dialog .imp-jinak button{font-size:12.5px;padding:7px 11px}
 .atlas-import-dialog .imp-volba{cursor:help}
 .atlas-import-dialog .imp-fakta b{font-size:15px}
+
+/* Claude 25. 9. (33): pohlavi jako znacka.
+
+   Sken ho vozi jako slovo ve sloupci; na karte je citelnejsi symbol
+   z herniho menu. U Nidorana to navic neni kosmetika, ale druh. */
+.rarity-chip.r-f{background:#e75aa8;color:#fff;font-weight:700}
+.rarity-chip.r-m{background:#4a8fe0;color:#fff;font-weight:700}

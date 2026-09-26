@@ -719,7 +719,9 @@ try {
   check("je vidět, odkud je PvP meta a jak je stará", info.text.indexOf("PvPoke top") > -1, info.text.slice(0, 200));
   eq("odkaz vede na žebříčky PvPoke", info.odkaz, "https://pvpoke.com/rankings/");
   check("je tam návod, co na PvPoke hledat", info.text.indexOf("moveset") > -1);
-  check("jsou tam příkazy na obnovu dat", info.text.indexOf("build_meta.py --refresh") > -1);
+  check("obnova dat je popsaná lidsky, ne příkazem",
+    /nové verze appky/.test(info.text) && !/\.py|--refresh|python /.test(info.text),
+    info.text.slice(0, 400));
   check("stará data vyvolají varování", info.staleVarovani);
   check("…a po obnovení zmizí", info.poObnoveni);
   eq("meta se bere z top 200 PvPoke", info.metaTop, 200);
@@ -3712,8 +3714,9 @@ try {
     "Uplneneznamypokemon,Dalsineznamy");
   check("…a je to vidět nad patičkou", nova.videt);
   check("…se správným skloňováním", nova.text.indexOf("2 druhy") > -1, nova.text.slice(0, 80));
-  check("…a s návodem, jak data obnovit",
-    nova.text.indexOf("build_pokedex.py --refresh") > -1, nova.text.slice(0, 300));
+  check("…a s tím, co se s tím dá dělat — bez příkazů",
+    /novější verze appky/.test(nova.text) && !/\.py|--refresh|python /.test(nova.text),
+    nova.text.slice(0, 300));
   check("…a s datem, ze kdy data jsou",
     /\d{4}-\d{2}-\d{2}/.test(nova.text), nova.text.slice(0, 300));
 
@@ -7461,13 +7464,26 @@ try {
   // Sloupce se musí řídit verdiktem. Dřív se počítaly DŘÍV než se CUTE
   // uplatnilo, takže u kusu s verdiktem „Ponechat“ svítilo v Tradovat
   // „Ano · pouštíš ho“ — což je totéž jako ho vyhodit.
-  const cuteTrade = await page.evaluate(() => {
+  const cuteTrade = await page.evaluate(async () => {
     const P = window.__pgo;
+    // Prah „od jakeho IV nechat kus na trade" tady prekazi: testuje se, ze
+    // CUTE trade zavre, ne jestli je ten kus na vymenu dost dobry.
+    const prah = document.getElementById("tradeThresh");
+    const puvodni = prah.value;
+    prah.value = "0";
+    prah.dispatchEvent(new Event("input", { bubbles: true }));
+    prah.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 900));
     const c = P.getComputed(), rows = P.getRows();
     const r = rows.filter((x) => x.pokemon === "Rattata" && +x.cp === 210)[0];
     const bez = rows.filter((x) => x.pokemon === "Rattata" && +x.cp === 200)[0];
-    return { cute: { t: c[r.id].trade, s: c[r.id].tradeSub || "" },
+    const out = { cute: { t: c[r.id].trade, s: c[r.id].tradeSub || "" },
       bezCute: { t: c[bez.id].trade } };
+    prah.value = puvodni;
+    prah.dispatchEvent(new Event("input", { bubbles: true }));
+    prah.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 700));
+    return out;
   });
   check("CUTE kus se nenabízí ani k tradu", cuteTrade.cute.t === "Ne",
     cuteTrade.cute.t + " · " + cuteTrade.cute.s);
@@ -13080,7 +13096,7 @@ try {
     // Tabulka zdrojů je vlastní prvek, který se veze se záložkou.
     const z = (document.getElementById("dataInfo") || {}).textContent || "";
     return { alias: t.indexOf("Jeden boss, dvě jména") > -1,
-      denne: (t + z).replace(/\s+/g, " ").indexOf("naplanovat.ps1 -Obnovit") > -1 };
+      denne: (t + z).replace(/\s+/g, " ").indexOf("denní úloha") > -1 };
   });
   check("dokumentace popisuje sjednocení jmen bossů", dok218.alias);
   check("…i denní obnovu dat", dok218.denne);
@@ -16362,7 +16378,7 @@ try {
       ["Mewtwo", "Litten", "Nickit", "Clamperl", "Combee", "Ampharos", "Gyarados"]),
     JSON.stringify(chyceni.chyceniNovejsi));
   check("import hned řekne, kolik kusů má datum chycení",
-    /datum chycení 1\/7 \(\+4 jen rok\)/.test(chyceni.importNote), chyceni.importNote);
+    /datum chycení: 1 z 7, další 4 jen rok/.test(chyceni.importNote), chyceni.importNote);
   check("řazení podle skenu: naposledy naskenovaný první",
     chyceni.skenNovejsi[0] === "Ampharos" && chyceni.skenNovejsi[chyceni.skenNovejsi.length - 1] === "Clamperl",
     JSON.stringify(chyceni.skenNovejsi));
@@ -17923,6 +17939,109 @@ try {
     impNahled.poSlouceni.indexOf("Gyarados 2686") > -1
       && impNahled.poSlouceni.indexOf("Lapras 1700") > -1
       && impNahled.poSlouceni.split("|").length === 5, impNahled.poSlouceni);
+
+  // ---- Nidoran: dva druhy, ne dvě pohlaví jednoho ------------------
+  // Značka pohlaví se ze jména odstraňuje, protože je to údaj o kuse.
+  // U Nidorana ale značka JE jméno druhu: ♀ (#29) vede na Nidoqueen,
+  // ♂ (#32) na Nidokinga. Bez ní ho herní data neznají vůbec.
+  const nidoran = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Nidoran♀", cp: 300, level: 20, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { pokemon: "Nidoran♂", cp: 310, level: 20, ivAtk: 14, ivDef: 14, ivSta: 14 },
+      { pokemon: "Nidoran", gender: "Female", cp: 280, level: 18, ivAtk: 10, ivDef: 10, ivSta: 10 },
+      { pokemon: "Jellicent♂", cp: 1500, level: 25, ivAtk: 10, ivDef: 10, ivSta: 10 }
+    ]);
+    await new Promise((r) => setTimeout(r, 1500));
+    const rows = P.getRows(), comp = P.getComputed();
+    const out = rows.map((r) => {
+      const c = comp[r.id] || {};
+      return { jmeno: r.pokemon, pohlavi: P.atlasPohlavi(r), kopii: c.copies || 1,
+        cesta: (c.evolveSub || "") + " " + (c.keepSub || ""), typy: c.types || "" };
+    });
+    return { rows: out, varovani: (document.getElementById("unknownWarn") || {}).textContent || "" };
+  });
+  check("Nidoran si značku pohlaví ve jméně nechá",
+    nidoran.rows[0].jmeno === "Nidoran ♀" && nidoran.rows[1].jmeno === "Nidoran ♂",
+    JSON.stringify(nidoran.rows.map((r) => r.jmeno)));
+  check("…a herní data ho díky tomu znají",
+    !/Nidoran/.test(nidoran.varovani), nidoran.varovani);
+  check("…kus, kterému značku sebral starší import, se opraví podle pohlaví",
+    nidoran.rows[2].jmeno === "Nidoran ♀", nidoran.rows[2].jmeno);
+  // Sloupec Kopie je věta („#1 z 2", „jediný kus"), ne číslo.
+  check("…a samec se samicí se nepočítají jako kopie jednoho druhu",
+    /2/.test(String(nidoran.rows[0].kopii)) && /jedin/.test(String(nidoran.rows[1].kopii)),
+    JSON.stringify(nidoran.rows.map((r) => r.jmeno + " × " + r.kopii)));
+  check("u ostatních druhů značka ze jména dál mizí",
+    nidoran.rows[3].jmeno === "Jellicent" && nidoran.rows[3].pohlavi === "m",
+    nidoran.rows[3].jmeno + " / " + nidoran.rows[3].pohlavi);
+
+  // ---- Práh, od kterého se pouštěný kus nechává na trade -------------
+  const tradePrah = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const nastav = async (v) => {
+      const el = document.getElementById("tradeThresh");
+      el.value = String(v);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 900));
+    };
+    P.setRows([
+      { pokemon: "Rattata", cp: 300, level: 20, ivAtk: 14, ivDef: 14, ivSta: 14 },
+      { pokemon: "Rattata", cp: 200, level: 15, ivAtk: 2, ivDef: 3, ivSta: 4 }
+    ]);
+    await new Promise((r) => setTimeout(r, 1200));
+    const cti = () => {
+      const comp = P.getComputed();
+      return P.getRows().map((r) => {
+        const c = comp[r.id] || {};
+        return { iv: c.ivPct === null ? null : Math.round(c.ivPct * 100),
+          keep: c.keep, trade: c.trade, sub: c.tradeSub };
+      });
+    };
+    const out = { vychozi: cti() };
+    await nastav(100);
+    out.prisne = cti();
+    await nastav(0);
+    out.vse = cti();
+    await nastav(80);
+    return out;
+  });
+  const tradeDobry = tradePrah.vychozi.filter((x) => x.iv >= 80)[0];
+  const tradeSlaby = tradePrah.vychozi.filter((x) => x.iv < 80)[0];
+  check("pouštěný kus nad prahem se nechává na trade",
+    tradeDobry && tradeDobry.trade === "Ano" && tradeDobry.sub === "nech na trade", JSON.stringify(tradeDobry));
+  check("…a pod prahem jde rovnou pryč",
+    tradeSlaby && tradeSlaby.trade === "Ne" && tradeSlaby.sub === "rovnou pusť", JSON.stringify(tradeSlaby));
+  check("práh 100 % nenechá na trade nikoho",
+    tradePrah.prisne.every((x) => x.trade !== "Ano" || x.keep.indexOf("Zahodit") !== 0),
+    JSON.stringify(tradePrah.prisne));
+  check("práh 0 nabídne k tradu všechno, co pouštíš",
+    tradePrah.vse.filter((x) => x.keep.indexOf("Zahodit") === 0)
+      .every((x) => x.trade === "Ano"), JSON.stringify(tradePrah.vse));
+
+  // ---- V appce není vidět žádný kus kódu ----------------------------
+  // Appka mluví k tomu, kdo třídí pokémony, ne k tomu, kdo ji sestavuje.
+  // Příkaz, který si uživatel nemá kde spustit, je šum a vypadá jako chyba.
+  const kod = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([{ pokemon: "Nesmyslny Druh XY", cp: 100, level: 10, ivAtk: 1, ivDef: 1, ivSta: 1 }]);
+    await new Promise((r) => setTimeout(r, 1200));
+    window.__pgoZalozka("docsCard");
+    await new Promise((r) => setTimeout(r, 900));
+    if (P.renderDataInfo) P.renderDataInfo();
+    await new Promise((r) => setTimeout(r, 600));
+    const text = ["unknownWarn", "docsCard", "dataInfo", "eventsBody", "importBox"]
+      .map((id) => (document.getElementById(id) || {}).textContent || "").join(" ");
+    const vzor = /python\s|tools\/[a-z_]+\.py|\b[a-z_]+\.py\b|--refresh|\.ps1\b/g;
+    const nalezy = [];
+    (text.match(vzor) || []).forEach((m) => { if (nalezy.indexOf(m) === -1) nalezy.push(m); });
+    return { nalezy: nalezy, varovani: (document.getElementById("unknownWarn") || {}).textContent || "" };
+  });
+  check("appka nikde neukazuje příkaz ani název skriptu",
+    kod.nalezy.length === 0, kod.nalezy.join(", "));
+  check("…ani ve varování o druhu, který data neznají",
+    /Nesmyslny/.test(kod.varovani) && !/python|\.py/.test(kod.varovani), kod.varovani);
 
   await page.goto(URL);
   await page.waitForTimeout(700);

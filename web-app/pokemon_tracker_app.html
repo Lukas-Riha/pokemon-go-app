@@ -1104,6 +1104,11 @@
   .col-pokemon .poke-name { display: block; font-weight: 600; }
   .col-pokemon .poke-tagy { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
   .col-pokemon .poke-tagy .rarity-chip { margin-left: 0; }
+  /* Pohlaví jako značka: symbol z herního menu místo slova ze skenu. */
+  .rarity-chip.r-pohlavi { font-size: 12px; line-height: 1; padding: 2px 5px;
+    font-weight: 700; }
+  .rarity-chip.r-f { background: #e75aa8; color: #fff; }
+  .rarity-chip.r-m { background: #4a8fe0; color: #fff; }
   .col-note input { min-width: 140px; }
   .col-move input { min-width: 100px; }
   /* zebra + přišpendlený první sloupec, ať se v 33 sloupcích neztratíš */
@@ -2834,7 +2839,6 @@
   .imp-pozn:empty { display: none; }
   /* Po výběru souboru je dropzone jen zpáteční lístek, ne hlavní věc. */
   .import-box.ma-soubor .dropzone { padding: 9px; font-size: 12px; margin-bottom: 8px; }
-  .import-box.ma-soubor #impNastaveniBtn, .import-box.ma-soubor #impNastaveniText,
   .import-box.ma-soubor > .actions { display: none; }
   @media (max-width: 760px) { .imp-mriz { grid-template-columns: 1fr; } }
   #boxCount { width: 78px; margin: 0 6px; padding: 3px 6px; font: inherit;
@@ -2972,9 +2976,9 @@
       <div class="setting">
         <label for="boxSekce">Sekce v čištění boxu</label>
         <select id="boxSekce">
-          <option value="3" selected>Tři sekce</option>
-          <option value="2">Dvě sekce</option>
-          <option value="1">Jedna sekce</option>
+          <option value="3" selected>Tři — hromadně, shadow, po jednom</option>
+          <option value="2">Dvě — shadow zpátky do hromadně</option>
+          <option value="1">Jedna — nedělit vůbec</option>
         </select>
         <span class="hint">Čištění jde rychleji, když je fronta rozdělená podle toho,
           co se dá ve hře udělat jedním tahem. <b>Hromadně</b> je všechno, co pustíš
@@ -2982,7 +2986,8 @@
           stojí prach a bonbóny, a než se rozhodneš, chceš je vidět pohromadě
           (kusy se značkou 100 % nebo CUTE mezi ně nepatří — ty se nepouští).
           <b>Po jednom</b> jsou shiny, legendární a mytické, které hra do hromadného
-          výběru nepustí.</span>
+          výběru nepustí. Při <b>dvou sekcích</b> se shadow vrátí mezi hromadné —
+          zvlášť zůstane jen „po jednom“.</span>
       </div>
       <div class="setting">
         <label for="ivThresh">Práh „vysoké IV“ (%)</label>
@@ -2993,6 +2998,15 @@
           jen „nejlepší možný Dugtrio“, ne „užitečný pokémon“. O ponechání rozhoduje
           <b>rozpočet rolí</b> (záložka Role).</span>
         <span class="setting-warn" id="ivThreshWarn"></span>
+      </div>
+      <div class="setting">
+        <label for="tradeThresh">Od jakého IV nechat kus na trade (%)</label>
+        <input type="number" id="tradeThresh" min="0" max="100" value="80" />
+        <span class="hint">Kus, který si appka nenechává, jde buď rovnou profesorovi,
+          nebo kamarádovi. Výměna dá bonbóny oběma a při Lucky Friends z toho může
+          být lucky kus — ale drží místo v boxu a spousta jich za to nestojí.
+          Tohle říká, <b>od jakého IV se vyplácí počkat na kamaráda</b>. Nižší kusy
+          appka posílá rovnou pryč. 0 = nabízet k tradu všechno.</span>
       </div>
       <div class="setting">
         <label for="spThresh">Práh PvP potenciálu — <b>procenta</b> (%)</label>
@@ -3590,13 +3604,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         Přetáhni sem <strong>CSV/TSV</strong> z Calcy IV nebo Poké Genie — nebo klikni a vyber soubor.
         <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.json" style="display:none" />
       </div>
-      <!-- Věta o nastaveni.json se týká jednoho importu z dvaceti, takže
-           nestojí na ploše, ale pod odkazem. -->
-      <button type="button" class="imp-odkaz" id="impNastaveniBtn" aria-expanded="false"
-        aria-controls="impNastaveniText">Přenáším nastavení do telefonu</button>
-      <div class="imp-pod" id="impNastaveniText" hidden>Sem patří i <code>nastaveni.json</code>
-        ze zálohovací složky — přenese do druhého zařízení prahy, aby tam vycházely
-        stejné verdikty.</div>
       <div class="actions">
         <button id="cancelImportBtn">Zrušit</button>
       </div>
@@ -3878,8 +3885,27 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   /** Normalizace názvu druhu pro matchování a počítání kopií:
    *  "Shadow Metagross" / "Metagross (Mega)" -> "metagross" */
+  /* Nidoran♀ (#29) a Nidoran♂ (#32) jsou dva RŮZNÉ druhy, ne dvě pohlaví
+     jednoho: jiné staty, jiná evoluční řada (Nidoqueen vs. Nidoking). Je to
+     jediný případ ve hře, kdy značka pohlaví patří ke JMÉNU DRUHU, a ne ke
+     kusu — všude jinde je to údaj o kuse a ve jménu jen překážel. */
+  var JE_NIDORAN = /^\s*nidoran/i;
+
+  /** Jméno Nidorana se značkou podle sloupce Pohlaví. Ostatní druhy vrací
+   *  beze změny. */
+  function jmenoSPohlavim(jmeno, pohlavi) {
+    var holy = String(jmeno === undefined || jmeno === null ? "" : jmeno)
+      .replace(/[♀♂]/g, "").replace(/\s+/g, " ").trim();
+    if (!JE_NIDORAN.test(holy)) return jmeno;
+    var g = genderOf(pohlavi);
+    if (!g) return holy;
+    return holy + " " + (g === "f" ? "♀" : "♂");
+  }
+
   function speciesKey(name) {
     var raw = deaccent(cleanName(name)).toLowerCase();
+    // Bez tohohle by si appka oba Nidorany počítala jako kopie jednoho druhu.
+    if (JE_NIDORAN.test(raw)) raw = raw.replace(/♀/g, " f").replace(/♂/g, " m");
     // „Mega Mewtwo Y" → po odstranění „mega" zbyde „mewtwo y" a druh se nedohledá.
     // Písmeno varianty patří k mega formě, ne k druhu — Mewtwo, Charizard
     // a Mewtwo Y jsou jeden a ten samý pokémon.
@@ -4053,6 +4079,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // Druhy, které se vyvíjejí jen v jednom pohlaví — v herních datech to není,
   // ale bez toho by appka radila evolvovat samce Combee (to nejde).
   var GENDER_LOCKED = { combee: "f", salandit: "f" };
+
+  /** Pohlaví kusu, ať přišlo ze skenu (`gender`), nebo z ruční volby
+   *  (`pohlavi`). Ruční má přednost — člověk ví víc než sken. */
+  function pohlaviKusu(r) {
+    if (!r) return null;
+    return genderOf(r.pohlavi) || genderOf(r.gender);
+  }
 
   function genderOf(value) {
     var v = String(value === undefined || value === null ? "" : value).trim().toLowerCase();
@@ -5814,6 +5847,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         .replace(/\((?:fe)?male\)/ig, "")
         .replace(/\s+/g, " ").trim();
     }
+    // U Nidorana je značka součástí jména druhu. Bez ní ho herni data neznají
+    // vůbec — žádné typy, staty ani role. Doplni se zpětně i kusům, kterým ji
+    // sebral dřívější import.
+    if (typeof r.pokemon === "string" && JE_NIDORAN.test(r.pokemon)) {
+      r.pokemon = jmenoSPohlavim(r.pokemon, r.pohlavi || r.gender);
+    }
 
     // ID se dřív přidělilo z čítače a HNED se přepsalo tím, co přišlo v datech.
     // Čítač se přitom posunul jen o počet řádků — takže v rosteru, kde se
@@ -5857,7 +5896,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -8048,6 +8087,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function getSettings() {
     return {
       ivThresh: (num(nastaveniHodnota("ivThresh")) || 0) / 100,
+      // Od jakého IV se vyplácí držet pouštěný kus na trade místo transferu.
+      tradeThresh: (function () {
+        var v = num(nastaveniHodnota("tradeThresh"));
+        return (v === null ? 80 : Math.max(0, Math.min(100, v))) / 100;
+      })(),
       rankThresh: num(nastaveniHodnota("rankThresh")) || 0,
       spThresh: (num(nastaveniHodnota("spThresh")) || 0) / 100,
       // sleva se zadává v bodech (5 = pět procentních bodů), počítá se v podílu
@@ -10477,13 +10521,25 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         tradeTitle = "Označil sis ho jako CUTE. Výměna je nevratná a IV se při ní"
           + " přehází, takže ho appka nenabízí ani k tradu.";
         tradeTone = "muted";
-      } else if (!keepGood) {
+      } else if (!keepGood && (b.ivPct === null || b.ivPct >= s.tradeThresh)) {
         trade = "Ano";
-        tradeSub = "pouštíš ho";
-        tradeTitle = "Tenhle kus si podle rozpočtu nenecháváš, takže výměna je"
-          + " lepší než transfer: bonbóny dostanete oba, druhý může získat nový"
-          + " druh do pokédexu a při Lucky Friends z toho může být lucky kus.";
+        tradeSub = "nech na trade";
+        tradeTitle = "Tenhle kus si podle rozpočtu nenecháváš, ale na výměnu je dost"
+          + " dobrý (" + (b.ivPct === null ? "IV neznáme" : Math.round(b.ivPct * 100) + " % IV")
+          + ", práh je " + Math.round(s.tradeThresh * 100) + " %). Výměna je lepší než"
+          + " transfer: bonbóny dostanete oba, druhý může získat nový druh do pokédexu"
+          + " a při Lucky Friends z toho může být lucky kus.";
         tradeTone = "good";
+      } else if (!keepGood) {
+        // Držet v boxu každý pouštěný kus kvůli tradu nejde — místo je dražší
+        // než těch pár bonbónů navíc. Práh říká, kde je hranice.
+        trade = "Ne";
+        tradeSub = "rovnou pusť";
+        tradeTitle = "Na výměnu je slabý (" + Math.round((b.ivPct || 0) * 100)
+          + " % IV, práh je " + Math.round(s.tradeThresh * 100) + " %), a držet ho"
+          + " v boxu kvůli pár bonbónům navíc se nevyplatí. Pusť ho profesorovi."
+          + " Práh změníš v nastavení.";
+        tradeTone = "muted";
       } else {
         trade = "Ne";
         tradeTone = "muted";
@@ -11000,10 +11056,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + (list.length > 12 ? " a další " + (list.length - 12) : "") + "."
       + " U nich appka nemá typy ani staty, takže jim <b>nemůže spočítat žádnou roli</b>"
       + " — verdikt u nich neber vážně."
-      + "<br>Nejčastější důvod je nová generace: data jsou z <b>" + (DATA_INFO.pokedex || "?")
-      + "</b>. Obnovíš je takhle:<br><code>python tools/build_pokedex.py --refresh</code>"
-      + " → <code>build_moves.py</code> → <code>build_meta.py --refresh</code>"
-      + " → <code>audit_data.py</code> → <code>sync_reference.py</code>"
+      + "<br>Nejčastější důvod je nová generace: herní data v téhle verzi jsou z <b>"
+      + (DATA_INFO.pokedex || "?") + "</b> a ten druh v nich ještě není."
+      + " Spraví to novější verze appky."
       + "<br>Druhý důvod je překlep ve jménu — pak stačí opravit řádek v tabulce.";
   }
 
@@ -11222,28 +11277,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "číslo vlevo je pořadí, které appka ukazuje jako „PvPoke #“. Rozklikni ho a zkontroluj "
       + "<em>doporučený moveset</em> (rychlý + nabité útoky) — <strong>útoky appka neřeší</strong>, "
       + "a špatný moveset umí dobrého pokémona úplně pohřbít.</p>";
-    html += "<p><strong>Obnova dat:</strong> všechno najednou udělá "
-      + "<code>python tools/refresh_all.py</code> — stáhne pokédex, ligy, "
-      + "útoky i akce, prožene to auditem a zapeče do appky. Jednotlivě: "
-      + "<code>python tools/build_meta.py --refresh</code> (PvP žebříčky), "
-      + "<code>python tools/build_pokedex.py --refresh</code> (herní data), pak "
-      + "<code>python tools/sync_reference.py</code>.</p>";
-    html += "<p><strong>Co se obnovuje samo:</strong> nasazení "
-      + "(<code>tools/deploy.ps1</code>) před každým buildem stáhne <em>akce "
-      + "a raid bosse</em>, protože ti stárnou po dnech. Navíc denní úloha "
-      + "(<code>tools/naplanovat.ps1 -Obnovit</code>) stáhne večer akce "
+    html += "<p><strong>Obnova dat:</strong> pokédex, PvP žebříčky, útoky i akce "
+      + "se stahují znovu při sestavení nové verze appky, projdou auditem a zapečou "
+      + "se dovnitř. Datum každého zdroje je v tabulce nahoře.</p>";
+    html += "<p><strong>Co se obnovuje samo:</strong> každé nasazení "
+      + "stáhne <em>akce a raid bosse</em>, protože ti stárnou po dnech. "
+      + "Navíc večer běží denní úloha, která stáhne akce "
       + "i <em>ligové žebříčky</em> a zapeče je do appky, i když se několik dní "
       + "nenasazuje. Pořadí je záloha, obnova, audit, testy — když obnova "
       + "neprojde kontrolou, data i appka se vrátí ze zálohy. Pokédex "
-      + "a útoky se mění jen s novou generací, ty se stahují na vyžádání "
-      + "(<code>-Vsechno</code>, nebo <code>refresh_all.py</code>). Datum "
+      + "a útoky se mění jen s novou generací, ty se stahují na vyžádání. Datum "
       + "u každého řádku výš říká, jak jsou data stará, a nad "
       + STALE_DAYS + " dní se sem přidá žluté varování.</p>";
 
     if (stale) {
       html = "<div class=\"stale-warn\">Data jsou starší než " + STALE_DAYS
-        + " dní — než se podle nich rozhodneš u něčeho drahého, obnov je (příkazy níže) "
-        + "nebo ověř na PvPoke.</div>" + html;
+        + " dní — než se podle nich rozhodneš u něčeho drahého, ověř to na PvPoke "
+        + "nebo si stáhni novější verzi appky.</div>" + html;
     }
     box.innerHTML = html;
   }
@@ -12444,8 +12494,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   function spriteHtml(b) {
     var r = b && b.row ? b.row : null;
     var vzhled = { shiny: !!(b && (b.shiny || (r && r.shiny === "Ano"))),
-      zena: !!(r && String(r.pohlavi || "").toLowerCase().indexOf("sam") === 0
-        && String(r.pohlavi).toLowerCase() !== "samec") };
+      zena: pohlaviKusu(r) === "f" };
     return obrazekHtml(r ? r.pokemon : "", b ? b.dex : null, "d-sprite", vzhled);
   }
 
@@ -15767,7 +15816,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             ? r.forma : "";
           if (col.key === "pokemon"
               && (c.rarity || c.dynamax || c.cute || c.stoProcent || c.shiny
-                  || c.lucky || formaTag)) {
+                  || c.lucky || formaTag || pohlaviKusu(r))) {
             var chips = "";
             // Shadow a Purified bývaly vlastním sloupcem „Forma“. Jako značka
             // u jména jsou vidět tam, kde se čtou — a sloupec ubyl.
@@ -15805,6 +15854,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
               chips += '<span class="rarity-chip r-L2" title="Lucky — vylepšení'
                 + ' stojí poloviční prach a IV má zaručeně aspoň 12/12/12.'
                 + ' Nejlevnější kus na dotažení do ligy.">LUCKY</span>';
+            }
+            // Pohlaví je vlastní značka, ne slovo ve sloupci: u většiny druhů
+            // mění jen vzhled, u Nidorana je to rovnou jiný druh.
+            var pg = pohlaviKusu(r);
+            if (pg) {
+              chips += '<span class="rarity-chip r-pohlavi r-' + pg + '" title="'
+                + (pg === "f" ? "Samice" : "Samec")
+                + ' — u části druhů se liší vzhledem.">'
+                + (pg === "f" ? "♀" : "♂") + "</span>";
             }
             td.innerHTML = '<span class="poke-name">' + escHtml(td.textContent) + "</span>"
               + '<span class="poke-tagy">' + chips + "</span>";
@@ -15848,6 +15906,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             }
             // Level napsaný ručně je pánem nad dopočtem.
             if (col.key === "level") delete r.levelZCP;
+            // U Nidorana je pohlaví součástí jména druhu — změna jednoho
+            // musí přepsat druhé, jinak by zůstal druh, který už nesedí.
+            if (col.key === "pohlavi" && JE_NIDORAN.test(String(r.pokemon || ""))) {
+              var noveJmeno = jmenoSPohlavim(r.pokemon, r.pohlavi);
+              if (noveJmeno !== r.pokemon) {
+                r.pokemon = noveJmeno;
+                refreshComputed();
+                persist();
+                renderBody();
+                return;
+              }
+            }
             refreshComputed();
             persist();
           });
@@ -18343,8 +18413,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     box.innerHTML = "";
     var ev = (EVENTS && EVENTS.events) || [], bossove = (EVENTS && EVENTS.raids) || [];
     if (!ev.length && !bossove.length) {
-      box.innerHTML = '<p class="empty-state">Data o eventech nejsou zapečená —'
-        + " spusť <code>python tools/build_events.py --refresh</code> a <code>sync_reference.py</code>.</p>";
+      box.innerHTML = '<p class="empty-state">Data o akcích nejsou v téhle verzi '
+        + "zapečená. Spraví to novější verze appky.</p>";
       return;
     }
 
@@ -18474,8 +18544,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (dni > 7) {
         var w = document.createElement("div");
         w.className = "ev-stale";
-        w.textContent = "Data o eventech jsou stará " + dni + " dní. Eventy se mění po týdnech —"
-          + " obnov je přes tools/build_events.py --refresh.";
+        w.textContent = "Data o akcích jsou stará " + dni + " dní. Akce se mění po týdnech —"
+          + " čerstvá přijdou s novější verzí appky.";
         box.appendChild(w);
       }
     }
@@ -18490,9 +18560,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     foot.className = "ev-foot";
     foot.innerHTML = "Zdroj: <b>ScrapedDuck</b> (komunitní scraper LeekDuck), staženo "
       + ((DATA_INFO || {}).events || "?") + ". Není to oficiální zdroj Niantiku."
-      + " Oficiální pokemongo.com/events je JS stránka za přihlášením, ze které se strojově"
-      + " nedá vytáhnout nic. Obnovení: <code>python tools/build_events.py --refresh</code>"
-      + " a pak <code>python tools/sync_reference.py</code>.";
+      + " Oficiální stránka Niantiku se strojově číst nedá, proto tenhle zdroj."
+      + " Čerstvá data přijdou s novou verzí appky — každé nasazení je stahuje znovu.";
     box.appendChild(foot);
   }
 
@@ -22792,8 +22861,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           var pr = presnostChyceni(r.catchDate);
           if (pr > 0 && pr < 3) rok++;
         });
-        f.push('<span class="imp-slabe">datum chycení ' + cele + "/" + vsechny.length
-          + (rok ? " (+" + rok + " jen rok)" : "") + "</span>");
+        /* Datum chycení Calcy vidí jen někdy. Samotné "0/290" nikomu nic
+           neřekne, tak je u něj bublina s tím, co to znamená. */
+        f.push('<span class="imp-slabe" data-tip="'
+          + escHtml("Kolik řádků nese úplné datum chycení (den, měsíc, rok). "
+            + "Calcy ho u většiny kusů nevidí a zapíše jen rok nebo vůbec nic. "
+            + "Bez něj nejde roster řadit podle toho, kdy jsi kus chytil.")
+          + '">datum chycení: ' + cele + " z " + vsechny.length
+          + (rok ? ", " + (rok < 5 ? "další " : "dalších ") + rok + " jen rok" : "")
+          + "</span>");
       }
       fakta.innerHTML = f.join("");
     }
@@ -24186,7 +24262,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   });
   // Dva prepinace: veta o nastaveni.json a dve zbyla slovesa importu.
   (function () {
-    var dvojice = [["impNastaveniBtn", "impNastaveniText"], ["impJinakBtn", "impJinak"]];
+    var dvojice = [["impJinakBtn", "impJinak"]];
     dvojice.forEach(function (par) {
       var btn = document.getElementById(par[0]), cil = document.getElementById(par[1]);
       if (!btn || !cil) return;
@@ -25517,13 +25593,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "odolá). Co se nepočítá vůbec: štíty a uhýbání.</li>"
       + "<li><b>Nová generace přijde dřív než data.</b> Když Calcy naskenuje druh, "
       + "který appka nezná, nemá pro něj typy ani staty — a nemůže mu spočítat roli. "
-      + "Nahoře nad patičkou se proto vypíše varování se seznamem takových druhů "
-      + "a příkazy na obnovení. Nikdy se to nestane tiše.</li>"
+      + "Nahoře nad patičkou se proto vypíše varování se seznamem takových druhů. "
+      + "Nikdy se to nestane tiše.</li>"
       + "<li><b>Žebříčky stárnou.</b> PvPoke i útoky se mění s balance patchi; datumy "
       + "stažení máš v tabulce nahoře a po 90 dnech na to appka upozorní v patičce. "
-      + "Obnovení je jedna dávka: <code>python tools/build_pokedex.py --refresh</code>, "
-      + "<code>build_moves.py</code>, <code>fetch_meta.py</code> a nakonec "
-      + "<code>sync_reference.py</code>, který to zapeče do tohohle souboru.</li>"
+      + "Čerstvá data přijdou s novou verzí appky.</li>"
       + "</ul></div>";
 
     el.innerHTML = h;
@@ -26948,7 +27022,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       if (!r || !r.pokemon) return "";
       return obrazekHtml(r.pokemon, dexEntry(r.pokemon), trida || "", {
         shiny: r.shiny === "Ano",
-        zena: String(r.pohlavi || "").toLowerCase() === "samice"
+        zena: pohlaviKusu(r) === "f"
       });
     },
 
@@ -27200,6 +27274,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * Vrstva z toho staví nabídku — seznam se bere odtud, aby se nerozešel
      * s tím, podle čeho se doopravdy filtruje.
      */
+    /** Pohlaví kusu jako `"f"` / `"m"` / `null` — vrstva z toho kreslí značku. */
+    atlasPohlavi: function (r) { return pohlaviKusu(r); },
+
     atlasStitky: function () {
       /* Jak se štítek kreslí v detailu — vrstva ho v nabídce ukáže stejně,
          aby člověk viděl to, co pak najde. Klíč filtru → třída a popisek. */
