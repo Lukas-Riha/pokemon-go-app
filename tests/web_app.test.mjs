@@ -849,10 +849,10 @@ try {
 
   check("stránka nemá vodorovný posuvník", !layout.pageOverflow);
   // Sloupec „Forma“ už není — Shadow/Purified jsou značka u jména.
-  eq("v režimu Rozhodnutí je 20 sloupců", layout.verdict.cols, 20);
+  eq("v režimu Rozhodnutí je 19 sloupců", layout.verdict.cols, 19);
   check("…a na 1920 px se vejdou bez scrollování", layout.verdict.fits, String(layout.verdict.width));
   check("je vidět, proti jakým typům je pokémon silný", layout.strongCol, layout.strongCol);
-  eq("v režimu Vše je sloupců 41", layout.all.cols, 41);
+  eq("v režimu Vše je sloupců 40", layout.all.cols, 40);
   eq("sloupec se jménem je přišpendlený", layout.sticky, "sticky");
   check("nastavení prahů je sbalené, roster je hned pod souhrnem", layout.settingsClosed);
   check("tabulka zdrojů se neroztahuje přes celou šířku", layout.srcTableWidth <= 800, String(layout.srcTableWidth));
@@ -1648,66 +1648,32 @@ try {
   eq("filtr „jen legendární a mytičtí“ ukáže tři", chip.filtered, 3);
 
 
-  console.log("\n39) hvězdička — ruční značka „tenhle si nechávám“");
-  const star = await page.evaluate(() => {
+  console.log("\n39) hvězdička z appky zmizela");
+  // Na „tenhle je můj oblíbený" je značka CUTE. Hvězdička vedle ní dělala
+  // druhý způsob téhož a označovala se podle verdiktu, takže se s ním pletla.
+  // Sloupec `star` v datech zůstává, ať se už označené kusy neztratí — proto
+  // se hlídá jen to, že po něm v UI nezbylo ovládání.
+  const hvezda = await page.evaluate(() => {
     window.__pgo.setRows([
-      { pokemon: "Machamp", cp: 2100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
-      { pokemon: "Rattata", cp: 200, level: 15, ivAtk: 4, ivDef: 3, ivSta: 5 },
-      { pokemon: "Lanturn", cp: 1500, level: 25, ivAtk: 2, ivDef: 14, ivSta: 15 },
+      { pokemon: "Machamp", cp: 2100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13, star: true },
+      { pokemon: "Rattata", cp: 200, level: 15, ivAtk: 4, ivDef: 3, ivSta: 5 }
     ]);
-    const btnFor = (name) => {
-      let found = null;
-      document.querySelectorAll("#tbody tr").forEach((tr) => {
-        if (tr.querySelector("td.col-pokemon").textContent === name) found = tr.querySelector(".star-btn");
-      });
-      return found;
+    const volby = [...document.querySelectorAll("#filterSelect option")].map((o) => o.value);
+    return {
+      sloupec: [...document.querySelectorAll("#headerRow th")].map((x) => x.textContent.trim())
+        .indexOf("★"),
+      tlacitka: !!document.getElementById("starKeepersBtn")
+        || !!document.getElementById("clearUnstarredBtn"),
+      prepinac: document.querySelectorAll(".star-btn").length,
+      filtry: volby.indexOf("star") > -1 || volby.indexOf("nostar") > -1,
+      vDatech: window.__pgo.getRows().filter((r) => r.star).length
     };
-    const rowFor = (name) => window.__pgo.getRows().filter((r) => r.pokemon === name)[0];
-    const posOf = (name) => Array.from(document.querySelectorAll("#tbody tr td.col-pokemon"))
-      .map((td) => td.textContent).indexOf(name);
-    const names = () => Array.from(document.querySelectorAll("#tbody tr td.col-pokemon")).map((td) => td.textContent);
-    // Dřív se četlo z dlaždice v Souhrnu; ta už v appce není.
-    const tileVal = () => String(window.__pgo.getRows()
-      .filter((r) => r.star).length);
-    const out = { prvniSloupec: document.querySelector("#headerRow th").textContent.trim() };
-
-    const pozPred = posOf("Machamp");
-    out.pred = btnFor("Machamp").textContent;
-    btnFor("Machamp").click();               // první klik rozsvítí
-    out.po = btnFor("Machamp").textContent;
-    out.tridaPo = btnFor("Machamp").className;
-    out.radekZustal = posOf("Machamp") === pozPred;   // řádek nesmí odskočit pryč
-    out.vRosteru = !!rowFor("Machamp").star;
-    out.dlazdice = tileVal();
-
-    btnFor("Lanturn").click();               // označit i Lanturna
-    const f = document.getElementById("filterSelect");
-    f.value = "star"; f.dispatchEvent(new Event("change", { bubbles: true }));
-    out.filtrOznacene = names();
-    f.value = "nostar"; f.dispatchEvent(new Event("change", { bubbles: true }));
-    out.filtrNeoznacene = names();
-    f.value = "all"; f.dispatchEvent(new Event("change", { bubbles: true }));
-
-    
-
-    btnFor("Machamp").click();               // druhý klik zhasne
-    out.poDruhem = btnFor("Machamp").textContent;
-    out.zpetVRosteru = !!rowFor("Machamp").star;
-    return out;
   });
-
-  eq("hvězdička je úplně první sloupec", star.prvniSloupec, "★");
-  eq("nezapnutá je prázdná", star.pred, "☆");
-  eq("první klik ji rozsvítí", star.po, "★");
-  check("…a je vidět i barvou", star.tridaPo.indexOf("on") > -1, star.tridaPo);
-  eq("druhý klik ji zhasne", star.poDruhem, "☆");
-  check("stav se propíše do rosteru (a tím i do localStorage)", star.vRosteru === true && star.zpetVRosteru === false);
-  check("řádek při kliknutí neodskočí pryč", star.radekZustal);
-  eq("dlaždice počítá označené", star.dlazdice, "1");
-  check("filtr „jen označené“ nechá jen je",
-    star.filtrOznacene.length === 2 && star.filtrOznacene.indexOf("Rattata") === -1, star.filtrOznacene.join(","));
-  check("filtr „jen neoznačené“ ukáže zbytek",
-    star.filtrNeoznacene.length === 1 && star.filtrNeoznacene[0] === "Rattata", star.filtrNeoznacene.join(","));
+  eq("sloupec ★ v tabulce není", hvezda.sloupec, -1);
+  check("…ani tlačítka na hromadné označení a mazání", hvezda.tlacitka === false);
+  eq("…ani přepínač u řádků", hvezda.prepinac, 0);
+  check("…ani filtry podle označení", hvezda.filtry === false);
+  eq("označení z dřívějška ale v datech zůstává", hvezda.vDatech, 1);
 
   console.log("\n40) značka přežije export i opětovný import");
   const starRt = await page.evaluate(() => {
@@ -1791,7 +1757,7 @@ try {
     dupes.vSeznamu.length === 1 && dupes.vSeznamu.indexOf("Marill") > -1,
     dupes.vSeznamu.join(","));
 
-  console.log("\n42) mazání neoznačených (a kontrola, že karta na prach je pryč)");
+  console.log("\n42) karta na prach je pryč");
   const plist = await page.evaluate(() => {
     window.__pgo.setRows([
       { pokemon: "Machamp", cp: 2100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
@@ -1806,34 +1772,12 @@ try {
     out.kartaZrusena = !document.getElementById("planCard");
     out.zbytekVRozpoctu = !!document.querySelector("#dustCard #planBody");
 
-    const btn = document.getElementById("clearUnstarredBtn");
-    out.skryteBezHvezdicek = btn.style.display === "none";
-    document.querySelectorAll("#tbody tr").forEach((tr) => {
-      if (tr.querySelector("td.col-pokemon").textContent === "Rattata") tr.querySelector(".star-btn").click();
-    });
-    out.popisek = btn.textContent;
-    out.viditelne = btn.style.display !== "none";
-
-    window.confirm = () => true;
-    // Appka má vlastní potvrzovací okno místo prohlížečového confirm —
-    // v testu se hned odklikne (otevírá se i zavírá synchronně).
-    const potvrdit = () => { const b = document.getElementById("appOknoOk");
-      const box = document.getElementById("appOkno");
-      if (b && box && !box.hidden) b.click(); };
-    btn.click();
-    potvrdit();
-    out.zbylo = window.__pgo.getRows().map((r) => r.pokemon);
-    out.zapamatovano = window.__pgo.getDiscarded().length;
     return out;
   });
 
   check("karta „Kam dát prach“ už neexistuje", plist.kartaZrusena);
   check("…a co z ní zbylo, sedí v Rozpočtu", plist.zbytekVRozpoctu);
-  check("bez jediné hvězdičky se tlačítko neukazuje", plist.skryteBezHvezdicek);
-  eq("po označení nabídne smazat zbytek", plist.popisek, "Smazat neoznačené (2)");
-  check("…a je vidět", plist.viditelne);
-  check("smaže opravdu jen neoznačené", plist.zbylo.length === 1 && plist.zbylo[0] === "Rattata", plist.zbylo.join(","));
-  eq("smazané si zapamatuje, ať se při importu nevrátí", plist.zapamatovano, 2);
+
 
   console.log("\n43) Dynamax kusy se nikdy neposílají do koše");
   const dmax = await page.evaluate(() => {
@@ -2908,30 +2852,9 @@ try {
     scroll.hlavickaPoScrollu + " vs záložky končí na " + scroll.zalozkySpodek);
   check("…a stránka se nescrolluje do stran", scroll.strankaVodorovne === false);
 
-  const hromadne = await page.evaluate(() => {
-    window.__pgo.setDiscarded([]);
-    window.__pgo.setRows([
-      { pokemon: "Machamp", cp: 2100, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Counter", charged1: "Dynamic Punch" },
-      { pokemon: "Mewtwo", cp: 2387, level: 20, ivAtk: 15, ivDef: 15, ivSta: 15, fastMove: "Confusion", charged1: "Psystrike" },
-      { pokemon: "Rattata", cp: 200, level: 15, ivAtk: 4, ivDef: 3, ivSta: 5 },
-    ]);
-    const btn = document.getElementById("starKeepersBtn");
-    const out = { popisek: btn.textContent, videt: btn.style.display !== "none" };
-    window.alert = () => {};
-    btn.click();
-    const c = window.__pgo.getComputed();
-    out.oznaceni = window.__pgo.getRows().filter((r) => r.star).map((r) => r.pokemon);
-    out.neoznaceni = window.__pgo.getRows().filter((r) => !r.star).map((r) => r.pokemon);
-    out.poKliku = document.getElementById("starKeepersBtn").style.display === "none";
-    return out;
-  });
-  check("tlačítko nabídne označit ponechané", hromadne.videt && hromadne.popisek.indexOf("Označit ponechané") === 0,
-    hromadne.popisek);
-  check("označí jen kusy s kladným verdiktem",
-    hromadne.oznaceni.indexOf("Machamp") > -1 && hromadne.oznaceni.indexOf("Mewtwo") > -1
-      && hromadne.oznaceni.indexOf("Rattata") === -1,
-    hromadne.oznaceni.join(",") + " | nechal: " + hromadne.neoznaceni.join(","));
-  check("…a pak zmizí, protože není co označovat", hromadne.poKliku);
+  // Hromadne "Oznacit ponechane" zmizelo s hvezdickou: na "tenhle je muj
+  // oblibeny" je znacka CUTE a oznacovat podle verdiktu delalo druhy zpusob
+  // teze veci.
 
   const tmPlan = await page.evaluate(() => {
     window.__pgo.setRows([
@@ -10992,7 +10915,6 @@ try {
     document.body.appendChild(sonda);
     const zluta = getComputedStyle(sonda).color;
     sonda.remove();
-    const btn = document.getElementById("starKeepersBtn");
     return {
       keep: c.keep, keepGood: c.keepGood, tone: c.keepTone,
       priznak: !!c.luckyVarovani, sub: c.keepSub || "", title: c.keepTitle || "",
@@ -11003,9 +10925,7 @@ try {
       sirkaBunky: bunka ? Math.floor(bunka.getBoundingClientRect().width) : 0,
       // Uřezané „Zahodit – ale je…“ by celou tu brzdu zahodilo.
       urezano: odznak ? odznak.scrollWidth > odznak.clientWidth + 1 : true,
-      vyskaRadku: bunka ? Math.round(bunka.parentNode.getBoundingClientRect().height) : 0,
-      // Hvězdička znamená „nechávám si ho" — žlutý odpad ji dostat nesmí.
-      hvezdicka: btn ? btn.style.display : "?"
+      vyskaRadku: bunka ? Math.round(bunka.parentNode.getBoundingClientRect().height) : 0
     };
   }, jmeno);
 
@@ -11046,7 +10966,6 @@ try {
   check("…a řádek kvůli němu nenaroste",
     luckyOdpad.vyskaRadku > 0 && luckyOdpad.vyskaRadku <= bezneOdpad.vyskaRadku + 2,
     luckyOdpad.vyskaRadku + " px vs " + bezneOdpad.vyskaRadku + " px");
-  eq("hromadná hvězdička ho mezi ponechané nepočítá", luckyOdpad.hvezdicka, "none");
 
   // A pořád patří mezi odpad: filtr „Zahodit" ho musí najít.
   const luckyVeFiltru = await page.evaluate(async () => {
@@ -11218,7 +11137,7 @@ try {
   check("karta se vejde do sto deseti pixelů", mobilKarta.max <= 110,
     mobilKarta.max + " px");
   check("…a nese jen to, podle čeho se rozhoduje",
-    mobilKarta.videt.join(",") === "star,pokemon,cp,ivPct,keep,kos",
+    mobilKarta.videt.join(",") === "pokemon,cp,ivPct,keep,kos",
     mobilKarta.videt.join(","));
   check("klepnutí kamkoli na kartu otevře rozbor", mobilKarta.otevrelSe);
   // Tohle je ta nedostupná informace: na telefonu není kam najet myší.
@@ -16377,8 +16296,8 @@ try {
     JSON.stringify(chyceni.chyceniNovejsi) === JSON.stringify(
       ["Mewtwo", "Litten", "Nickit", "Clamperl", "Combee", "Ampharos", "Gyarados"]),
     JSON.stringify(chyceni.chyceniNovejsi));
-  check("import hned řekne, kolik kusů má datum chycení",
-    /datum chycení: 1 z 7, další 4 jen rok/.test(chyceni.importNote), chyceni.importNote);
+  check("import o datu chycení nemluví — není podle čeho by se rozhodovalo",
+    !/datum chycení/.test(chyceni.importNote), chyceni.importNote);
   check("řazení podle skenu: naposledy naskenovaný první",
     chyceni.skenNovejsi[0] === "Ampharos" && chyceni.skenNovejsi[chyceni.skenNovejsi.length - 1] === "Clamperl",
     JSON.stringify(chyceni.skenNovejsi));
@@ -18042,6 +17961,83 @@ try {
     kod.nalezy.length === 0, kod.nalezy.join(", "));
   check("…ani ve varování o druhu, který data neznají",
     /Nesmyslny/.test(kod.varovani) && !/python|\.py/.test(kod.varovani), kod.varovani);
+
+  // ---- Vyvinout, nebo vyměnit? Obojí najednou nejde ------------------
+  // Výměna vyvine zadarmo (sto bonbónů), ale kus odejde a IV se přehází.
+  // Drží-li vyvinutá forma místo v rozpočtu, je ta role dražší než sleva.
+  const vyvinoutNeboTrade = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      // Golem Alolan roli drží, takže Graveler se nevyměňuje — vyvíjí se.
+      { pokemon: "Graveler Alolan", cp: 1300, level: 22, ivAtk: 12, ivDef: 12, ivSta: 12 },
+      // Machamp tu žádnou roli neuzavírá (jen lepí díru), takže Machoke
+      // je pořád nejlepší vyměnit a vyvinout až potom, zdarma.
+      { pokemon: "Machoke", cp: 1400, level: 22, ivAtk: 14, ivDef: 14, ivSta: 14 },
+      { pokemon: "Rhyperior", cp: 3724, level: 36, ivAtk: 15, ivDef: 14, ivSta: 13,
+        fastMove: "Mud-Slap", charged1: "Earthquake" },
+      { pokemon: "Tyranitar", cp: 3400, level: 33, ivAtk: 15, ivDef: 15, ivSta: 14,
+        fastMove: "Bite", charged1: "Crunch" }
+    ]);
+    await new Promise((r) => setTimeout(r, 1800));
+    const comp = P.getComputed();
+    const out = {};
+    P.getRows().forEach((r) => {
+      const c = comp[r.id] || {};
+      out[r.pokemon] = { keep: c.keep, evolve: c.evolve, trade: c.trade,
+        tradeSub: c.tradeSub || "", tradeTitle: (c.tradeTitle || "").slice(0, 120),
+        evolveTitle: (c.evolveTitle || "").slice(0, 120) };
+    });
+    return out;
+  });
+  const drziPoEvo = vyvinoutNeboTrade["Graveler Alolan"];
+  const jenSleva = vyvinoutNeboTrade["Machoke"];
+  check("kus, který po evoluci obsadí roli, se nenabízí k výměně",
+    drziPoEvo.trade === "Ne" && drziPoEvo.tradeSub === "radši vyvinout",
+    JSON.stringify(drziPoEvo));
+  check("…a je v tom napsané proč",
+    /vyvinutý ti drží místo v rozpočtu/.test(drziPoEvo.tradeTitle), drziPoEvo.tradeTitle);
+  check("…ani se u něj neobjeví verdikt „Ponechat – trade“",
+    drziPoEvo.keep.indexOf("trade") === -1, drziPoEvo.keep);
+  check("…a evoluce u něj zůstane doporučená", drziPoEvo.evolve === "Ano", drziPoEvo.evolve);
+  check("kus, ze kterého po evoluci nic nebude, se na výměnu pořád nabízí",
+    jenSleva.trade === "Ano", JSON.stringify(jenSleva));
+  check("…a evoluce se u něj naopak zavře, ať sleva nepropadne",
+    jenSleva.evolve === "Ne – až po výměně"
+      && /sleva na bonbónech/.test(jenSleva.evolveTitle),
+    jenSleva.evolve + " | " + jenSleva.evolveTitle);
+
+  // ---- Elitní TM není chyba k opravě --------------------------------
+  // Elitních TM je pár za rok. Když je lepší útok jen za něj a kus už má
+  // to nejlepší bez něj, není co přeučovat — je to strop toho kusu.
+  const elitniTM = await page.evaluate(async () => {
+    const P = window.__pgo;
+    P.setRows([
+      // Overheat je nejlepší nabitý, který Charizard umí bez elitního TM;
+      // Blast Burn je lepší, ale jen za něj.
+      { pokemon: "Charizard", cp: 2900, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13,
+        fastMove: "Fire Spin", charged1: "Overheat" },
+      // Fire Blast není ani nejlepší bez elitního TM — tam rada platí dál.
+      { pokemon: "Charizard", cp: 2880, level: 30, ivAtk: 14, ivDef: 14, ivSta: 13,
+        fastMove: "Fire Spin", charged1: "Fire Blast" }
+    ]);
+    await new Promise((r) => setTimeout(r, 1500));
+    const comp = P.getComputed();
+    return P.getRows().map((r) => {
+      const c = comp[r.id] || {};
+      const u = (c.utoky || []).filter((x) => !x.rychly);
+      const nabity = u[u.length - 1] || {};
+      return { utok: r.charged1, stav: nabity.stav, proc: nabity.proc || "" };
+    });
+  });
+  const stropKusu = elitniTM.filter((x) => x.utok === "Overheat")[0];
+  const horsi = elitniTM.filter((x) => x.utok === "Fire Blast")[0];
+  check("nejlepší útok bez elitního TM není červený",
+    stropKusu && stropKusu.stav === "dobry", JSON.stringify(stropKusu));
+  check("…a bublina řekne, že lepší je jen za elitní TM, i kolik se ztrácí",
+    stropKusu && /elitn/i.test(stropKusu.proc) && /%/.test(stropKusu.proc),
+    (stropKusu || {}).proc);
+  check("útok, který ani bez elitního TM nejlepší není, zůstává na přeučení",
+    horsi && horsi.stav === "preucit", JSON.stringify(horsi));
 
   await page.goto(URL);
   await page.waitForTimeout(700);

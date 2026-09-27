@@ -224,10 +224,10 @@ const stav = await ui.evaluate(async () => {
   await cekej(800);
   const out = {};
   const menu = document.querySelector(".atlas-roster-commands");
-  const smazat = document.getElementById("clearUnstarredBtn");
   const vse = document.getElementById("clearBtn");
-  out.smazatVMenu = !!(menu && smazat && menu.contains(smazat));
-  out.smazatPredVse = !!(smazat && vse && smazat.nextElementSibling === vse);
+  // "Smazat neoznacene" zmizelo s hvezdickou; v menu ma zustat mazani vseho.
+  out.smazatVMenu = !document.getElementById("clearUnstarredBtn");
+  out.smazatPredVse = !!(menu && vse && menu.contains(vse));
   const disp = (id) => { const e = document.getElementById(id); return e ? getComputedStyle(e).display : "chybi"; };
   out.saveState = disp("saveState");
   out.backupWarn = (document.getElementById("backupState") || {}).className || "";
@@ -335,7 +335,7 @@ const stav = await ui.evaluate(async () => {
   }
   return out;
 });
-check("„Smazat neoznačené“ je v menu Správa rosteru hned nad „Vymazat vše“",
+check("„Smazat neoznačené“ s hvězdičkou zmizelo a „Vymazat vše“ zůstalo v menu Správa rosteru",
   stav.smazatVMenu && stav.smazatPredVse, JSON.stringify([stav.smazatVMenu, stav.smazatPredVse]));
 check("věta o uložení není vidět", stav.saveState === "none", stav.saveState);
 check("prázdná lišta pod rosterem není vidět, dokud se neotevře profil",

@@ -677,7 +677,6 @@
      * rozpisu. Typy jdou pryč taky — na kartě zabíraly celý řádek a při
      * rozhodování „nechat/pustit“ neříkají nic, co by verdikt neuměl. */
     #rosterTable tbody td[data-col] { display: none; }
-    #rosterTable tbody td[data-col="star"],
     #rosterTable tbody td[data-col="pokemon"],
     #rosterTable tbody td[data-col="cp"],
     #rosterTable tbody td[data-col="ivPct"],
@@ -699,13 +698,13 @@
      */
     #rosterTable tbody tr:not(.detail-row) {
       display: grid; align-items: center;
-      grid-template-columns: 22px minmax(0, 1fr) 74px 40px;
+      grid-template-columns: minmax(0, 1fr) 74px 40px;
       /* První řádek drží výšku, i když kus žádný odznáček nemá — jinak byla
          karta s „LEG“ o pět pixelů vyšší než ta bez něj a seznam se vlnil. */
       grid-template-rows: minmax(42px, auto) auto;
       grid-template-areas:
-        "star jmeno cp   pct"
-        ".    keep  keep kos";
+        "jmeno cp   pct"
+        "keep  keep kos";
       column-gap: 8px; row-gap: 2px; }
     #rosterTable tbody td { background: none !important; border: 0 !important;
       /* Svislá linka za jménem je oddělovač přišpendleného sloupce z tabulky.
@@ -714,9 +713,6 @@
       box-shadow: none !important; padding: 0 !important; }
     #rosterTable tbody td .cell-sub { display: inline; margin-left: 4px;
       font-size: 11px; }
-    /* Hvězdička se lepí k prvnímu řádku jména. Vystředěná ve svém poli
-       klesala u kusů s odznáčkem pod jméno a působila, že patří k němu. */
-    #rosterTable tbody td[data-col="star"] { grid-area: star; align-self: start; }
     #rosterTable tbody td[data-col="pokemon"] { grid-area: jmeno; align-self: start;
       font-size: 15px; font-weight: 600; min-width: 0; }
     /* Dlouhé jméno se usekne třemi tečkami. Když přetékalo, rozhodilo celou
@@ -1104,11 +1100,10 @@
   .col-pokemon .poke-name { display: block; font-weight: 600; }
   .col-pokemon .poke-tagy { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
   .col-pokemon .poke-tagy .rarity-chip { margin-left: 0; }
-  /* Pohlaví jako značka: symbol z herního menu místo slova ze skenu. */
-  .rarity-chip.r-pohlavi { font-size: 12px; line-height: 1; padding: 2px 5px;
-    font-weight: 700; }
-  .rarity-chip.r-f { background: #e75aa8; color: #fff; }
-  .rarity-chip.r-m { background: #4a8fe0; color: #fff; }
+  /* Pohlaví za jménem: symbol z herního menu místo slova ve sloupci. */
+  .poke-pohlavi { margin-left: 3px; font-weight: 800; font-size: .86em; }
+  .poke-pohlavi.p-f { color: #f06fb4; }
+  .poke-pohlavi.p-m { color: #6fa8ef; }
   .col-note input { min-width: 140px; }
   .col-move input { min-width: 100px; }
   /* zebra + přišpendlený první sloupec, ať se v 33 sloupcích neztratíš */
@@ -1118,23 +1113,18 @@
   #rosterTable thead #headerRow th:first-child,
   #rosterTable tbody td:first-child { position: sticky; left: 0; z-index: 1; }
   #rosterTable thead #headerRow th:nth-child(2),
-  #rosterTable tbody td:nth-child(2) { position: sticky; left: var(--pin2, 30px); z-index: 1; }
-  #rosterTable thead #headerRow th:nth-child(3),
-  #rosterTable tbody td:nth-child(3) { position: sticky; left: var(--pin3, 64px);
+  #rosterTable tbody td:nth-child(2) { position: sticky; left: var(--pin2, 34px);
     z-index: 1; box-shadow: 1px 0 0 var(--grid); }
   #rosterTable thead #headerRow th:first-child,
-  #rosterTable thead #headerRow th:nth-child(2),
-  #rosterTable thead #headerRow th:nth-child(3) { z-index: 3; background: var(--surface-1); }
+  #rosterTable thead #headerRow th:nth-child(2) { z-index: 3; background: var(--surface-1); }
   /* Filtr `of :not(.detail-row)` tu musí být stejně jako u zebry přes celý
      řádek, jinak se po otevření detailu parita rozejde a světlé zůstane
      jen jméno. */
   #rosterTable tbody tr:nth-child(odd of :not(.detail-row)) td:first-child,
-  #rosterTable tbody tr:nth-child(odd of :not(.detail-row)) td:nth-child(2),
-  #rosterTable tbody tr:nth-child(odd of :not(.detail-row)) td:nth-child(3) {
+  #rosterTable tbody tr:nth-child(odd of :not(.detail-row)) td:nth-child(2) {
     background: var(--surface-1); }
   #rosterTable tbody tr:nth-child(even of :not(.detail-row)) td:first-child,
-  #rosterTable tbody tr:nth-child(even of :not(.detail-row)) td:nth-child(2),
-  #rosterTable tbody tr:nth-child(even of :not(.detail-row)) td:nth-child(3) {
+  #rosterTable tbody tr:nth-child(even of :not(.detail-row)) td:nth-child(2) {
     background: var(--page); }
   #rosterTable tbody tr:hover td:first-child,
   #rosterTable tbody tr:hover td:nth-child(2) { background: color-mix(in srgb, var(--series-1) 7%, var(--surface-1)); }
@@ -1144,13 +1134,6 @@
   #rosterTable tbody tr:not(.detail-row) td.iv-nejiste {
     background: color-mix(in srgb, var(--status-warning) 22%, transparent);
     color: var(--status-warning); font-weight: 700; }
-  /* hvezdicka = rucni znacka "tenhle si nechavam", stejne jako oblibeny ve hre */
-  #rosterTable thead th.star-head { padding-left: 4px; padding-right: 4px; text-align: center; }
-  #rosterTable tbody td.star-cell { padding: 4px 0; text-align: center; }
-  .star-btn { background: none; border: 0; padding: 2px; cursor: pointer; line-height: 1;
-    font-size: 16px; color: var(--text-muted); opacity: .45; }
-  .star-btn:hover { opacity: 1; color: #f5b301; }
-  .star-btn.on { opacity: 1; color: #f5b301; text-shadow: 0 0 7px color-mix(in srgb, #f5b301 50%, transparent); }
   #rosterTable .summary-cell { white-space: normal; line-height: 1.35; }
   /* `width: auto` nechávalo na širokém okně vpravo mrtvý pruh. Se 100 %
      rozdá prohlížeč přebytek sloupcům podle jejich šířky, takže místo
@@ -1902,8 +1885,8 @@
 
     /* Mobilní verze je na kontrolu — co se dělá od stolu (přidávání kusů,
        import, export, zálohy, mazání, profil), se v liště neukazuje. */
-    #addRowBtn, #toggleImportBtn, #exportBtn, #starKeepersBtn, #backupBtn,
-    #backupNowBtn, #forgetDiscardedBtn, #clearUnstarredBtn, #clearBtn,
+    #addRowBtn, #toggleImportBtn, #exportBtn, #backupBtn,
+    #backupNowBtn, #forgetDiscardedBtn, #clearBtn,
     #profilBtn, .profile-box { display: none; }
 
     /* Lišta se zalomí, neposouvá se do strany. Posuv byl sice úspornější,
@@ -3444,13 +3427,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         <option value="konflikt">Jen konflikt útoků (raid ≠ liga)</option>
         <option value="shadow">Jen shadow</option>
         <option value="purified">Jen purified</option>
-        <option value="star">Jen označené ★</option>
-        <option value="nostar">Jen neoznačené</option>
       </select>
       <button id="backupBtn" title="Připojí složku na disku, do které se roster bude sám ukládat — jedna generace na den, takže včerejší stav zůstane."></button>
       <button id="backupNowBtn" title="Uloží snímek s časem v názvu. Nic nepřepíše — hodí se, až budeš s úklidem hotový.">Zálohovat teď</button>
-      <button id="starKeepersBtn" title="Označí hvězdičkou všechny kusy s kladným verdiktem. Co už označené je, zůstane."></button>
-      <button class="danger" id="clearUnstarredBtn" style="display:none"></button>
       <button id="boxModeBtn" title="Projde kus po kusu přes celou obrazovku. Šipkami rozhodneš, tabulku k tomu nepotřebuješ.">Čistit box</button>
       <button class="danger" id="clearBtn">Vymazat vše</button>
       <button id="forgetDiscardedBtn" style="display:none" title="Co jsi tady smazal, se při importu nevrací. Tady se to dá prohlédnout a vrátit."></button>
@@ -5337,6 +5316,35 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return best;
   }
 
+  var bestBezElitCache = {};
+  /** Nejlepší sestava, kterou kus zvládne BEZ elitního TM.
+   *
+   *  Elitní TM je vzácný — pár kusů za rok. Když je nejlepší útok jen za něj,
+   *  není to chyba k opravě, ale strop toho kusu; appka to musí umět říct
+   *  jinak než červenou „přeuč to".
+   */
+  function bestMovesetBezElite(dex, key) {
+    if (bestBezElitCache[key] !== undefined) return bestBezElitCache[key];
+    var l = learnset(key);
+    var best = null;
+    if (dex && l && l.fast.length && l.charged.length) {
+      l.fast.forEach(function (fi) {
+        if (l.eliteFast.indexOf(fi) !== -1) return;
+        var f = fastMove(fi);
+        if (!f) return;
+        l.charged.forEach(function (ci) {
+          if (l.eliteCharged.indexOf(ci) !== -1) return;
+          var c = chargedMove(ci);
+          if (!c) return;
+          var raw = cycleDps(dex.types, f, c);
+          if (!best || raw > best.dps) best = { dps: raw, fast: f, charged: c };
+        });
+      });
+    }
+    bestBezElitCache[key] = best;
+    return best;
+  }
+
   var bestByTypeCache = {};
   /** Nejlepší moveset zvlášť pro každý typ útoku, který se druh může naučit.
    *  Tyranitar je špičkový Dark i Rock útočník — dávat mu jedno „nejlepší"
@@ -5432,7 +5440,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
   // ---------- sloupce ----------
   var COLS = [
-    { key: "star", label: "★", star: true, wv: 30, w: 30 },
     // Obrázek. Nemá název ani obsah k řazení — je to jen záchytný bod pro oko.
     { key: "obrazek", label: "", readonly: true, cls: "col-obr", wv: 34, w: 34 },
     { key: "pokemon", label: "Pokémon", type: "text", cls: "col-pokemon", wv: 128, w: 130 },
@@ -5485,7 +5492,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // 33 sloupců se nedá číst, verdikt se ztrácí mezi vstupy.
   var DETAIL_ONLY = ["dynamax", "cute", "shiny", "finalEvo", "level", "lcRank", "ivAtk", "ivDef", "ivSta", "fastMove", "charged1", "charged2",
     "glRank", "ulRank", "mlRank", "buddy", "note", "raid", "gym", "pvpPot", "summary"];
-  var LEFT_SIDE = ["star", "pokemon", "dynamax", "cute", "shiny", "finalEvo", "cp", "level", "ivAtk", "ivDef", "ivSta", "ivPct",
+  var LEFT_SIDE = ["pokemon", "dynamax", "cute", "shiny", "finalEvo", "cp", "level", "ivAtk", "ivDef", "ivSta", "ivPct",
     "types", "cpMax", "strong", "fastMove", "charged1", "charged2", "lcRank", "glRank", "ulRank", "mlRank", "buddy", "note"];
   // Zaškrtávací filtr nad sloupcem PvP. Prázdná množina = neomezovat.
   // Ligy a stavy se kombinují jako AND: „Great League" + „hotoví" = jen kusy,
@@ -9371,6 +9378,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // …a co je trade evolucí až o stupeň dál (Abra → Kadabra → Alakazam).
       var tradeRada = tradeEvo ? null : tradeEvoVRade(b);
       var tradeEvoPending = !!tradeEvo && b.isFinalEvo === false && r.forma !== "Shadow";
+      /* Kus, který drží slot v rozpočtu AŽ PO EVOLUCI. Počítá se takhle
+         brzo proto, že o tom musí vědět i verdikt: u takového kusu je
+         evoluce dražší než sleva za výměnu, takže se nenabízí na trade. */
+      var slotyPoEvo = (b.sloty || []).filter(function (sl) { return sl.poEvoluci; });
+      var maSlotPoEvo = slotyPoEvo.length > 0;
+      /* Skutečná role po evoluci, ne náplast ani rezerva. Rozdíl je důležitý
+         u výměny: kvůli místu, které kus drží jen „než chytíš lepšího",
+         nemá cenu přicházet o evoluci zdarma. */
+      var drziRoliPoEvo = slotyPoEvo.some(function (sl) {
+        return !sl.mezera && !sl.rezerva;
+      });
       // nejistý sken, který ještě může vyjít dobře → nemá cenu soudit teď
       var mohlBy = num(r.ivPctMax);
       var rescanWorth = b.ivUncertain && (b.listedCapped || eliteRaidGym || !!b.megaEntry
@@ -9561,10 +9579,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
                 + " Hromadně půjde poslat až po zapnutí „Expanded Group Transfer“"
                 + " (ve hře Poké Ball → Nastavení); jednotlivě jde vždycky."
               : "");
-      } else if (tradeEvoPending && !drziRoliTed(b)) {
-        // Jen u kusu, který žádné pořádné místo v rozpočtu nedrží. „Nechat
-        // – trade" znamená „dej ho kamarádovi" a výměna IV přehází — u kusu,
-        // který drží ligu, by ta rada stála víc než ušetřených 100 bonbónů.
+      } else if (tradeEvoPending && !drziRoliTed(b) && !drziRoliPoEvo) {
+        // Jen u kusu, který žádné pořádné místo v rozpočtu nedrží — a ani ho
+        // nezíská evolucí. „Ponechat – trade" znamená „dej ho kamarádovi"
+        // a výměna IV přehází; u kusu, který drží ligu (nebo ji bude držet,
+        // až ho vyvineš), by ta rada stála víc než ušetřených 100 bonbónů.
         keepGood = true;
         keepLabel = "Ponechat – trade";
         keepTone = "good";
@@ -9786,8 +9805,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
          u Combuskena stálo „Drží místo v rozpočtu: Fighting 5. z 6 — ale až
          jako Blaziken" a o dvě buňky vedle „Nemá to pro co, ani vyvinutý by
          tenhle kus žádnou roli nedržel". */
-      var slotyPoEvo = (b.sloty || []).filter(function (sl) { return sl.poEvoluci; });
-      var maSlotPoEvo = slotyPoEvo.length > 0;
       // Eevee, Ralts a spol. mají víc konců řetězce, takže jednoznačný cíl není
       var hrajeTed = (b.ligyVse || []).some(function (L) { return L.ted && L.ted.rank; });
       var hrajePo = (b.ligyVse || []).some(function (L) { return L.po && L.po.rank; });
@@ -10455,6 +10472,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
               + " takže bys o ten kus i o jeho místo přišel; sto bonbónů"
               + " je levnější." : ". Výměna je nevratná a IV se u ní přehází.");
         tradeTone = "muted";
+      } else if (tradeEvo && b.isFinalEvo === false && drziRoliPoEvo) {
+        /* Vyvinout, nebo vyměnit? Obojí najednou nejde. Výměna vyvine zdarma
+           (sto bonbónů), ale kus odejde k druhému a IV se přehází. Když
+           vyvinutá forma drží místo v rozpočtu, je ta role dražší než sto
+           bonbónů — pak se vyvíjí a výměna se zavírá. */
+        trade = "Ne";
+        tradeSub = "radši vyvinout";
+        tradeTitle = "Po výměně by se vyvinul zdarma na " + tradeEvo.evolvesTo
+          + ", jenže vyvinutý ti drží místo v rozpočtu (" + slotVety(b) + ")."
+          + " Výměnou bys o něj i o to místo přišel — sto bonbónů je levnější"
+          + " než shánět náhradu.";
+        tradeTone = "muted";
       } else if (tradeEvo && b.isFinalEvo === false) {
         trade = "Ano";
         tradeFree = true;
@@ -10563,6 +10592,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // IV, jenže vysoké IV samo o sobě není důvod k evoluci — říká jen, že
       // se evolucí nic nezkazí. Rozhoduje se to až tady, protože verdikt se
       // ještě po evolučním bloku dolaďuje.
+      /* Druhá strana téhož rozhodnutí: vyvinutý kus nic nehraje, takže
+         jediná hodnota, kterou má, je ta sleva na bonbónech. Pak se mění
+         a evoluce se zavírá — jinak by appka radila obojí naráz a jedno
+         z toho by muselo být špatně. */
+      if (evolve === "Ano" && tradeFree && !drziRoliPoEvo && tradeEvo) {
+        evolveTitle = "Vyvinutá forma ti nedrží žádné místo v rozpočtu, takže"
+          + " jediné, co z toho kusu je, je sleva na bonbónech: po výměně se"
+          + " vyvine ZDARMA. Vyvinout ho teď za "
+          + ((b.dex && b.dex.evoCandy) || 100) + " bonbónů by ta sleva propadla."
+          + (evolveTitle ? " Jinak by platilo: " + evolveTitle : "");
+        evolve = "Ne – až po výměně";
+        evolveTone = "muted";
+        evolveSub = "";
+      }
+
       if (evolve === "Ano" && keepLabel.indexOf("Zahodit") === 0) {
         evolveTitle = "Tenhle kus se podle rozpočtu pouští, takže bonbóny by"
           + " přišly nazmar. Kdyby sis ho nechával, platilo by tohle: "
@@ -11353,14 +11397,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   }
 
   function syncPin() {
-    var cell = document.querySelector("#rosterTable tbody td.star-cell") || document.querySelector("#headerRow th");
     var table = document.getElementById("rosterTable");
-    if (!cell || !table) return;
-    table.style.setProperty("--pin2", cell.offsetWidth + "px");
-    // Jméno začíná až za hvězdičkou a obrázkem.
+    if (!table) return;
+    // Jméno se přišpendlí hned za obrázkem — ten je první sloupec.
     var obr = document.querySelector("#rosterTable tbody td.col-obr");
-    table.style.setProperty("--pin3",
-      (cell.offsetWidth + (obr ? obr.offsetWidth : 34)) + "px");
+    table.style.setProperty("--pin2", (obr ? obr.offsetWidth : 34) + "px");
   }
 
   function renderColgroup() {
@@ -11421,12 +11462,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           renderHeader();   // jinak se šipka řazení nikdy nepřekreslí
           renderBody(); persist(true);
         });
-        th.title = c.star ? "Klik = označené nahoru" : "Klik = seřadit, Shift+klik = druhotné řazení";
+        th.title = "Klik = seřadit, Shift+klik = druhotné řazení";
         if (sortKey === c.key) th.textContent += sortDir === 1 ? " ▲" : " ▼";
         else if (sortKey2 === c.key) th.textContent += sortDir2 === 1 ? " ▲2" : " ▼2";
       }
       if (viewMode === "verdict" && c.lv) th.title = c.label + (th.title ? " · " + th.title : "");
-      if (c.star) th.className += (th.className ? " " : "") + "star-head";
       // Sloupec PvP má vlastní zaškrtávací filtr — rozbalovátko nahoře na tohle
       // nestačí, protože ligy a stavy se kombinují (např. „hotoví do Great").
       if (c.key === "types") {
@@ -11903,6 +11943,38 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // Nedoporučovat útok, který už ten kus má — to není rada, to je zmatek.
       var uzMa = lepsi && [b.row.fastMove, b.row.charged1, b.row.charged2]
         .filter(Boolean).some(function (x) { return moveKey(x) === moveKey(lepsi.name); });
+      /* Lepší útok jen za elitní TM. Těch je pár za rok, takže „přeuč to"
+         červeně je rada, kterou skoro nikdo neposlechne — a u kusu, který
+         už má to nejlepší bez elitního TM, je to rovnou nepravda. Rozhoduje
+         ztráta: do desetiny je to strop kusu (oranžová), víc je důvod
+         zvážit, jestli na to jeden elitní TM padne. */
+      var lepsiJeElitni = !!(lepsi && elite.indexOf(moveKey(lepsi.name)) !== -1);
+      if (lepsiJeElitni && b.dex) {
+        var bezElit = bestMovesetBezElite(b.dex, b.key);
+        var jeToStrop = !!(bezElit
+          && moveKey((rychly ? bezElit.fast : bezElit.charged).name) === klic);
+        var podil = bezElit && mr && mr.best && mr.best.dps
+          ? bezElit.dps / mr.best.dps : null;
+        if (jeToStrop) {
+          var ztrataElit = podil === null ? null : 1 - podil;
+          var kolik = ztrataElit === null ? "" : " Ztrácíš tím " + procenta(ztrataElit) + " %.";
+          if (ztrataElit !== null && ztrataElit <= 0.1) {
+            out.stav = "dobry";
+            out.proc = "Lepší je " + lepsi.name + ", jenže ten jde naučit jen"
+              + " elitním TM. Bez něj je tohle to nejlepší, co ten kus umí —"
+              + " a rozdíl je malý." + kolik;
+          } else {
+            out.proc = "Nejlepší je " + lepsi.name + ", ale jen za elitní TM."
+              + kolik + " Tohle je nejlepší, co jde bez něj — zvaž, jestli"
+              + " na tenhle kus jeden elitní TM padne.";
+          }
+          out.proc += druhyNabity
+            ? " Druhý nabitý útok se navíc platí zvlášť a v raidu se skoro"
+              + " nevystřílí — smysl dává hlavně v lize."
+            : "";
+          return out;
+        }
+      }
       out.proc = "Do raidu se nehodí" + oKolik
         + (lepsi && !uzMa ? " — nejlepší je " + lepsi.name + " (" + lepsi.type + ")" : "")
         + " a v žádné lize, kterou ten druh hraje, ho simulace nepoužívá.";
@@ -12255,6 +12327,17 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     if (!img || !img.src) return;
     nactiRamecky();
     var url = img.src;
+    /* Kdyz primarni adresa spadne, `onerror` prepne na zalozni — a ta ma
+       jine okraje. Zmerene zvetseni patri k puvodni adrese, takze se po
+       prepnuti musi premerit. Bez toho zustal sprite bez zvetseni a vedle
+       stejneho druhu vypadal o tretinu mensi. */
+    if (!img.dataset.zalohaHlidac) {
+      img.dataset.zalohaHlidac = "1";
+      img.addEventListener("error", function () {
+        img.style.transform = "";
+        window.setTimeout(function () { vystredSprite(img); }, 0);
+      });
+    }
     var pouzij = function (v) {
       img.style.transform = "translate(" + v.x + "%, " + v.y + "%) scale(" + v.s + ")";
     };
@@ -13963,13 +14046,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    */
   // Pořadí tlačítek v hlavní řadě lišty.
   var LISTA_HLAVNI = ["addRowBtn", "boxModeBtn", "doplnitBtn", "toggleImportBtn", "exportBtn",
-    "starKeepersBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn",
-    "clearUnstarredBtn", "clearBtn"];
+    "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearBtn"];
   // Práce od stolu. Mobilní verze je doplněk na kontrolu — přidávání kusů,
   // ruční zápis, import a hromadné označení se dělají u počítače. V liště
   // pod prstem by je nikdo nehledal a osm tlačítek se do telefonu nevejde.
-  var LISTA_OD_STOLU = ["addRowBtn", "doplnitBtn", "toggleImportBtn", "exportBtn", "starKeepersBtn",
-    "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearUnstarredBtn", "clearBtn"];
+  var LISTA_OD_STOLU = ["addRowBtn", "doplnitBtn", "toggleImportBtn", "exportBtn",
+    "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearBtn"];
 
   function usporadatListu() {
     var lista = document.querySelector(".card.roster .toolbar");
@@ -15779,29 +15861,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           tr.appendChild(td);
           return;
         }
-        if (col.star) {
-          // Klik přepne značku a nic dalšího nepřekresluje — při hromadném
-          // označování by řádek jinak odskočil pryč (řazení/filtr).
-          td.className = "star-cell";
-          var sb = document.createElement("button");
-          var paintStar = function () {
-            sb.className = "star-btn" + (r.star ? " on" : "");
-            sb.textContent = r.star ? "★" : "☆";
-            sb.title = r.star ? "Označeno — klikni pro zrušení" : "Označit hvězdičkou (stejně jako oblíbený ve hře)";
-            sb.setAttribute("aria-pressed", r.star ? "true" : "false");
-          };
-          paintStar();
-          sb.addEventListener("click", function () {
-            r.star = !r.star;
-            paintStar();
-            renderTiles();
-            renderUnstarredBtn();   // ať se „Smazat neoznačené" objeví hned po první hvězdičce
-            persist(true);
-          });
-          td.appendChild(sb);
-          tr.appendChild(td);
-          return;
-        }
         if (col.readonly) {
           // `col.cls` musí projít i u readonly sloupců — na něm visí vzhled,
           // který se nesmí měnit až dodatečně přidanou třídou.
@@ -15867,16 +15926,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
                 + ' stojí poloviční prach a IV má zaručeně aspoň 12/12/12.'
                 + ' Nejlevnější kus na dotažení do ligy.">LUCKY</span>';
             }
-            // Pohlaví je vlastní značka, ne slovo ve sloupci: u většiny druhů
-            // mění jen vzhled, u Nidorana je to rovnou jiný druh.
-            var pg = pohlaviKusu(r);
-            if (pg) {
-              chips += '<span class="rarity-chip r-pohlavi r-' + pg + '" title="'
-                + (pg === "f" ? "Samice" : "Samec")
-                + ' — u části druhů se liší vzhledem.">'
-                + (pg === "f" ? "♀" : "♂") + "</span>";
-            }
-            td.innerHTML = '<span class="poke-name">' + escHtml(td.textContent) + "</span>"
+
+            /* Pohlaví patří ke jménu, ne mezi značky: značky říkají, co kus
+               HRAJE, kdežto pohlaví je součást toho, KDO to je — a u Nidorana
+               rovnou jiný druh. */
+            var pg = /[♀♂]/.test(String(r.pokemon || "")) ? null : pohlaviKusu(r);
+            td.innerHTML = '<span class="poke-name">' + escHtml(td.textContent)
+              + (pg ? '<span class="poke-pohlavi p-' + pg + '" title="'
+                  + (pg === "f" ? "Samice" : "Samec") + '">'
+                  + (pg === "f" ? "♀" : "♂") + "</span>" : "")
+              + "</span>"
               + '<span class="poke-tagy">' + chips + "</span>";
           }
           if (col.key === "pokemon" && r.pokemon) {
@@ -15994,8 +16053,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     renderTiles();
     renderZalWarn();
     renderBoxCheck();
-    renderUnstarredBtn();
-    renderStarKeepersBtn();
     syncPin();
     syncWrapOverflow();
     syncToolbarHeight();
@@ -16118,7 +16175,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var tiles = [
       { lbl: "Celkem v rosteru", tone: "neutral", filter: "all" },
       { lbl: "Ponechat", tone: "good", filter: "keep" },
-      { lbl: "Označené ★", tone: "good", filter: "star" },
       { lbl: "Duplicity k zahození", tone: "critical", filter: "dupes" },
       { lbl: "Zahodit", tone: "critical", filter: "discard" },
       { lbl: "Díry v pokrytí", tone: "warning", filter: "mezera" },
@@ -19246,15 +19302,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // neměl jediný Electric/Grass útok. Roster se dá vyčistit na krásné kusy
   // a přitom přijít o celý typ — tohle na to upozorní dřív, než se maže.
 
-  /** Co z rosteru přežije: hvězdičky, pokud nějaké jsou, jinak verdikt tabulky. */
+  /** Co z rosteru přežije — podle verdiktu tabulky.
+   *
+   *  Dřív o tom rozhodovaly hvězdičky, když nějaké v rosteru byly. Hvězdička
+   *  z appky zmizela (na „tenhle je můj oblíbený" je značka CUTE), takže by
+   *  to teď filtrovalo podle údaje, který nejde nastavit. */
   function prezijiciSet(base) {
-    var maHvezdy = base.some(function (b) { return b.row && b.row.star; });
     return {
-      podleHvezd: maHvezdy,
-      prezije: function (b) {
-        if (maHvezdy) return !!(b.row && b.row.star);
-        return usableForPlan(b);
-      }
+      podleHvezd: false,
+      prezije: function (b) { return usableForPlan(b); }
     };
   }
 
@@ -21382,31 +21438,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       && (c.keepTone === "good" || c.keepTone === "warning");
   }
 
-  function renderStarKeepersBtn() {
-    var b = document.getElementById("starKeepersBtn");
-    if (!b) return;
-    var c = analyze();
-    var kolik = rows.filter(function (r) { return !r.star && jeZajimavy(c[r.id]); }).length;
-    if (!kolik) { b.style.display = "none"; return; }
-    b.style.display = "";
-    b.textContent = "Označit ponechané (" + kolik + ")";
-    b.title = "Dá hvězdičku všemu, co má aspoň někde zelený nebo žlutý stav —"
-      + " tedy i kusům, které samy o sobě nedrží roli, ale je u nich co řešit"
-      + " (přeučit útoky, purifikovat, doskenovat, dovyvinout).";
-  }
-
-  function renderUnstarredBtn() {
-    var b = document.getElementById("clearUnstarredBtn");
-    if (!b) return;
-    var starred = rows.filter(function (r) { return !!r.star; }).length;
-    var rest = rows.length - starred;
-    if (!starred || !rest) { b.style.display = "none"; return; }
-    b.style.display = "";
-    b.textContent = "Smazat neoznačené (" + rest + ")";
-    b.title = "Nechá v rosteru jen " + starred + " kusů s hvězdičkou. Smazané si appka zapamatuje, "
-      + "takže se při dalším importu nevrátí.";
-  }
-
   function renderDiscardBtn() {
     var b = document.getElementById("forgetDiscardedBtn");
     if (!b) return;
@@ -22863,26 +22894,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       f.push('<span class="imp-slabe">' + pending.headers.length + " sloupců"
         + (pending.hasHeader ? ", hlavička sedí" : ", bez hlavičky") + "</span>");
       if (onlyExactWanted()) f.push('<span class="imp-slabe">jen přesné IV</span>');
-      // Calcy dá datum chycení jen někdy — ať je hned vidět, jestli má smysl
-      // podle něj řadit.
-      if (pending.mapping.catchDate !== undefined) {
-        var cele = 0;
-        vsechny.forEach(function (r) { if (presnostChyceni(r.catchDate) === 3) cele++; });
-        var rok = 0;
-        vsechny.forEach(function (r) {
-          var pr = presnostChyceni(r.catchDate);
-          if (pr > 0 && pr < 3) rok++;
-        });
-        /* Datum chycení Calcy vidí jen někdy. Samotné "0/290" nikomu nic
-           neřekne, tak je u něj bublina s tím, co to znamená. */
-        f.push('<span class="imp-slabe" data-tip="'
-          + escHtml("Kolik řádků nese úplné datum chycení (den, měsíc, rok). "
-            + "Calcy ho u většiny kusů nevidí a zapíše jen rok nebo vůbec nic. "
-            + "Bez něj nejde roster řadit podle toho, kdy jsi kus chytil.")
-          + '">datum chycení: ' + cele + " z " + vsechny.length
-          + (rok ? ", " + (rok < 5 ? "další " : "dalších ") + rok + " jen rok" : "")
-          + "</span>");
-      }
       fakta.innerHTML = f.join("");
     }
     if (note) {
@@ -24353,34 +24364,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return;
     }
     pripojitZalohu();
-  });
-
-  document.getElementById("starKeepersBtn").addEventListener("click", function () {
-    var c = analyze(), kolik = 0;
-    rows.forEach(function (r) {
-      if (!r.star && jeZajimavy(c[r.id])) { r.star = true; kolik++; }
-    });
-    if (!kolik) return;
-    renderBody(); persist(true);
-    appHlaska("Označeno " + kolik + " kusů, které mají aspoň někde zelený nebo žlutý stav.\n\n"
-      + "Ve hře jim dej „Oblíbený“ — hra je pak nepustí do hromadného transferu.");
-  });
-
-  document.getElementById("clearUnstarredBtn").addEventListener("click", function () {
-    var doomed = rows.filter(function (r) { return !r.star; });
-    if (!doomed.length) return;
-    appPotvrdit("Smazat " + doomed.length + " pokémonů bez hvězdičky?\n\n"
-      + "V rosteru zůstane " + (rows.length - doomed.length) + " označených. Smazané si appka zapamatuje, "
-      + "takže se ti při dalším importu nevrátí (dokud nedáš „Zapomenout smazané“).",
-      function () {
-        snimekPred("mazani");
-        doomed.forEach(function (r) {
-          if (r.cp) discarded.push({ k: scanKey(r), at: parseScanDate(r.scanDate), n: r.pokemon || "", del: Date.now(), r: rowSnapshot(r) });
-        });
-        rows = rows.filter(function (r) { return !!r.star; });
-        if (!rows.length) povolPrazdnyZapis();
-        renderBody(); persist(true); renderDiscardBtn();
-      }, "Smazat");
   });
 
   document.getElementById("clearBtn").addEventListener("click", function () {
@@ -27286,8 +27269,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * Vrstva z toho staví nabídku — seznam se bere odtud, aby se nerozešel
      * s tím, podle čeho se doopravdy filtruje.
      */
-    /** Pohlaví kusu jako `"f"` / `"m"` / `null` — vrstva z toho kreslí značku. */
-    atlasPohlavi: function (r) { return pohlaviKusu(r); },
+    /** Pohlaví kusu ke KRESLENÍ značky: `"f"` / `"m"` / `null`.
+     *
+     *  U Nidorana je značka součástí jména druhu, takže by se vykreslila
+     *  dvakrát („Nidoran ♀ ♀"). Tam se vrací `null` — je už vidět ve jméně. */
+    atlasPohlavi: function (r) {
+      if (r && /[♀♂]/.test(String(r.pokemon || ""))) return null;
+      return pohlaviKusu(r);
+    },
 
     atlasStitky: function () {
       /* Jak se štítek kreslí v detailu — vrstva ho v nabídce ukáže stejně,

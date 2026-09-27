@@ -538,6 +538,22 @@ def main():
             "Primal" if str(m["mega_name"]).startswith("Primal") else "Mega",
         ])
 
+    # Mega formy, které pogoapi ještě nemá. Niantic je přidává dřív, než se
+    # mirror stihne obnovit — Mega Malamar takhle v datech chyběl týdny.
+    # Ručně dopsaný záznam se použije JEN tehdy, když pro ten druh z pogoapi
+    # nepřijde nic, takže se sám vyřadí, jakmile se mirror doplní.
+    doplnky_path = ROOT / "data" / "mega_doplnky.json"
+    if doplnky_path.exists():
+        doplnky = json.loads(doplnky_path.read_text(encoding="utf-8"))
+        pridano = 0
+        for key, formy in doplnky.items():
+            if key.startswith("_") or key in mega:
+                continue
+            mega[key] = formy
+            pridano += 1
+        if pridano:
+            print(f"mega doplněné ručně (pogoapi je nemá): {pridano}")
+
     # level chodí jako float (40.0) — klíč musí být „40", ať se v JS dá hledat podle levelu
     cpm = {}
     for c in raw["cp_multiplier"]:

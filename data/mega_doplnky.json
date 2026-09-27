@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "popis": "Mega formy, ktere pogoapi jeste nema. Rucne dopsane podle herniho zdroje, zapecou se jen tehdy, kdyz pro ten druh z pogoapi nic neprijde.",
+    "pravidlo": "Jakmile se druh objevi v pogoapi, tenhle zaznam se ignoruje a muze se smazat.",
+    "schema": "klic -> [[jmeno, atk, def, sta, [typy], mega_energie, Mega|Primal], ...]"
+  },
+  "malamar": [
+    [
+      "Mega Malamar",
+      208,
+      222,
+      200,
+      ["Dark", "Psychic"],
+      40,
+      "Mega"
+    ]
+  ]
+}

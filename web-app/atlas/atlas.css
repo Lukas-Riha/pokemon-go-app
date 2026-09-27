@@ -1748,3 +1748,22 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    plachtu, upravy a vyber utoku az na 3000 — bublina "Elitni utok" se pod
    nimi kreslila a bylo z ni videt jen proužek. */
 .atlas-test .tip-bublina{z-index:4000}
+
+/* Claude 27. 9. (35): pohlavi za jmenem, ne mezi stitky.
+
+   Stitky rikaji, co kus HRAJE — pohlavi je soucast toho, KDO to je (a u
+   Nidorana rovnou druh). Patri proto ke jmenu, jako ve hre. */
+.atlas-pohlavi{display:inline-block;vertical-align:baseline;font-weight:800;
+  font-size:.82em;line-height:1;margin-left:.18em}
+.atlas-pohlavi-f{color:#f06fb4}
+.atlas-pohlavi-m{color:#6fa8ef}
+
+/* Jmenovka "POSLEDNI SKEN" mela bilou na modre a spatne se cetla. */
+.atlas-test #atlasRoster .atlas-roster-tile[data-sken]::after{
+  background:var(--series-1);color:#04121f}
+
+/* Podminka evoluce se orezavala i v cisteni boxu. Karta ma pevnou vysku,
+   ale veta se vejde — je psana malym pismem a dlazdice ma dost mista. */
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u.d-evo-podminka,
+.atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u.d-evo-bonus{
+  display:block;-webkit-line-clamp:none;overflow:visible;overflow-wrap:anywhere}
