@@ -990,7 +990,10 @@ html[data-theme=dark] .atlas-test{--page:#040f20;--surface-1:#08182b;--border:#2
 /* Staty a IV dostanou víc místa — pruhy na 40 px neukazovaly nic. Útoky
    se vejdou i tak, mají užší sloupec a jsou úplně vpravo. */
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-stats{flex:2 1 460px}
-.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-utoky{flex:1 1 250px}
+/* Blok UTOKY: 250 px bylo malo, "-> Thunder Shock" se do nej nevesel
+   a orezal se. Roste doleva, takze zaroven zmizi prazdne misto za
+   sekci STROP. */
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-utoky{flex:1 1 250px;min-width:190px}
 .atlas-test .atlas-drawer .atlas-ident-stats .d-box{overflow:visible;border-radius:0}
 .atlas-test .atlas-drawer .atlas-ident-utoky{border-radius:0}
 /* Pruh statu ať roste s buňkou, ne aby zůstal na pevných pár pixelech. */
@@ -1767,3 +1770,31 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u.d-evo-podminka,
 .atlas-test .atlas-box-rozbor .atlas-evolution-column .d-evo-kus u.d-evo-bonus{
   display:block;-webkit-line-clamp:none;overflow:visible;overflow-wrap:anywhere}
+
+/* Claude 28. 9. (36): jmenovka posledniho skenu a sirsi evolucni rada.
+
+   Ovalek sedel pulkou nad okrajem dlazdice a ta ho orezala. Ted stoji
+   celym telem uvnitr. */
+.atlas-test #atlasRoster .atlas-roster-tile[data-sken]::after{
+  top:6px;transform:translateX(-50%)}
+
+/* Podminky evoluce jsou vety ("byt u stopu s Glacial Lure Module") a do
+   uzke dlazdice se nevesly. Sloupec s evolucni radou je proto sirsi. */
+.atlas-test .atlas-drawer .atlas-evolution-column{min-width:330px}
+.atlas-test .atlas-evolution-column .d-evo.husty .d-evo-stupen{gap:6px 10px}
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-podminka,
+.atlas-test .atlas-evolution-column .d-evo-kus u.d-evo-bonus{
+  max-width:none;width:100%;box-sizing:border-box}
+
+/* Claude 28. 9. (37): blok UTOKY v hlavicce detailu.
+
+   Mel pevnou sirku 260 px, radky se nesmely zalomit a co pretejkalo, to
+   se orezalo — "-> Thunder Shock" konciloo v pulce. Ted blok roste doleva
+   (zaroven tim zmizi prazdne misto za STROPem) a rada se v nouzi zalomi. */
+.atlas-test .atlas-drawer .atlas-ident-utoky{overflow:visible}
+/* Rada s utoky nesmela zalomit, takze "-> Volt Switch" vylezl z bloku ven
+   a orezal se. Ted se v nouzi zalomi pod utoky. */
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-radek{flex-wrap:wrap;min-width:0}
+/* Sekce STATY je siroka a kdyz se zuzi, blok UTOKY se posune doleva k STROPu
+   a ma vic mista na doporuceny utok. */
+.atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-s{min-width:0}

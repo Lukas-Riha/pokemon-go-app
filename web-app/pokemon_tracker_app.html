@@ -15930,8 +15930,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             /* Pohlaví patří ke jménu, ne mezi značky: značky říkají, co kus
                HRAJE, kdežto pohlaví je součást toho, KDO to je — a u Nidorana
                rovnou jiný druh. */
-            var pg = /[♀♂]/.test(String(r.pokemon || "")) ? null : pohlaviKusu(r);
-            td.innerHTML = '<span class="poke-name">' + escHtml(td.textContent)
+            var pg = pohlaviKusu(r);
+            td.innerHTML = '<span class="poke-name">'
+              + escHtml(String(td.textContent).replace(/\s*[♀♂]\s*/g, " ").trim())
               + (pg ? '<span class="poke-pohlavi p-' + pg + '" title="'
                   + (pg === "f" ? "Samice" : "Samec") + '">'
                   + (pg === "f" ? "♀" : "♂") + "</span>" : "")
@@ -27234,6 +27235,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // pro audit: pořadí druhu v lize přesně tak, jak ho bere UI
     ligovePoradi: ligovePoradi,
     posunVLize: posunVLize, drziteleLigy: drziteleLigy, drziteleSlotu: drziteleSlotu,
+    /* Paměť pořadí z PvPoke — podle ní se kreslí šipky u lig. Ven kvůli
+       kontrole, že šipka i datum sedí s tím, co je opravdu zapečené. */
+    metaPoradiDrive: function () { return META.poradiDrive || null; },
+    metaPoradiPamet: function () { return META.poradiPamet || null; },
     pametPoradi: pametPoradi,
     // kdo se do ligy (LC/GL/UL/ML) nevešel, ač druh v limitu pořadí je
     ligaPodCarou: function (label) { return (ligaPodCarou[label] || []).slice(); },
@@ -27269,13 +27274,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * Vrstva z toho staví nabídku — seznam se bere odtud, aby se nerozešel
      * s tím, podle čeho se doopravdy filtruje.
      */
-    /** Pohlaví kusu ke KRESLENÍ značky: `"f"` / `"m"` / `null`.
-     *
-     *  U Nidorana je značka součástí jména druhu, takže by se vykreslila
-     *  dvakrát („Nidoran ♀ ♀"). Tam se vrací `null` — je už vidět ve jméně. */
-    atlasPohlavi: function (r) {
-      if (r && /[♀♂]/.test(String(r.pokemon || ""))) return null;
-      return pohlaviKusu(r);
+    /** Pohlaví kusu ke KRESLENÍ značky: `"f"` / `"m"` / `null`. */
+    atlasPohlavi: function (r) { return pohlaviKusu(r); },
+
+    /** Jméno kusu, jak se ukazuje. U Nidorana je pohlaví součástí jména
+     *  druhu, ale na obrazovce ho nese stejná značka jako u všech ostatních
+     *  — jinak by měl jeden druh jinou ikonu než zbytek rosteru. */
+    atlasJmeno: function (r) {
+      return String((r && r.pokemon) || "").replace(/\s*[♀♂]\s*/g, " ").trim();
     },
 
     atlasStitky: function () {

@@ -18039,6 +18039,82 @@ try {
   check("útok, který ani bez elitního TM nejlepší není, zůstává na přeučení",
     horsi && horsi.stav === "preucit", JSON.stringify(horsi));
 
+  // ---- Posun v PvPoke: šipka musí sedět s daty -----------------------
+  // Žebříčky se mění po balance patchích a appka u ligy ukazuje „▲6 od
+  // 2026-09-12 (#8 → #2)". Šipka i datum musí vycházet z toho, co je
+  // opravdu zapečené — jinak by tvrdila pohyb, který se nestal.
+  const posun = await page.evaluate(() => {
+    const P = window.__pgo;
+    const drive = P.metaPoradiDrive ? P.metaPoradiDrive() : null;
+    if (!drive || !drive.ligy) return { chyba: "žádná paměť pořadí" };
+    const ligy = Object.keys(drive.ligy);
+    const out = { datum: drive.datum || "", ligy: ligy.length,
+      sedi: 0, nesedi: [], bezPosunu: 0, celkem: 0 };
+    ligy.forEach((liga) => {
+      Object.keys(drive.ligy[liga]).slice(0, 400).forEach((klic) => {
+        const p = P.posunVLize(klic, liga);
+        out.celkem++;
+        if (!p) { out.bezPosunu++; return; }
+        // Rozdíl je „o kolik se polepšil": kladné = nahoru.
+        if (p.rozdil === p.drive - p.ted && p.drive !== p.ted
+            && p.odKdy === drive.datum) out.sedi++;
+        else out.nesedi.push(klic + " " + liga + " " + JSON.stringify(p));
+      });
+    });
+    // Druh, který v tabulce není, se od té doby nehnul — šipku dostat nesmí.
+    const liga = ligy[0];
+    const znamy = Object.keys(drive.ligy[liga]);
+    out.cizi = null;
+    const pamet = P.metaPoradiPamet ? P.metaPoradiPamet() : null;
+    const vsichni = pamet && pamet.ligy && pamet.ligy[liga] ? Object.keys(pamet.ligy[liga]) : [];
+    const mimo = vsichni.filter((k) => znamy.indexOf(k) === -1);
+    out.mimoCelkem = mimo.length;
+    out.cizi = mimo.slice(0, 20).map((k) => ({ klic: k, posun: P.posunVLize(k, liga) }))
+      .filter((x) => x.posun !== null);
+    return out;
+  });
+  check("appka ví, proti kterému dni se pořadí porovnává",
+    /^\d{4}-\d{2}-\d{2}$/.test(posun.datum || ""), JSON.stringify(posun.datum));
+  // Ukládá se JEN to, co se pohnulo — celá tabulka by do appky přidala
+  // desítky kilobajtů kvůli druhům, u kterých appka stejně nic neukáže.
+  // Liga, ve které se nic nezměnilo, tam proto vůbec není.
+  check("…a je v tom aspoň jedna liga", posun.ligy >= 1, String(posun.ligy));
+  check("šipka u ligy sedí s tím, co je v datech",
+    posun.nesedi.length === 0, (posun.nesedi || []).slice(0, 3).join(" | "));
+  check("druh, který mezi změněnými není, šipku nedostane",
+    posun.mimoCelkem > 0 && posun.cizi.length === 0,
+    posun.mimoCelkem + " mimo, s šipkou: " + JSON.stringify(posun.cizi));
+  check("…a co je uložené, to se opravdu pohnulo — nic beze změny",
+    posun.bezPosunu === 0 && posun.celkem > 0,
+    posun.bezPosunu + " beze změny z " + posun.celkem);
+
+  const pametPoradi = await page.evaluate(() => {
+    const P = window.__pgo;
+    const m = P.metaPoradiPamet ? P.metaPoradiPamet() : null;
+    if (!m) return { chyba: "žádná paměť" };
+    const ligy = Object.keys(m.ligy || {});
+    let nejstarsi = "9999", nejnovejsi = "0000", zaznamu = 0;
+    ligy.forEach((liga) => {
+      Object.keys(m.ligy[liga]).forEach((klic) => {
+        const z = m.ligy[liga][klic];
+        zaznamu++;
+        if (z[1] < nejstarsi) nejstarsi = z[1];
+        if (z[1] > nejnovejsi) nejnovejsi = z[1];
+      });
+    });
+    return { dni: m.dni, od: m.od, snimku: m.snimku, ligy: ligy.length,
+      zaznamu: zaznamu, nejstarsi: nejstarsi, nejnovejsi: nejnovejsi };
+  });
+  eq("paměť pořadí drží třicet dní", pametPoradi.dni, 30);
+  check("…a má aspoň dva snímky, jinak není co porovnávat",
+    pametPoradi.snimku >= 2, String(pametPoradi.snimku));
+  check("…žádný záznam není starší než den, od kterého paměť sahá",
+    pametPoradi.nejstarsi >= pametPoradi.od,
+    pametPoradi.nejstarsi + " vs " + pametPoradi.od);
+  check("…a nejnovější snímek není z budoucnosti",
+    pametPoradi.nejnovejsi <= new Date().toISOString().slice(0, 10),
+    pametPoradi.nejnovejsi);
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 
