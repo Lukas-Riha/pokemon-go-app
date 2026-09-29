@@ -2519,6 +2519,17 @@ const dNov = await pNov.evaluate(async () => {
   if (!tlacitko) return { chyba: "tlačítko Novinky v liště není" };
   // Na testu se okno samo neotevírá — při ladění by překáželo.
   const samoPredtim = !!document.getElementById("novinkyOkno");
+  if (!zaznam) {
+    /* Verze, ke které se novinky teprve píšou. Okno nemá co ukázat —
+       tlačítko to musí říct, ne mlčet. */
+    tlacitko.click();
+    await cekej(500);
+    const hlaska = (document.getElementById("appOknoText") || {}).textContent || "";
+    const ok = document.getElementById("appOknoOk");
+    if (ok) ok.click();
+    return { prazdna: true, samoPredtim, hlaska,
+      okno: !!document.getElementById("novinkyOkno") };
+  }
   tlacitko.click();
   await cekej(700);
   const plachta = document.getElementById("novinkyOkno");
@@ -2555,6 +2566,10 @@ const dNov = await pNov.evaluate(async () => {
 await pNov.close();
 check("okno Novinky otevře tlačítko v liště", !dNov.chyba, dNov.chyba || "");
 check("…samo od sebe se na testu neotevře", dNov.samoPredtim === false, JSON.stringify(dNov.samoPredtim));
+if (dNov.prazdna) {
+  check("…bez novinek pro verzi se okno neukáže", dNov.okno === false, "");
+  check("…a tlačítko to řekne lidsky", /novinky/i.test(dNov.hlaska), dNov.hlaska);
+} else {
 check("…ukáže všechny body verze", dNov.bodu > 0 && dNov.bodu === dNov.zaznamBodu,
   dNov.bodu + " z " + dNov.zaznamBodu);
 check("…tučné části jsou tučné, ne hvězdičky",
@@ -2568,6 +2583,24 @@ check("…v textu není ani kousek kódu", dNov.kod === false, "");
 check("…zavření si appka zapamatuje",
   dNov.zavrelo === true && dNov.samoPodruhe === false && dNov.tlacitkemPodruhe === true,
   JSON.stringify([dNov.zavrelo, dNov.samoPodruhe, dNov.tlacitkemPodruhe]));
+}
+
+/* Snímky se zapékají do appky při sestavení, takže je nejde ověřit jen
+   přes okno: pro verzi bez novinek by se žádné nevykreslily a chyba
+   v zapékání by prošla. Kontroluje se proto rovnou to, co je v souboru —
+   ať je otevřená kterákoli verze. */
+const novinkyData = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "data", "novinky.json"), "utf8"));
+const sObrazkem = Object.keys(novinkyData)
+  .filter((k) => k !== "_meta")
+  .reduce((n, k) => n + (novinkyData[k].body || [])
+    .filter((b) => b && b.obrazek).length, 0);
+const zdrojNovinek = fs.readFileSync(TEST_APP, "utf8");
+const zapecenych = (zdrojNovinek.match(/"obrazek":"data:image\//g) || []).length;
+check("snímky z novinek jsou zapečené v appce, ne odkazem na soubor",
+  sObrazkem > 0 && zapecenych === sObrazkem, zapecenych + " z " + sObrazkem);
+check("…a jméno souboru v appce nezůstalo",
+  !/"obrazek":"[a-z0-9-]+"/.test(zdrojNovinek), "");
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
