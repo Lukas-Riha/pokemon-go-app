@@ -13951,6 +13951,99 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *  Strop CP se ukazuje pro dokonalý kus (15/15/15) a je to tak napsané,
    *  protože jinak by to vypadalo jako údaj o kusu, který nikdo nemá.
    */
+  /**
+   * Strukturovaný výsledek hledání druhu.
+   *
+   * Jeden zdroj pro výsledkovou tabulku ve Vyhledávání: vzhledová vrstva
+   * z něj jen kreslí. Nic se tu nepočítá znovu — ptá se týchž funkcí jako
+   * rozbor druhu (`ligovePoradi`, `raidRankIndex`, `gymRankIndex`,
+   * `posunVLize`), jen z nich skládá řádky místo HTML. Kdyby si to UI
+   * počítalo samo, rozešlo by se to s enginem při první změně žebříčků.
+   *
+   * Vrací `null` u druhu, který appka nezná. Schéma je v ATLAS_KONTRAKT.
+   *
+   * POZOR na tři různé údaje, které se pletou: `rank` je pořadí DRUHU
+   * v téhle roli, ne pořadí konkrétního kusu (to je IV rank) ani jeho
+   * připravenost (to je level a útoky).
+   */
+  function prohlidkaModel(jmeno) {
+    var klic = dataKlic(dexKey(jmeno));
+    var d = dexByKey(klic);
+    if (!d) return null;
+    // Vstupní druh, čím se stane, a formy, které se bijí jinak. Víc řádků
+    // než tři schválně: Eevee má osm evolucí a oříznout je na tři by
+    // znamenalo zatajit, která z nich tu ligu hraje.
+    var druhy = [{ klic: klic, jmeno: jmenoFormy(klic), vztah: "vstup" }];
+    (pozdejiVRade(klic) || []).forEach(function (fk) {
+      druhy.push({ klic: fk, jmeno: jmenoFormy(fk), vztah: "evoluce" });
+    });
+    (formyDruhu(klic) || []).forEach(function (fk) {
+      druhy.push({ klic: fk, jmeno: jmenoFormy(fk), vztah: "forma" });
+    });
+
+    // Neznámé pořadí patří na konec, ne na začátek: řádek bez čísla není
+    // nejlepší, jen nezměřený.
+    var podlePoradi = function (a, b) {
+      var ra = a.rank == null ? Infinity : a.rank, rb = b.rank == null ? Infinity : b.rank;
+      if (ra !== rb) return ra - rb;
+      return String(a.jmeno).localeCompare(String(b.jmeno), "cs");
+    };
+
+    var pvp = {}, poradiLig = [];
+    LEAGUES.concat([{ nazev: "Master League", meta: "master" }]).forEach(function (lg) {
+      var radky = [];
+      druhy.forEach(function (x) {
+        var p = ligovePoradi(x.klic, lg.meta);
+        if (!p) return;
+        var pos = posunVLize(x.klic, lg.meta);
+        radky.push({ klic: x.klic, jmeno: x.jmeno, vztah: x.vztah,
+          rank: p.rank, pct: p.pct, jeMeta: !!p.jeMeta,
+          utoky: sestavaText(p.sestava) || "",
+          posun: pos ? { drive: pos.drive, ted: pos.ted, rozdil: pos.rozdil,
+            odKdy: pos.odKdy } : null });
+      });
+      radky.sort(podlePoradi);
+      poradiLig.push(lg.meta);
+      pvp[lg.meta] = { klic: lg.meta, nazev: lg.nazev, radky: radky };
+    });
+
+    var raid = [], gym = [], mega = [];
+    druhy.forEach(function (x) {
+      (raidRankIndex()[x.klic] || []).forEach(function (r) {
+        raid.push({ klic: x.klic, jmeno: x.jmeno, vztah: x.vztah, typ: r.type,
+          rank: r.rank, pct: r.pct == null ? null : Math.round(r.pct * 1000) / 10,
+          utoky: r.moveset || "" });
+      });
+      var g = gymRankIndex()[x.klic];
+      if (g) {
+        gym.push({ klic: x.klic, jmeno: x.jmeno, vztah: x.vztah,
+          rank: g.poradi == null ? null : g.poradi,
+          pct: g.pct == null ? null : Math.round(g.pct * 1000) / 10, utoky: "" });
+      }
+      // Mega nemá v datech pořadí, jen prioritu do raidů — vymýšlet si
+      // k němu číslo by bylo horší než říct, co o něm víme.
+      var m = MEGA_BY[speciesKey(x.jmeno)];
+      if (m) {
+        mega.push({ klic: x.klic, jmeno: x.jmeno, vztah: x.vztah, rank: null,
+          pct: null, utoky: "", priorita: m.raidPriority || "Neznámá" });
+      }
+    });
+    raid.sort(podlePoradi);
+    gym.sort(podlePoradi);
+
+    return {
+      klic: klic, jmeno: jmenoFormy(klic), typy: (d.types || []).slice(),
+      druhy: druhy,
+      poradiLig: poradiLig,
+      role: {
+        pvp: pvp,
+        raid: { klic: "raid", nazev: "Raidy", radky: raid },
+        gym: { klic: "gym", nazev: "Obrana gymu", radky: gym },
+        mega: { klic: "mega", nazev: "Mega", radky: mega }
+      }
+    };
+  }
+
   function druhHtml(klic, d) {
     if (!d) return "";
     // Klíč, pod kterým ten pokémon opravdu je v žebříčcích. Staty ani
@@ -27454,6 +27547,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     finishImport: finishImport,
     scanPlanInfo: scanPlanInfo,
     levelZCP: levelZCP,
+    /* Strukturovaný výsledek hledání druhu — podklad pro výsledkovou
+       tabulku ve Vyhledávání. Schéma je v ATLAS_KONTRAKT. */
+    prohlidkaModel: prohlidkaModel,
     /* Hlídač nové verze. `verzeZkontroluj` dostane to, co by jinak přišlo
        z `verze.json` — dá se tím vyzkoušet celý pruh bez sítě. */
     verzeZkontroluj: verzeZkontroluj,

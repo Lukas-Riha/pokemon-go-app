@@ -1934,3 +1934,47 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test #atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child)
     .atlas-event-link>span{font-size:18px}
 }
+
+/* Claude 29. 9. (45): vysledkova tabulka Vyhledavani (A-015 bod 5).
+
+   Drive se pod sebe skladaly vsechny evoluce a vsechny ligy — u Eevee to
+   byla stranka a pul, ve ktere nebylo co najit. Ted je vybrana jedna role
+   (a v PvP jedna liga) a k ni jedna tabulka: druh, poradi druhu, utoky.
+   Hledany druh je zvyrazneny, klepnuti na evoluci zvyrazni jeji radek —
+   vstup ani roster to neprepisuje. */
+.atlas-test .atlas-vysledek{margin-top:18px;border:1px solid var(--border);
+  border-radius:13px;background:var(--surface-1);padding:18px 20px}
+.atlas-test .atlas-vysledek[hidden]{display:none}
+.atlas-test .atlas-vysledek-ovladani,.atlas-test .atlas-vysledek-ligy{
+  display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.atlas-test .atlas-vysledek-ovladani button,.atlas-test .atlas-vysledek-ligy button{
+  border:1px solid var(--border);background:var(--surface-1);color:var(--text-secondary);
+  border-radius:8px;padding:7px 13px;font-size:12.5px;min-height:34px}
+.atlas-test .atlas-vysledek-ligy button{font-size:12px;padding:6px 11px}
+.atlas-test .atlas-vysledek-ovladani button[aria-pressed=true],
+.atlas-test .atlas-vysledek-ligy button[aria-pressed=true]{
+  border-color:var(--series-1);background:var(--atlas-soft);color:var(--series-1);font-weight:650}
+.atlas-test .atlas-vysledek-nadpis{margin:12px 0 8px;font-size:14px;color:var(--text-primary)}
+.atlas-test .atlas-vysledek-tab{width:100%;border-collapse:collapse;font-size:13px}
+.atlas-test .atlas-vysledek-tab th{text-align:left;font-size:10px;letter-spacing:1px;
+  text-transform:uppercase;color:var(--text-muted);padding:6px 10px 6px 0;font-weight:700}
+.atlas-test .atlas-vysledek-tab td{padding:9px 10px 9px 0;border-top:1px solid var(--border);
+  vertical-align:top;color:var(--text-secondary)}
+.atlas-test .atlas-vysledek-tab td:first-child{color:var(--text-primary)}
+.atlas-test .atlas-vysledek-tab td button{background:none;border:0;padding:0;font:inherit;
+  color:inherit;font-weight:650;cursor:pointer;text-align:left;min-height:34px}
+.atlas-test .atlas-vysledek-tab td small{color:var(--text-muted);font-weight:400}
+.atlas-test .atlas-vysledek-tab tr.je-vstup td{background:var(--atlas-soft)}
+.atlas-test .atlas-vysledek-tab tr.je-vstup td:first-child button{color:var(--series-1)}
+.atlas-test .atlas-vysledek-tab tr[data-zvyrazneno] td{box-shadow:inset 0 0 0 1px var(--series-1)}
+.atlas-test .atlas-vysledek-nezname{color:var(--text-muted)}
+.atlas-test .atlas-vysledek-prazdno{font-size:13px;color:var(--text-secondary);margin:6px 0 0}
+@media(max-width:650px){
+  /* Tataz data ve svislych radcich: tri sloupce se na telefon nevejdou. */
+  .atlas-test .atlas-vysledek{padding:16px}
+  .atlas-test .atlas-vysledek-tab thead{display:none}
+  .atlas-test .atlas-vysledek-tab tr{display:block;border-top:1px solid var(--border);padding:8px 0}
+  .atlas-test .atlas-vysledek-tab td{display:block;border:0;padding:2px 0}
+  .atlas-test .atlas-vysledek-tab td:first-child{font-size:14px}
+  .atlas-test .atlas-vysledek-tab td button{min-height:44px}
+}

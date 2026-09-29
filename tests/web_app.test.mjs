@@ -18299,6 +18299,50 @@ try {
       s275.hlaska);
   }
 
+  console.log("\n278) Vysledek hledani jako data, ne jako hotova tabulka");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s278 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const m = P.prohlidkaModel("Eevee");
+    const gl = m.role.pvp.great.radky;
+    const serazeno = (radky) => radky.every((r, i, a) => i === 0
+      || (a[i - 1].rank == null ? Infinity : a[i - 1].rank)
+         <= (r.rank == null ? Infinity : r.rank));
+    return {
+      jmeno: m.jmeno,
+      vstupu: m.druhy.filter((x) => x.vztah === "vstup").length,
+      evoluci: m.druhy.filter((x) => x.vztah === "evoluce").length,
+      // Poradi druhu z modelu musi sedet s tim, co rekne engine primo.
+      sediSEnginem: gl.every((r) => {
+        const p = P.ligovePoradi(r.klic, "great");
+        return p && p.rank === r.rank;
+      }),
+      glSerazene: serazeno(gl),
+      gymSerazene: serazeno(m.role.gym.radky),
+      raidMaTyp: m.role.raid.radky.every((r) => !!r.typ),
+      megaBezVymysleneho: m.role.mega.radky.every((r) => r.rank === null && !!r.priorita),
+      neznamy: P.prohlidkaModel("Tenhle druh neexistuje"),
+      // Mimo metu: prazdna sestava se nesmi tvarit jako "bez utoku".
+      mimoMetu: gl.filter((r) => !r.jeMeta).every((r) => r.utoky === ""),
+      charizardMega: (P.prohlidkaModel("Charizard").role.mega.radky[0] || {}).priorita || "",
+      machopEvoluce: P.prohlidkaModel("Machop").druhy.map((x) => x.jmeno).join(" > ")
+    };
+  });
+  check("model zna vstupni druh i vsechny jeho evoluce",
+    s278.vstupu === 1 && s278.evoluci === 8, JSON.stringify([s278.vstupu, s278.evoluci]));
+  check("...a poradi v nem sedi s tim, co rekne engine", s278.sediSEnginem === true, "");
+  check("...radky jsou serazene podle poradi, nezmerene na konci",
+    s278.glSerazene === true && s278.gymSerazene === true, "");
+  check("...raidovy radek nese typ utocnika", s278.raidMaTyp === true, "");
+  check("...u mega se zadne poradi nevymysli",
+    s278.megaBezVymysleneho === true && /\w/.test(s278.charizardMega), s278.charizardMega);
+  check("...druh mimo metu ma prazdnou sestavu, ne vymyslenou",
+    s278.mimoMetu === true, "");
+  check("...evoluce jdou po sobe", s278.machopEvoluce === "Machop > Machoke > Machamp",
+    s278.machopEvoluce);
+  eq("neznamy druh vrati null", String(s278.neznamy), "null");
+
   console.log("\n277) Hledani: rezim druh nepocita s udaji kusu, ale nechá si je");
   await page.setViewportSize({ width: 1400, height: 950 });
   await page.goto(URL);

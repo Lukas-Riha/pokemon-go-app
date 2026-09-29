@@ -1195,6 +1195,67 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  const jmeno=$('#prohName');if(!mrizka||!vysledek||!jmeno)return;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+ /* Výsledková tabulka. Jedna role, jedna liga, jedna tabulka — dřív se
+    všechny evoluce a všechny ligy skládaly pod sebe a v tom seznamu
+    nešlo nic najít. Data dává engine (`prohlidkaModel`); vrstva z nich
+    jen kreslí, nic nepočítá znovu. */
+ const ROLE_POPIS={pvp:'PvP',raid:'Raidy',gym:'Gym',mega:'Mega'};
+ let role='pvp',liga='great',zvyrazneny=null;
+
+ function vysledekBlok(){
+  let el=karta.querySelector('.atlas-vysledek');
+  if(!el){
+   el=document.createElement('section');el.className='atlas-vysledek';
+   el.addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.role){role=b.dataset.role;zvyrazneny=null;vykresliVysledek();return}
+    if(b.dataset.liga){liga=b.dataset.liga;zvyrazneny=null;vykresliVysledek();return}
+    /* Klepnuti na evoluci jen zvyrazni jeji radek. Vstup ani roster to
+       prepsat nesmi — clovek se pta na druh, ne ze ho chce zmenit. */
+    if(b.dataset.zvyraznit){zvyrazneny=b.dataset.zvyraznit;vykresliVysledek();return}
+   });
+   identita.after(el);
+  }
+  return el;
+ }
+
+ function radekHtml(r,vstupKlic){
+  const poradi=r.rank==null?'<span class="atlas-vysledek-nezname">neměří se</span>'
+   :`<b>#${r.rank}</b>${r.pct!=null?` <small>${r.pct} % nejlepšího</small>`:''}`;
+  const utoky=r.utoky?esc(r.utoky)
+   :(r.priorita?`priorita do raidů: ${esc(r.priorita)}`
+    :(r.jeMeta===false?'<span class="atlas-vysledek-nezname">mimo metu — sestavu appka nemá</span>'
+     :'<span class="atlas-vysledek-nezname">sestavu appka nemá</span>'));
+  const znacka=r.vztah==='vstup'?'':(r.vztah==='forma'?' <small>jiná forma</small>':' <small>až po evoluci</small>');
+  return `<tr data-klic="${esc(r.klic)}"${r.klic===vstupKlic?' class="je-vstup"':''}${r.klic===zvyrazneny?' data-zvyrazneno="1"':''}>`
+   +`<td><button type="button" data-zvyraznit="${esc(r.klic)}">${esc(r.jmeno)}</button>${znacka}${r.typ?` <small>${esc(r.typ)}</small>`:''}</td>`
+   +`<td>${poradi}</td><td>${utoky}</td></tr>`;
+ }
+
+ function vykresliVysledek(){
+  const el=vysledekBlok(),hodnota=jmeno.value.trim();
+  const m=hodnota&&P.prohlidkaModel?P.prohlidkaModel(hodnota):null;
+  if(!m){el.hidden=true;el.innerHTML='';return}
+  el.hidden=false;
+  const skupina=role==='pvp'?m.role.pvp[liga]:m.role[role];
+  const radky=(skupina&&skupina.radky)||[];
+  /* Nadpis rika, CO se pocita — ne ze to druh "hraje". Jestli ho hrat,
+     plyne z poradi v tabulce, ne z nadpisu. */
+  const nadpis=role==='pvp'?`Výsledky pro ${skupina?skupina.nazev:'ligu'}`
+   :`Výsledky pro ${ROLE_POPIS[role]}`;
+  el.innerHTML=`<div class="atlas-vysledek-ovladani" role="group" aria-label="Role">`
+   +Object.keys(ROLE_POPIS).map(k=>`<button type="button" data-role="${k}" aria-pressed="${role===k}">${ROLE_POPIS[k]}</button>`).join('')
+   +`</div>`
+   +(role==='pvp'?`<div class="atlas-vysledek-ligy" role="group" aria-label="Liga">`
+     +m.poradiLig.map(k=>`<button type="button" data-liga="${k}" aria-pressed="${liga===k}">${esc(m.role.pvp[k].nazev)}</button>`).join('')
+     +`</div>`:'')
+   +`<h4 class="atlas-vysledek-nadpis">${esc(nadpis)}</h4>`
+   +(radky.length
+     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th></tr></thead><tbody>`
+      +radky.map(r=>radekHtml(r,m.klic)).join('')+`</tbody></table>`
+     :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`);
+ }
+
  // Počasí je v datech anglicky, protože tak se jmenuje v herním souboru.
  const POCASI_CZ={'Clear':'Jasno','Fog':'Mlha','Overcast':'Zataženo',
   'Partly Cloudy':'Polojasno','Rainy':'Déšť','Snow':'Sníh','Windy':'Vítr'};
@@ -1257,7 +1318,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const hodnota=jmeno.value.trim();
   hlava.querySelector('[data-hledani-zrus]').hidden=!hodnota;
   const d=hodnota?P.dexEntry(hodnota):null;
-  if(!d){identita.hidden=true;identita.innerHTML='';return}
+  if(!d){identita.hidden=true;identita.innerHTML='';vykresliVysledek();return}
   const typy=(d.types||[]).filter(t=>t&&t!=='–');
   const barvy=P.typeColors()||{};
   const shiny=P.atlasShiny?P.atlasShiny(d.name):null;
@@ -1307,6 +1368,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      <small>${pocasi.length?'počasí pro jeho typy':'počasí u těchhle typů neznáme'}</small>
     </div>
    </dl>`;
+  vykresliVysledek();
  }
 
  ['input','change'].forEach(u=>jmeno.addEventListener(u,vykresli));

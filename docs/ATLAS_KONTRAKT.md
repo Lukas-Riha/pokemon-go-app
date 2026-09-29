@@ -187,6 +187,39 @@ formy vrací `null` — základní formou se to nenahrazuje.
 `atlasPocasi(typ)` → počasí, které ten typ boostuje (anglicky, klíč do
 `POCASI`), nebo `""`, když se na typ žádné neváže.
 
+`prohlidkaModel(jmeno)` → podklad pro výsledkovou tabulku ve Vyhledávání,
+nebo `null` u neznámého druhu. Nic se v něm nepočítá znovu: skládá ho týž
+výpočet jako rozbor druhu, jen vrací data místo HTML. **UI z něj jen kreslí**
+— rank ani cenu si nedopočítává a text hotových tabulek neparsuje.
+
+```
+{
+  klic, jmeno, typy: [...],
+  druhy: [ { klic, jmeno, vztah: "vstup" | "evoluce" | "forma" } ],
+  poradiLig: ["little", "great", "ultra", "master"],
+  role: {
+    pvp:  { little: {klic, nazev, radky}, great: {...}, ultra: {...}, master: {...} },
+    raid: { klic, nazev, radky },
+    gym:  { klic, nazev, radky },
+    mega: { klic, nazev, radky }
+  }
+}
+```
+
+Řádek: `{ klic, jmeno, vztah, rank, pct, utoky, jeMeta?, posun?, typ?, priorita? }`
+
+- `rank` je **pořadí druhu** v té roli. Není to pořadí konkrétního kusu
+  (IV rank) ani jeho připravenost (level a útoky) — tři různé údaje.
+  `null` znamená, že pořadí pro tu roli v datech není; takové řádky stojí
+  na konci, protože nezměřené není totéž co nejlepší.
+- `pct` je procento nejlepšího v té roli; `null`, když se neměří.
+- `utoky` je doporučená sestava pro tu roli, nebo `""`. Prázdné s
+  `jeMeta:false` znamená „mimo metu, sestavu appka nemá" — ne „bez útoků".
+- `posun` je změna pořadí od poslední obnovy dat (`{drive, ted, rozdil, odKdy}`),
+  nebo `null`.
+- `typ` má jen raid (typ útočníka), `priorita` jen mega (v datech k ní
+  žádné pořadí není, takže se žádné nevymýšlí).
+
 `window.__pgoProhlidkaRezim(rezim?)` → přepne Vyhledávání mezi `"druh"`
 a `"kus"` a vrátí, jak to teď stojí. V režimu `"druh"` se CP, level, IV ani
 útoky do výpočtu neberou, ale v polích zůstanou pro návrat. Režim patří
