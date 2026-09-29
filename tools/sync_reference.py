@@ -6,6 +6,7 @@ takže se data nenačítají fetchem, ale zapékají se sem tímhle skriptem.
 Spusť po každé změně dat:
     python tools/sync_reference.py
 """
+import base64
 import json
 import re
 import datetime
@@ -104,6 +105,35 @@ app_verze = verze_modul.verze("--test" in sys.argv)
 # Novinky pro uzivatele. Okno se po preklopeni produkce ukaze jednou samo;
 # na testu jde otevrit tlacitkem, aby slo zkontrolovat, co produkce uvidi.
 novinky = json.loads((ROOT / "data" / "novinky.json").read_text(encoding="utf-8"))
+
+
+def _novinky_obrazky(data):
+    """Jméno snímku vymění za samotný obrázek.
+
+    Appka je jeden soubor, takže odkaz na `data/novinky_obrazky/...` by
+    po zkopírování jinam nefungoval. Bod novinky proto místo názvu
+    dostane rovnou data: URI. Snímky vyrábí `tools/novinky_snimky.mjs`,
+    do WebP je převádí `tools/novinky_obrazky.py`.
+    """
+    slozka = ROOT / "data" / "novinky_obrazky"
+    for verze_klic, zaznam in data.items():
+        if not isinstance(zaznam, dict):
+            continue
+        for bod in zaznam.get("body", []):
+            jmeno = bod.get("obrazek") if isinstance(bod, dict) else None
+            if not jmeno:
+                continue
+            soubor = slozka / (jmeno + ".webp")
+            if not soubor.exists():
+                raise SystemExit(
+                    "Novinky %s: snimek %s chybi (%s). Spust tools/novinky_snimky.mjs"
+                    " a tools/novinky_obrazky.py." % (verze_klic, jmeno, soubor))
+            bod["obrazek"] = ("data:image/webp;base64,"
+                              + base64.b64encode(soubor.read_bytes()).decode("ascii"))
+    return data
+
+
+novinky = _novinky_obrazky(novinky)
 
 BLOCKS = [
     ("// === REFERENCE DATA START", "// === REFERENCE DATA END ===", "REFERENCE", reference),

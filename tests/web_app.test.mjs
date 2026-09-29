@@ -18221,6 +18221,35 @@ try {
   check("…a legendární forma bez řady žádnou nedostane",
     regionalniRada.legenda === null, JSON.stringify(regionalniRada.legenda));
 
+  console.log("\n275) Kdyz pro verzi novinky nejsou, okno se neukaze");
+  await page.goto(URL);
+  await page.waitForTimeout(1400);
+  const s275 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const out = {
+      zaznam: P.novinkyVerze(),
+      // Okno se otevira samo 900 ms po startu; to uz je davno za nami.
+      samoOtevrene: !!document.getElementById("novinkyOkno"),
+      tlacitko: !!document.getElementById("novinkyBtn")
+    };
+    out.vynucene = P.ukazNovinky();
+    out.poVynuceni = !!document.getElementById("novinkyOkno");
+    document.getElementById("novinkyBtn").click();
+    await new Promise((r) => setTimeout(r, 400));
+    out.hlaska = (document.getElementById("appOknoText") || {}).textContent || "";
+    const ok = document.getElementById("appOknoOk");
+    if (ok) ok.click();
+    return out;
+  });
+  check("tlacitko Novinky je v liste", s275.tlacitko === true, JSON.stringify(s275));
+  check("...bez novinek pro verzi se okno samo neotevre",
+    s275.samoOtevrene === false && s275.zaznam === null, JSON.stringify(s275));
+  check("...ani na vyzadani", s275.vynucene === false && s275.poVynuceni === false,
+    JSON.stringify(s275));
+  check("...a appka to rekne lidsky, bez nazvu souboru",
+    /novinky/i.test(s275.hlaska) && !/[a-z_]+\.(js|json|html)/.test(s275.hlaska),
+    s275.hlaska);
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

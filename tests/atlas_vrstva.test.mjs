@@ -2507,6 +2507,68 @@ check("šipka k doporučenému útoku vede shora dolů a pak doprava",
 check("…a u ní stojí jen jméno útoku, bez druhé šipky v textu",
   !/[→↳]/.test(dSip2.text || ""), dSip2.text);
 
+console.log("\n26) okno Novinky: tlačítko, body a snímky");
+const pNov = await otevri(1400, [
+  { pokemon: "Azumarill", level: 25, ivAtk: 10, ivDef: 12, ivSta: 14 }
+]);
+const dNov = await pNov.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const P = window.__pgo;
+  const zaznam = P.novinkyVerze();
+  const tlacitko = document.querySelector('[data-click="novinkyBtn"]');
+  if (!tlacitko) return { chyba: "tlačítko Novinky v liště není" };
+  // Na testu se okno samo neotevírá — při ladění by překáželo.
+  const samoPredtim = !!document.getElementById("novinkyOkno");
+  tlacitko.click();
+  await cekej(700);
+  const plachta = document.getElementById("novinkyOkno");
+  if (!plachta) return { chyba: "okno se neotevřelo" };
+  const okno = plachta.querySelector(".novinky-okno");
+  const body = [...plachta.querySelectorAll(".novinky-seznam > li")];
+  const obrazky = [...plachta.querySelectorAll(".novinky-obrazek img")];
+  const sirkaOkna = okno.getBoundingClientRect().width;
+  const out = {
+    samoPredtim,
+    bodu: body.length,
+    zaznamBodu: zaznam ? zaznam.body.length : 0,
+    // Hvězdičky jsou zápis tučného písma, ne text k přečtení.
+    hvezdicky: body.some((li) => li.textContent.indexOf("**") >= 0),
+    tucnych: plachta.querySelectorAll(".novinky-seznam b").length,
+    obrazku: obrazky.length,
+    nactenych: obrazky.filter((i) => i.complete && i.naturalWidth > 0).length,
+    vlastniData: obrazky.every((i) => (i.getAttribute("src") || "").slice(0, 11) === "data:image/"),
+    presahuje: obrazky.some((i) => i.getBoundingClientRect().width > sirkaOkna),
+    bezPopisku: obrazky.every((i) => i.getAttribute("alt") === ""),
+    // V appce nesmí být kód: ani cesta k souboru, ani název funkce.
+    kod: /[a-z_]+\.(js|py|json|html)|window\.|function |data\/|tools\//.test(
+      plachta.querySelector(".novinky-seznam").textContent)
+  };
+  plachta.querySelector("[data-novinky-ok]").click();
+  await cekej(400);
+  out.zavrelo = !document.getElementById("novinkyOkno");
+  // Viděl jsem — podruhé se samo neotevře, tlačítkem ano.
+  out.samoPodruhe = P.ukazNovinky(false);
+  out.tlacitkemPodruhe = P.ukazNovinky();
+  document.getElementById("novinkyOkno")?.remove();
+  return out;
+});
+await pNov.close();
+check("okno Novinky otevře tlačítko v liště", !dNov.chyba, dNov.chyba || "");
+check("…samo od sebe se na testu neotevře", dNov.samoPredtim === false, JSON.stringify(dNov.samoPredtim));
+check("…ukáže všechny body verze", dNov.bodu > 0 && dNov.bodu === dNov.zaznamBodu,
+  dNov.bodu + " z " + dNov.zaznamBodu);
+check("…tučné části jsou tučné, ne hvězdičky",
+  dNov.hvezdicky === false && dNov.tucnych >= 5, JSON.stringify([dNov.hvezdicky, dNov.tucnych]));
+check("…u bodů se ukážou snímky", dNov.obrazku >= 4 && dNov.nactenych === dNov.obrazku,
+  dNov.nactenych + " z " + dNov.obrazku);
+check("…snímky jsou v appce, ne stažené odjinud", dNov.vlastniData === true, "");
+check("…a vejdou se do okna", dNov.presahuje === false, "");
+check("…čtečka je přeskočí, text je nad nimi", dNov.bezPopisku === true, "");
+check("…v textu není ani kousek kódu", dNov.kod === false, "");
+check("…zavření si appka zapamatuje",
+  dNov.zavrelo === true && dNov.samoPodruhe === false && dNov.tlacitkemPodruhe === true,
+  JSON.stringify([dNov.zavrelo, dNov.samoPodruhe, dNov.tlacitkemPodruhe]));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();
