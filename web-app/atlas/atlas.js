@@ -1581,3 +1581,18 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  // Vychozi razeni: CP od nejvyssiho. "Puvodni poradi" uz volba neni.
  if(!znam.has(aktivni))nastav(VYCHOZI); else sync();
 })();
+
+/* Hlidac nove verze. Engine se pta `verze.json`, jestli vedle nej nelezi
+   novejsi appka, a az na to prijde, sam se obnovi — ale ne driv, nez ma
+   clovek dodelano. O svych oknech engine nevi, tahle je jeho seznamu
+   pripise vrstva. Veta zni "Pockam, <tohle> — o nic neprijdes." */
+(()=>{const P=window.__pgo;if(!P||!P.zaneprazdneniPridat)return;
+ P.zaneprazdneniPridat(()=>{
+  if(document.querySelector('#atlasRowEditor'))return 'dokud upravuješ kus';
+  const imp=document.getElementById('atlasImportDialog');
+  if(imp&&imp.open)return 'dokud máš rozdělaný import';
+  if(document.querySelector('#atlasModal:not([hidden])'))return 'dokud máš otevřený detail kusu';
+  if(document.getElementById('novinkyOkno'))return 'dokud čteš novinky';
+  return '';
+ });
+})();

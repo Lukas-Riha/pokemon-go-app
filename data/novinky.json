@@ -31,5 +31,14 @@
       },
       "**Level v úpravách se dopočítá** z CP a IV. Když na zadaná čísla žádný level nesedí, appka řekne, že taková kombinace ve hře není."
     ]
+  },
+  "2.9": {
+    "nadpis": "Co je nového",
+    "body": [
+      {
+        "text": "**Appka si všimne, že vyšla nová verze.** Nahoře se objeví pruh a stránka se sama obnoví — ale až ve chvíli, kdy nemáš nic rozdělaného. Při čištění boxu, úpravě kusu nebo otevřeném importu počká. Obnovení nic neztratí: roster je uložený v prohlížeči, ne ve stránce. Když se ti to zrovna nehodí, dej „Teď ne“ a obnov si ji, až budeš chtít.",
+        "obrazek": "nova-verze"
+      }
+    ]
   }
 }

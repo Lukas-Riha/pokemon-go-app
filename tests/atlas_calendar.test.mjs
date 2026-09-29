@@ -60,7 +60,12 @@ try{
   check('no horizontal overflow '+width,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  }
  check('mobile agenda visible',await page.locator('.ac-mobile-view').isVisible());
- await page.locator('.ac-mobile-view .ac-agenda-day > .ac-event').first().click();
+ // Kratke akce ten den byt nemusi — rozpis se stahuje a test ho neridi.
+ // Kdyz zadna neni, rozbali se "Probiha take" a klikne se na dlouhodobou:
+ // overovat se ma, ze klepnuti v agende otevre detail, ne co zrovna hra hraje.
+ {const kratke=page.locator('.ac-mobile-view .ac-agenda-day > .ac-event');
+  if(!await kratke.count())await page.locator('.ac-mobile-view .ac-also > summary').first().click();
+  await page.locator('.ac-mobile-view .ac-event:visible').first().click();}
  check('mobile opens event dialog',await page.locator('#atlasEventDialog').evaluate(e=>e.open));
  check('no runtime errors',errors.length===0);
  console.log('Calendar checks passed: '+passed);

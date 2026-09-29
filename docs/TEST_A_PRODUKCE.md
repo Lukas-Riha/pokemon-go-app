@@ -119,6 +119,30 @@ produkce už odejde s novým číslem. Ručně není potřeba dělat nic.
 a u ražítka sestavení dole pod tabulkou (`Verze 2.1 · 2026-09-23 22:47`).
 Když si nejsi jistý, kterou sestavu máš otevřenou, stačí se podívat tam.
 
+## Otevřená záložka a nová verze
+
+Kdo si appku nechá otevřenou, může na ní zůstat dny — soubor se pod ním
+vymění, ale on kouká na to, co si prohlížeč načetl kdysi. Vedle appky proto
+leží `publish/verze.json` (píše ho `tools/build_publish.py` z čísla, které
+je zapečené v appce) a appka si ho občas přečte: po dvaceti vteřinách od
+startu, pak jednou za deset minut a při každém návratu k záložce.
+
+Když se číslo rozejde, ukáže se nahoře pruh a stránka se **sama obnoví** —
+ale jen tehdy, když člověk nic rozdělaného nemá. Čištění boxu, otevřené
+okno, import, rozepsaná úprava nebo okno vrstvy (detail kusu, editor)
+obnovení zdrží; odpočet v tu chvíli stojí a pruh to říká. „Teď ne" zruší
+jen automatiku, pruh zůstane. Před obnovením se rozepsané uloží.
+
+Dvě věci, které z toho plynou:
+
+1. Hlídač běží jen přes http(s). Kopie otevřená ze souboru (OneDrive) nemá
+   koho se zeptat a nespustí ho vůbec — tam platí dál „zavřít a otevřít".
+2. Hlídač má až ta verze, která ho obsahuje. Kdo má otevřenou 2.8, o 2.9 se
+   sám nedozví; jednou ji musí obnovit ručně. Od 2.9 dál už to jde samo.
+
+Service worker `verze.json` nikdy nebere z cache — právě podle něj se
+pozná, že je venku něco novějšího.
+
 ## Kontrola
 
 ```

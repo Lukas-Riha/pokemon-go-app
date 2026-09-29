@@ -8,6 +8,7 @@ Co se sem sype:
     index.html            appka (kopie web-app/pokemon_tracker_app.html)
     strop.html            kapesní stránka se stropy CP
     sw.js                 service worker — po prvním otevření jede offline
+    verze.json            číslo verze pro otevřené záložky (hlídač aktualizace)
     manifest.webmanifest  aby šla přidat na plochu jako appka
     ikona-192/512.png     ikona na ploše
     .nojekyll             ať Pages nesahá na obsah
@@ -22,6 +23,7 @@ import hashlib
 import sys
 import io
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -106,6 +108,18 @@ def main():
         raise SystemExit("v appce není </head> — kam vložit manifest?")
 
     (OUT / "index.html").write_text(html, encoding="utf-8")
+
+    # Číslo verze zvlášť, pro záložky, které někdo nechal otevřené.
+    # Appka si ho občas přečte; když se rozejde s tím, co v ní běží, řekne
+    # o nové verzi a obnoví se. Bez tohohle souboru se o novou verzi
+    # otevřená appka nemá jak dozvědět — soubor se pod ní vymění, ale ona
+    # už ho jednou načtený má.
+    cislo = re.search(r'var VERZE = "([^"]+)"', html)
+    razitko = re.search(r'var BUILD = "([^"]+)"', html)
+    (OUT / "verze.json").write_text(json.dumps({
+        "verze": cislo.group(1) if cislo else "",
+        "sestaveno": razitko.group(1) if razitko else "",
+    }, ensure_ascii=False), encoding="utf-8")
     if STROP.exists():
         shutil.copyfile(STROP, OUT / "strop.html")
 
@@ -192,6 +206,12 @@ self.addEventListener("fetch", function (e) {
   // z Microsoft Graphu, tedy roster stažený z OneDrivu — ten by pak ležel
   // v prohlížeči navíc a přežil by i odhlášení.
   var vlastni = e.request.url.indexOf(self.location.origin) === 0;
+  // Soubor s číslem verze se NIKDY nebere z cache — právě podle něj se
+  // pozná, že je nová verze, a odpověď z cache by pořád tvrdila to samé.
+  if (vlastni && /verze\.json($|\?)/.test(e.request.url)) {
+    e.respondWith(fetch(e.request, { cache: "no-store" }));
+    return;
+  }
   // Samotnou appku si prohlížeč drží v HTTP mezipaměti (Pages posílají
   // `Cache-Control: max-age=600`), takže ještě deset minut po nasazení umí
   // i obnovení stránky vrátit starou verzi — a člověk pak kouká na změnu,

@@ -2542,6 +2542,7 @@ const dNov = await pNov.evaluate(async () => {
     samoPredtim,
     bodu: body.length,
     zaznamBodu: zaznam ? zaznam.body.length : 0,
+    zaznamObrazku: zaznam ? zaznam.body.filter((b) => b && b.obrazek).length : 0,
     // Hvězdičky jsou zápis tučného písma, ne text k přečtení.
     hvezdicky: body.some((li) => li.textContent.indexOf("**") >= 0),
     tucnych: plachta.querySelectorAll(".novinky-seznam b").length,
@@ -2573,9 +2574,11 @@ if (dNov.prazdna) {
 check("…ukáže všechny body verze", dNov.bodu > 0 && dNov.bodu === dNov.zaznamBodu,
   dNov.bodu + " z " + dNov.zaznamBodu);
 check("…tučné části jsou tučné, ne hvězdičky",
-  dNov.hvezdicky === false && dNov.tucnych >= 5, JSON.stringify([dNov.hvezdicky, dNov.tucnych]));
-check("…u bodů se ukážou snímky", dNov.obrazku >= 4 && dNov.nactenych === dNov.obrazku,
-  dNov.nactenych + " z " + dNov.obrazku);
+  dNov.hvezdicky === false && dNov.tucnych >= 1, JSON.stringify([dNov.hvezdicky, dNov.tucnych]));
+check("…u bodů se ukážou snímky",
+  dNov.obrazku === dNov.zaznamObrazku && dNov.nactenych === dNov.obrazku,
+  dNov.nactenych + " nactenych, " + dNov.obrazku + " v okne, "
+    + dNov.zaznamObrazku + " napsanych");
 check("…snímky jsou v appce, ne stažené odjinud", dNov.vlastniData === true, "");
 check("…a vejdou se do okna", dNov.presahuje === false, "");
 check("…čtečka je přeskočí, text je nad nimi", dNov.bezPopisku === true, "");
@@ -2601,6 +2604,71 @@ check("snímky z novinek jsou zapečené v appce, ne odkazem na soubor",
   sObrazkem > 0 && zapecenych === sObrazkem, zapecenych + " z " + sObrazkem);
 check("…a jméno souboru v appce nezůstalo",
   !/"obrazek":"[a-z0-9-]+"/.test(zdrojNovinek), "");
+
+console.log("\n27) pruh nové verze: sedí nad lištou a čeká na rozdělanou práci");
+const pVer = await otevri(1400, [
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13,
+    fastMove: "Counter", charged1: "Dynamic Punch" },
+  { pokemon: "Azumarill", level: 24, ivAtk: 10, ivDef: 15, ivSta: 15 }
+]);
+const dVer = await pVer.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const P = window.__pgo, A = window.__atlasTest;
+  P.verzeZkontroluj({ verze: "9.9", sestaveno: "2026-10-01 10:00" });
+  await cekej(300);
+  const pruh = document.getElementById("verzePruh");
+  if (!pruh) return { chyba: "pruh se neukázal" };
+  const lista = document.querySelector(".atlas-top");
+  const r = pruh.getBoundingClientRect(), l = lista.getBoundingClientRect();
+  const out = {
+    nahore: Math.round(r.top) === 0,
+    pres: Math.round(r.width) >= Math.round(window.innerWidth) - 20,
+    // Lišta Atlasu je fixed — musí se o pruh posunout, ne zmizet pod ním.
+    listaPod: Math.round(l.top) >= Math.round(r.bottom) - 1,
+    promenna: getComputedStyle(document.body).getPropertyValue("--verze-pruh-h").trim(),
+    naStart: P.verzeStav().obnoveniPlanovano
+  };
+  // Detail kusu je okno vrstvy — engine o něm sám neví.
+  A.openDetail(P.getRows()[0].id);
+  await cekej(700);
+  out.priDetailu = P.verzeStav();
+  A.closeDetail();
+  await cekej(500);
+  out.poDetailu = P.verzeStav().obnoveniPlanovano;
+  // Úprava kusu taky.
+  window.AtlasEditRow(P.getRows()[0].id);
+  await cekej(700);
+  out.priUprave = P.verzeStav().rozdelane;
+  const zrus = document.querySelector("[data-editor-cancel]");
+  if (zrus) zrus.click();
+  await cekej(500);
+  out.poUprave = P.verzeStav().obnoveniPlanovano;
+  // Import.
+  document.getElementById("toggleImportBtn").click();
+  await cekej(700);
+  out.priImportu = P.verzeStav().rozdelane;
+  const zavri = document.querySelector("#atlasImportDialog header button");
+  if (zavri) zavri.click();
+  await cekej(500);
+  out.poImportu = P.verzeStav().obnoveniPlanovano;
+  // Ať se stránka pod testem neobnoví, než ji zavřeme.
+  pruh.querySelector("[data-verze-pozdeji]").click();
+  return out;
+});
+await pVer.close();
+check("pruh nové verze je nahoře přes celou šířku",
+  !dVer.chyba && dVer.nahore === true && dVer.pres === true, dVer.chyba || JSON.stringify(dVer));
+check("…a horní lišta Atlasu se o něj posune", dVer.listaPod === true, JSON.stringify(dVer));
+check("…výška pruhu je hlášená ve stylu", /^\d+px$/.test(dVer.promenna || ""), dVer.promenna);
+check("…bez rozdělané práce se obnovení naplánuje", dVer.naStart === true, "");
+check("otevřený detail kusu obnovení pozdrží",
+  dVer.priDetailu.obnoveniPlanovano === false && /detail/i.test(dVer.priDetailu.rozdelane),
+  JSON.stringify(dVer.priDetailu));
+check("…po zavření detailu se zase naplánuje", dVer.poDetailu === true, "");
+check("rozepsaná úprava kusu obnovení pozdrží", /uprav/i.test(dVer.priUprave || ""), dVer.priUprave);
+check("…po zrušení úpravy se zase naplánuje", dVer.poUprave === true, "");
+check("otevřený import obnovení pozdrží", /import/i.test(dVer.priImportu || ""), dVer.priImportu);
+check("…po zavření importu se zase naplánuje", dVer.poImportu === true, "");
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

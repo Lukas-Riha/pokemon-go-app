@@ -1849,3 +1849,19 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   content:"\21B3";display:inline-block;overflow:hidden;
   width:10px;height:10px;margin-right:4px;
   font-size:16px;line-height:0;vertical-align:middle}
+
+/* Claude 29. 9. (41): pruh „je nova verze" nad horni listou.
+
+   Engine ho dava jako prvni prvek stranky a v jeho vlastnim vzhledu to
+   staci. Tady je horni lista i postranni panel `fixed`, takze by pruh
+   skoncil pod nimi — je proto taky fixed uplne nahore a vsechno ostatni
+   se o jeho vysku posune dolu. Vysku hlasi engine v `--verze-pruh-h`:
+   na uzkem okne se veta zalomi a pevne cislo by nesedelo. */
+.atlas-test #verzePruh{position:fixed;top:0;left:0;right:0;z-index:1300;
+  padding:9px 18px;font-size:13.5px;border-radius:0}
+.atlas-test.ma-novou-verzi .atlas-top{top:var(--verze-pruh-h,44px)}
+.atlas-test.ma-novou-verzi .atlas-side{padding-top:calc(27px + var(--verze-pruh-h,44px))}
+.atlas-test.ma-novou-verzi .app{padding-top:calc(108px + var(--verze-pruh-h,44px))}
+@media(max-width:650px){
+  .atlas-test.ma-novou-verzi .app{padding-top:calc(90px + var(--verze-pruh-h,44px))}
+}

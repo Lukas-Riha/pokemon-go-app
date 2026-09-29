@@ -18250,6 +18250,91 @@ try {
     /novinky/i.test(s275.hlaska) && !/[a-z_]+\.(js|json|html)/.test(s275.hlaska),
     s275.hlaska);
 
+  console.log("\n276) Nova verze: pruh nahore a obnoveni, az bude dodelano");
+  // Předchozí test nechává okno úzké a v úzkém okně lišta políčka schovává.
+  await page.setViewportSize({ width: 1400, height: 950 });
+  await page.goto(URL);
+  await page.waitForTimeout(900);
+  const s276 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const out = {};
+    P.setRows([
+      { id: "v1", pokemon: "Machamp", cp: 2600, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { id: "v2", pokemon: "Azumarill", cp: 1400, level: 24, ivAtk: 10, ivDef: 15, ivSta: 15 }
+    ]);
+    await cekej(1500);
+    // Stejna verze neni novinka - pruh se objevit nesmi.
+    out.stejna = P.verzeZkontroluj({ verze: P.verzeStav().bezi, sestaveno: "" });
+    out.pruhPoStejne = !!document.getElementById("verzePruh");
+
+    // Cizi cislo = nova verze.
+    out.jina = P.verzeZkontroluj({ verze: "9.9", sestaveno: "2026-10-01 10:00" });
+    const pruh = document.getElementById("verzePruh");
+    out.pruh = !!pruh;
+    out.text = pruh ? pruh.querySelector(".verze-pruh-text").textContent : "";
+    out.trida = document.body.classList.contains("ma-novou-verzi");
+    out.vyskaOhlasena = document.body.style.getPropertyValue("--verze-pruh-h");
+    out.planovano = P.verzeStav().obnoveniPlanovano;
+
+    // Rozepsana uprava v policku se pocita taky. Zalozka zustava
+    // z predchozich testu a policka listy jsou jen na te prvni.
+    const zal = document.querySelector(".zal-lista button");
+    if (zal) { zal.click(); await cekej(700); }
+    const pole = [...document.querySelectorAll("input, select, textarea")]
+      .filter((e) => e.id !== "searchInput" && e.type !== "search" && e.offsetParent !== null)[0];
+    out.poleNalezeno = pole ? (pole.id || pole.name || pole.tagName) : false;
+    if (pole) { pole.focus(); out.priPsani = P.verzeStav().rozdelane; pole.blur(); }
+
+    // Rozdelana prace: cisteni boxu. Obnovit se v tu chvili NESMI.
+    P.boxOtevrit();
+    { const o = document.getElementById("appOknoOk");
+      if (o && !document.getElementById("appOkno").hidden) o.click(); }
+    await cekej(1500);
+    out.priCisteni = P.verzeStav();
+    out.textPriCisteni = pruh ? pruh.querySelector(".verze-pruh-text").textContent : "";
+    P.boxZavritNatvrdo();
+    await cekej(500);
+    out.poCisteni = P.verzeStav().obnoveniPlanovano;
+
+
+    // "Ted ne" automatiku zrusi, ale pruh nechá.
+    pruh.querySelector("[data-verze-pozdeji]").click();
+    await cekej(300);
+    out.poOdmitnuti = P.verzeStav();
+    out.pruhZustal = !!document.getElementById("verzePruh");
+    out.textPoOdmitnuti = pruh.querySelector(".verze-pruh-text").textContent;
+    out.tlacitkoZustalo = !!pruh.querySelector("[data-verze-ted]");
+    return out;
+  });
+  check("stejne cislo verze pruh nevyvola",
+    s276.stejna === false && s276.pruhPoStejne === false, JSON.stringify(s276.stejna));
+  check("nove cislo ukaze pruh nahore",
+    s276.jina === true && s276.pruh === true && s276.trida === true, JSON.stringify(s276));
+  check("...rekne, ktera verze je nova, a ze se obnovi",
+    /9\.9/.test(s276.text) && /Obnov/i.test(s276.text), s276.text);
+  check("...a ohlasi svou vysku vzhledove vrstve",
+    /^\d+px$/.test(s276.vyskaOhlasena || ""), s276.vyskaOhlasena);
+  check("...bez rozdelane prace se obnova naplanuje", s276.planovano === true, "");
+  check("pri cisteni boxu se stranka sama neobnovi",
+    s276.priCisteni.obnoveniPlanovano === false && /box/i.test(s276.priCisteni.rozdelane),
+    JSON.stringify(s276.priCisteni));
+  check("...a pruh to rekne, misto aby odpocitaval",
+    /Počkám/.test(s276.textPriCisteni) && !/Obnovím za/.test(s276.textPriCisteni),
+    s276.textPriCisteni);
+  check("...po zavreni cisteni se obnova zase naplanuje", s276.poCisteni === true, "");
+  check("rozepsana uprava v policku se pocita taky",
+    !!s276.poleNalezeno && !!s276.priPsani,
+    JSON.stringify([s276.poleNalezeno, s276.priPsani]));
+  check("\"Ted ne\" zrusi jen automatiku, pruh zustane",
+    s276.poOdmitnuti.odmitnuta === true && s276.poOdmitnuti.obnoveniPlanovano === false
+      && s276.pruhZustal === true && s276.tlacitkoZustalo === true,
+    JSON.stringify(s276.poOdmitnuti));
+  check("...a v pruhu neni ani kousek kodu",
+    !/[a-z_]+\.(js|json|html)|window\.|verze\.json/.test(
+      s276.text + " " + s276.textPriCisteni + " " + s276.textPoOdmitnuti),
+    s276.text);
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 

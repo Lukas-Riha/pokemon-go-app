@@ -1070,6 +1070,20 @@
   .novinky-obrazek img { display: block; max-width: 100%; height: auto;
     border: 1px solid var(--border); border-radius: 10px; }
   .novinky-pata { margin-top: 18px; display: flex; justify-content: flex-end; }
+  /* Pruh „je nova verze". Je nahore a pres celou sirku: ma se ho vsimnout
+     i clovek, ktery appku nechal otevrenou a kouka do jedne tabulky. */
+  .verze-pruh { position: sticky; top: 0; z-index: 4500; display: flex;
+    align-items: center; flex-wrap: wrap; gap: 10px 16px;
+    padding: 11px 18px; font-size: 14px; font-weight: 600;
+    color: #06131f; background: linear-gradient(90deg, #ffd24a, #ffb020);
+    border-bottom: 1px solid #00000033; }
+  .verze-pruh strong { font-weight: 800; }
+  .verze-pruh-text { flex: 1 1 260px; }
+  .verze-pruh-cekam { font-weight: 500; opacity: .85; }
+  .verze-pruh button { border: 1px solid #06131f55; border-radius: 8px;
+    padding: 6px 13px; font: inherit; font-size: 13px; cursor: pointer;
+    background: #06131f; color: #ffe08a; }
+  .verze-pruh button.druha { background: transparent; color: #06131f; }
 
   /* table */
   /* Vodorovný posuvník potřebujeme jen když se tabulka nevejde. Nastavený
@@ -11221,6 +11235,144 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     box.querySelector("[data-novinky-ok]").focus();
     return true;
+  }
+
+  /* ---------- hlidac nove verze ----------
+     Appka je jedna stranka a kdo si ji nechá otevřenou, může na ní zůstat
+     celé dny — o nové verzi by se dozvěděl leda tím, že mu něco chybí.
+     Vedle appky proto leží `verze.json` a ta se občas přečte.
+
+     Obnovení stránky samo o sobě nic neztratí: roster je v prohlížeči,
+     ne v souboru. Ztratit se dá jen to, co ještě není uložené — rozepsaná
+     úprava, rozjeté čištění boxu, otevřený import. Proto se čeká, dokud
+     člověk něco takového rozdělaného má, a teprve pak se obnoví.
+
+     Běží jen přes http(s). Kopie otevřená ze souboru (OneDrive) nemá koho
+     se zeptat a hlídač se v ní vůbec nespustí. */
+  var VERZE_ZDROJ = "verze.json";
+  var VERZE_INTERVAL = 10 * 60 * 1000;
+  var VERZE_ODPOCET = 10;
+  var novaVerze = null;
+  var verzeTiker = null;
+  var verzeOdmitnuta = false;
+  var verzeZaneprazdneni = [];
+
+  /**
+   * Co má člověk rozdělané? Vrací lidský název, nebo prázdno, když nic.
+   *
+   * Vzhledová vrstva má vlastní okna, o kterých engine neví — přidává si
+   * je přes `zaneprazdneniPridat`.
+   */
+  function coJeRozdelane() {
+    var bm = document.getElementById("boxMode");
+    if (bm && !bm.hidden) return "dokud čistíš box";
+    var okno = document.getElementById("appOkno");
+    if (okno && !okno.hidden) return "dokud máš otevřené okno";
+    var imp = document.getElementById("importBox");
+    if (imp && !imp.hidden && imp.offsetParent !== null) return "dokud máš rozdělaný import";
+    for (var i = 0; i < verzeZaneprazdneni.length; i++) {
+      var co = "";
+      try { co = verzeZaneprazdneni[i](); } catch (e) { co = ""; }
+      if (co) return co;
+    }
+    var a = document.activeElement;
+    if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.tagName === "SELECT")
+        && a.type !== "search" && a.id !== "searchInput") return "dokud něco vyplňuješ";
+    return "";
+  }
+
+  /** Obnovení stránky. Rozepsané se nejdřív uloží, teprve pak se načítá. */
+  function verzeObnovit() {
+    try { persist(true); } catch (e) { /* radši obnovit než zůstat na staré */ }
+    window.location.reload();
+  }
+
+  function verzePruh() {
+    var pruh = document.getElementById("verzePruh");
+    if (!pruh) {
+      pruh = document.createElement("div");
+      pruh.id = "verzePruh";
+      pruh.className = "verze-pruh";
+      pruh.setAttribute("role", "status");
+      pruh.innerHTML = '<span class="verze-pruh-text"></span>'
+        + '<button type="button" data-verze-ted>Obnovit teď</button>'
+        + '<button type="button" class="druha" data-verze-pozdeji>Teď ne</button>';
+      document.body.insertBefore(pruh, document.body.firstChild);
+      document.body.classList.add("ma-novou-verzi");
+      pruh.querySelector("[data-verze-ted]").addEventListener("click", verzeObnovit);
+      pruh.querySelector("[data-verze-pozdeji]").addEventListener("click", function () {
+        // „Teď ne" ruší jen tu automatiku. Pruh zůstane, aby si člověk mohl
+        // obnovit sám, až bude chtít.
+        verzeOdmitnuta = true;
+        this.hidden = true;
+        verzeVypis(0);
+      });
+    }
+    return pruh;
+  }
+
+  function verzeVypis(zbyva) {
+    var pruh = verzePruh();
+    var text = pruh.querySelector(".verze-pruh-text");
+    var cislo = novaVerze && novaVerze.verze ? " " + novaVerze.verze : "";
+    var rozdelane = coJeRozdelane();
+    if (verzeOdmitnuta) {
+      text.innerHTML = "<strong>Je nová verze" + escHtml(cislo) + ".</strong> "
+        + "<span class=\"verze-pruh-cekam\">Obnov si ji, až budeš chtít.</span>";
+    } else if (rozdelane) {
+      text.innerHTML = "<strong>Je nová verze" + escHtml(cislo) + ".</strong> "
+        + "<span class=\"verze-pruh-cekam\">Počkám, "
+        + escHtml(rozdelane) + " — o nic nepřijdeš.</span>";
+    } else {
+      text.innerHTML = "<strong>Je nová verze" + escHtml(cislo) + ".</strong> "
+        + "<span class=\"verze-pruh-cekam\">Obnovím za " + zbyva
+        + " s.</span>";
+    }
+    // Vzhledová vrstva má lištu i panel „fixed" a musí je o pruh posunout;
+    // na úzkém okně se věta zalomí, takže pevné číslo by nesedělo.
+    document.body.style.setProperty("--verze-pruh-h", pruh.offsetHeight + "px");
+  }
+
+  /**
+   * Co říká `verze.json`. Když se rozejde s tím, co běží, spustí se pruh.
+   * Odděleno od stahování schválně: takhle se to dá vyzkoušet bez sítě.
+   */
+  function verzeZkontroluj(data) {
+    if (!data || !data.verze) return false;
+    if (data.verze === VERZE && (!data.sestaveno || data.sestaveno === BUILD)) return false;
+    if (novaVerze && novaVerze.verze === data.verze) return true;
+    novaVerze = data;
+    verzeVypis(VERZE_ODPOCET);
+    if (verzeTiker) window.clearInterval(verzeTiker);
+    var zbyva = VERZE_ODPOCET;
+    verzeTiker = window.setInterval(function () {
+      if (verzeOdmitnuta) { verzeVypis(0); return; }
+      // Dokud je něco rozdělaného, odpočet stojí — ne že by běžel dál.
+      if (coJeRozdelane()) { zbyva = VERZE_ODPOCET; verzeVypis(zbyva); return; }
+      zbyva -= 1;
+      verzeVypis(zbyva);
+      if (zbyva <= 0) { window.clearInterval(verzeTiker); verzeTiker = null; verzeObnovit(); }
+    }, 1000);
+    return true;
+  }
+
+  function verzeZeptejSe() {
+    if (novaVerze) return;            // už víme, víc se ptát nemusíme
+    fetch(VERZE_ZDROJ, { cache: "no-store" })
+      .then(function (o) { return o.ok ? o.json() : null; })
+      .then(function (d) { if (d) verzeZkontroluj(d); })
+      ["catch"](function () { /* bez sítě se nic neděje */ });
+  }
+
+  function verzeHlidac() {
+    if (location.protocol !== "http:" && location.protocol !== "https:") return;
+    window.setTimeout(verzeZeptejSe, 20000);
+    window.setInterval(verzeZeptejSe, VERZE_INTERVAL);
+    // Návrat k záložce je nejlevnější chvíle na kontrolu: člověk se zrovna
+    // dívá a ještě nic nerozdělal.
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) verzeZeptejSe();
+    });
   }
 
   function renderBuild() {
@@ -27009,6 +27161,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   renderSettingWarnings();
   renderDataInfo();
   renderBuild();
+  verzeHlidac();
   renderBody();
   setSaveState(STORAGE_OK ? (rows.length ? "Uloženo v prohlížeči" + (PROFILES_ENABLED ? " — profil „" + activeProfile + "“" : "") : "") : STORAGE_WARN, false);
   } catch (chybaStartu) {
@@ -27281,6 +27434,21 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     finishImport: finishImport,
     scanPlanInfo: scanPlanInfo,
     levelZCP: levelZCP,
+    /* Hlídač nové verze. `verzeZkontroluj` dostane to, co by jinak přišlo
+       z `verze.json` — dá se tím vyzkoušet celý pruh bez sítě. */
+    verzeZkontroluj: verzeZkontroluj,
+    verzeStav: function () {
+      return { bezi: VERZE, nova: novaVerze, odmitnuta: verzeOdmitnuta,
+        rozdelane: coJeRozdelane(),
+        /* Že odpočet běží nestačí: dokud má člověk něco rozdělaného,
+           odpočet stojí a stránka se sama neobnoví. */
+        obnoveniPlanovano: !!verzeTiker && !verzeOdmitnuta && !coJeRozdelane() };
+    },
+    /* Vzhledová vrstva si přidá svoje okna: vrátí jejich lidský název,
+       dokud jsou otevřená, jinak prázdno. */
+    zaneprazdneniPridat: function (fn) {
+      if (typeof fn === "function") verzeZaneprazdneni.push(fn);
+    },
     /* Okno s novinkami. Bez argumentu ho otevře vždycky — na testu se tím
        kontroluje, co produkce po překlopení uvidí. */
     ukazNovinky: function (vynutit) { return ukazNovinky(vynutit !== false); },

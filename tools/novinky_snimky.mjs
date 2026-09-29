@@ -132,5 +132,17 @@ await stranka.evaluate(async () => {
 });
 await snimek('druhy-nabity', ['.atlas-drawer .atlas-ident-utoky > *'], 14);
 
+// 5) Pruh „je nová verze". Číslo je ilustrativní — ukazuje se verze,
+//    která zrovna vyšla; tady se nastaví ručně, aby bylo co nasnímat.
+await stranka.evaluate(async () => {
+  window.__atlasTest.closeDetail();
+  await new Promise((r) => setTimeout(r, 500));
+  window.__pgo.verzeZkontroluj({ verze: '3.0', sestaveno: '2026-10-01 09:00' });
+  await new Promise((r) => setTimeout(r, 500));
+});
+await snimek('nova-verze', ['#verzePruh'], 0);
+// Ať se stránka pod skriptem neobnoví.
+await stranka.evaluate(() => document.querySelector('[data-verze-pozdeji]')?.click());
+
 await prohlizec.close();
 console.log('hotovo →', CIL);
