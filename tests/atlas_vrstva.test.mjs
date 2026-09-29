@@ -2441,6 +2441,72 @@ check("kus bez druhého nabitého dostane návrh, co dokoupit",
 check("…a bublina řekne, že do raidu se to nepřidává",
   /raid/i.test(dDN.tip) && /lize/i.test(dDN.tip), dDN.tip);
 
+/* Level se v úpravách nezadává — dopočítá se z CP a IV.
+   CP je funkce (staty druhu, IV, level) a nic jiného, takže level z nich
+   vyjde zpětně. Zároveň to hlídá, že zadaná kombinace ve hře existuje. */
+const pLv = await otevri(1800, [
+  { pokemon: "Machamp", cp: 2600, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
+]);
+const dLv = await pLv.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1200);
+  window.AtlasEditRow(P.getRows()[0].id);
+  await cekej(800);
+  const f = document.getElementById("atlasRowEditor");
+  if (!f) return { chyba: "editor se neotevřel" };
+  const stav = () => ({ level: f.elements.level.value,
+    readonly: f.elements.level.readOnly,
+    hlaska: (f.querySelector("[role=status]") || {}).textContent || "" });
+  const nastav = async (pole, hodnota) => {
+    f.elements[pole].value = String(hodnota);
+    f.elements[pole].dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(200);
+  };
+  const out = { start: stav() };
+  await nastav("cp", 2255);
+  out.nesmysl = stav();
+  await nastav("cp", 2600);
+  out.zpet = stav();
+  f.requestSubmit();
+  await cekej(900);
+  out.ulozeno = { level: P.getRows()[0].level, cp: P.getRows()[0].cp };
+  return out;
+});
+await pLv.close();
+check("level se v úpravách nezadává, jen ukazuje",
+  dLv.start.readonly === true, JSON.stringify(dLv.start));
+check("…a dopočítá se z CP a IV", dLv.start.level === "30", JSON.stringify(dLv.start));
+check("kombinace, která ve hře nemůže existovat, se pozná",
+  dLv.nesmysl.level === "" && /neexistuje/.test(dLv.nesmysl.hlaska),
+  JSON.stringify(dLv.nesmysl));
+check("…a po opravě čísel se level zase dopočítá",
+  dLv.zpet.level === "30" && dLv.zpet.hlaska === "", JSON.stringify(dLv.zpet));
+check("uložení zapíše dopočítaný level",
+  dLv.ulozeno.level === "30" || dLv.ulozeno.level === 30, JSON.stringify(dLv.ulozeno));
+
+/* Šipka k doporučenému útoku: v plachtě vede shora dolů a pak doprava,
+   protože doporučení stojí pod útokem, ke kterému patří. */
+const pSip = await otevri(1800, [
+  { pokemon: "Zapdos", cp: 3056, level: 31.5, ivAtk: 15, ivDef: 14, ivSta: 10,
+    fastMove: "Charge Beam", charged1: "Zap Cannon" }
+]);
+const dSip2 = await pSip.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  A.openDetail(P.getRows()[0].id);
+  await new Promise((r) => setTimeout(r, 1300));
+  const sip = document.querySelector(".atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi");
+  if (!sip) return { chyba: "šipka není" };
+  return { znak: getComputedStyle(sip, "::before").content,
+    text: sip.textContent.trim(), tip: (sip.dataset.tip || "").slice(0, 60) };
+});
+await pSip.close();
+check("šipka k doporučenému útoku vede shora dolů a pak doprava",
+  /\u21b3|↳/.test(dSip2.znak || ""), JSON.stringify(dSip2.znak));
+check("…a u ní stojí jen jméno útoku, bez druhé šipky v textu",
+  !/[→↳]/.test(dSip2.text || ""), dSip2.text);
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

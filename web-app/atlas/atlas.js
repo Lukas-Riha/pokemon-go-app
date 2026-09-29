@@ -375,6 +375,42 @@ globalThis.AtlasBudget = (() => {
     form.innerHTML='<div class="atlas-eyebrow">UPRAVUJEŠ JEDEN KUS</div><h3>'+esc(row.pokemon)+'</h3><div class="atlas-editor-grid">'+fields.map(([key,label,type,min,max,step])=>`<label>${label}<input name="${key}" type="${type}" value="${esc(row[key])}" ${min!=null?`min="${min}" max="${max}" step="${step}"`:''} ${key==='pokemon'?'required':''}></label>`).join('')+'<label>Stav / forma<select name="forma">'+forms.map(f=>`<option value="${esc(f)}" ${f===(row.forma||'Normal')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+(maPohlavi?'<label>Pohlaví<select name="pohlavi">'+pohlavi.map(f=>`<option value="${f==='—'?'':esc(f)}" ${f===(row.pohlavi||'—')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>':'')+'<label class="atlas-editor-note">Poznámka<textarea name="note">'+esc(row.note)+'</textarea></label></div>'+'<div class="atlas-editor-actions"><button type="submit" class="atlas-cta">Uložit</button><button type="button" class="atlas-mini-btn" data-editor-cancel>Zrušit</button><p role="status" id="atlasEditorStatus"></p></div>';
     // Útoky se vybírají stejným výběrem jako ve Vyhledávání (typ, síla, ★ elitní) — engine __pgoUtoky.vyber na dočasném objektu; hodnota jde do skrytého pole formuláře. Při změně druhu se výběr postaví znovu.
     const utoky={pokemon:row.pokemon,fastMove:row.fastMove||'',charged1:row.charged1||'',charged2:row.charged2||'',__docasny:true};const vyberUtoku=()=>{if(!window.__pgoUtoky)return;utoky.pokemon=form.elements.pokemon.value;['fastMove','charged1','charged2'].forEach(k=>{const input=form.elements[k];let obal=form.querySelector('[data-utok-obal="'+k+'"]');if(!obal){obal=document.createElement('div');obal.className='atlas-utok-vyber';obal.dataset.utokObal=k;input.after(obal);input.type='hidden'}obal.innerHTML='';window.__pgoUtoky.vyber(obal,utoky,k,()=>{input.value=utoky[k]||''})})};vyberUtoku();form.elements.pokemon.addEventListener('change',vyberUtoku);
+    /* Level se nezadava, dopocitava se z CP a IV. CP je funkce (staty druhu,
+       IV, level) a nic jineho, takze level z nich vyjde zpetne — a zaroven
+       to hlida, ze zadana kombinace ve hre vubec muze existovat. Kdyz na ni
+       zadny level nesedi, pole zustane prazdne a pod formularem to stoji.
+       Dva sousedni pul-levely muzou dat stejne CP (CP se zaokrouhluje dolu),
+       proto se pripadne pise, ze je to na pul levelu.
+       Mega forma ma vlastni staty, ktere levelZCP nezna — tam vyjde
+       "neexistuje" a je to poctive: appka to CP dopocitat neumi. */
+    const poleLevel=form.elements.level;
+    if(poleLevel){
+     poleLevel.readOnly=true;poleLevel.tabIndex=-1;
+     poleLevel.classList.add('atlas-editor-dopocet');
+     poleLevel.title='Dopočítá se z CP a IV — zadávat se nedá.';
+    }
+    const hlaska=form.querySelector('[role=status]');
+    const dopocitejLevel=()=>{
+     if(!poleLevel||!P.levelZCP)return;
+     const e=form.elements;
+     const v=P.levelZCP(e.pokemon.value,e.cp.value,e.ivAtk.value,e.ivDef.value,e.ivSta.value);
+     if(v){
+      poleLevel.value=v.level;
+      if(hlaska)hlaska.textContent=v.jednoznacne?'':
+       'Level vychází na '+v.vse.join(' nebo ')+' — CP se ve hře zaokrouhluje dolů, '
+       +'takže dva půl-levely dají totéž. Appka bere ten nižší.';
+     }else{
+      poleLevel.value='';
+      if(hlaska)hlaska.textContent=(e.cp.value&&e.ivAtk.value!==''&&e.ivDef.value!==''
+        &&e.ivSta.value!=='')
+       ?'Takové CP s těmihle IV ve hře neexistuje — zkontroluj čísla.':'';
+     }
+    };
+    ['pokemon','cp','ivAtk','ivDef','ivSta'].forEach(k=>{
+     const el=form.elements[k];
+     if(el){el.addEventListener('input',dopocitejLevel);el.addEventListener('change',dopocitejLevel)}
+    });
+    dopocitejLevel();
     const baseline=new Map([...form.elements].filter(e=>e.name).map(e=>[e.name,e.type==='checkbox'?e.checked:e.value]));
     form.querySelector('[data-editor-cancel]').addEventListener('click',()=>{form.remove();document.body.classList.remove('atlas-edituje');document.querySelector('.atlas-drawer-header button')?.focus()});
     form.addEventListener('submit',e=>{e.preventDefault();const current=P.getRows().find(r=>r.id===id);if(!current||profile!==P.getProfile()){form.querySelector('[role=status]').textContent='Kus nebo profil se změnil. Zavři detail a zkontroluj roster.';return}if(!form.reportValidity())return;
@@ -777,7 +813,7 @@ globalThis.AtlasBudget = (() => {
           // by mu primo odporovala.
           if(stav!=='nej'&&stav!=='poEvoluci'&&lepsi){
             const sip=document.createElement('em');sip.className='atlas-utok-lepsi';
-            sip.textContent='→ '+lepsi;
+            sip.textContent=lepsi;
             const proc=duvody.get(cist)||'';
             sip.dataset.tip=(proc?proc+' ':'')+'Lepší volba: '+lepsi+' — přeučení stojí TM.';
             radek.append(sip);

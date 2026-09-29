@@ -1828,3 +1828,18 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi{min-width:0;margin-left:14px}
 /* V cisteni boxu je blok siroky dost, tam se nezalamuje nic. */
 .atlas-test #boxMode .atlas-ident-utoky .atlas-utok-radek{flex-wrap:nowrap}
+
+/* Level se v upravach nezadava — dopocita se z CP a IV. Vypada proto jako
+   udaj, ne jako policko k vyplneni. */
+.atlas-test .atlas-editor-grid input.atlas-editor-dopocet{
+  background:transparent;border-style:dashed;color:var(--text-secondary);
+  cursor:default}
+
+/* Claude 29. 9. (40): sipka k doporucenemu utoku podle toho, kde stoji.
+
+   V plachte detailu se doporuceni zalomi pod utok, ke kteremu patri —
+   tam ma sipka vest shora dolu a pak doprava (kolenem). V cisteni boxu
+   stoji na temze radku vedle utoku, tam zustava vodorovna. */
+.atlas-test .atlas-utok-lepsi::before{content:"\2192\00a0"}
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi::before{
+  content:"\21B3\00a0";font-size:12px;line-height:1}

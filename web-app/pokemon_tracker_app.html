@@ -12243,7 +12243,24 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       dalsi.forEach(function (k) { videl[k] = true; });
       stupne.push(dalsi);
     }
-    return stupne.length > 1 ? stupne : null;
+    if (stupne.length > 1) return stupne;
+    /* Regionální forma bez vlastní řady. Patnáct forem (Samurott Hisuian,
+       Marowak Alolan, Weezing Galarian…) nemá v herních datech napojení na
+       nic — pogoapi je neveze. Ve hře přitom vzniknou evolucí ze stejné
+       řady jako základní forma, jen během akce nebo s jinou podmínkou.
+       Ukáže se proto řada základní formy a na konci stojí ta forma, kterou
+       má člověk v ruce; bez toho u ní stálo „tenhle druh se nevyvíjí",
+       což je u třetího stupně evoluce nesmysl. */
+    var zaklad = String(klic || "").split("-")[0];
+    if (zaklad && zaklad !== klic && POKEDEX.species[klic]) {
+      var zakladniLinie = evoLinie(zaklad);
+      if (zakladniLinie) {
+        return zakladniLinie.map(function (stupen) {
+          return stupen.map(function (k) { return k === zaklad ? klic : k; });
+        });
+      }
+    }
+    return null;
   }
 
   /* Obrázky přímo ze hry (256x256), ne pixelové sprity z hlavní série.
@@ -14047,6 +14064,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       h += "</div>";
     });
     if (bezEvoluce) h += '<div class="d-note">Tenhle druh se nevyvíjí.</div>';
+    /* Regionální forma nemá v herních datech vlastní řadu, tak se ukazuje
+       řada základní formy — ve hře z ní taky vzniká, jen za jiné podmínky.
+       Bez téhle věty vypadá poslední stupeň jako obyčejná forma. */
+    if (!bezEvoluce && String(mujKlic).indexOf("-") > -1
+        && linie.length > 1 && String(linie[0][0]).indexOf("-") === -1) {
+      h += '<div class="d-note">Řada patří základní formě — tahle forma se ve hře'
+        + " vyvíjí z té samé, jen za jiné podmínky. Poslední stupeň je ta tvoje.</div>";
+    }
     if (linie[linie.length - 1].length > 1) {
       h += '<div class="d-note">Řada se větví — kterou formu z toho uděláš,'
         + " je na tobě. Rozpočet proto počítá s tou nejlepší z nich.</div>";
@@ -27144,6 +27169,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     finishImport: finishImport,
     scanPlanInfo: scanPlanInfo,
     levelZCP: levelZCP,
+    /* Evoluční řada podle jména — ven kvůli kontrole, že regionalní forma
+       dostane řadu své základní formy místo „tenhle druh se nevyvíjí". */
+    evoLinieProKlic: function (jmeno) { return evoLinie(dexKey(jmeno)); },
     // pro testy: CP druhu na daném levelu, ať jde dopočet levelu ověřit
     // proti skutečným CP, ne proti vymyšleným číslům
     cpNaLevelu: function (name, a, d, st, lv) {

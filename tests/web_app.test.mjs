@@ -18191,6 +18191,36 @@ try {
   check("…a je to opravdu sestava toho druhu, ne cizí útoky",
     druhyNabity[0].sestava[0] === "Bubble", JSON.stringify(druhyNabity[0]));
 
+  // ---- Regionální forma a evoluční řada ------------------------------
+  // Patnáct regionálních forem (Samurott Hisuian, Marowak Alolan, Weezing
+  // Galarian…) nemá v herních datech napojení na nic — pogoapi je neveze.
+  // U Samurotta Hisuian pak stálo „tenhle druh se nevyvíjí", což je
+  // u třetího stupně nesmysl.
+  const regionalniRada = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const zkus = (jmeno) => {
+      const l = P.evoLinieProKlic ? P.evoLinieProKlic(jmeno) : null;
+      return l ? l.map((stupen) => stupen.join("+")) : null;
+    };
+    return { hisui: zkus("Samurott (Hisuian)"), zakladni: zkus("Samurott"),
+      alolan: zkus("Marowak (Alolan)"), legenda: zkus("Zapdos (Galarian)") };
+  });
+  check("regionální forma ukáže evoluční řadu základní formy",
+    Array.isArray(regionalniRada.hisui) && regionalniRada.hisui.length === 3,
+    JSON.stringify(regionalniRada.hisui));
+  check("…a na konci stojí ta forma, kterou má člověk v ruce",
+    (regionalniRada.hisui || []).slice(-1)[0] === "samurott-hisui",
+    JSON.stringify(regionalniRada.hisui));
+  check("…základní forma má pořád svou vlastní řadu",
+    (regionalniRada.zakladni || []).slice(-1)[0] === "samurott",
+    JSON.stringify(regionalniRada.zakladni));
+  check("…platí to i pro Alolan Marowaka",
+    Array.isArray(regionalniRada.alolan) && regionalniRada.alolan.length === 2
+      && regionalniRada.alolan.slice(-1)[0] === "marowak-alola",
+    JSON.stringify(regionalniRada.alolan));
+  check("…a legendární forma bez řady žádnou nedostane",
+    regionalniRada.legenda === null, JSON.stringify(regionalniRada.legenda));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 
