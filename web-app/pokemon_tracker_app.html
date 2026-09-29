@@ -14117,7 +14117,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           ligaKlic: lg.meta, druhKlic: fk });
       });
     });
-    h += '<div class="d-box-h d-sec-h">Ligy podrobně</div>';
+    h += '<div class="d-ligy-blok"><div class="d-box-h d-sec-h">Ligy podrobně</div>';
     if (ligy.length) {
       /* Seskupeno podle FORMY, ne podle ligy. U větvených řad (Eevee, Applin)
          to jinak byla jedna dlouhá tabulka, kde se čtyři „Great League“
@@ -14182,6 +14182,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     } else {
       h += '<p class="d-note">Do žádné z lig se tenhle druh nedostal.</p>';
     }
+    h += "</div>";
 
     // --- role ---
     var role = [];

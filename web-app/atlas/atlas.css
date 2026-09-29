@@ -2021,3 +2021,49 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
      stranka doprava. Tady se vejit MUSI. */
   .atlas-test .d-evo-side,.atlas-test .d-evo-side.sirsi{min-width:0;flex:1 1 auto}
 }
+
+/* Claude 30. 9. (47): Vyhledavani podle navrhu V2 od Astry.
+
+   Role jsou zalozky s ikonou a podtrzenim, ne dalsi rada pilulek —
+   pilulky uz nese liga pod nimi a dve stejne rady se pletly. Radek
+   vysledku ma obrazek a typy, hledany druh svoji znacku. Evoluce jsou
+   mrizka obrazku; podminky jsou o tlacitko dal, aby panel nebyl stena
+   textu, ale dosahne na ne i klavesnice. */
+.atlas-test .atlas-vysledek-ovladani{gap:0;border-bottom:1px solid var(--border);
+  margin-bottom:12px}
+.atlas-test .atlas-vysledek-ovladani button{border:0;border-bottom:2px solid transparent;
+  border-radius:0;background:none;padding:10px 16px;display:inline-flex;align-items:center;gap:7px}
+.atlas-test .atlas-vysledek-ovladani button .atlas-icon{width:16px;height:16px}
+.atlas-test .atlas-vysledek-ovladani button[aria-selected=true]{background:none;
+  border-bottom-color:var(--series-1);color:var(--series-1)}
+.atlas-test .atlas-vysledek-druh{display:flex;align-items:center;gap:10px}
+.atlas-test .atlas-vysledek-obr{width:34px;height:34px;object-fit:contain;flex:none}
+.atlas-test .atlas-vysledek-druh>span{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.atlas-test .atlas-vysledek-typy{display:inline-flex;flex-wrap:wrap;gap:4px}
+.atlas-test .atlas-vysledek-typy .d-type{font-size:10px;padding:2px 7px}
+.atlas-test .atlas-vysledek-znacka{display:inline-block;font-size:10px;font-weight:700;
+  letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--series-1);
+  color:#fff;vertical-align:1px}
+.atlas-test .atlas-vysledek-evo-mrizka{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.atlas-test .atlas-vysledek-evo-kus{display:flex;flex-direction:column;align-items:center;
+  gap:4px;border:1px solid var(--border);border-radius:10px;padding:10px 6px;
+  background:var(--surface-1);cursor:pointer;min-height:96px}
+.atlas-test .atlas-vysledek-evo-kus b{font-size:12px;color:var(--text-primary);font-weight:650}
+.atlas-test .atlas-vysledek-evo-obr{width:46px;height:46px;object-fit:contain}
+.atlas-test .atlas-vysledek-evo-kus[aria-pressed=true]{border-color:var(--series-1);
+  background:var(--atlas-soft)}
+.atlas-test .atlas-vysledek-evo-kus[aria-pressed=true] b{color:var(--series-1)}
+.atlas-test .atlas-vysledek-evo-pod{margin-top:12px;border-top:1px solid var(--border);
+  padding-top:10px}
+.atlas-test .atlas-vysledek-evo-pod h5{margin:0;font-size:12px;color:var(--text-primary)}
+.atlas-test .atlas-vysledek-evo-pod p{margin:3px 0 0;font-size:11.5px;color:var(--text-muted)}
+.atlas-test .atlas-vysledek-evo-pod dl{margin:8px 0 0;font-size:11.5px}
+.atlas-test .atlas-vysledek-evo-pod dt{font-weight:650;color:var(--text-primary);margin-top:6px}
+.atlas-test .atlas-vysledek-evo-pod dd{margin:0;color:var(--text-secondary)}
+.atlas-test .atlas-vysledek-evo-vic{display:flex;align-items:center;justify-content:space-between;
+  width:100%;margin-top:10px;border:1px solid var(--border);border-radius:9px;
+  background:var(--surface-1);color:var(--text-primary);padding:9px 12px;font-size:12px;
+  cursor:pointer;min-height:38px}
+/* Tytez ligy uz ukazuje tabulka nahore a evoluce vlastni panel — v rozboru
+   druhu pod tim by stalo totez podruhe, jen delsi. */
+.atlas-test #prohOut .d-ligy-blok,.atlas-test #prohOut .d-evo-side{display:none}

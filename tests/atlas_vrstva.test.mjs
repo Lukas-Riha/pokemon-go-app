@@ -2787,14 +2787,25 @@ const dVysl29 = await pVysl29.evaluate(async () => {
   const evo = document.querySelector(".atlas-vysledek-evo");
   out.evo = { je: !!evo,
     kusu: evo ? evo.querySelectorAll(".atlas-vysledek-evo-kus").length : 0,
-    sPodminkou: evo ? [...evo.querySelectorAll(".atlas-vysledek-evo-kus small")]
-      .filter((x) => x.textContent.trim().length > 0).length : 0,
+    obrazku: evo ? evo.querySelectorAll(".atlas-vysledek-evo-obr").length : 0,
+    // Podminky jsou o tlacitko dal — dosahne na ne i klavesnice, ne jen mys.
+    podminkyPred: evo ? evo.querySelectorAll(".atlas-vysledek-evo-pod dd").length : 0,
+    tlacitko: !!(evo && evo.querySelector("[data-podminky]")),
     vedle: (() => {
       const tab = document.querySelector(".atlas-vysledek-telo");
       if (!evo || !tab) return false;
       return Math.round(evo.getBoundingClientRect().left)
         >= Math.round(tab.getBoundingClientRect().right) - 2;
     })() };
+  {
+    const b = document.querySelector("[data-podminky]");
+    if (b) { b.click(); await cekej(400); }
+    const ev2 = document.querySelector(".atlas-vysledek-evo");
+    out.evo.podminkyPo = ev2 ? [...ev2.querySelectorAll(".atlas-vysledek-evo-pod dd")]
+      .map((d) => d.textContent.trim()) : [];
+    const b2 = document.querySelector("[data-podminky]");
+    if (b2) { b2.click(); await cekej(300); }
+  }
   // Kusovy rezim prida sloupec o kusu, rezim druhu ho zase sebere.
   const rezim = (k) => { const b = document.querySelector('[data-rezim="' + k + '"]'); if (b) b.click(); };
   rezim("kus");
@@ -2822,9 +2833,14 @@ check("…a neříká se, že je druh v raidech zrovna teď",
 check("fokus přežije přepnutí role", dVysl29.fokus === "gym", dVysl29.fokus);
 check("evoluční možnosti stojí vedle tabulky",
   dVysl29.evo.je === true && dVysl29.evo.vedle === true, JSON.stringify(dVysl29.evo));
-check("…a podmínky jsou vidět rovnou, ne až po najetí myší",
-  dVysl29.evo.kusu === 8 && dVysl29.evo.sPodminkou === dVysl29.evo.kusu,
-  JSON.stringify([dVysl29.evo.kusu, dVysl29.evo.sPodminkou]));
+check("…jako mřížka obrázků, jeden za každou evoluci",
+  dVysl29.evo.kusu === 8 && dVysl29.evo.obrazku === 8,
+  JSON.stringify([dVysl29.evo.kusu, dVysl29.evo.obrazku]));
+check("…a podmínky jsou o tlačítko dál, ne jen po najetí myší",
+  dVysl29.evo.tlacitko === true && dVysl29.evo.podminkyPred === 0
+    && dVysl29.evo.podminkyPo.length === 8
+    && dVysl29.evo.podminkyPo.every((x) => x.length > 0),
+  JSON.stringify(dVysl29.evo.podminkyPo.slice(0, 3)));
 check("kusový režim přidá sloupec o konkrétním kusu",
   dVysl29.kus.hlavicka.length === 4 && /Tvůj kus/.test(dVysl29.kus.hlavicka.join(" ")),
   JSON.stringify(dVysl29.kus.hlavicka));

@@ -1200,7 +1200,15 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     nešlo nic najít. Data dává engine (`prohlidkaModel`); vrstva z nich
     jen kreslí, nic nepočítá znovu. */
  const ROLE_POPIS={pvp:'PvP',raid:'Raidy',gym:'Gym',mega:'Mega'};
- let role='pvp',liga='great',zvyrazneny=null;
+ /* Vlastni ikonky zalozek: `icon()` z hlavni vrstvy sem nedosahne (jiny
+    uzaver) a ctyri cary staci. Navrh V2 od Astry. */
+ const ROLE_IKONA={
+  pvp:'M5 19 19 5M5 5l4 4m10 10-4-4',
+  raid:'M12 3l7 7-7 11-7-11z',
+  gym:'M7 21V4m0 1 11 3-11 3',
+  mega:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z'};
+ const ikona=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${ROLE_IKONA[k]}"/></svg>`;
+ let role='pvp',liga='great',zvyrazneny=null,podminkyVidet=false;
 
  function vysledekBlok(){
   let el=karta.querySelector('.atlas-vysledek');
@@ -1213,6 +1221,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     /* Klepnuti na evoluci jen zvyrazni jeji radek. Vstup ani roster to
        prepsat nesmi — clovek se pta na druh, ne ze ho chce zmenit. */
     if(b.dataset.zvyraznit){zvyrazneny=b.dataset.zvyraznit;vykresliVysledek();return}
+    if(b.dataset.podminky){podminkyVidet=!podminkyVidet;vykresliVysledek();return}
    });
    identita.after(el);
   }
@@ -1239,12 +1248,25 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  function evoluceHtml(m){
   const evo=m.druhy.filter(x=>x.vztah==='evoluce');
   if(!evo.length)return '';
+  /* Mrizka s obrazky, ne seznam jmen: na co se Eevee vyvine, se pozna
+     rychleji podle obrazku. Podminky jsou o tlacitko dal — vidi je
+     i klavesnice, nejen mys. (Navrh V2 od Astry.) */
   return `<aside class="atlas-vysledek-evo"><h4>Evoluční možnosti</h4>`
-   +evo.map(x=>{
-    const pod=(P.evoPodminky?P.evoPodminky(m.klic,x.klic):[])||[];
-    return `<div class="atlas-vysledek-evo-kus"><button type="button" data-zvyraznit="${esc(x.klic)}"${x.klic===zvyrazneny?' aria-pressed="true"':''}>${esc(x.jmeno)}</button>`
-     +(pod.length?`<small>${esc(pod.join(' · '))}</small>`:'<small>stačí bonbóny</small>')+`</div>`;
-   }).join('')+`</aside>`;
+   +`<div class="atlas-vysledek-evo-mrizka">`
+   +evo.map(x=>`<button type="button" class="atlas-vysledek-evo-kus" data-zvyraznit="${esc(x.klic)}"${x.klic===zvyrazneny?' aria-pressed="true"':' aria-pressed="false"'}>`
+     +`${P.atlasImage?P.atlasImage(x.jmeno,'atlas-vysledek-evo-obr'):''}<b>${esc(x.jmeno)}</b></button>`).join('')
+   +`</div>`
+   +`<div class="atlas-vysledek-evo-pod"><h5>Podmínky evoluce</h5>`
+   +`<p>Podmínky podle herních dat.</p>`
+   +(podminkyVidet
+     ?`<dl>`+evo.map(x=>{
+       const pod=(P.evoPodminky?P.evoPodminky(m.klic,x.klic):[])||[];
+       return `<dt>${esc(x.jmeno)}</dt><dd>${pod.length?esc(pod.join(' · ')):'stačí bonbóny'}</dd>`;
+      }).join('')+`</dl>`
+     :'')
+   +`<button type="button" class="atlas-vysledek-evo-vic" data-podminky="1" aria-expanded="${podminkyVidet}">`
+   +`${podminkyVidet?'Skrýt podrobnosti':'Zobrazit podrobnosti'} <span aria-hidden="true">›</span></button>`
+   +`</div></aside>`;
  }
 
  /* Co appka spocitala o zadanem kusu. Patri jen k radku hledaneho druhu:
@@ -1260,6 +1282,13 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   return `<td>${casti.join(' · ')}</td>`;
  }
 
+ /* Typy druhu jako barevne ovaly — stejne jako v identite a v rosteru.
+    Radek tim rovnou rika, proti cemu se ten druh hodi. */
+ function typyHtml(klic){
+  const d=P.dexByKey?P.dexByKey(klic):null,barvy=P.typeColors?P.typeColors():{};
+  return ((d&&d.types)||[]).map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('');
+ }
+
  function radekHtml(r,vstupKlic){
   const poradi=r.rank==null?'<span class="atlas-vysledek-nezname">neměří se</span>'
    :`<b>#${r.rank}</b>${r.pct!=null?` <small>${r.pct} % nejlepšího</small>`:''}`;
@@ -1267,10 +1296,13 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    :(r.priorita?`priorita do raidů: ${esc(r.priorita)}`
     :(r.jeMeta===false?'<span class="atlas-vysledek-nezname">mimo metu — sestavu appka nemá</span>'
      :'<span class="atlas-vysledek-nezname">sestavu appka nemá</span>'));
-  const znacka=r.vztah==='vstup'?'':(r.vztah==='forma'?' <small>jiná forma</small>':' <small>až po evoluci</small>');
+  const znacka=r.vztah==='vstup'?' <span class="atlas-vysledek-znacka">Hledaný druh</span>'
+   :(r.vztah==='forma'?' <small>jiná forma</small>':' <small>až po evoluci</small>');
   const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
   return `<tr data-klic="${esc(r.klic)}"${r.klic===vstupKlic?' class="je-vstup"':''}${r.klic===zvyrazneny?' data-zvyrazneno="1"':''}>`
-   +`<td><button type="button" data-zvyraznit="${esc(r.klic)}">${esc(r.jmeno)}</button>${znacka}${r.typ?` <small>${esc(r.typ)}</small>`:''}</td>`
+   +`<td class="atlas-vysledek-druh">${P.atlasImage?P.atlasImage(r.jmeno,'atlas-vysledek-obr'):''}`
+    +`<span><button type="button" data-zvyraznit="${esc(r.klic)}">${esc(r.jmeno)}</button>${znacka}${r.typ?` <small>${esc(r.typ)}</small>`:''}`
+    +`<span class="atlas-vysledek-typy">${typyHtml(r.klic)}</span></span></td>`
    +`<td>${poradi}</td><td>${utoky}</td>${kusovy?kusBunka(r,vstupKlic):''}</tr>`;
  }
 
@@ -1296,8 +1328,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const nadpis=role==='pvp'?`Výsledky pro ${skupina?skupina.nazev:'ligu'}`
    :`Výsledky pro ${ROLE_POPIS[role]}`;
   const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
-  el.innerHTML=`<div class="atlas-vysledek-ovladani" role="group" aria-label="Role">`
-   +Object.keys(ROLE_POPIS).map(k=>`<button type="button" data-role="${k}" aria-pressed="${role===k}">${ROLE_POPIS[k]}</button>`).join('')
+  el.innerHTML=`<div class="atlas-vysledek-ovladani" role="tablist" aria-label="Role">`
+   +Object.keys(ROLE_POPIS).map(k=>`<button type="button" role="tab" data-role="${k}" aria-selected="${role===k}" aria-pressed="${role===k}">${ikona(k)}<span>${ROLE_POPIS[k]}</span></button>`).join('')
    +`</div>`
    +(role==='pvp'?`<div class="atlas-vysledek-ligy" role="group" aria-label="Liga">`
      +m.poradiLig.map(k=>`<button type="button" data-liga="${k}" aria-pressed="${liga===k}">${esc(m.role.pvp[k].nazev)}</button>`).join('')
