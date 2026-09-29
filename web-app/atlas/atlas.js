@@ -1219,6 +1219,47 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   return el;
  }
 
+ /* Raidova fakta: CP dokonaleho kusu a pocasi. Plni je `vykresli()`,
+    protoze je pocita ze stejnych dat jako identitu — a ukazuji se jen
+    pod zalozkou Raidy, kam patri. */
+ let raidFakta=null;
+ function raidFaktaHtml(){
+  if(!raidFakta)return '';
+  const f=raidFakta;
+  const hodnoty=(f.cp20!=null||f.cp25!=null)
+   ?`${f.cp20!=null?`<span><b>${f.cp20}</b><small>100 % IV · L20</small></span>`:''}${f.cp25!=null?`<span><b>${f.cp25}</b><small>100 % IV · L25 s počasím</small></span>`:''}`
+   :'<span><b>—</b><small>staty téhle formy nemáme</small></span>';
+  return `<div class="atlas-vysledek-raid"><div class="atlas-vysledek-raid-cp">${hodnoty}</div>`
+   +`<p>${f.bossTed?'Boss potvrzený probíhající akcí.':'Referenční hodnoty pro raidový úlovek.'} `
+   +`Shiny z raidu: ${esc(f.shinyRaid)}. Počasí: ${esc(f.pocasi||'Neověřeno')}.</p></div>`;
+ }
+
+ /* Evolucni moznosti vedle tabulky. Podminky jsou videt rovnou, ne az po
+    najeti mysi — na telefonu by je jinak nikdo nenasel. */
+ function evoluceHtml(m){
+  const evo=m.druhy.filter(x=>x.vztah==='evoluce');
+  if(!evo.length)return '';
+  return `<aside class="atlas-vysledek-evo"><h4>Evoluční možnosti</h4>`
+   +evo.map(x=>{
+    const pod=(P.evoPodminky?P.evoPodminky(m.klic,x.klic):[])||[];
+    return `<div class="atlas-vysledek-evo-kus"><button type="button" data-zvyraznit="${esc(x.klic)}"${x.klic===zvyrazneny?' aria-pressed="true"':''}>${esc(x.jmeno)}</button>`
+     +(pod.length?`<small>${esc(pod.join(' · '))}</small>`:'<small>stačí bonbóny</small>')+`</div>`;
+   }).join('')+`</aside>`;
+ }
+
+ /* Co appka spocitala o zadanem kusu. Patri jen k radku hledaneho druhu:
+    o evolucich zadny kus zadany neni. IV rank je poradi te kombinace IV
+    mezi 4096 moznymi — ne poradi druhu v lize a ne pripravenost. */
+ function kusBunka(r,vstupKlic){
+  const k=window.__pgoProhlidkaKus&&window.__pgoProhlidkaKus();
+  if(!k||r.klic!==vstupKlic)return '<td class="atlas-vysledek-nezname">—</td>';
+  const casti=[];
+  if(k.ivRank!=null)casti.push(`IV <b>#${k.ivRank}</b> ze 4096`);
+  if(k.ivPct!=null)casti.push(`${k.ivPct} % IV`);
+  if(!casti.length)return '<td class="atlas-vysledek-nezname">nedá se spočítat</td>';
+  return `<td>${casti.join(' · ')}</td>`;
+ }
+
  function radekHtml(r,vstupKlic){
   const poradi=r.rank==null?'<span class="atlas-vysledek-nezname">neměří se</span>'
    :`<b>#${r.rank}</b>${r.pct!=null?` <small>${r.pct} % nejlepšího</small>`:''}`;
@@ -1227,13 +1268,24 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     :(r.jeMeta===false?'<span class="atlas-vysledek-nezname">mimo metu — sestavu appka nemá</span>'
      :'<span class="atlas-vysledek-nezname">sestavu appka nemá</span>'));
   const znacka=r.vztah==='vstup'?'':(r.vztah==='forma'?' <small>jiná forma</small>':' <small>až po evoluci</small>');
+  const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
   return `<tr data-klic="${esc(r.klic)}"${r.klic===vstupKlic?' class="je-vstup"':''}${r.klic===zvyrazneny?' data-zvyrazneno="1"':''}>`
    +`<td><button type="button" data-zvyraznit="${esc(r.klic)}">${esc(r.jmeno)}</button>${znacka}${r.typ?` <small>${esc(r.typ)}</small>`:''}</td>`
-   +`<td>${poradi}</td><td>${utoky}</td></tr>`;
+   +`<td>${poradi}</td><td>${utoky}</td>${kusovy?kusBunka(r,vstupKlic):''}</tr>`;
  }
 
  function vykresliVysledek(){
   const el=vysledekBlok(),hodnota=jmeno.value.trim();
+  /* Prepnuti role nebo ligy prekresli celou tabulku a fokus by skoncil
+     na tele stranky — dalsi tab by zacinal od zacatku. Tlacitko se proto
+     po prekresleni najde znova podle toho, co dela. `preventScroll`:
+     vraceni fokusu nesmi stranku posunout. */
+  const aktivni=document.activeElement;
+  const klicFokusu=aktivni&&el.contains(aktivni)
+   ?(aktivni.dataset.role?'[data-role="'+aktivni.dataset.role+'"]'
+     :aktivni.dataset.liga?'[data-liga="'+aktivni.dataset.liga+'"]'
+     :aktivni.dataset.zvyraznit?'[data-zvyraznit="'+CSS.escape(aktivni.dataset.zvyraznit)+'"]':null)
+   :null;
   const m=hodnota&&P.prohlidkaModel?P.prohlidkaModel(hodnota):null;
   if(!m){el.hidden=true;el.innerHTML='';return}
   el.hidden=false;
@@ -1243,6 +1295,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      plyne z poradi v tabulce, ne z nadpisu. */
   const nadpis=role==='pvp'?`Výsledky pro ${skupina?skupina.nazev:'ligu'}`
    :`Výsledky pro ${ROLE_POPIS[role]}`;
+  const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
   el.innerHTML=`<div class="atlas-vysledek-ovladani" role="group" aria-label="Role">`
    +Object.keys(ROLE_POPIS).map(k=>`<button type="button" data-role="${k}" aria-pressed="${role===k}">${ROLE_POPIS[k]}</button>`).join('')
    +`</div>`
@@ -1250,10 +1303,17 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      +m.poradiLig.map(k=>`<button type="button" data-liga="${k}" aria-pressed="${liga===k}">${esc(m.role.pvp[k].nazev)}</button>`).join('')
      +`</div>`:'')
    +`<h4 class="atlas-vysledek-nadpis">${esc(nadpis)}</h4>`
+   +`<div class="atlas-vysledek-telo">`
+   /* Raidova fakta patri k raidum. V PvP zabirala prvni obrazovku a
+      s ligou nemela nic spolecneho. */
+   +(role==='raid'?raidFaktaHtml():'')
    +(radky.length
-     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th></tr></thead><tbody>`
+     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${kusovy?'<th>Tvůj kus</th>':''}</tr></thead><tbody>`
       +radky.map(r=>radekHtml(r,m.klic)).join('')+`</tbody></table>`
-     :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`);
+     :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`)
+   +`</div>`
+   +evoluceHtml(m);
+  if(klicFokusu){const znovu=el.querySelector(klicFokusu);if(znovu)znovu.focus({preventScroll:true})}
  }
 
  // Počasí je v datech anglicky, protože tak se jmenuje v herním souboru.
@@ -1340,6 +1400,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    &&new Date(e[3])<=ted&&new Date(e[4])>ted
    &&(window.AtlasEventUI?.names(e)||[]).some(n=>P.dexKeyOf&&P.dexKeyOf(n)===P.dexKeyOf(d.name)));
   identita.hidden=false;
+  raidFakta={cp20:cp20,cp25:cp25,pocasi:pocasi.join(' / '),shinyRaid:shinyRaid,bossTed:bossTed};
   identita.innerHTML=`<div class="atlas-hledani-kdo">
     ${P.atlasImage?P.atlasImage(d.name,'atlas-hledani-obr'):''}
     <div>
@@ -1354,18 +1415,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      <dd>${{ano:'Ano',ne:'Zatím ne'}[shinyStav]||'Neověřeno'}</dd>
      <small>${esc({ano:shiny&&shiny.zdroje.length?shiny.zdroje.join(' · '):'zdroj neuveden',
        ne:'ve hře se zatím neobjevil'}[shinyStav]||'o tomhle druhu zdroj nic neříká')}</small>
-    </div>
-    <div class="atlas-hledani-raid">
-     <dt>Raidový úlovek</dt>
-     <dd>${cp20!=null||cp25!=null
-       ?`${cp20!=null?`<span><b>${cp20}</b><small>100 % IV · L20</small></span>`:''}${cp25!=null?`<span><b>${cp25}</b><small>100 % IV · L25 s počasím</small></span>`:''}`
-       :'<span><b>—</b><small>staty téhle formy nemáme</small></span>'}</dd>
-     <small>${bossTed?'Boss potvrzený probíhající akcí.':'Referenční hodnoty pro raidový úlovek.'} Shiny z raidu: ${shinyRaid}.</small>
-    </div>
-    <div>
-     <dt>Boostuje ho</dt>
-     <dd>${pocasi.length?esc(pocasi.join(' / ')):'Neověřeno'}</dd>
-     <small>${pocasi.length?'počasí pro jeho typy':'počasí u těchhle typů neznáme'}</small>
     </div>
    </dl>`;
   vykresliVysledek();

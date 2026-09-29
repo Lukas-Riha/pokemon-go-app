@@ -14066,7 +14066,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       });
       var raidT = (raidRankIndex()[klic] || []).map(function (x) { return x.type; });
       var casti = [];
-      if (kde.length) casti.push("hraje " + kde.join(", "));
+      if (kde.length) casti.push("v žebříčku " + kde.join(", "));
       if (raidT.length) casti.push("do raidů na " + raidT.slice(0, 3).join(", "));
       if (gymRankIndex()[klic]) casti.push("obránce gymu");
       return casti.length ? casti.join(" · ") : "žádnou roli nezastane";
@@ -14541,7 +14541,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return out;
     }
 
-    function zavrit() { panel.hidden = true; vyber = -1; }
+    /* Pro kterou hodnotu je nabídka zavřená. Návrat fokusu (tabem zpátky,
+       kliknutím do pole) ji sám otevírat nemá — člověk už si vybral. */
+    var zavrenoPro = null;
+    function zavrit() { panel.hidden = true; vyber = -1; zavrenoPro = String(vstup.value || ""); }
 
     var praveVybrano = false;
     function vybrat(jm) {
@@ -14585,11 +14588,15 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         window.innerWidth - 240)) + "px";
       panel.style.top = (r.bottom + 4) + "px";
       panel.hidden = false;
+      zavrenoPro = null;
       vyber = -1;
     }
 
     vstup.addEventListener("input", prekreslit);
-    vstup.addEventListener("focus", prekreslit);
+    vstup.addEventListener("focus", function () {
+      if (zavrenoPro !== null && zavrenoPro === String(vstup.value || "")) return;
+      prekreslit();
+    });
     vstup.addEventListener("blur", function () {
       // Klik na položku problíkne až po blur — malé zpoždění to spraví.
       window.setTimeout(zavrit, 160);
@@ -24463,8 +24470,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       out.firstChild.textContent = text;
     }
 
+    var kusFakta = null;
+
     function vykreslit() {
       naplnitSeznamy();
+      kusFakta = null;
       var jm = (pole.name.value || "").trim();
       if (!jm) {
         hlaska("Napiš druh a appka rovnou ukáže, co umí. CP a IV nejsou povinné —"
@@ -24510,6 +24520,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         if (!b || !c) { hlaska("Tenhle kus se spočítat nedá."); return; }
         // Verdikt „nechat / pustit" sem nepatří: ten je o rozpočtu rosteru.
         out.innerHTML = bezVerdiktu(detailHtml(b, c));
+        /* Fakta o zadaném kusu pro vzhledovou vrstvu. Jen to, co se dá
+           spočítat: IV rank je pořadí té kombinace IV mezi 4096 možnými
+           u téhož druhu — není to pořadí druhu v lize ani připravenost
+           kusu. Bez CP a IV zůstává `null` a vrstva nic nedopočítává. */
+        kusFakta = { ivRank: b.bestRank == null ? null : b.bestRank,
+          ivPct: c.ivPct == null ? null : Math.round(c.ivPct * 1000) / 10,
+          cp: cp, level: lv,
+          jmeno: jm, klic: dexKey(jm) };
       } finally { soloProhlidka = false; }
       vystreditVse(out);
       slozitVysvetlivky(out);
@@ -24528,6 +24546,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
     /* Režim hledání pro vzhledovou vrstvu. Bez argumentu jen řekne, jak
        to teď stojí. Výpočet zůstává jeden a společný. */
+    /* Co appka spočítala o zadaném kusu. `null`, když se kus nezadal
+       nebo se spočítat nedá — vrstva pak o kusu nic netvrdí. */
+    window.__pgoProhlidkaKus = function () {
+      return kusFakta ? JSON.parse(JSON.stringify(kusFakta)) : null;
+    };
     window.__pgoProhlidkaRezim = function (r) {
       if (r === "druh" || r === "kus") { jenDruh = r === "druh"; vykreslit(); }
       return jenDruh ? "druh" : "kus";
@@ -27550,6 +27573,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     /* Strukturovaný výsledek hledání druhu — podklad pro výsledkovou
        tabulku ve Vyhledávání. Schéma je v ATLAS_KONTRAKT. */
     prohlidkaModel: prohlidkaModel,
+    /* Co hra vyžaduje, aby se `odKlic` stal `naKlic` — česky, jako věty.
+       Prázdné pole znamená „nic navíc než bonbóny". */
+    evoPodminky: function (odKlic, naKlic) { return evoPodminky(odKlic, naKlic); },
     /* Hlídač nové verze. `verzeZkontroluj` dostane to, co by jinak přišlo
        z `verze.json` — dá se tím vyzkoušet celý pruh bez sítě. */
     verzeZkontroluj: verzeZkontroluj,

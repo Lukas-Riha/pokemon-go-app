@@ -220,6 +220,16 @@ výpočet jako rozbor druhu, jen vrací data místo HTML. **UI z něj jen kresl�
 - `typ` má jen raid (typ útočníka), `priorita` jen mega (v datech k ní
   žádné pořadí není, takže se žádné nevymýšlí).
 
+`window.__pgoProhlidkaKus()` → co appka spočítala o zadaném kusu ve
+Vyhledávání: `{ivRank, ivPct, cp, level, jmeno, klic}`, nebo `null`, když
+se kus nezadal nebo spočítat nedá. `ivRank` je pořadí té kombinace IV mezi
+4096 možnými u téhož druhu — **není to** pořadí druhu v lize ani
+připravenost kusu. Bez CP a IV vrstva o kusu netvrdí nic a nic nedopočítává.
+
+`evoPodminky(odKlic, naKlic)` → co hra vyžaduje, aby se z prvního stal
+druhý, česky a jako věty (`["ujít 10 km jako buddy", "jen v noci"]`).
+Prázdné pole znamená „nic navíc než bonbóny".
+
 `window.__pgoProhlidkaRezim(rezim?)` → přepne Vyhledávání mezi `"druh"`
 a `"kus"` a vrátí, jak to teď stojí. V režimu `"druh"` se CP, level, IV ani
 útoky do výpočtu neberou, ale v polích zůstanou pro návrat. Režim patří

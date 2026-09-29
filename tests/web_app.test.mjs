@@ -18299,6 +18299,48 @@ try {
       s275.hlaska);
   }
 
+  console.log("\n279) Naseptavac druhu se zavre a sam se neotevira");
+  await page.setViewportSize({ width: 1400, height: 950 });
+  await page.goto(URL);
+  await page.waitForTimeout(800);
+  const s279 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    window.__pgoZalozka("prohlidkaCard");
+    await cekej(900);
+    const pole = document.getElementById("prohName");
+    const panel = () => [...document.querySelectorAll("div")]
+      .filter((d) => d.querySelector(".druh-polozka"))[0] || null;
+    const videt = () => { const p = panel(); return !!(p && !p.hidden); };
+    pole.focus();
+    pole.value = "Eev";
+    pole.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(500);
+    const out = { poPsani: videt() };
+    // Odchod z pole (tab) nabidku zavre...
+    pole.blur();
+    await cekej(500);
+    out.poOdchodu = videt();
+    // ...a navrat fokusu ji sam neotevre: clovek uz si vybral.
+    pole.focus();
+    await cekej(400);
+    out.poNavratu = videt();
+    // Nove psani ano.
+    pole.value = "Eeve";
+    pole.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(500);
+    out.poDalsimPsani = videt();
+    // Escape zavre.
+    pole.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await cekej(300);
+    out.poEscape = videt();
+    return out;
+  });
+  check("naseptavac se otevre psanim", s279.poPsani === true, JSON.stringify(s279));
+  check("...odchod z pole ho zavre", s279.poOdchodu === false, JSON.stringify(s279));
+  check("...navrat fokusu ho sam neotevre", s279.poNavratu === false, JSON.stringify(s279));
+  check("...dalsi psani ano", s279.poDalsimPsani === true, JSON.stringify(s279));
+  check("...a Escape ho zavre", s279.poEscape === false, JSON.stringify(s279));
+
   console.log("\n278) Vysledek hledani jako data, ne jako hotova tabulka");
   await page.goto(URL);
   await page.waitForTimeout(700);

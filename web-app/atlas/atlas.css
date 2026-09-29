@@ -1978,3 +1978,46 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test .atlas-vysledek-tab td:first-child{font-size:14px}
   .atlas-test .atlas-vysledek-tab td button{min-height:44px}
 }
+
+/* Claude 29. 9. (46): druha pulka A-015 bodu 5.
+
+   Vysledek a evolucni moznosti vedle sebe (evoluce 280–320 px), pod
+   1100 px pod sebou. Raidova fakta patri pod zalozku Raidy, ne nad
+   ligovou tabulku. */
+.atlas-test .atlas-vysledek{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);
+  grid-template-areas:'ovladani ovladani' 'ligy ligy' 'nadpis nadpis' 'telo evo';
+  column-gap:20px;align-items:start}
+.atlas-test .atlas-vysledek-ovladani{grid-area:ovladani}
+.atlas-test .atlas-vysledek-ligy{grid-area:ligy}
+.atlas-test .atlas-vysledek-nadpis{grid-area:nadpis}
+.atlas-test .atlas-vysledek-telo{grid-area:telo;min-width:0}
+.atlas-test .atlas-vysledek-raid{margin-bottom:14px}
+.atlas-test .atlas-vysledek-raid-cp{display:flex;flex-wrap:wrap;gap:6px 20px}
+.atlas-test .atlas-vysledek-raid-cp>span{display:flex;flex-direction:column;line-height:1.2}
+.atlas-test .atlas-vysledek-raid-cp>span>b{font-size:18px;color:var(--text-primary)}
+.atlas-test .atlas-vysledek-raid-cp>span>small{font-size:10.5px;color:var(--text-muted);white-space:nowrap}
+.atlas-test .atlas-vysledek-raid p{margin:8px 0 0;font-size:12px;color:var(--text-secondary)}
+.atlas-test .atlas-vysledek-evo{grid-area:evo;border:1px solid var(--border);border-radius:11px;
+  padding:12px 14px;background:var(--page)}
+.atlas-test .atlas-vysledek-evo h4{margin:0 0 8px;font-size:11px;letter-spacing:1px;
+  text-transform:uppercase;color:var(--text-muted)}
+.atlas-test .atlas-vysledek-evo-kus{padding:6px 0;border-top:1px solid var(--border)}
+.atlas-test .atlas-vysledek-evo-kus:first-of-type{border-top:0}
+.atlas-test .atlas-vysledek-evo-kus button{display:block;background:none;border:0;padding:0;
+  font:inherit;font-weight:650;color:var(--text-primary);cursor:pointer;text-align:left;min-height:28px}
+.atlas-test .atlas-vysledek-evo-kus button[aria-pressed=true]{color:var(--series-1)}
+.atlas-test .atlas-vysledek-evo-kus small{display:block;font-size:11.5px;color:var(--text-muted);
+  line-height:1.45}
+@media(max-width:1100px){
+  .atlas-test .atlas-vysledek{grid-template-columns:minmax(0,1fr);
+    grid-template-areas:'ovladani' 'ligy' 'nadpis' 'telo' 'evo'}
+  .atlas-test .atlas-vysledek-evo{margin-top:14px}
+}
+@media(max-width:650px){
+  /* Prsty, ne mys: vsechno klikatelne ve vysledcich musi jit trefit. */
+  .atlas-test .atlas-vysledek button{min-height:44px}
+  /* Evolucni rada z rozboru druhu ma v enginu pevnou nejmensi sirku
+     (330, s delsi radou 380 px) a na telefonu kvuli ni pretekala cela
+     stranka doprava. Tady se vejit MUSI. */
+  .atlas-test .d-evo-side,.atlas-test .d-evo-side.sirsi{min-width:0;flex:1 1 auto}
+}

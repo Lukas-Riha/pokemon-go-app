@@ -2240,9 +2240,12 @@ await pH.close();
 check("hledání je nahoře a údaje kusu zavřené",
   dH.poleVZahlavi && dH.udajeZavrene && dH.vymazatUvnitr && dH.identitaSkryta,
   JSON.stringify(dH));
-check("identita druhu řekne shiny, CP dokonalého kusu i počasí",
-  /Shiny/.test(dH.identita) && /1977/.test(dH.identita) && /2472/.test(dH.identita)
-    && /Déšť/.test(dH.identita) && dH.typuVIdentite === 2, dH.identita);
+check("identita druhu řekne shiny i s tím, odkud padá",
+  /Shiny/.test(dH.identita)
+    && /volná příroda|raid|vajíčko|výzkum|evoluce|fotka|Zatím ne|Neověřeno/.test(dH.identita)
+    && dH.typuVIdentite === 2, dH.identita);
+check("…a raidová čísla v ní nejsou, ta patří pod Raidy",
+  !/Raidový úlovek/.test(dH.identita), dH.identita);
 check("…a engine už jméno s typy nekreslí podruhé",
   dH.duplicitniNadpis === 0, String(dH.duplicitniNadpis));
 check("přepnutí na vlastní kus otevře údaje a změní značku",
@@ -2749,6 +2752,85 @@ check("…a ten přínos je z dat, ne vymyšlený", dKar.prinosZDat === true, JS
 check("nahoře stojí dnešní krátká akce, ne dlouhá sezóna",
   dKar.prvniKratka === true && dKar.dlouheAzZaKratkymi === true,
   JSON.stringify({ dnes: dKar.prvniBeziDnes, kratka: dKar.prvniKratka }));
+
+console.log("\n29) Vyhledávání: raidová fakta pod Raidy, kus zvlášť, evoluce vedle");
+const pVysl29 = await otevri(1600, [
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
+]);
+const dVysl29 = await pVysl29.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.__pgoZalozka("prohlidkaCard");
+  await cekej(1200);
+  const pole = document.getElementById("prohName");
+  const klik = async (sel) => { const b = document.querySelector(sel); if (b) b.click(); await cekej(400); };
+  pole.value = "Charizard";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(1100);
+  const out = {};
+  // Raidova fakta nepatri do PvP ani do identity — jsou o raidech.
+  out.vPvp = { raid: document.querySelectorAll(".atlas-vysledek-raid").length,
+    identita: document.querySelectorAll(".atlas-hledani-raid").length };
+  await klik('[data-role="raid"]');
+  const blok = document.querySelector(".atlas-vysledek-raid");
+  out.vRaidu = { je: !!blok,
+    cisel: blok ? blok.querySelectorAll(".atlas-vysledek-raid-cp > span").length : 0,
+    text: blok ? blok.textContent.replace(/\s+/g, " ") : "" };
+  // Fokus prezije prepnuti role.
+  const gym = document.querySelector('[data-role="gym"]');
+  if (gym) { gym.focus(); gym.click(); await cekej(400); }
+  out.fokus = (document.activeElement.dataset || {}).role || "(pryc)";
+  await klik('[data-role="pvp"]');
+  // Evolucni moznosti vedle tabulky, podminky videt rovnou.
+  pole.value = "Eevee";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(1100);
+  const evo = document.querySelector(".atlas-vysledek-evo");
+  out.evo = { je: !!evo,
+    kusu: evo ? evo.querySelectorAll(".atlas-vysledek-evo-kus").length : 0,
+    sPodminkou: evo ? [...evo.querySelectorAll(".atlas-vysledek-evo-kus small")]
+      .filter((x) => x.textContent.trim().length > 0).length : 0,
+    vedle: (() => {
+      const tab = document.querySelector(".atlas-vysledek-telo");
+      if (!evo || !tab) return false;
+      return Math.round(evo.getBoundingClientRect().left)
+        >= Math.round(tab.getBoundingClientRect().right) - 2;
+    })() };
+  // Kusovy rezim prida sloupec o kusu, rezim druhu ho zase sebere.
+  const rezim = (k) => { const b = document.querySelector('[data-rezim="' + k + '"]'); if (b) b.click(); };
+  rezim("kus");
+  await cekej(400);
+  const nastav = (id, v) => { const e = document.getElementById(id); e.value = v;
+    e.dispatchEvent(new Event("input", { bubbles: true })); };
+  nastav("prohCp", "500"); nastav("prohA", "15"); nastav("prohD", "15"); nastav("prohS", "15");
+  await cekej(1200);
+  out.kus = { hlavicka: [...document.querySelectorAll(".atlas-vysledek-tab thead th")]
+      .map((t) => t.textContent),
+    radek: (document.querySelector(".atlas-vysledek-tab tr.je-vstup") || {}).textContent || "" };
+  rezim("druh");
+  await cekej(900);
+  out.druh = { sloupcu: document.querySelectorAll(".atlas-vysledek-tab thead th").length };
+  return out;
+});
+await pVysl29.close();
+check("raidová fakta nejsou v PvP ani v identitě",
+  dVysl29.vPvp.raid === 0 && dVysl29.vPvp.identita === 0, JSON.stringify(dVysl29.vPvp));
+check("…ale pod Raidy stojí obě čísla i s popiskem",
+  dVysl29.vRaidu.je === true && dVysl29.vRaidu.cisel === 2
+    && /Shiny z raidu/.test(dVysl29.vRaidu.text), JSON.stringify(dVysl29.vRaidu.cisel));
+check("…a neříká se, že je druh v raidech zrovna teď",
+  /Referenční hodnoty|Boss potvrzený/.test(dVysl29.vRaidu.text), dVysl29.vRaidu.text.slice(0, 60));
+check("fokus přežije přepnutí role", dVysl29.fokus === "gym", dVysl29.fokus);
+check("evoluční možnosti stojí vedle tabulky",
+  dVysl29.evo.je === true && dVysl29.evo.vedle === true, JSON.stringify(dVysl29.evo));
+check("…a podmínky jsou vidět rovnou, ne až po najetí myší",
+  dVysl29.evo.kusu === 8 && dVysl29.evo.sPodminkou === dVysl29.evo.kusu,
+  JSON.stringify([dVysl29.evo.kusu, dVysl29.evo.sPodminkou]));
+check("kusový režim přidá sloupec o konkrétním kusu",
+  dVysl29.kus.hlavicka.length === 4 && /Tvůj kus/.test(dVysl29.kus.hlavicka.join(" ")),
+  JSON.stringify(dVysl29.kus.hlavicka));
+check("…a řekne o něm jen to, co jde spočítat",
+  /% IV|IV #|nedá se spočítat/.test(dVysl29.kus.radek), dVysl29.kus.radek.slice(0, 80));
+check("…v režimu druhu ten sloupec zase zmizí", dVysl29.druh.sloupcu === 3, String(dVysl29.druh.sloupcu));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
