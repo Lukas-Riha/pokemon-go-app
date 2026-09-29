@@ -101,6 +101,9 @@ pocasi = json.loads((ROOT / "data" / "raw" / "weather_boosts.json")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verze as verze_modul
 app_verze = verze_modul.verze("--test" in sys.argv)
+# Novinky pro uzivatele. Okno se po preklopeni produkce ukaze jednou samo;
+# na testu jde otevrit tlacitkem, aby slo zkontrolovat, co produkce uvidi.
+novinky = json.loads((ROOT / "data" / "novinky.json").read_text(encoding="utf-8"))
 
 BLOCKS = [
     ("// === REFERENCE DATA START", "// === REFERENCE DATA END ===", "REFERENCE", reference),
@@ -115,6 +118,7 @@ BLOCKS = [
     ("// === POCASI START", "// === POCASI END ===", "POCASI", pocasi),
     ("// === BUILD START", "// === BUILD END ===", "BUILD", build),
     ("// === VERZE START", "// === VERZE END ===", "VERZE", app_verze),
+    ("// === NOVINKY START", "// === NOVINKY END ===", "NOVINKY", novinky),
 ]
 
 # Vzhledová vrstva. Drží ji někdo jiný a má vlastní soubory, aby se

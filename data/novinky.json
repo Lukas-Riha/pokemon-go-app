@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "popis": "Novinky pro uzivatele, jednou na verzi. Po preklopeni produkce se okno ukaze jednou samo; na testu jde otevrit tlacitkem.",
+    "pravidlo": "Piseme to, co clovek pozna pri praci s appkou, ne co se zmenilo v kodu. Kratke vety, zadne nazvy funkci."
+  },
+  "2.8": {
+    "nadpis": "Co je nového",
+    "body": [
+      "**Hledání v rosteru** teď bere štítky: napiš „UL“, „Fire“ nebo „Ponechat“ a klikni na nabídku. Víc štítků najednou hledá průnik.",
+      "**Řazení je v kostičkách** místo rozbalovátka — CP, abeceda, IV, level. Přibyly role PvP, Raid, Gym a Mega: ukážou celou skupinu i s jejím pořadím.",
+      "**Import se přestavěl.** Ukáže, co v souboru je, a hlavně co to udělá s rosterem — kolik přibude, kolik se aktualizuje, kolik pustíš.",
+      "**Import už nespojí dva stejné kusy v jeden.** Když máš tři Growlithy se stejným CP, zůstanou tři. Dřív z nich zbyl jeden a nikde to nebylo vidět.",
+      "**Nidoran** se zase pozná. Samice a samec jsou dva různé druhy s vlastní evoluční řadou; bez značky ve jméně ho appka neznala vůbec.",
+      "**Nové nastavení: od jakého IV nechat kus na trade** (výchozí 80 %). Slabší pouštěné kusy appka pošle rovnou profesorovi.",
+      "**Vyvinout, nebo vyměnit?** U kusu, kterému výměna dá evoluci zdarma, appka poradí jen jedno: když vyvinutá forma drží roli, vyvíjí se; když ne, mění se.",
+      "**Elitní TM už není povinnost.** Když je lepší útok jen za něj a kus má to nejlepší bez něj, svítí oranžová místo červené a bublina řekne, o kolik přicházíš.",
+      "**Hvězdička zmizela** — na „tenhle je můj oblíbený“ je značka CUTE. Označení z dřívějška se neztratilo, jen ho appka neukazuje.",
+      "**Druhý nabitý útok**: u kusu, který hraje ligu, je pod „+“ útok, který se vyplatí dokoupit.",
+      "**Level v úpravách se dopočítá** z CP a IV. Když na zadaná čísla žádný level nesedí, appka řekne, že taková kombinace ve hře není."
+    ]
+  }
+}

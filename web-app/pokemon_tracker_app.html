@@ -1046,6 +1046,24 @@
   }
   .import-box .actions { margin-top: 8px; display: flex; gap: 8px; }
   .import-note { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  /* Okno s novinkami ve verzi. */
+  .novinky-plachta { position: fixed; inset: 0; z-index: 5000; display: flex;
+    align-items: center; justify-content: center; padding: 16px;
+    background: #061020cc; }
+  .novinky-okno { width: min(640px, 100%); max-height: calc(100vh - 32px);
+    overflow: auto; background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; }
+  .novinky-hlava { display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; margin-bottom: 14px; }
+  .novinky-hlava h2 { margin: 2px 0 0; font-size: 22px; }
+  .novinky-verze { font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--series-1); }
+  .novinky-krizek { background: none; border: 0; color: var(--text-secondary);
+    font-size: 17px; cursor: pointer; padding: 4px 6px; }
+  .novinky-seznam { margin: 0; padding-left: 20px; display: grid; gap: 9px;
+    font-size: 13.5px; line-height: 1.5; }
+  .novinky-seznam b { color: var(--text-primary); }
+  .novinky-pata { margin-top: 18px; display: flex; justify-content: flex-end; }
 
   /* table */
   /* Vodorovný posuvník potřebujeme jen když se tabulka nevejde. Nastavený
@@ -3390,6 +3408,7 @@
       <button id="doplnitBtn" title="Projde kusy, které si necháváš, a doplní
 u nich útoky jeden po druhém">Doplnit útoky</button>
       <button id="toggleImportBtn">Importovat data</button>
+      <button id="novinkyBtn" title="Co se v appce změnilo v téhle verzi.">Novinky</button>
       <button id="exportBtn">Exportovat CSV</button>
       <input type="search" id="searchInput" placeholder="Hledat pokémona…" autocomplete="off" />
       <button id="zrusitFiltry" title="Zruší hledání, filtry ve sloupcích i řazení">
@@ -3779,6 +3798,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // === VERZE START
   var VERZE = "2.7";
   // === VERZE END ===
+  /* Novinky ve verzi. Po překlopení produkce se ukážou jednou — co se
+     změnilo, lidsky. Zapéká `tools/sync_reference.py` z `data/novinky.json`. */
+  // === NOVINKY START
+  var NOVINKY = {};
+  // === NOVINKY END ===
   /* Počasí, které boostuje jednotlivé typy. Boostnutý útok dává víc
      poškození a chycený kus je o pět levelů výš (raid L20 → L25). */
   // === POCASI START
@@ -11124,6 +11148,62 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + "<br>Druhý důvod je překlep ve jménu — pak stačí opravit řádek v tabulce.";
   }
 
+  /**
+   * Okno s novinkami ve verzi.
+   *
+   * Po překlopení produkce na nové číslo se ukáže jednou samo — appka se
+   * mění po částech a bez tohohle se o změně člověk dozví až tím, že mu
+   * něco chybí tam, kde to bývalo. Na testu se neotevírá samo (při ladění
+   * by překáželo), ale tlačítkem jde kdykoli — je tak vidět předem, co
+   * produkce dostane.
+   *
+   * `vynutit` otevře okno i tehdy, když už tuhle verzi člověk viděl.
+   */
+  function ukazNovinky(vynutit) {
+    var n = NOVINKY && NOVINKY[VERZE];
+    if (!n || !n.body || !n.body.length) return false;
+    var klic = "pgo_videl_novinky";
+    if (!vynutit) {
+      var videl = "";
+      try { videl = localStorage.getItem(klic) || ""; } catch (e) { /* nevadi */ }
+      if (videl === VERZE) return false;
+    }
+    var stare = document.getElementById("novinkyOkno");
+    if (stare) stare.remove();
+    var tucne = function (text) {
+      // Jen **tučně** — víc formátování není potřeba a HTML z dat se sem
+      // pouštět nemá.
+      return escHtml(text).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+    };
+    var box = document.createElement("div");
+    box.id = "novinkyOkno";
+    box.className = "novinky-plachta";
+    box.innerHTML = '<div class="novinky-okno" role="dialog" aria-modal="true"'
+      + ' aria-labelledby="novinkyNadpis"><div class="novinky-hlava">'
+      + '<div><div class="novinky-verze">Verze ' + escHtml(VERZE) + "</div>"
+      + '<h2 id="novinkyNadpis">' + escHtml(n.nadpis || "Co je nového") + "</h2></div>"
+      + '<button type="button" class="novinky-krizek" aria-label="Zavřít">\u2715</button>'
+      + "</div><ul class=\"novinky-seznam\">"
+      + n.body.map(function (x) { return "<li>" + tucne(String(x)) + "</li>"; }).join("")
+      + '</ul><div class="novinky-pata"><button type="button" class="primary"'
+      + ' data-novinky-ok>Rozumím</button></div></div>';
+    document.body.appendChild(box);
+    var zavri = function () {
+      box.remove();
+      try { localStorage.setItem(klic, VERZE); } catch (e) { /* nevadi */ }
+    };
+    box.querySelector(".novinky-krizek").addEventListener("click", zavri);
+    box.querySelector("[data-novinky-ok]").addEventListener("click", zavri);
+    box.addEventListener("click", function (e) { if (e.target === box) zavri(); });
+    document.addEventListener("keydown", function esc(e) {
+      if (e.key !== "Escape") return;
+      document.removeEventListener("keydown", esc);
+      if (document.getElementById("novinkyOkno")) zavri();
+    });
+    box.querySelector("[data-novinky-ok]").focus();
+    return true;
+  }
+
   function renderBuild() {
     var el = document.getElementById("buildStamp");
     if (!el) return;
@@ -14089,12 +14169,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    */
   // Pořadí tlačítek v hlavní řadě lišty.
   var LISTA_HLAVNI = ["addRowBtn", "boxModeBtn", "doplnitBtn", "toggleImportBtn", "exportBtn",
-    "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearBtn"];
+    "novinkyBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearBtn"];
   // Práce od stolu. Mobilní verze je doplněk na kontrolu — přidávání kusů,
   // ruční zápis, import a hromadné označení se dělají u počítače. V liště
   // pod prstem by je nikdo nehledal a osm tlačítek se do telefonu nevejde.
   var LISTA_OD_STOLU = ["addRowBtn", "doplnitBtn", "toggleImportBtn", "exportBtn",
-    "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearBtn"];
+    "novinkyBtn", "backupBtn", "backupNowBtn", "forgetDiscardedBtn", "clearBtn"];
 
   function usporadatListu() {
     var lista = document.querySelector(".card.roster .toolbar");
@@ -24431,6 +24511,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     pripojitZalohu();
   });
 
+  document.getElementById("novinkyBtn").addEventListener("click", function () {
+    if (!ukazNovinky(true)) appHlaska("K t\u00e9hle verzi \u017e\u00e1dn\u00e9 novinky nejsou.");
+  });
+
+  /* V produkci se okno uk\u00e1\u017ee samo, jednou na verzi. Na testu ne \u2014 p\u0159i
+     lad\u011bn\u00ed by p\u0159ek\u00e1\u017eelo a otev\u0159e se tla\u010d\u00edtkem. Po\u010dk\u00e1 se, a\u017e se
+     vzhledov\u00e1 vrstva ozve, jestli je to testovac\u00ed sestaven\u00ed. */
+  window.setTimeout(function () {
+    if (window.__ATLAS_TEST_BUILD) return;
+    if (!document.getElementById("novinkyBtn")) return;
+    ukazNovinky(false);
+  }, 900);
+
   document.getElementById("clearBtn").addEventListener("click", function () {
     var vymaz = function () {
       snimekPred("vymazani-vseho");
@@ -27169,6 +27262,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     finishImport: finishImport,
     scanPlanInfo: scanPlanInfo,
     levelZCP: levelZCP,
+    /* Okno s novinkami. Bez argumentu ho otevře vždycky — na testu se tím
+       kontroluje, co produkce po překlopení uvidí. */
+    ukazNovinky: function (vynutit) { return ukazNovinky(vynutit !== false); },
+    novinkyVerze: function () { return (NOVINKY && NOVINKY[VERZE]) || null; },
     /* Evoluční řada podle jména — ven kvůli kontrole, že regionalní forma
        dostane řadu své základní formy místo „tenhle druh se nevyvíjí". */
     evoLinieProKlic: function (jmeno) { return evoLinie(dexKey(jmeno)); },

@@ -1825,7 +1825,7 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    a to uz je k nicemu. Zustava proto zalomeni pod utok, ke kteremu
    doporuceni patri; cele zneni je v bubline po najeti. */
 .atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-radek{flex-wrap:wrap;min-width:0}
-.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi{min-width:0;margin-left:14px}
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi{min-width:0;margin-left:56px}
 /* V cisteni boxu je blok siroky dost, tam se nezalamuje nic. */
 .atlas-test #boxMode .atlas-ident-utoky .atlas-utok-radek{flex-wrap:nowrap}
 

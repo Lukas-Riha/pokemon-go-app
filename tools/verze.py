@@ -51,6 +51,19 @@ if __name__ == "__main__":
         stara, nova = povysit()
         print("produkce: %s -> %s" % (stara["produkce"], nova["produkce"]))
         print("test:     %s -> %s" % (stara["test"], nova["test"]))
+        # Okno "Co je noveho" se v produkci ukaze jen tehdy, kdyz pro novou
+        # verzi nejake novinky jsou. Bez teto pripominky se na ne zapomene
+        # a uzivatel se o zmenach nedozvi.
+        novinky_path = ROOT / "data" / "novinky.json"
+        try:
+            novinky = json.loads(novinky_path.read_text(encoding="utf-8"))
+        except Exception:
+            novinky = {}
+        for kde in ("produkce", "test"):
+            cislo = nova[kde]
+            if cislo not in novinky:
+                print("POZOR: v data/novinky.json nejsou novinky pro verzi %s (%s)"
+                      % (cislo, kde))
     else:
         d = nacti()
         print("produkce: " + d["produkce"])
