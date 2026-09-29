@@ -34,14 +34,22 @@ FILES = ["pokemon_names", "pokemon_stats", "pokemon_evolutions", "pokemon_types"
 # Odkud u druhu může padnout shiny. Ukládá se jako součet příznaků,
 # protože jde o deset řádků dat na devět set druhů — jedno číslo stačí.
 SHINY_ZDROJE = [("found_wild", 1), ("found_raid", 2), ("found_egg", 4),
-                ("found_research", 8), ("found_evolution", 16)]
+                ("found_research", 8), ("found_evolution", 16),
+                ("found_photobomb", 32)]
+# Druh je ve zdroji, ale žádný známý zdroj u něj není: shiny ve hře JE,
+# jen nevíme odkud. Bez tohohle by vypadl jako „shiny zatím není“.
+SHINY_BEZ_ZDROJE = 64
+# Zdroj je SEZNAM vydaných shiny, takže druh, který v něm není, shiny
+# zatím nemá. Platí to ale jen pro druhy, na které už zdroj dosáhl —
+# u novějších by „nemá“ byla domněnka, ne údaj. Proto -1: nevíme.
+SHINY_NEVIME = -1
 
 
 def shiny_priznak(zaznam):
-    """Souhrn zdrojů shiny do jednoho čísla; 0 = shiny zatím není."""
+    """Souhrn zdrojů shiny do jednoho čísla; 0 = záznam chybí."""
     if not zaznam:
         return 0
-    return sum(bit for klic, bit in SHINY_ZDROJE if zaznam.get(klic))
+    return sum(bit for klic, bit in SHINY_ZDROJE if zaznam.get(klic)) or SHINY_BEZ_ZDROJE
 
 # Formy, které mění staty/typy natolik, že se musí rozlišovat.
 # Kosmetické formy (kostýmy, Fall_2019, barvy Vivillonu…) se ignorují.
@@ -459,6 +467,8 @@ def main():
     for zaznam in (raw.get("shiny_pokemon") or {}).values():
         if isinstance(zaznam, dict) and zaznam.get("id"):
             shiny_podle_id[zaznam["id"]] = shiny_priznak(zaznam)
+    # Kam až zdroj dosáhl. Co je za tím, o tom nic netvrdí.
+    shiny_nejvyssi_id = max(shiny_podle_id) if shiny_podle_id else 0
 
     species = {}
     for s in raw["pokemon_stats"]:
@@ -478,7 +488,9 @@ def main():
             final_of.get(key, ""),
             rarity_of.get(key, ""),
             candy_of.get(key, 0),
-            shiny_podle_id.get(s["pokemon_id"], 0),
+            shiny_podle_id.get(
+                s["pokemon_id"],
+                0 if s["pokemon_id"] <= shiny_nejvyssi_id else SHINY_NEVIME),
         ]
 
     # Dvě díry, na které se přišlo až při hledání obránců gymu:

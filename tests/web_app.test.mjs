@@ -2183,7 +2183,10 @@ try {
   // „pod čarou" a štítky důvodů u verdiktu s bublinami a filtrem.
   // Strop roste s herními daty (nové generace, víc druhů v metě).
   // 1,90 MB je pořád jeden soubor, který se otevře z disku bez čekání.
-  check("appka se drží pod 1,90 MB", velikostSouboru < 1900000, String(velikostSouboru));
+  // 2,00 MB: snímky v okně „Co je nového" (~45 kB). Ukázat změnu obrázkem
+  // je srozumitelnější než ji popsat dvěma řádky; obrázky jdou přes WebP
+  // a drží se do 1000 px, protože v okně jsou vidět na ~700 px.
+  check("appka se drží pod 2,00 MB", velikostSouboru < 2000000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {
@@ -13969,6 +13972,8 @@ try {
       shinyRattata: P.atlasShiny("Rattata"),
       shinySobble: P.atlasShiny("Sobble"),
       shinyNeznamy: P.atlasShiny("Tenhle druh neexistuje"),
+      shinyNovy: P.atlasShiny("Wo-Chien"),
+      shinySmeargle: P.atlasShiny("Smeargle"),
       pocasiBug: P.atlasPocasi("Bug"),
       pocasiNesmysl: P.atlasPocasi("Neexistuje"),
       cp20: P.atlasCP("Buzzwole", 20),
@@ -13988,10 +13993,19 @@ try {
   // Tri udaje, ktere chce mit uzivatel u raidoveho bosse ve Vyhledavani.
   check("atlasShiny rekne, jestli druh shiny ma a odkud",
     uiApi.shinyRattata && uiApi.shinyRattata.je === true
+      && uiApi.shinyRattata.stav === "ano"
       && uiApi.shinyRattata.zdroje.indexOf("raid") > -1, JSON.stringify(uiApi.shinyRattata));
   check("...a u druhu bez shiny rekne, ze neni",
     uiApi.shinySobble && uiApi.shinySobble.je === false
+      && uiApi.shinySobble.stav === "ne"
       && uiApi.shinySobble.zdroje.length === 0, JSON.stringify(uiApi.shinySobble));
+  // Tri stavy, ne dva: "ve hre zatim neni" tvrdi neco o hre, "nevime" o datech.
+  check("...a u druhu, o kterem zdroj nic nerika, rekne neoevereno",
+    uiApi.shinyNovy && uiApi.shinyNovy.stav === "neověřeno"
+      && uiApi.shinyNovy.je === null, JSON.stringify(uiApi.shinyNovy));
+  check("...a shiny jen z fotky se pozna taky",
+    uiApi.shinySmeargle && uiApi.shinySmeargle.stav === "ano"
+      && uiApi.shinySmeargle.zdroje.join() === "fotka", JSON.stringify(uiApi.shinySmeargle));
   eq("neznamy druh vrati null", String(uiApi.shinyNeznamy), "null");
   eq("atlasPocasi zna pocasi pro typ", uiApi.pocasiBug, "Rainy");
   eq("...a u neznameho typu vrati prazdno", uiApi.pocasiNesmysl, "");
@@ -16716,7 +16730,7 @@ try {
     P.atlasDetail(idKusu("Eevee"), box);
     // Vrstva lištu „ve hře" přesouvá jinam, takže se hledá v celé stránce.
     const tlacitka = [...document.querySelectorAll(".hra-pruh .hra-btn")].map((b) => b.textContent.trim());
-    const evoBtn = [...document.querySelectorAll(".hra-pruh .hra-btn")].find((b) => /Vyvinul/.test(b.textContent));
+    const evoBtn = [...document.querySelectorAll(".hra-pruh .hra-btn")].find((b) => /Vyvinut/.test(b.textContent));
     if (evoBtn) evoBtn.click();
     await new Promise((r) => setTimeout(r, 300));
     const out = { tlacitka,
@@ -16758,9 +16772,9 @@ try {
     });
     return out;
   });
-  check("„Vyvinul jsem ho“ je jedno tlačítko i u Eevee s osmi cíli",
-    s258.tlacitka.filter((t) => /Vyvinul/.test(t)).length === 1
-      && s258.tlacitka.some((t) => t === "Vyvinul jsem ho"),
+  check("„Vyvinutý“ je jedno tlačítko i u Eevee s osmi cíli",
+    s258.tlacitka.filter((t) => /Vyvinut/.test(t)).length === 1
+      && s258.tlacitka.some((t) => t === "Vyvinutý"),
     JSON.stringify(s258.tlacitka));
   check("…po kliknutí se vybírá z evoluční řady v okně (s obrázky)",
     /Na co jsi ho vyvinul/.test(s258.vyberNadpis) && s258.vyber.length === 8
@@ -16870,7 +16884,7 @@ try {
     const box = document.createElement("div");
     document.body.append(box);
     P.atlasDetail(idKusu("Frigibax"), box);
-    const btn = [...document.querySelectorAll(".hra-pruh .hra-btn")].find((b) => /Vyvinul/.test(b.textContent));
+    const btn = [...document.querySelectorAll(".hra-pruh .hra-btn")].find((b) => /Vyvinut/.test(b.textContent));
     if (btn) btn.click();
     await new Promise((r) => setTimeout(r, 300));
     out.vyber = [...document.querySelectorAll("#hraBox .hra-vyber-kus")].map((b) => b.textContent.trim());
@@ -16895,7 +16909,7 @@ try {
     s260.chips.length > 0 && s260.chips.every((c) => !pruhledny(c.bg)
       && !pruhledny(c.fg) && c.fg !== "rgb(40, 200, 120)"),
     JSON.stringify(s260.chips));
-  check("„Vyvinul jsem ho“ nabídne i finální stupeň přes mezikrok",
+  check("„Vyvinutý“ nabídne i finální stupeň přes mezikrok",
     s260.vyber.length === 2 && s260.vyber.some((t) => /^Arctibax/.test(t))
       && s260.vyber.some((t) => /Baxcalibur/.test(t) && /přes Arctibax/.test(t)),
     JSON.stringify(s260.vyber));
@@ -18221,7 +18235,13 @@ try {
   check("…a legendární forma bez řady žádnou nedostane",
     regionalniRada.legenda === null, JSON.stringify(regionalniRada.legenda));
 
-  console.log("\n275) Kdyz pro verzi novinky nejsou, okno se neukaze");
+  console.log("\n275) Okno Novinky: jednou samo, podruhe jen tlacitkem");
+  // Okno se ukazuje tomu, kdo tuhle verzi jeste nevidel. Predchozi testy uz
+  // po strance chodily, takze se ta znamka pred merenim smaze — jinak by
+  // test meril jejich stopu, ne chovani appky.
+  await page.evaluate(() => {
+    try { localStorage.removeItem("pgo_videl_novinky"); } catch (e) { /* nevadi */ }
+  });
   await page.goto(URL);
   await page.waitForTimeout(1400);
   const s275 = await page.evaluate(async () => {
@@ -18232,6 +18252,21 @@ try {
       samoOtevrene: !!document.getElementById("novinkyOkno"),
       tlacitko: !!document.getElementById("novinkyBtn")
     };
+    if (out.zaznam) {
+      const plachta = document.getElementById("novinkyOkno");
+      out.bodu = plachta ? plachta.querySelectorAll(".novinky-seznam > li").length : 0;
+      out.obrazku = plachta ? plachta.querySelectorAll(".novinky-obrazek img").length : 0;
+      out.napsanychObrazku = out.zaznam.body.filter(function (b) { return b && b.obrazek; }).length;
+      if (plachta) plachta.querySelector("[data-novinky-ok]").click();
+      await new Promise((r) => setTimeout(r, 300));
+      out.zavrelo = !document.getElementById("novinkyOkno");
+      // Videl jsem — podruhe uz se samo neotevre, tlacitkem ano.
+      out.samoPodruhe = P.ukazNovinky(false);
+      out.tlacitkem = P.ukazNovinky();
+      const znovu = document.getElementById("novinkyOkno");
+      if (znovu) znovu.remove();
+      return out;
+    }
     out.vynucene = P.ukazNovinky();
     out.poVynuceni = !!document.getElementById("novinkyOkno");
     document.getElementById("novinkyBtn").click();
@@ -18241,14 +18276,67 @@ try {
     if (ok) ok.click();
     return out;
   });
-  check("tlacitko Novinky je v liste", s275.tlacitko === true, JSON.stringify(s275));
-  check("...bez novinek pro verzi se okno samo neotevre",
-    s275.samoOtevrene === false && s275.zaznam === null, JSON.stringify(s275));
-  check("...ani na vyzadani", s275.vynucene === false && s275.poVynuceni === false,
-    JSON.stringify(s275));
-  check("...a appka to rekne lidsky, bez nazvu souboru",
-    /novinky/i.test(s275.hlaska) && !/[a-z_]+\.(js|json|html)/.test(s275.hlaska),
-    s275.hlaska);
+  check("tlacitko Novinky je v liste", s275.tlacitko === true, JSON.stringify(s275.tlacitko));
+  if (s275.zaznam) {
+    // Sestaveni, ktere novinky pro svoji verzi ma — tohle uvidi produkce.
+    check("po preklopeni verze se okno ukaze samo",
+      s275.samoOtevrene === true && s275.bodu === s275.zaznam.body.length,
+      JSON.stringify([s275.samoOtevrene, s275.bodu]));
+    check("...se snimky, ktere k bodum patri",
+      s275.obrazku === s275.napsanychObrazku,
+      s275.obrazku + " z " + s275.napsanychObrazku);
+    check("...a podruhe uz samo nevyskoci, tlacitkem ano",
+      s275.zavrelo === true && s275.samoPodruhe === false && s275.tlacitkem === true,
+      JSON.stringify([s275.zavrelo, s275.samoPodruhe, s275.tlacitkem]));
+  } else {
+    // Verze, ke ktere se novinky teprve pisou.
+    check("...bez novinek pro verzi se okno samo neotevre",
+      s275.samoOtevrene === false, JSON.stringify(s275.samoOtevrene));
+    check("...ani na vyzadani", s275.vynucene === false && s275.poVynuceni === false,
+      JSON.stringify(s275));
+    check("...a appka to rekne lidsky, bez nazvu souboru",
+      /novinky/i.test(s275.hlaska) && !/[a-z_]+\.(js|json|html)/.test(s275.hlaska),
+      s275.hlaska);
+  }
+
+  console.log("\n277) Hledani: rezim druh nepocita s udaji kusu, ale nechá si je");
+  await page.setViewportSize({ width: 1400, height: 950 });
+  await page.goto(URL);
+  await page.waitForTimeout(900);
+  const s277 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    window.__pgoZalozka("prohlidkaCard");
+    await cekej(900);
+    const out = () => (document.getElementById("prohOut") || {}).textContent || "";
+    const nastav = (id, v) => { const e = document.getElementById(id); e.value = v;
+      e.dispatchEvent(new Event("input", { bubbles: true })); };
+    nastav("prohName", "Eevee");
+    await cekej(600);
+    nastav("prohCp", "500"); nastav("prohA", "15"); nastav("prohD", "15"); nastav("prohS", "15");
+    await cekej(900);
+    const kus = { rezim: window.__pgoProhlidkaRezim(), text: out() };
+    window.__pgoProhlidkaRezim("druh");
+    await cekej(900);
+    const druh = { rezim: window.__pgoProhlidkaRezim(), text: out(),
+      cp: document.getElementById("prohCp").value,
+      iv: document.getElementById("prohA").value };
+    window.__pgoProhlidkaRezim("kus");
+    await cekej(900);
+    const zpet = { rezim: window.__pgoProhlidkaRezim(), text: out(),
+      cp: document.getElementById("prohCp").value };
+    return { kus, druh, zpet };
+  });
+  check("rezim kus pocita s vyplnenym CP a IV",
+    s277.kus.rezim === "kus" && /Staty na levelu|IV/i.test(s277.kus.text),
+    s277.kus.text.slice(0, 60));
+  check("...rezim druh udaje kusu ignoruje", s277.druh.rezim === "druh"
+    && /plat\u00ed o/i.test(s277.druh.text) && s277.druh.text !== s277.kus.text,
+    s277.druh.text.slice(0, 60));
+  check("...ale v polich zustanou pro navrat",
+    s277.druh.cp === "500" && s277.druh.iv === "15", JSON.stringify([s277.druh.cp, s277.druh.iv]));
+  check("...a po navratu je rozbor kusu zpatky",
+    s277.zpet.rezim === "kus" && s277.zpet.text === s277.kus.text && s277.zpet.cp === "500",
+    s277.zpet.text.slice(0, 60));
 
   console.log("\n276) Nova verze: pruh nahore a obnoveni, az bude dodelano");
   // Předchozí test nechává okno úzké a v úzkém okně lišta políčka schovává.

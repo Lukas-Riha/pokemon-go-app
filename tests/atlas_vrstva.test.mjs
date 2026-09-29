@@ -157,7 +157,7 @@ console.log("\n3) Detail kusu (1400 px)");
 const dPc = await detail(pc);
 check("verdikt v detailu má všechny štítky", dPc.stitku === dPc.duvodu, dPc.stitku + " vs " + dPc.duvodu);
 check("zdvojený text verdiktu (souhrn keepSub) je pryč", !dPc.souhrn && !dPc.subVedle, JSON.stringify(dPc));
-check("„Vylepšil jsem ho“ stojí hned před „Upravit tohoto Pokémona“", dPc.barPredEdit, JSON.stringify(dPc));
+check("„Vylepšený“ stojí hned před „Upravit tohoto Pokémona“", dPc.barPredEdit, JSON.stringify(dPc));
 check("…ve stejném řádku", dPc.stejnyRadek === true, JSON.stringify(dPc));
 check("evoluční řada má jeden nadpis", dPc.evoNadpisu === 0 && /Evoluční řada/.test(dPc.evoSummary),
   JSON.stringify(dPc));
@@ -1636,7 +1636,7 @@ const dHl = await pHl.evaluate(async () => {
     const c = getComputedStyle(b);
     return c.fontWeight + "|" + c.backgroundColor;
   };
-  const vyvin = tl.filter((b) => /Vylepšil|Vyvinul/.test(b.textContent))[0];
+  const vyvin = tl.filter((b) => /Vylepšen|Vyvinut/.test(b.textContent))[0];
   const uprav = document.getElementById("atlasEditPokemon");
   out.stejnyVzhled = !!(vyvin && uprav) && styl(vyvin) === styl(uprav);
   out.styly = vyvin && uprav ? [styl(vyvin), styl(uprav)] : "nic";
@@ -2397,7 +2397,12 @@ const dPr = await pPr.evaluate(async () => {
     const bar = document.querySelector("#boxMode .atlas-box-rozbor > .hra-pruh");
     const evo = document.querySelector("#boxMode .atlas-evolution-column");
     const strom = evo ? (evo.querySelector("summary, .d-evo") || evo) : null;
+    /* Kolik radku lista zabira: tlacitka, ktera zacinaji ve stejne vysce,
+       jsou na jednom radku. Na dvou uz by prekryla nadpis evolucni rady. */
+    const vysky = bar ? [...new Set([...bar.querySelectorAll("button")]
+      .map((b) => Math.round(b.getBoundingClientRect().top)))] : [];
     return { tlacitka: bar ? [...bar.querySelectorAll("button")].map((b) => b.textContent.trim()) : [],
+      radku: vysky.length,
       nadRadou: !!(bar && strom
         && bar.getBoundingClientRect().bottom <= strom.getBoundingClientRect().top + 4),
       vBoxu: !!(bar && bar.getBoundingClientRect().height > 10) };
@@ -2410,11 +2415,15 @@ const dPr = await pPr.evaluate(async () => {
   return out;
 });
 await pPr.close();
-check("v čištění je příkaz „Vyvinul jsem ho“ i „Vylepšil jsem ho“",
-  dPr.prvni.tlacitka.some((x) => /Vyvinul/.test(x))
+check("v čištění je příkaz „Vyvinutý“ i „Vylepšený“",
+  dPr.prvni.tlacitka.some((x) => /Vyvinut/.test(x))
     && dPr.prvni.tlacitka.some((x) => /Vylep/.test(x)), JSON.stringify(dPr.prvni));
 check("…a u shadow kusu k tomu očista",
-  dPr.shadow.tlacitka.some((x) => /istil/.test(x)), JSON.stringify(dPr.shadow));
+  dPr.shadow.tlacitka.some((x) => /Očišt/.test(x)), JSON.stringify(dPr.shadow));
+// Ctyri prikazy se musi vejit na jeden radek — jinak prekryji nadpis
+// evolucni rady, nad kterou lista stoji.
+check("…a všechny příkazy stojí na jednom řádku",
+  dPr.shadow.radku === 1, JSON.stringify(dPr.shadow));
 check("…a Upravit, které tam dřív nebylo vůbec",
   dPr.prvni.tlacitka.some((x) => /Upravit/.test(x)), JSON.stringify(dPr.prvni.tlacitka));
 check("…celá lišta je vidět a stojí nad evoluční řadou",
@@ -2669,6 +2678,77 @@ check("rozepsaná úprava kusu obnovení pozdrží", /uprav/i.test(dVer.priUprav
 check("…po zrušení úpravy se zase naplánuje", dVer.poUprave === true, "");
 check("otevřený import obnovení pozdrží", /import/i.test(dVer.priImportu || ""), dVer.priImportu);
 check("…po zavření importu se zase naplánuje", dVer.poImportu === true, "");
+
+console.log("\n28) Přehled: karty se čtou po řádcích a říkají, co akce přináší");
+const pKar = await otevri(1600, [
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
+]);
+const dKar = await pKar.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.__atlasTest.go("home");
+  await cekej(1200);
+  const karty = [...document.querySelectorAll("#atlasHome .atlas-event-card")];
+  if (karty.length < 2) return { chyba: "karty nejsou" };
+  const radek = (k, sel) => {
+    const e = k.querySelector(sel);
+    return e ? Math.round(e.getBoundingClientRect().top - k.getBoundingClientRect().top) : null;
+  };
+  const C = window.AtlasCalendar, P = window.__pgo;
+  const dnes = new Date();
+  const dnesek = new Date(dnes.getFullYear(), dnes.getMonth(), dnes.getDate());
+  const vybrane = C.featured();
+  const kratka = (e) => Math.round((new Date(e[4]) - new Date(e[3])) / 86400000) + 1 <= 7;
+  return {
+    karet: karty.length,
+    nazvy: karty.map((k) => (k.querySelector("h3") || {}).textContent),
+    // Stav, nazev i termin musi u vsech karet zacinat ve stejne vysce,
+    // i kdyz se jeden nazev zalomi na dva radky.
+    stavy: karty.map((k) => radek(k, ".atlas-event-status")),
+    nadpisy: karty.map((k) => radek(k, "h3")),
+    terminy: karty.map((k) => radek(k, ".atlas-event-date")),
+    zalomenych: karty.filter((k) => {
+      const h = k.querySelector("h3");
+      return h && h.getBoundingClientRect().height
+        / parseFloat(getComputedStyle(h).lineHeight) > 1.5;
+    }).length,
+    prinosy: karty.map((k) => ((k.querySelector(".atlas-event-prinos") || {}).textContent || "").trim()),
+    // Prvni karta ma byt dnesni kratka akce, ne sezona, ktera "taky bezi".
+    prvniBeziDnes: vybrane[0]
+      ? C.overlap(vybrane[0], dnesek, new Date(dnesek.getFullYear(), dnesek.getMonth(), dnesek.getDate() + 1))
+      : null,
+    prvniKratka: vybrane[0] ? kratka(vybrane[0]) : null,
+    dlouheAzZaKratkymi: (() => {
+      const delky = vybrane.map(kratka);
+      return delky.indexOf(false) === -1 || delky.indexOf(false) > delky.lastIndexOf(true);
+    })(),
+    // Prinos se nevymysli: bud bonus z platneho okna, nebo potvrzeny druh,
+    // nebo se rekne, ze to v datech neni.
+    prinosZDat: vybrane.every((e) => {
+      const p = window.AtlasEventUI.prinos(e);
+      if (p === "Podrobnosti ve zdroji") return true;
+      const druhy = window.AtlasEventUI.names(e).filter((n) => P.dexKeyOf(n));
+      if (druhy.some((n) => p.indexOf(n) > -1)) return true;
+      const okno = window.AtlasEventUI.oknoDne(e);
+      const bonus = ((okno || [])[2] || {}).bonus || [];
+      return bonus.some((x) => Array.isArray(x) && x[1] !== -1 && String(x[0]).trim() === p);
+    })
+  };
+});
+await pKar.close();
+check("Přehled ukáže tři karty", !dKar.chyba && dKar.karet === 3, dKar.chyba || String(dKar.karet));
+check("…stav začíná u všech ve stejné výšce",
+  new Set(dKar.stavy).size === 1, JSON.stringify(dKar.stavy));
+check("…stejně tak název a termín",
+  new Set(dKar.nadpisy).size === 1 && new Set(dKar.terminy).size === 1,
+  JSON.stringify([dKar.nadpisy, dKar.terminy]));
+check("…a drží to i s názvem na dva řádky", dKar.zalomenych >= 1, String(dKar.zalomenych));
+check("…každá karta říká, co akce přináší",
+  dKar.prinosy.length === 3 && dKar.prinosy.every((x) => x.length > 0),
+  JSON.stringify(dKar.prinosy));
+check("…a ten přínos je z dat, ne vymyšlený", dKar.prinosZDat === true, JSON.stringify(dKar.prinosy));
+check("nahoře stojí dnešní krátká akce, ne dlouhá sezóna",
+  dKar.prvniKratka === true && dKar.dlouheAzZaKratkymi === true,
+  JSON.stringify({ dnes: dKar.prvniBeziDnes, kratka: dKar.prvniKratka }));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

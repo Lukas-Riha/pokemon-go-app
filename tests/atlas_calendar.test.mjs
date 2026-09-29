@@ -38,9 +38,18 @@ try{
    check('raid hour illustrations recognized from explicit name',
      ocekavano>0 && await page.locator('.ac-detail .ac-art img').count()===ocekavano);}
   else check('raid hour illustrations recognized from explicit name',true);}
- check('three multi-day bars initially',await page.locator('.ac-span').count()===3);
- await page.locator('[data-ac-spans]').click();check('all multi-day bars available',await page.locator('.ac-span').count()>3);
- await page.locator('[data-ac-spans]').click();
+ // Vicedenni akce se uz nesbaluji: schovana cast tydne je horsi nez delsi
+ // seznam, protoze o ni clovek nevi.
+ check('all multi-day bars shown at once',
+   await page.locator('.ac-span').count()
+     === await page.evaluate(() => {
+       const C = window.AtlasCalendar, P = window.__pgo;
+       const a = new Date(C.getState().anchor + 'T00:00'), b = new Date(a);
+       b.setDate(b.getDate() + 7);
+       return (P.eventsData().events || []).filter((e) => C.multi(e) && C.overlap(e, a, b)).length;
+     }));
+ check('no collapse control for multi-day bars',
+   await page.locator('[data-ac-spans]').count() === 0);
  await page.locator('[data-ac-mode="month"]').click();check('month grid',await page.locator('.ac-month-day').count()===42);
  await page.locator('[data-ac-mode="week"]').click();check('week begins Monday',await page.evaluate(()=>new Date(AtlasCalendar.getState().anchor+'T12:00').getDay()===1));
  await page.locator('[data-ac-filter="max"]').click();check('filter excludes raids',await page.locator('.ac-desktop-view [data-kind="raid"]').count()===0);

@@ -1095,7 +1095,11 @@ globalThis.AtlasBudget = (() => {
      if(!Array.isArray(polozka))continue;
      const text=String(polozka[0]||''),priznak=polozka[1];
      if(priznak===-1){bere=/featured\s+pok/i.test(text);continue}
-     if(bere&&priznak===1&&text&&!ven.includes(text))ven.push(text);
+     /* 0/1 je shiny, ne "je to druh". Hlavnim druhem akce je i ten, u nehoz
+        shiny neni — drive takovy vypadl a akci reprezentoval nahodny spawn.
+        Ze o druh jde, rozhoduje dex: textovy bonus se tim do seznamu
+        nedostane. Forma zustava, jak ji uvadi zdroj. */
+     if(bere&&text&&P.dexKeyOf&&P.dexKeyOf(text)&&!ven.includes(text))ven.push(text);
     }
    }
   }
@@ -1115,13 +1119,31 @@ globalThis.AtlasBudget = (() => {
   if(/(Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i.test(String(e[0]))
     ||/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).reverse().forEach(name=>{if(!names.includes(name)&&(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name)))names.unshift(name)})}return names.slice(0,3)}
  function bossCards(es){return es.flatMap(e=>{const names=eventNames(e);return (names.length?names:[null]).map(name=>`<button class="atlas-boss" data-event-index="${events.indexOf(e)}"><span class="atlas-boss-art">${name?image(name):'<span aria-hidden="true">◇</span>'}</span><b>${esc(name&&/^Shadow /.test(e[0])&&!/^Shadow /.test(name)?'Shadow '+name:name||e[0])}</b><small>${/^max-/.test(e[1])?'Max souboj':'Raid'} · ${format(e[4])}</small></button>`)}).join('')}
+ /* Okno akce, ktere pro dany den plati. Akce mivaji vic casti a kazda
+    svuj obsah — bonus z jineho okna by o tom dni lhal. Sdili to karta
+    Prehledu i nahled v kalendari. */
+ function oknoDne(e,d){const den=d||new Date();
+  return (e[7]||[]).filter(w=>date(w[0])&&date(w[1]))
+   .find(w=>date(w[0])<=den&&date(w[1])>den)||null}
+ /* Cim je akce zajimava, jednou vetou. Poradi je dane tim, co clovek
+    nejspis hleda: platny bonus, pak potvrzeny hlavni druh. Kdyz v datech
+    nic takoveho neni, rekne se to — vymyslet se nic nesmi. */
+ function prinos(e,d){
+  const bloky=(oknoDne(e,d)||[])[2]||{};
+  const veta=x=>Array.isArray(x)&&x[1]!==-1?String(x[0]||'').trim():'';
+  const bonus=(bloky.bonus||[]).map(veta).filter(Boolean)[0];
+  if(bonus)return bonus;
+  const druhy=eventNames(e).filter(n=>P.dexKeyOf&&P.dexKeyOf(n));
+  if(druhy.length)return druhy.slice(0,3).join(' · ');
+  return 'Podrobnosti ve zdroji';
+ }
  function card(e){
  const a=date(e[3]),b=end(e[4]),now=new Date(),tomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1),afterTomorrow=new Date(now.getFullYear(),now.getMonth(),now.getDate()+2);
  const label=!a||!b?'Termín nepotvrzen':b<=now?'Ukončeno':a>now?(a>=tomorrow&&a<afterTomorrow?'Zítra':'Chystá se'):(b<=tomorrow?'Končí dnes':'Probíhá');
  const kind=/^max-/.test(e[1])?'max':/raid/.test(e[1])?'raid':/research|choose-your-path/.test(e[1])?'research':'event';
  const names=eventNames(e);
  const title=String(e[0]).replace(/ during Max Monday$/i,'').replace(/ in (?:5-star Raid Battles|Mega Raids|Shadow Raids)$/i,'').replace(/: The Series Celebration Event 2026$/i,'').replace(/Pokémon Horizons Bonus Timed Research/i,'Pokémon Horizons: bonusový výzkum');
- return `<button class="atlas-event-card" data-event-kind="${kind}" data-event-state="${b&&b<=tomorrow?'ending':a&&a>now?'upcoming':'live'}" data-event-index="${events.indexOf(e)}" title="${esc(e[0])}"><span class="atlas-event-visual"><span class="atlas-event-status">${label}</span><span class="atlas-event-art">${names.map(image).join('')}</span></span><span class="atlas-event-copy"><span class="atlas-event-category">${{max:'Max souboje',raid:'Raidy',research:'Výzkum',event:'Událost'}[kind]}</span><h3>${esc(title)}</h3><span class="atlas-event-date">${format(e[3])} → ${format(e[4])}</span><span class="atlas-event-link">Prohlédnout akci <span aria-hidden="true">→</span></span></span></button>`;
+ return `<button class="atlas-event-card" data-event-kind="${kind}" data-event-state="${b&&b<=tomorrow?'ending':a&&a>now?'upcoming':'live'}" data-event-index="${events.indexOf(e)}" title="${esc(e[0])}"><span class="atlas-event-visual"><span class="atlas-event-status">${label}</span><span class="atlas-event-art">${names.map(image).join('')||'<span class="atlas-event-bez-obrazku" aria-hidden="true">◇</span>'}</span></span><span class="atlas-event-copy"><span class="atlas-event-category">${{max:'Max souboje',raid:'Raidy',research:'Výzkum',event:'Událost'}[kind]}</span><h3>${esc(title)}</h3><span class="atlas-event-prinos">${esc(prinos(e))}</span><span class="atlas-event-date">${format(e[3])} → ${format(e[4])}</span><span class="atlas-event-link">Prohlédnout akci <span aria-hidden="true">→</span></span></span></button>`;
  }
  function list(items,kind){return `<div class="atlas-event-species">${items.map(([name,shiny])=>shiny===-1?`<h4>${esc(name)}</h4>`:`<div class="atlas-event-specimen">${['spawn','raid','vejce','shiny'].includes(kind)?image(name):''}<span>${esc(name)}${shiny===1?' <small>✦ shiny dostupné</small>':''}</span></div>`).join('')}</div>`}
  function openEvent(i){const e=events[i];if(!e)return;const url=safeUrl(e[5]);modal.innerHTML=`<header><div><span class="atlas-eyebrow">TAHÁK AKCE</span><h2 id="atlasEventTitle">${esc(e[0])}</h2><p>${format(e[3])} — ${format(e[4])}</p></div><button class="atlas-mini-btn" data-event-close aria-label="Zavřít detail akce">✕</button></header><div class="atlas-event-body">${(e[7]||[]).map(w=>`<section class="atlas-event-window"><p class="atlas-small-note">Platnost této části: ${format(w[0])} — ${format(w[1])}</p>${Object.entries(w[2]||{}).filter(([k,v])=>Array.isArray(v)&&v.length).map(([k,v])=>`<details open><summary>${esc(sections[k]||k)}</summary>${list(v,k)}</details>`).join('')}</section>`).join('')||'<p>Podrobný obsah není ve zdroji k dispozici.</p>'}<p class="atlas-small-note">Seznam popisuje obsah akce, nikoli živé spawny v okolí. Dostupné shiny neznamená zvýšenou šanci. Podmínky a zvláštní časová okna ověř ve zdroji.</p><div class="atlas-event-actions"><button class="atlas-mini-btn" data-event-teams>Otevřít Tahák soubojů</button>${url?`<a class="atlas-mini-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Zdroj akce ↗</a>`:''}</div></div>`;modal.showModal();}
@@ -1145,7 +1167,7 @@ globalThis.AtlasBudget = (() => {
  window.AtlasDecorateHome?.();
  }
  window.AtlasRenderHome=render;
- window.AtlasEventUI={card:e=>card(e),image,format,open:i=>openEvent(i),names:eventNames};
+ window.AtlasEventUI={card:e=>card(e),image,format,open:i=>openEvent(i),names:eventNames,oknoDne,prinos};
  document.querySelector('#atlasHome').addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(el.hasAttribute('data-event-index'))openEvent(Number(el.dataset.eventIndex));if(el.dataset.overviewDay){selected=el.dataset.overviewDay;render(root);root.querySelector(`[data-overview-day="${selected}"]`)?.focus({preventScroll:true})}if(el.dataset.overviewWeek){offset+=Number(el.dataset.overviewWeek);const d=new Date();d.setDate(d.getDate()+offset);selected=day(d);render(root)}if(el.hasAttribute('data-overview-today')){offset=0;selected=day(new Date());render(root)}if(el.hasAttribute('data-overview-teams'))__atlasTest.go('teams','cheatCard')});
  render(document.querySelector('#atlasHome'));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!modal.open&&__atlasTest.getState().view==='home')render(root)});
@@ -1214,6 +1236,10 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   hlava.querySelectorAll('[data-rezim]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rezim===k)));
   udaje.open=k==='kus';
   karta.dataset.atlasRezim=k;
+  /* Rezim rozhoduje o vypoctu, ne jen o nadpisu: v "Prozkoumat druh" se
+     udaje kusu do vysledku neberou. Pocita to engine — vrstva mu jen
+     rekne, co se ptame. V polich udaje zustanou pro navrat. */
+  window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim(k);
   vykresli();
  }
  hlava.addEventListener('click',e=>{
@@ -1240,6 +1266,18 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const pocasi=[...new Set(typy.map(t=>P.atlasPocasi?P.atlasPocasi(t):'').filter(Boolean))]
    .map(x=>POCASI_CZ[x]||x);
   const kusovy=rezim()==='kus';
+  /* Shiny má tři stavy, ne dva: "ve hře zatím není" tvrdí něco o hře,
+     "nevíme" o datech. A obecné shiny ANO neříká nic o tom, jestli shiny
+     padá z raidu — u raidového úlovku se proto ptáme zvlášť. */
+  const shinyStav=shiny?shiny.stav:'neověřeno';
+  const shinyRaid=shinyStav==='neověřeno'?'Neověřeno'
+   :(shiny.zdroje.includes('raid')?'Ano':'Zatím ne');
+  /* Čísla CP jsou referenční — o tom, jestli druh PRÁVĚ TEĎ v raidech je,
+     rozhoduje rozpis akcí, ne pokédex. */
+  const ted=new Date();
+  const bossTed=(P.eventsData?.().events||[]).some(e=>/raid|max/.test(String(e[1]))
+   &&new Date(e[3])<=ted&&new Date(e[4])>ted
+   &&(window.AtlasEventUI?.names(e)||[]).some(n=>P.dexKeyOf&&P.dexKeyOf(n)===P.dexKeyOf(d.name)));
   identita.hidden=false;
   identita.innerHTML=`<div class="atlas-hledani-kdo">
     ${P.atlasImage?P.atlasImage(d.name,'atlas-hledani-obr'):''}
@@ -1250,20 +1288,23 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     </div>
    </div>
    <dl class="atlas-hledani-fakta">
-    <div${shiny&&shiny.je?' data-ano="1"':''}>
+    <div data-shiny="${shinyStav}">
      <dt>Shiny</dt>
-     <dd>${shiny&&shiny.je?'Ano':'Zatím ne'}</dd>
-     <small>${shiny&&shiny.je?esc(shiny.zdroje.join(' · ')):'ve hře se zatím neobjevil'}</small>
+     <dd>${{ano:'Ano',ne:'Zatím ne'}[shinyStav]||'Neověřeno'}</dd>
+     <small>${esc({ano:shiny&&shiny.zdroje.length?shiny.zdroje.join(' · '):'zdroj neuveden',
+       ne:'ve hře se zatím neobjevil'}[shinyStav]||'o tomhle druhu zdroj nic neříká')}</small>
     </div>
-    <div>
-     <dt>CP dokonalého kusu</dt>
-     <dd>${cp20??'—'}${cp25?` <span class="atlas-hledani-boost">${cp25}</span>`:''}</dd>
-     <small>z raidu · v boostu</small>
+    <div class="atlas-hledani-raid">
+     <dt>Raidový úlovek</dt>
+     <dd>${cp20!=null||cp25!=null
+       ?`${cp20!=null?`<span><b>${cp20}</b><small>100 % IV · L20</small></span>`:''}${cp25!=null?`<span><b>${cp25}</b><small>100 % IV · L25 s počasím</small></span>`:''}`
+       :'<span><b>—</b><small>staty téhle formy nemáme</small></span>'}</dd>
+     <small>${bossTed?'Boss potvrzený probíhající akcí.':'Referenční hodnoty pro raidový úlovek.'} Shiny z raidu: ${shinyRaid}.</small>
     </div>
     <div>
      <dt>Boostuje ho</dt>
-     <dd>${pocasi.length?esc(pocasi.join(' / ')):'—'}</dd>
-     <small>${pocasi.length?'chycený kus je o pět levelů výš':'počasí neznáme'}</small>
+     <dd>${pocasi.length?esc(pocasi.join(' / ')):'Neověřeno'}</dd>
+     <small>${pocasi.length?'počasí pro jeho typy':'počasí u těchhle typů neznáme'}</small>
     </div>
    </dl>`;
  }

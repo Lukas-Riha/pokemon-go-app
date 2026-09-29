@@ -1865,3 +1865,72 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 @media(max-width:650px){
   .atlas-test.ma-novou-verzi .app{padding-top:calc(90px + var(--verze-pruh-h,44px))}
 }
+
+/* Claude 29. 9. (42): nahled udalosti podle A-015 bodu 3.3 a 3.4.
+
+   Misto jedne vety, ktera platila na kazdou akci stejne, stoji v nahledu
+   nejvys tri konkretni body z okna, ktere pro vybrany den plati. U akce
+   s vic bossy si clovek vybere, na koho tym — vybrany stoji i v tlacitku,
+   aby se nestalo, ze appka pripravi tym na nekoho jineho.
+
+   Sirka sloupce 300–340 px (A-015), obraz 16:9, text vlevo. */
+.atlas-test .ac-layout{grid-template-columns:minmax(0,1fr) minmax(300px,340px)}
+.atlas-test .ac-detail{text-align:left}
+.atlas-test .ac-detail>.ac-art{display:block;width:100%;aspect-ratio:16/9;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  border-radius:10px;background:var(--input-bg);overflow:hidden;margin-bottom:12px}
+.atlas-test .ac-detail>.ac-art img{max-height:86%;width:auto;object-fit:contain}
+.atlas-test .ac-detail-body{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:7px}
+.atlas-test .ac-detail-body li{position:relative;padding-left:15px;font-size:12.5px;
+  line-height:1.5;color:var(--text-secondary)}
+.atlas-test .ac-detail-body li::before{content:"·";position:absolute;left:4px;
+  color:var(--series-1);font-weight:800}
+.atlas-test .ac-boss-volba{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
+.atlas-test .ac-boss-volba button{font-size:11.5px;padding:5px 9px;border-radius:7px;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--text-secondary)}
+.atlas-test .ac-boss-volba button[aria-pressed=true]{border-color:var(--series-1);
+  background:var(--atlas-soft);color:var(--series-1);font-weight:650}
+.atlas-test .ac-detail-vyzva{font-size:13px;color:var(--text-secondary);margin:6px 0 0}
+@media(max-width:1100px){.atlas-test .ac-layout{grid-template-columns:1fr}}
+
+/* Claude 29. 9. (43): raidovy ulovek a shiny ve Vyhledavani (A-015, 2.2+2.3).
+
+   Dve cisla vedle sebe splyvala v jedno ("612 765"). Kazde ma proto svuj
+   sloupecek i svuj popisek: co to cislo znamena, stoji pod nim.
+   Shiny ma tri stavy — ano svitne, "zatim ne" a "neovereno" ne, protoze
+   to druhe netvrdi nic o hre, jen o datech. */
+.atlas-test .atlas-hledani-raid dd{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0}
+.atlas-test .atlas-hledani-raid dd>span{display:flex;flex-direction:column;line-height:1.2}
+.atlas-test .atlas-hledani-raid dd>span>b{font-size:inherit;font-weight:700}
+.atlas-test .atlas-hledani-raid dd>span>small{font-size:10.5px;color:var(--text-muted);
+  white-space:nowrap}
+.atlas-test .atlas-hledani-fakta>div[data-shiny=ano] dd{color:var(--status-good)}
+.atlas-test .atlas-hledani-fakta>div[data-shiny=neověřeno] dd{color:var(--text-secondary)}
+
+/* Claude 29. 9. (44): karta "Dnes a brzy" podle A-015 bodu 4.
+
+   Karty stoji vedle sebe a musi se cist po radcich: obraz → stav → nazev
+   → prinos → termin. Drive delsi nazev odsunul stav nahoru a stitky tri
+   karet nesedely v jedne vysce. Nazev ma proto pevne misto na dva radky
+   (delsi se orizne, cely je v bubline i v detailu) a prinos na jeden. */
+.atlas-test .atlas-event-copy{display:grid;gap:0;align-content:end}
+.atlas-test .atlas-event-card h3{margin:8px 0 0;min-height:2.8em;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.atlas-test .atlas-event-prinos{display:-webkit-box;-webkit-line-clamp:1;
+  -webkit-box-orient:vertical;overflow:hidden;min-height:1.5em;margin-top:2px;
+  font-size:12px;line-height:1.5;color:#c7d8ef}
+.atlas-test .atlas-event-date{margin-top:6px}
+/* Chybejici obrazek je neutralni znacka, ne jiny Pokemon. */
+.atlas-test .atlas-event-bez-obrazku{font-size:46px;color:#ffffff30;line-height:1}
+@media(max-width:650px){
+  /* Na mobilu prvni karta velka, dalsi dve kompaktni radky — prinos by
+     se do nich uz nevesel. */
+  .atlas-test .atlas-event-grid>.atlas-event-card:not(:first-child) .atlas-event-prinos{display:none}
+  .atlas-test .atlas-event-grid>.atlas-event-card:not(:first-child) h3{min-height:0}
+  /* V kompaktni karte je misto jen na stav, nazev a termin — popisek
+     "Prohlédnout akci" se prekryval s datem. Zustava jen sipka. */
+  .atlas-test #atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child)
+    .atlas-event-link{font-size:0}
+  .atlas-test #atlasHome .atlas-overview-calendar .atlas-event-card:not(:first-child)
+    .atlas-event-link>span{font-size:18px}
+}

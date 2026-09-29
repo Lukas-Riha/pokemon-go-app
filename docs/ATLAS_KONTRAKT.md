@@ -167,6 +167,31 @@ ne funkce — datumy zdrojů),
 `ligovePoradi(klic, liga, forma)`, `raidRankIndex()`, `gymRankIndex()`,
 `counterScore(b, typyBosse)`, `speciesMaxSP(...)`, `formatDust(n)`.
 
+### Druh ve Vyhledávání
+
+`atlasShiny(jmeno)` → `{ stav, je, zdroje }`, nebo `null` u neznámého druhu.
+`stav` je `"ano"`, `"ne"`, nebo `"neověřeno"` — a ten rozdíl je podstatný:
+„ve hře zatím není“ tvrdí něco o hře, „nevíme“ o datech. Zdroj je seznam
+vydaných shiny, takže druh mimo něj shiny nemá; druh, na který zdroj ještě
+nedosáhl, je `"neověřeno"`. `zdroje` jsou česky: `raid`, `volná příroda`,
+`vajíčko`, `výzkum`, `evoluce`, `fotka`. Prázdné `zdroje` při `stav:"ano"`
+znamenají „vydané, zdroj neuveden“. **Obecné ANO neříká nic o raidu** — na
+shiny z raidu se ptej přes `zdroje`.
+
+`atlasCP(jmeno, level, ivA, ivD, ivS)` → CP druhu při daném levelu (výchozí
+IV 15/15/15), nebo `null`, když druh nebo level neznáme. L20 je běžný raid,
+L25 raid v boostujícím počasí. **Není to údaj o aktuální dostupnosti**;
+jestli je druh právě teď boss, plyne z `eventsData()`, ne odsud. U neznámé
+formy vrací `null` — základní formou se to nenahrazuje.
+
+`atlasPocasi(typ)` → počasí, které ten typ boostuje (anglicky, klíč do
+`POCASI`), nebo `""`, když se na typ žádné neváže.
+
+`window.__pgoProhlidkaRezim(rezim?)` → přepne Vyhledávání mezi `"druh"`
+a `"kus"` a vrátí, jak to teď stojí. V režimu `"druh"` se CP, level, IV ani
+útoky do výpočtu neberou, ale v polích zůstanou pro návrat. Režim patří
+společnému výpočtu; vrstva si druhý algoritmus nestaví.
+
 ## Pole na vyhodnoceném kusu
 
 `getComputed()[id]` má 84 polí. Stabilní jádro, na které se dá spolehnout:

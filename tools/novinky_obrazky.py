@@ -18,10 +18,11 @@ except ImportError:  # pragma: no cover - jen hlaska pro cloveka
     sys.exit("Chybi Pillow: pip install pillow")
 
 SLOZKA = pathlib.Path(__file__).resolve().parent.parent / "data" / "novinky_obrazky"
-# Okno s novinkami je siroke nejvys 640 px; ve dvojnasobku je 1280 px
-# horni mez, nad kterou uz pixely navic nikdo neuvidi.
-MAX_SIRKA = 1280
-KVALITA = 80
+# Okno s novinkami je siroke nejvys 760 px a obrazek se do nej vejde na
+# ~700 px. 1000 px je tedy porad s rezervou nad tim, co je videt — a kazdy
+# kilobajt navic nese CELA appka, protoze se snimky zapekaji do souboru.
+MAX_SIRKA = 1000
+KVALITA = 74
 
 
 def main():
