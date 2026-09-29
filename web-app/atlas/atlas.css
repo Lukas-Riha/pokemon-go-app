@@ -1977,6 +1977,7 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test .atlas-vysledek-tab td{display:block;border:0;padding:2px 0}
   .atlas-test .atlas-vysledek-tab td:first-child{font-size:14px}
   .atlas-test .atlas-vysledek-tab td button{min-height:44px}
+  .atlas-test .atlas-vysledek-tab td:last-child{display:none}
 }
 
 /* Claude 29. 9. (46): druha pulka A-015 bodu 5.
@@ -2067,3 +2068,46 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 /* Tytez ligy uz ukazuje tabulka nahore a evoluce vlastni panel — v rozboru
    druhu pod tim by stalo totez podruhe, jen delsi. */
 .atlas-test #prohOut .d-ligy-blok,.atlas-test #prohOut .d-evo-side{display:none}
+
+/* Claude 30. 9. (48): Vyhledavani blizsi navrhu V2.
+
+   Hledani a prepinac rezimu na jednom radku (navrh je ma vedle sebe,
+   ne pod sebou), identita jako tri bunky oddelene carou, obrazek druhu
+   v ramecku a sipka na konci radku, ktera opravdu neco dela. */
+.atlas-test #prohlidkaCard .atlas-hledani-hlava{display:flex;flex-wrap:wrap;
+  align-items:center;gap:12px}
+.atlas-test #prohlidkaCard .atlas-hledani-pole{flex:1 1 320px;min-width:0}
+.atlas-test #prohlidkaCard .atlas-hledani-rezim{flex:0 0 auto;margin-left:auto}
+.atlas-test #prohlidkaCard .atlas-hledani-rezim button{white-space:nowrap}
+/* Jmeno a typ na jednom radku, popisek nad nimi — jako v navrhu. */
+.atlas-test #prohlidkaCard .atlas-hledani-kdo>div{display:flex;flex-wrap:wrap;
+  align-items:center;gap:10px;min-width:0}
+.atlas-test #prohlidkaCard .atlas-hledani-kdo>div>.atlas-hledani-rezim-znacka{flex-basis:100%;margin:0}
+.atlas-test #prohlidkaCard .atlas-hledani-kdo h3{margin:0}
+.atlas-test #prohlidkaCard .atlas-hledani-kdo .atlas-hledani-typy{margin:0}
+.atlas-test #prohlidkaCard .atlas-hledani-obr{background:var(--input-bg);border-radius:12px;padding:4px}
+.atlas-test #prohlidkaCard .atlas-hledani-fakta{border-left:1px solid var(--border);
+  padding-left:22px;gap:22px}
+/* Obrazek druhu v radku ma ramecek jako v navrhu, at radky drzi rytmus. */
+.atlas-test .atlas-vysledek-obr{background:var(--input-bg);border-radius:9px;padding:2px;
+  width:38px;height:38px}
+.atlas-test .atlas-vysledek-tab td:last-child{width:34px;text-align:right}
+.atlas-test .atlas-vysledek-sip{background:none;border:0;color:var(--text-muted);
+  font-size:17px;line-height:1;padding:4px 6px;cursor:pointer}
+.atlas-test .atlas-vysledek-tab tr:hover .atlas-vysledek-sip{color:var(--series-1)}
+/* Hledany druh je obtazeny, ne prebarveny: cislo v nem ma zustat citelne. */
+.atlas-test .atlas-vysledek-tab tr.je-vstup td{background:var(--atlas-soft);
+  border-top:1px solid var(--series-1);border-bottom:1px solid var(--series-1)}
+.atlas-test .atlas-vysledek-tab tr.je-vstup td:first-child{border-left:1px solid var(--series-1);
+  border-radius:10px 0 0 10px}
+.atlas-test .atlas-vysledek-tab tr.je-vstup td:last-child{border-right:1px solid var(--series-1);
+  border-radius:0 10px 10px 0}
+.atlas-test #prohlidkaCard .atlas-hledani-udaje>summary{display:flex;align-items:center;gap:10px}
+.atlas-test #prohlidkaCard .atlas-hledani-udaje>summary::after{content:"›";margin-left:auto;
+  font-size:18px;color:var(--text-muted)}
+@media(max-width:650px){
+  .atlas-test #prohlidkaCard .atlas-hledani-pole,
+  .atlas-test #prohlidkaCard .atlas-hledani-rezim{flex:1 1 100%;margin-left:0}
+  .atlas-test #prohlidkaCard .atlas-hledani-fakta{border-left:0;padding-left:0;
+    border-top:1px solid var(--border);padding-top:12px}
+}

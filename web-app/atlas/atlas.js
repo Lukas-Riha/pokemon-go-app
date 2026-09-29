@@ -1303,7 +1303,9 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`<td class="atlas-vysledek-druh">${P.atlasImage?P.atlasImage(r.jmeno,'atlas-vysledek-obr'):''}`
     +`<span><button type="button" data-zvyraznit="${esc(r.klic)}">${esc(r.jmeno)}</button>${znacka}${r.typ?` <small>${esc(r.typ)}</small>`:''}`
     +`<span class="atlas-vysledek-typy">${typyHtml(r.klic)}</span></span></td>`
-   +`<td>${poradi}</td><td>${utoky}</td>${kusovy?kusBunka(r,vstupKlic):''}</tr>`;
+   +`<td>${poradi}</td><td>${utoky}</td>${kusovy?kusBunka(r,vstupKlic):''}`
+   +`<td><button type="button" class="atlas-vysledek-sip" data-zvyraznit="${esc(r.klic)}"`
+    +` aria-label="Zvýraznit ${esc(r.jmeno)}">›</button></td></tr>`;
  }
 
  function vykresliVysledek(){
@@ -1340,7 +1342,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
       s ligou nemela nic spolecneho. */
    +(role==='raid'?raidFaktaHtml():'')
    +(radky.length
-     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${kusovy?'<th>Tvůj kus</th>':''}</tr></thead><tbody>`
+     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${kusovy?'<th>Tvůj kus</th>':''}<th></th></tr></thead><tbody>`
       +radky.map(r=>radekHtml(r,m.klic)).join('')+`</tbody></table>`
      :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`)
    +`</div>`

@@ -2819,6 +2819,7 @@ const dVysl29 = await pVysl29.evaluate(async () => {
     radek: (document.querySelector(".atlas-vysledek-tab tr.je-vstup") || {}).textContent || "" };
   rezim("druh");
   await cekej(900);
+  // Ctvrty sloupec je sipka bez nadpisu; "Tvuj kus" je ten paty.
   out.druh = { sloupcu: document.querySelectorAll(".atlas-vysledek-tab thead th").length };
   return out;
 });
@@ -2841,12 +2842,15 @@ check("…a podmínky jsou o tlačítko dál, ne jen po najetí myší",
     && dVysl29.evo.podminkyPo.length === 8
     && dVysl29.evo.podminkyPo.every((x) => x.length > 0),
   JSON.stringify(dVysl29.evo.podminkyPo.slice(0, 3)));
+const pojmenovane = (h) => h.filter((x) => x.trim().length > 0);
 check("kusový režim přidá sloupec o konkrétním kusu",
-  dVysl29.kus.hlavicka.length === 4 && /Tvůj kus/.test(dVysl29.kus.hlavicka.join(" ")),
+  pojmenovane(dVysl29.kus.hlavicka).length === 4
+    && /Tvůj kus/.test(dVysl29.kus.hlavicka.join(" ")),
   JSON.stringify(dVysl29.kus.hlavicka));
 check("…a řekne o něm jen to, co jde spočítat",
   /% IV|IV #|nedá se spočítat/.test(dVysl29.kus.radek), dVysl29.kus.radek.slice(0, 80));
-check("…v režimu druhu ten sloupec zase zmizí", dVysl29.druh.sloupcu === 3, String(dVysl29.druh.sloupcu));
+check("…v režimu druhu ten sloupec zase zmizí", dVysl29.druh.sloupcu === 4,
+  String(dVysl29.druh.sloupcu));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
