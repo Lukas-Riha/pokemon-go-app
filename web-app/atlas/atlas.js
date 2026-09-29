@@ -626,7 +626,30 @@ globalThis.AtlasBudget = (() => {
   // musí říct — jinak sedí ikona nakřivo (u Machopa dole, u Abry nahoře).
   try{const hl=document.querySelector(vPlachte?'.atlas-drawer .atlas-detail-identity':'#boxMode .atlas-detail-identity');if(hl&&P.vystreditSprity)P.vystreditSprity(hl)}catch(e){}if(vPlachte)$('.atlas-drawer-header .hra-pruh')?.remove();const bar=container.querySelector('.hra-pruh');
   // V čištění boxu patří lišta „ve hře jsem s ním něco udělal" nahoru k postupu.
-  if(bar&&!vPlachte&&window.innerWidth>650){const rozbor=document.querySelector('#boxMode .atlas-box-rozbor');if(rozbor){document.querySelectorAll('#boxMode .bm-top .hra-pruh,#boxMode .atlas-box-rozbor>.hra-pruh').forEach(e=>e.remove());bar.classList.add('atlas-hra-nad-evoluci');rozbor.append(bar)}}
+  /* Lista "ve hre jsem s nim neco udelal" patri v cisteni boxu nad
+     evolucni radu. Driv se pripinala na mrizku rozboru pres `grid-area`,
+     jenze ta oblast v mrizce neexistuje — prvek skoncil v implicitni stope
+     nekde u hlavicky a podle sirky okna zmizel z dohledu. Ted sedi primo
+     ve sloupci s evoluci, jako jeho prvni radek. */
+  if(bar&&!vPlachte&&window.innerWidth>650){
+   const sloupec=document.querySelector('#boxMode .atlas-box-rozbor');
+   if(sloupec){
+    document.querySelectorAll('#boxMode .bm-top .hra-pruh,#boxMode .atlas-box-rozbor .hra-pruh')
+      .forEach(e=>e.remove());
+    bar.classList.add('atlas-hra-nad-evoluci');
+    /* Upravit kus je v plachte hned vedle techhle prikazu; v cisteni boxu
+       chybelo uplne, prestoze je to tataz otazka ("tohle nesedi, oprav"). */
+    if(!bar.querySelector('[data-box-edit]')){
+     const uprav=document.createElement('button');
+     uprav.type='button';uprav.className='hra-btn';uprav.dataset.boxEdit='1';
+     uprav.textContent='Upravit';
+     uprav.title='Otevře úpravu tohohle kusu — CP, level, IV, útoky, forma.';
+     uprav.addEventListener('click',()=>{window.AtlasEditRow&&window.AtlasEditRow(row.id)});
+     bar.append(uprav);
+    }
+    sloupec.append(bar);
+   }
+  }
   if(bar&&vPlachte){bar.setAttribute('aria-label','Zapsat změnu ve hře');bar.querySelectorAll('[aria-pressed]').forEach(b=>b.removeAttribute('aria-pressed'));const editBtn=$('#atlasEditPokemon');if(editBtn)editBtn.before(bar);else $('.atlas-drawer-header').append(bar)}
   // Souhrn keepSub vedle verdiktu už nepřidávat: verdikt v detailu má štítky důvodů a text je zdvojoval.
   // Vysvětlení verdiktu (d-why) opakuje bubliny štítků — když štítky jsou, přesune se do bubliny nadpisu verdiktu.
@@ -800,6 +823,33 @@ globalThis.AtlasBudget = (() => {
     if(why)why.remove();
     // Nejdřív co kus doopravdy má, pak co by mít měl.
     if(row.fastMove&&row.charged1)pridej('má',[row.fastMove,row.charged1,row.charged2].filter(Boolean),'Útoky, které kus má ve hře.');
+    /* Druhy nabity utok. V lize je to jina hrozba a jiny typ poskozeni,
+       takze se casto dokupuje; do raidu se skoro nevystreli, protoze deli
+       energii. Ukazuje se jen tehdy, kdyz ho kus jeste nema a doporucena
+       sestava ho ma — jinak by to byla rada do prazdna. */
+    const ligove=(P.atlasDoporuceneUtoky?P.atlasDoporuceneUtoky(row):[])||[];
+    if(row.fastMove&&row.charged1&&!row.charged2&&ligove.length>2){
+     const mam=[row.fastMove,row.charged1].map(x=>cisteJmeno(String(x)).trim().toLowerCase());
+     const druhy=ligove.slice(2).find(x=>x&&mam.indexOf(String(x).toLowerCase())===-1);
+     if(druhy){
+      const radek=document.createElement('div');
+      radek.className='atlas-sestava atlas-sestava-plus';
+      radek.dataset.sestava='plus:'+String(druhy).toLowerCase();
+      radek.dataset.tip='Druhý nabitý útok: '+druhy+'. V lize je to druhá hrozba '
+       +'a jiný typ poškození, takže se vyplácí ho dokoupit — stojí prach a bonbóny '
+       +'(kolik, řekne hra u toho kusu). Do raidu ho nepřidávej: dělí energii '
+       +'a poškození za vteřinu tím klesne.';
+      const popisek=document.createElement('small');
+      popisek.className='atlas-sestava-kdy';popisek.textContent='+';
+      radek.append(popisek);
+      const sloupec=document.createElement('div');sloupec.className='atlas-sestava-utoky';
+      const r2=document.createElement('div');r2.className='atlas-utok-radek';
+      const mezera=document.createElement('i');
+      mezera.className='atlas-utok-tecka atlas-utok-mezera';
+      r2.append(mezera,chipUtoku(String(druhy).trim(),false));
+      sloupec.append(r2);radek.append(sloupec);box.append(radek);
+     }
+    }
     // Po očištění se Frustration mění na Return — jiný útok si shadow kus
     // nechá. Ukazuje se jen u shadow kusů, kterých se to týká.
     if(row.forma==='Shadow'&&row.fastMove&&row.charged1){
@@ -1398,6 +1448,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     ligu nebo jeden typ; tohle je "ukaz mi vsechny, kdo hraji PvP". */
  const ROLE=[
   ['pvp','PvP','Všechny ligy — od Little Cupu po Master, v lize podle pořadí'],
+  ['mega','Mega','Kdo má mega formu — podle typu megy, v typu nejdřív ten, komu ji rozpočet dal'],
   ['raid','Raid','Všichni raidoví útočníci — typy podle abecedy, v typu podle pořadí'],
   ['gym','Gym','Kdo drží místo mezi gymovými obránci']
  ];

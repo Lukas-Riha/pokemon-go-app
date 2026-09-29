@@ -1798,3 +1798,22 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 /* Sekce STATY je siroka a kdyz se zuzi, blok UTOKY se posune doleva k STROPu
    a ma vic mista na doporuceny utok. */
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-s{min-width:0}
+
+/* Claude 28. 9. (38): prikazy "ve hre jsem s nim neco udelal" v cisteni.
+
+   Pripinaly se na mrizku rozboru pres grid-area "akce", jenze ta oblast
+   v mrizce neexistuje — prvek skoncil v implicitni stope u hlavicky a podle
+   sirky okna zmizel. Ted je to prvni radek sloupce s evolucni radou. */
+.atlas-test #boxMode .atlas-box-rozbor>.atlas-hra-nad-evoluci{
+  grid-area:evoluce;align-self:start;justify-self:stretch;margin:0;z-index:2;
+  display:flex;flex-wrap:wrap;gap:6px}
+.atlas-test #boxMode .atlas-box-rozbor>.atlas-hra-nad-evoluci .hra-btn{
+  flex:1 1 auto;min-height:34px;font-size:12px;white-space:nowrap}
+/* Rada zacina pod listou, at se neprekryvaji. */
+.atlas-test #boxMode .atlas-box-rozbor>.atlas-evolution-column{padding-top:44px}
+
+/* Druhy nabity utok: radek s "+" se odlisi, at je videt, ze to kus zatim
+   nema — je to navrh, ne stav. */
+.atlas-test .atlas-sestava-plus .atlas-sestava-kdy{color:var(--series-1);font-size:12px;
+  font-weight:800}
+.atlas-test .atlas-sestava-plus .d-move{opacity:.85}

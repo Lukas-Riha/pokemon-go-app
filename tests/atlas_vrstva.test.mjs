@@ -835,8 +835,11 @@ async function boxKontrola(page) {
         const pruh = document.querySelector("#boxMode .atlas-box-rozbor > .hra-pruh");
         const evo = document.querySelector("#boxMode .atlas-evolution-column");
         if (!pruh || !evo) return false;
+        // Lista sedi v hornim okraji sloupce s evoluci; sam strom zacina
+        // pod ni. Merit proti okraji sloupce uz proto nedava smysl.
+        const strom = evo.querySelector("summary, .d-evo") || evo;
         return !document.querySelector("#boxMode .bm-top .hra-pruh")
-          && pruh.getBoundingClientRect().bottom <= evo.getBoundingClientRect().top + 1;
+          && pruh.getBoundingClientRect().bottom <= strom.getBoundingClientRect().top + 4;
       })(),
       pozice: (document.getElementById("bmPos") || {}).textContent || "" };
     for (let i = 0; i < 4; i++) {
@@ -1786,11 +1789,15 @@ const dSi = await pSi.evaluate(async () => {
     return { border: c.borderTopWidth, bg: c.backgroundColor, zarovnani: c.textAlign }; };
   out.evoSloupec = st(".atlas-evolution-column");
   out.evoNadpis = st(".atlas-evolution-column>summary");
+  // Lista sedi primo ve sloupci s evoluci jako jeho prvni radek — driv se
+  // pripinala na mrizku rozboru pres `grid-area`, kde ale ta oblast vubec
+  // neni, a podle sirky okna zmizela z dohledu.
   out.prikazyNadRadou = (() => {
-    const bar = document.querySelector(".atlas-box-rozbor .hra-pruh");
+    const bar = document.querySelector(".atlas-box-rozbor > .hra-pruh");
     const evo = document.querySelector(".atlas-box-rozbor .atlas-evolution-column");
-    if (!bar || !evo) return null;
-    return bar.getBoundingClientRect().bottom <= evo.getBoundingClientRect().top + 4;
+    const strom = evo ? (evo.querySelector("summary, .d-evo") || evo) : null;
+    if (!bar || !strom) return null;
+    return bar.getBoundingClientRect().bottom <= strom.getBoundingClientRect().top + 4;
   })();
   P.boxZavritNatvrdo();
   return out;
@@ -2356,16 +2363,83 @@ check("rozbalovátko „Zobrazit: vše“ v rosteru není",
   dR.filtrVidet === false, String(dR.filtrVidet));
 check("role „Gym“ nechá jen gymové obránce",
   dR.poGymu.dlazdic > 0 && dR.poGymu.dlazdic < dR.vsech
-    && dR.poGymu.role.join() === "pvp,raid,gym:zap", JSON.stringify(dR.poGymu));
+    && dR.poGymu.role.join() === "pvp,mega,raid,gym:zap", JSON.stringify(dR.poGymu));
 check("druhé kliknutí roli vypne a vrátí celý roster",
-  dR.poVypnuti.dlazdic === dR.vsech && dR.poVypnuti.role.join() === "pvp,raid,gym",
+  dR.poVypnuti.dlazdic === dR.vsech && dR.poVypnuti.role.join() === "pvp,mega,raid,gym",
   JSON.stringify(dR.poVypnuti));
 check("štítek typu role zašedne — sám už řadí od nejlepšího",
-  dR.pridanStitek === true && dR.seStitkem.role.join() === "pvp:šedá,raid:šedá,gym:šedá",
+  dR.pridanStitek === true
+    && dR.seStitkem.role.join() === "pvp:šedá,mega:šedá,raid:šedá,gym:šedá",
   JSON.stringify(dR.seStitkem));
 check("…a po odebrání štítku jsou role zase k mání",
-  dR.bezStitku.role.join() === "pvp,raid,gym" && dR.bezStitku.dlazdic === dR.vsech,
+  dR.bezStitku.role.join() === "pvp,mega,raid,gym" && dR.bezStitku.dlazdic === dR.vsech,
   JSON.stringify(dR.bezStitku));
+
+/* Čištění boxu: příkazy „ve hře jsem s ním něco udělal" i Upravit.
+
+   Lišta se dřív připínala na mřížku rozboru přes `grid-area`, jenže ta
+   oblast v mřížce vůbec není — prvek skončil v implicitní stopě u hlavičky
+   a podle šířky okna zmizel z dohledu. Upravit v čištění chybělo úplně,
+   přestože je to tatáž otázka jako v plachtě („tohle nesedí, oprav to"). */
+const pPr = await otevri(1900, [
+  { pokemon: "Ralts", cp: 400, level: 18, ivAtk: 14, ivDef: 14, ivSta: 14 },
+  { pokemon: "Machop", cp: 500, level: 18, ivAtk: 14, ivDef: 14, ivSta: 14, forma: "Shadow" }
+]);
+const dPr = await pPr.evaluate(async () => {
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("boxModeBtn").click();
+  await cekej(1600);
+  const zavri = [...document.querySelectorAll("#boxMode button")]
+    .find((b) => /Jdeme|Pokra|Zav|OK|Rozum/i.test(b.textContent));
+  if (zavri) { zavri.click(); await cekej(800); }
+  const stav = () => {
+    const bar = document.querySelector("#boxMode .atlas-box-rozbor > .hra-pruh");
+    const evo = document.querySelector("#boxMode .atlas-evolution-column");
+    const strom = evo ? (evo.querySelector("summary, .d-evo") || evo) : null;
+    return { tlacitka: bar ? [...bar.querySelectorAll("button")].map((b) => b.textContent.trim()) : [],
+      nadRadou: !!(bar && strom
+        && bar.getBoundingClientRect().bottom <= strom.getBoundingClientRect().top + 4),
+      vBoxu: !!(bar && bar.getBoundingClientRect().height > 10) };
+  };
+  const out = { prvni: stav() };
+  P.boxRozhodnout("keep");
+  await cekej(1100);
+  out.shadow = stav();
+  P.boxZavritNatvrdo();
+  return out;
+});
+await pPr.close();
+check("v čištění je příkaz „Vyvinul jsem ho“ i „Vylepšil jsem ho“",
+  dPr.prvni.tlacitka.some((x) => /Vyvinul/.test(x))
+    && dPr.prvni.tlacitka.some((x) => /Vylep/.test(x)), JSON.stringify(dPr.prvni));
+check("…a u shadow kusu k tomu očista",
+  dPr.shadow.tlacitka.some((x) => /istil/.test(x)), JSON.stringify(dPr.shadow));
+check("…a Upravit, které tam dřív nebylo vůbec",
+  dPr.prvni.tlacitka.some((x) => /Upravit/.test(x)), JSON.stringify(dPr.prvni.tlacitka));
+check("…celá lišta je vidět a stojí nad evoluční řadou",
+  dPr.prvni.vBoxu === true && dPr.prvni.nadRadou === true, JSON.stringify(dPr.prvni));
+
+/* Druhý nabitý útok pod „+": co si k tomu kusu dokoupit. */
+const pDN = await otevri(1800, [
+  { pokemon: "Azumarill", cp: 1400, level: 24, ivAtk: 0, ivDef: 15, ivSta: 15,
+    fastMove: "Bubble", charged1: "Ice Beam" }
+]);
+const dDN = await pDN.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  A.openDetail(P.getRows()[0].id);
+  await new Promise((r) => setTimeout(r, 1400));
+  const plus = document.querySelector(".atlas-drawer .atlas-sestava-plus");
+  return { je: !!plus,
+    popisek: plus ? (plus.querySelector(".atlas-sestava-kdy") || {}).textContent : "",
+    utok: plus ? [...plus.querySelectorAll(".d-move-jm")].map((e) => e.textContent).join(",") : "",
+    tip: plus ? (plus.dataset.tip || "") : "" };
+});
+await pDN.close();
+check("kus bez druhého nabitého dostane návrh, co dokoupit",
+  dDN.je === true && dDN.popisek === "+" && dDN.utok.length > 0, JSON.stringify(dDN));
+check("…a bublina řekne, že do raidu se to nepřidává",
+  /raid/i.test(dDN.tip) && /lize/i.test(dDN.tip), dDN.tip);
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

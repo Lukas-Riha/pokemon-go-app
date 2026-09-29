@@ -5522,11 +5522,24 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return (c && c.duvody || []).filter(function (d) { return d.druh === role; });
   }
   function roleFiltrProjde(c) {
-    return !roleFiltr || roleDuvody(c, roleFiltr).length > 0;
+    if (!roleFiltr) return true;
+    /* „Mega" je jiná otázka než ostatní role: ne „kdo mi tu roli DRŽÍ",
+       ale „kdo z mých kusů mega formu vůbec má". Slot v rozpočtu dostává
+       jen mega, která za to stojí — tohle ukáže i zbytek. */
+    if (roleFiltr === "mega") return !!(c && c.isMega);
+    return roleDuvody(c, roleFiltr).length > 0;
   }
   /* Klic pro razeni uvnitr role: [skupina, poradi]. U PvP jsou skupiny
      ligy od nejnizsi po nejvyssi, u raidu typy podle abecedy. */
   function roleKlic(c) {
+    /* U megy se řadí podle typu MEGA FORMY a v typu stojí nahoru ten kus,
+       kterému rozpočet megu dal — za ním zbytek toho typu. */
+    if (roleFiltr === "mega") {
+      var typy = (c && c.megaTypy) || [];
+      var poradiPrio = { "Vysoká": 1, "Střední": 2, "Nízká": 3 };
+      return { skupina: 0, typ: String(typy[0] || "\uffff"),
+        poradi: (c && c.megaDrzi) ? 0 : (poradiPrio[c && c.mega] || 4) };
+    }
     var nej = null;
     roleDuvody(c, roleFiltr).forEach(function (d) {
       var s = String(d.stitek || "");
@@ -8947,6 +8960,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         : (megaPoEvoluci ? (dexByKey(megaPoEvoluci.klic) || {}).name : "");
       var megaEntry = megaZdroj ? {
         kind: megaZdroj[0].kind,
+        // Mega forma umí mít jiné typy než základ (Mega Charizard X je
+        // Fire/Dragon, Mega Gyarados Water/Dark) — a podle typu megy se
+        // rozhoduje, na co ji zapnout.
+        typy: megaZdroj[0].types || [],
         raidPriority: megaPriority(megaJmeno, megaZdroj),
         names: megaZdroj.map(function (m) { return m.name; }).join(" / "),
         energy: megaZdroj[0].energy,
@@ -10946,6 +10963,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         evolve: evolve, evolveTone: evolveTone, evolveTitle: evolveTitle, evolveSub: evolveSub,
         gymTitle: gymTitle, raidTitle: raidTitle, copiesTitle: copiesTitle, megaTitle: megaTitle, finalEvoAuto: b.finalEvoAuto,
         mega: mega, megaTone: megaTone, megaSub: megaSub, isMega: !!b.megaEntry,
+        megaTypy: b.megaEntry ? (b.megaEntry.typy || []) : [],
         // Kandidát = druh mega má A tenhle kus je ten, co se má mega evolvovat.
         // "Nejdřív evolvovat" a "Lepší kopie" znamenají, že to není on.
         // Drží mega slot z rozpočtu. Na rozdíl od `megaKandidat` to není
@@ -27274,6 +27292,27 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * Vrstva z toho staví nabídku — seznam se bere odtud, aby se nerozešel
      * s tím, podle čeho se doopravdy filtruje.
      */
+    /**
+     * Doporučená ligová sestava druhu — VČETNĚ druhého nabitého útoku.
+     *
+     * Raidová sestava je dvojice (rychlý + nabitý): druhý nabitý dělí energii
+     * a poškození za vteřinu tím klesne. V lize je to naopak druhá hrozba
+     * a jiný typ poškození, takže ho PvPoke doporučuje — a odsud se bere.
+     * Vrací `[rychlý, nabitý1, nabitý2?]`, nebo prázdné pole.
+     */
+    atlasDoporuceneUtoky: function (r) {
+      if (!r || !r.pokemon) return [];
+      var klic = dataKlic(dexKey(r.pokemon));
+      var nej = null;
+      LEAGUES.concat([{ label: "ML", meta: "master" }]).forEach(function (lg) {
+        if (nej) return;
+        var e = metaZaznam(klic, lg.meta, r.forma);
+        var rec = e ? recMoveset(e) : null;
+        if (rec && rec.fastName) nej = rec;
+      });
+      return nej ? [nej.fastName].concat(nej.chargedNames || []) : [];
+    },
+
     /** Pohlaví kusu ke KRESLENÍ značky: `"f"` / `"m"` / `null`. */
     atlasPohlavi: function (r) { return pohlaviKusu(r); },
 
@@ -27354,11 +27393,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
      * Ukáže jen kusy, které mají danou roli, a seřadí je uvnitř ní.
      *
      * `role`: `"pvp"` (ligy od LC po ML, v lize podle pořadí), `"raid"`
-     * (typy podle abecedy, v typu podle pořadí), `"gym"`. Prázdná hodnota
-     * filtr zruší. Vrací počet kusů, které zbyly.
+     * (typy podle abecedy, v typu podle pořadí), `"gym"`, `"mega"` (všichni,
+     * kdo mega formu mají — podle typu megy, v typu nejdřív ten, komu ji
+     * rozpočet dal). Prázdná hodnota filtr zruší. Vrací počet kusů.
      */
     atlasRole: function (role) {
-      roleFiltr = role === "pvp" || role === "raid" || role === "gym" ? role : "";
+      roleFiltr = role === "pvp" || role === "raid" || role === "gym" || role === "mega"
+        ? role : "";
       renderBody();
       persist(true);
       return { role: roleFiltr, kusu: lastVisibleIds.length };

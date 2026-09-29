@@ -18115,6 +18115,66 @@ try {
     pametPoradi.nejnovejsi <= new Date().toISOString().slice(0, 10),
     pametPoradi.nejnovejsi);
 
+  // ---- Role „Mega": kdo mega formu má, ne kdo drží slot ------------
+  // Slot v rozpočtu dostane jen mega, která za to stojí. Tahle role
+  // odpovídá na jinou otázku: co vůbec jde mega evolvovat — a v každém
+  // typu stojí nahoře ten kus, kterému rozpočet megu dal.
+  const megaRole = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const druhy = ["Charizard", "Charizard", "Alakazam", "Gardevoir", "Gengar",
+      "Malamar", "Absol", "Manectric", "Lucario", "Beedrill", "Snorlax", "Rattata"];
+    P.setRows(druhy.map((n, i) => ({ pokemon: n, cp: 2500 - i * 90, level: 30 - i,
+      ivAtk: 15 - (i % 5), ivDef: 14, ivSta: 13 })));
+    await new Promise((r) => setTimeout(r, 2200));
+    P.atlasSort("");
+    const v = P.atlasRole("mega");
+    const comp = P.getComputed(), jmena = {};
+    P.getRows().forEach((r) => { jmena[r.id] = r.pokemon; });
+    const poradi = P.atlasPoradi().map((id) => {
+      const c = comp[id] || {};
+      return { jmeno: jmena[id], typ: (c.megaTypy || [])[0] || "",
+        drzi: !!c.megaDrzi, jeMega: !!c.isMega };
+    });
+    P.atlasRole("");
+    return { kusu: v.kusu, poradi: poradi, vsech: P.atlasPoradi().length };
+  });
+  check("role „Mega“ nechá jen kusy, které mega formu mají",
+    megaRole.poradi.length > 0 && megaRole.poradi.every((x) => x.jeMega)
+      && megaRole.kusu < megaRole.vsech,
+    JSON.stringify(megaRole.poradi.map((x) => x.jmeno)));
+  check("…a je v tom i ten, komu rozpočet mega slot nedal",
+    megaRole.poradi.some((x) => !x.drzi), JSON.stringify(megaRole.poradi));
+  check("…řadí se podle typu mega formy",
+    megaRole.poradi.every((x, i) => i === 0
+      || String(megaRole.poradi[i - 1].typ).localeCompare(String(x.typ), "cs") <= 0),
+    JSON.stringify(megaRole.poradi.map((x) => x.typ)));
+  check("…a v typu stojí nahoře ten, komu rozpočet megu dal",
+    megaRole.poradi.every((x, i) => i === 0
+      || megaRole.poradi[i - 1].typ !== x.typ
+      || !(x.drzi && !megaRole.poradi[i - 1].drzi)),
+    JSON.stringify(megaRole.poradi.map((x) => x.typ + (x.drzi ? "*" : ""))));
+
+  // ---- Druhý nabitý útok: co dokoupit -------------------------------
+  // V lize je druhý nabitý jiná hrozba a jiný typ poškození, takže ho
+  // PvPoke doporučuje; v raidu dělí energii a nevyplatí se.
+  const druhyNabity = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const kusy = [
+      { pokemon: "Azumarill", cp: 1400, level: 24, ivAtk: 0, ivDef: 15, ivSta: 15,
+        fastMove: "Bubble", charged1: "Ice Beam" },
+      { pokemon: "Medicham", cp: 1450, level: 30, ivAtk: 2, ivDef: 15, ivSta: 14,
+        fastMove: "Counter", charged1: "Ice Punch" }
+    ];
+    P.setRows(kusy);
+    await new Promise((r) => setTimeout(r, 1200));
+    return P.getRows().map((r) => ({ jmeno: r.pokemon,
+      sestava: P.atlasDoporuceneUtoky(r) }));
+  });
+  check("appka zná ligovou sestavu včetně druhého nabitého útoku",
+    druhyNabity.every((x) => x.sestava.length > 2), JSON.stringify(druhyNabity));
+  check("…a je to opravdu sestava toho druhu, ne cizí útoky",
+    druhyNabity[0].sestava[0] === "Bubble", JSON.stringify(druhyNabity[0]));
+
   await page.goto(URL);
   await page.waitForTimeout(700);
 
