@@ -2219,6 +2219,16 @@ const dH = await pH.evaluate(async () => {
   const id = document.querySelector(".atlas-hledani-identita");
   out.identita = id.textContent.replace(/\s+/g, " ").trim();
   out.typuVIdentite = id.querySelectorAll(".d-type").length;
+  // Odkud shiny pada je o klik dal (navrh V2) — tlacitkem, tedy i klavesnici.
+  {
+    const b = id.querySelector("[data-shiny-vic]");
+    out.shinyTlacitko = !!b;
+    if (b) { b.click(); await cekej(500); }
+    const id2 = document.querySelector(".atlas-hledani-identita");
+    out.shinyZdroje = id2 ? id2.textContent.replace(/\s+/g, " ").trim() : "";
+    const b2 = id2 && id2.querySelector("[data-shiny-vic]");
+    if (b2) { b2.click(); await cekej(300); }
+  }
   // Jmeno a typy uz nese pruh identity; engine je kreslil znovu hned pod nim.
   out.duplicitniNadpis = [...document.querySelectorAll("#prohOut .detail-title")]
     .filter((el) => el.getClientRects().length).length;
@@ -2240,10 +2250,12 @@ await pH.close();
 check("hledání je nahoře a údaje kusu zavřené",
   dH.poleVZahlavi && dH.udajeZavrene && dH.vymazatUvnitr && dH.identitaSkryta,
   JSON.stringify(dH));
-check("identita druhu řekne shiny i s tím, odkud padá",
-  /Shiny/.test(dH.identita)
-    && /volná příroda|raid|vajíčko|výzkum|evoluce|fotka|Zatím ne|Neověřeno/.test(dH.identita)
-    && dH.typuVIdentite === 2, dH.identita);
+check("identita druhu řekne, jestli shiny je",
+  /Shiny/.test(dH.identita) && dH.typuVIdentite === 2, dH.identita);
+check("…a odkud padá, to řekne po kliknutí",
+  dH.shinyTlacitko === true
+    && /volná příroda|raid|vajíčko|výzkum|evoluce|fotka|zatím neobjevil|nic neříká/.test(dH.shinyZdroje),
+  dH.shinyZdroje);
 check("…a raidová čísla v ní nejsou, ta patří pod Raidy",
   !/Raidový úlovek/.test(dH.identita), dH.identita);
 check("…a engine už jméno s typy nekreslí podruhé",

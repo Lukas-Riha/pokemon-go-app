@@ -1208,7 +1208,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   gym:'M7 21V4m0 1 11 3-11 3',
   mega:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z'};
  const ikona=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${ROLE_IKONA[k]}"/></svg>`;
- let role='pvp',liga='great',zvyrazneny=null,podminkyVidet=false;
+ let role='pvp',liga='great',zvyrazneny=null,podminkyVidet=false,
+  shinyVic=false,evoVidet=false;
 
  function vysledekBlok(){
   let el=karta.querySelector('.atlas-vysledek');
@@ -1222,6 +1223,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
        prepsat nesmi — clovek se pta na druh, ne ze ho chce zmenit. */
     if(b.dataset.zvyraznit){zvyrazneny=b.dataset.zvyraznit;vykresliVysledek();return}
     if(b.dataset.podminky){podminkyVidet=!podminkyVidet;vykresliVysledek();return}
+    if(b.hasAttribute('data-evo-vic')){evoVidet=!evoVidet;vykresliVysledek();return}
    });
    identita.after(el);
   }
@@ -1251,7 +1253,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   /* Mrizka s obrazky, ne seznam jmen: na co se Eevee vyvine, se pozna
      rychleji podle obrazku. Podminky jsou o tlacitko dal — vidi je
      i klavesnice, nejen mys. (Navrh V2 od Astry.) */
-  return `<aside class="atlas-vysledek-evo"><h4>Evoluční možnosti</h4>`
+  /* Na telefonu je panel sbaleny: osm obrazku pod tabulkou by znamenalo,
+     ze se ke zbytku stranky clovek prorolovava. Na sirokem okne stoji
+     vedle tabulky a schovavat ho neni proc. */
+  return `<aside class="atlas-vysledek-evo" data-otevreno="${evoVidet}">`
+   +`<h4><button type="button" data-evo-vic aria-expanded="${evoVidet}">Evoluční možnosti`
+   +`<span class="atlas-vysledek-evo-sip" aria-hidden="true">›</span></button></h4>`
    +`<div class="atlas-vysledek-evo-mrizka">`
    +evo.map(x=>`<button type="button" class="atlas-vysledek-evo-kus" data-zvyraznit="${esc(x.klic)}"${x.klic===zvyrazneny?' aria-pressed="true"':' aria-pressed="false"'}>`
      +`${P.atlasImage?P.atlasImage(x.jmeno,'atlas-vysledek-evo-obr'):''}<b>${esc(x.jmeno)}</b></button>`).join('')
@@ -1446,14 +1453,22 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    <dl class="atlas-hledani-fakta">
     <div data-shiny="${shinyStav}">
      <dt>Shiny</dt>
-     <dd>${{ano:'Ano',ne:'Zatím ne'}[shinyStav]||'Neověřeno'}</dd>
-     <small>${esc({ano:shiny&&shiny.zdroje.length?shiny.zdroje.join(' · '):'zdroj neuveden',
-       ne:'ve hře se zatím neobjevil'}[shinyStav]||'o tomhle druhu zdroj nic neříká')}</small>
+     <button type="button" class="atlas-hledani-shiny" data-shiny-vic aria-expanded="${shinyVic}">
+      <span>${{ano:'✦ Shiny dostupné',ne:'Shiny zatím ne'}[shinyStav]||'Shiny neověřeno'}</span>
+      <span class="atlas-hledani-shiny-sip" aria-hidden="true">›</span>
+     </button>
+     ${shinyVic?`<small>${esc({ano:shiny&&shiny.zdroje.length?'Odkud padá: '+shiny.zdroje.join(' · '):'zdroj neuveden',
+       ne:'ve hře se zatím neobjevil'}[shinyStav]||'o tomhle druhu zdroj nic neříká')}</small>`:''}
     </div>
    </dl>`;
   vykresliVysledek();
  }
 
+ /* Zdroje shiny jsou o klik dal, jak je v navrhu; klik prekresli
+    identitu, takze se posluchac vesi na cely blok, ne na tlacitko. */
+ identita.addEventListener('click',e=>{
+  if(e.target.closest('[data-shiny-vic]')){shinyVic=!shinyVic;vykresli()}
+ });
  ['input','change'].forEach(u=>jmeno.addEventListener(u,vykresli));
  // Engine si výsledek překresluje sám; identita se veze s ním.
  new MutationObserver(vykresli).observe(vysledek,{childList:true});

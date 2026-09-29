@@ -2111,3 +2111,42 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test #prohlidkaCard .atlas-hledani-fakta{border-left:0;padding-left:0;
     border-top:1px solid var(--border);padding-top:12px}
 }
+
+/* Claude 30. 9. (49): posledni kousky navrhu V2.
+
+   Shiny je souhrn s sipkou a zdroje az po kliknuti (v navrhu je to
+   rozbalovaci radek). Na telefonu jsou evolucni moznosti sbalene —
+   osm obrazku pod tabulkou by znamenalo, ze se ke zbytku stranky clovek
+   prorolovava; na sirokem okne stoji vedle tabulky a schovavat je neni
+   proc. Zalozky rolí se na uzkem okne posunou do strany misto zalomeni. */
+.atlas-test #prohlidkaCard .atlas-hledani-shiny{display:flex;align-items:center;gap:10px;
+  background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;
+  font-size:19px;font-weight:700;min-height:34px}
+.atlas-test #prohlidkaCard [data-shiny=ano] .atlas-hledani-shiny{color:var(--status-good)}
+.atlas-test #prohlidkaCard .atlas-hledani-shiny-sip{font-size:17px;color:var(--text-muted);
+  transition:transform .15s ease}
+.atlas-test #prohlidkaCard .atlas-hledani-shiny[aria-expanded=true] .atlas-hledani-shiny-sip{
+  transform:rotate(90deg)}
+.atlas-test .atlas-vysledek-evo h4 button{display:flex;align-items:center;justify-content:space-between;
+  width:100%;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;
+  text-transform:inherit;letter-spacing:inherit}
+.atlas-test .atlas-vysledek-evo-sip{display:none;font-size:17px}
+@media(min-width:1101px){
+  /* Siroke okno: panel je vedle tabulky, sbalovat ho nedava smysl. */
+  .atlas-test .atlas-vysledek-evo h4 button{cursor:default;pointer-events:none}
+}
+@media(max-width:1100px){
+  .atlas-test .atlas-vysledek-evo-sip{display:inline;transition:transform .15s ease}
+  .atlas-test .atlas-vysledek-evo[data-otevreno=true] .atlas-vysledek-evo-sip{transform:rotate(90deg)}
+  .atlas-test .atlas-vysledek-evo[data-otevreno=false] .atlas-vysledek-evo-mrizka,
+  .atlas-test .atlas-vysledek-evo[data-otevreno=false] .atlas-vysledek-evo-pod{display:none}
+  .atlas-test .atlas-vysledek-evo h4 button{min-height:44px}
+}
+@media(max-width:650px){
+  /* Ctyri zalozky na jeden radek: na uzkem okne se jede do strany,
+     zalomeny "Mega" pod tim vypadal jako samostatna volba. */
+  .atlas-test .atlas-vysledek-ovladani{flex-wrap:nowrap;overflow-x:auto;
+    scrollbar-width:none}
+  .atlas-test .atlas-vysledek-ovladani::-webkit-scrollbar{display:none}
+  .atlas-test .atlas-vysledek-ovladani button{flex:0 0 auto;padding:10px 12px}
+}
