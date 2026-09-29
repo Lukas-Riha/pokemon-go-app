@@ -2363,16 +2363,16 @@ check("rozbalovátko „Zobrazit: vše“ v rosteru není",
   dR.filtrVidet === false, String(dR.filtrVidet));
 check("role „Gym“ nechá jen gymové obránce",
   dR.poGymu.dlazdic > 0 && dR.poGymu.dlazdic < dR.vsech
-    && dR.poGymu.role.join() === "pvp,mega,raid,gym:zap", JSON.stringify(dR.poGymu));
+    && dR.poGymu.role.join() === "pvp,raid,gym:zap,mega", JSON.stringify(dR.poGymu));
 check("druhé kliknutí roli vypne a vrátí celý roster",
-  dR.poVypnuti.dlazdic === dR.vsech && dR.poVypnuti.role.join() === "pvp,mega,raid,gym",
+  dR.poVypnuti.dlazdic === dR.vsech && dR.poVypnuti.role.join() === "pvp,raid,gym,mega",
   JSON.stringify(dR.poVypnuti));
 check("štítek typu role zašedne — sám už řadí od nejlepšího",
   dR.pridanStitek === true
-    && dR.seStitkem.role.join() === "pvp:šedá,mega:šedá,raid:šedá,gym:šedá",
+    && dR.seStitkem.role.join() === "pvp:šedá,raid:šedá,gym:šedá,mega:šedá",
   JSON.stringify(dR.seStitkem));
 check("…a po odebrání štítku jsou role zase k mání",
-  dR.bezStitku.role.join() === "pvp,mega,raid,gym" && dR.bezStitku.dlazdic === dR.vsech,
+  dR.bezStitku.role.join() === "pvp,raid,gym,mega" && dR.bezStitku.dlazdic === dR.vsech,
   JSON.stringify(dR.bezStitku));
 
 /* Čištění boxu: příkazy „ve hře jsem s ním něco udělal" i Upravit.

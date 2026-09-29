@@ -357,7 +357,14 @@ globalThis.AtlasBudget = (() => {
   const P=window.__pgo,esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   window.AtlasEditRow=(id,field)=>{
     const row=P.getRows().find(r=>r.id===id),profile=P.getProfile();if(!row)return;
-    const host=document.querySelector('#atlasDetailContent');host.querySelector('#atlasRowEditor')?.remove();
+    /* V cisteni boxu zadna plachta detailu neni, takze `#atlasDetailContent`
+       neexistuje — `host.querySelector` na nem spadl a tlacitko Upravit
+       se tvarilo, ze nedela nic. */
+    const plachtaOtevrena=!!document.querySelector('#atlasModal:not([hidden])');
+    const host=(plachtaOtevrena?document.querySelector('#atlasDetailContent'):null)
+      ||document.querySelector('#boxMode .atlas-box-rozbor')
+      ||document.querySelector('#atlasDetailContent')||document.body;
+    document.getElementById('atlasRowEditor')?.remove();
     const form=document.createElement('form');form.id='atlasRowEditor';form.className='atlas-row-editor';
     const fields=[['pokemon','Pokémon','text'],['cp','CP','number',10,99999,1],['level','Level','number',1,50,.5],['ivAtk','IV útok','number',0,15,1],['ivDef','IV obrana','number',0,15,1],['ivSta','IV HP','number',0,15,1],['fastMove','Rychlý útok','text'],['charged1','Nabitý útok 1','text'],['charged2','Nabitý útok 2','text']];
     const forms=[...new Set([row.forma||'Normal','Normal','Lucky','Shadow','Purified'])];
@@ -827,8 +834,12 @@ globalThis.AtlasBudget = (() => {
        takze se casto dokupuje; do raidu se skoro nevystreli, protoze deli
        energii. Ukazuje se jen tehdy, kdyz ho kus jeste nema a doporucena
        sestava ho ma — jinak by to byla rada do prazdna. */
+    /* Jen u kusu, ktery nejakou ligu opravdu HRAJE. Druhy nabity utok stoji
+       prach a bonbony, takze rada "dokup si ho" ma smysl u kusu, ktery ma
+       v lize misto — ne u kazdeho, koho PvPoke nekde zna. */
+    const hrajeLigu=!!(c&&(c.duvody||[]).some(d=>d&&d.druh==='pvp'));
     const ligove=(P.atlasDoporuceneUtoky?P.atlasDoporuceneUtoky(row):[])||[];
-    if(row.fastMove&&row.charged1&&!row.charged2&&ligove.length>2){
+    if(hrajeLigu&&row.fastMove&&row.charged1&&!row.charged2&&ligove.length>2){
      const mam=[row.fastMove,row.charged1].map(x=>cisteJmeno(String(x)).trim().toLowerCase());
      const druhy=ligove.slice(2).find(x=>x&&mam.indexOf(String(x).toLowerCase())===-1);
      if(druhy){
@@ -1448,9 +1459,9 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     ligu nebo jeden typ; tohle je "ukaz mi vsechny, kdo hraji PvP". */
  const ROLE=[
   ['pvp','PvP','Všechny ligy — od Little Cupu po Master, v lize podle pořadí'],
-  ['mega','Mega','Kdo má mega formu — podle typu megy, v typu nejdřív ten, komu ji rozpočet dal'],
   ['raid','Raid','Všichni raidoví útočníci — typy podle abecedy, v typu podle pořadí'],
-  ['gym','Gym','Kdo drží místo mezi gymovými obránci']
+  ['gym','Gym','Kdo drží místo mezi gymovými obránci'],
+  ['mega','Mega','Kdo má mega formu — podle typu megy, v typu nejdřív ten, komu ji rozpočet dal']
  ];
  rychle.innerHTML=RYCHLE.map(([val,popis,tip])=>
   `<button type="button" data-razeni="${esc(val)}" data-tip="${esc(tip)}" aria-pressed="false">${esc(popis)}</button>`).join('')

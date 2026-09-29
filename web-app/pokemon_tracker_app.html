@@ -22107,7 +22107,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var hNovy = kusKey(r);
       for (var i = 0; i < bucket.length; i++) {
         var hStary = kusKey(bucket[i]);
-        var sedi = (hNovy && hStary) ? hNovy === hStary : sameMonPossible(bucket[i], r);
+        /* Dva řádky, které se nedají od sebe odlišit, nejsou důkaz jednoho
+           kusu. Při shodném druhu, CP, levelu i útocích to může být jeden
+           kus naskenovaný dvakrát — nebo dva stejné kusy. Ztracený pokémon
+           se nevrátí, řádek navíc se smaže, takže se slučuje jen tehdy, když
+           pro to je důkaz:
+             • otisk kusu (druh + výška + váha) sedí — jistě týž kus;
+             • nebo je právě jeden z těch skenů přesný (IV na číslo) a druhý
+               jen rozsah — to je podpis appraisalu na tomže kuse.
+           Dva stejně nepřesné skeny (94 % exportů z Calcy) zůstanou oba. */
+        var presnyNovy = ivSpread(r) === 0, presnyStary = ivSpread(bucket[i]) === 0;
+        var sedi = (hNovy && hStary)
+          ? hNovy === hStary
+          : (presnyNovy !== presnyStary && sameMonPossible(bucket[i], r));
         if (sedi) { match = bucket[i]; break; }
       }
       if (!match) { bucket.push(r); order.push(r); return; }
@@ -22230,6 +22242,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     });
 
     var updated = 0, added = 0, poweredUp = 0, evolved = 0, nejasnych = 0, taken = [];
+    /* Kusy přidané PRÁVĚ TÍMHLE importem. Nesmí být cílem dalšího řádku
+       z téhož souboru: dva řádky jednoho skenu jsou dva pohledy na box,
+       ne „tentýž kus, který mezitím někdo vylepšil". Bez toho se ze tří
+       stejných Growlithů stali dva — druhý se vlil do prvního. */
+    var pridane = [];
     // Řádek, do kterého každý importovaný kus spadl — v pořadí importu.
     // Podle toho se roster nakonec přeskládá, viz níž.
     var poradiZeSkenu = [];
@@ -22237,7 +22254,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     /** Kolik řádků by na tenhle import sedělo — jen pro hlášení, proč se neslučovalo. */
     function pocetMoznych(test) {
       var n = 0;
-      rows.forEach(function (c) { if (taken.indexOf(c) === -1 && test(c)) n++; });
+      rows.forEach(function (c) {
+        if (taken.indexOf(c) === -1 && pridane.indexOf(c) === -1 && test(c)) n++;
+      });
       return n ? 1 : 0;
     }
     imported.forEach(function (imp) {
@@ -22259,6 +22278,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           for (var h = 0; h < rows.length; h++) {
             var kand = rows[h];
             if (taken.indexOf(kand) !== -1) continue;
+            if (pridane.indexOf(kand) !== -1) continue;
             if (kusKey(kand) !== ik) continue;
             // Přes hranici megy otisk nic neznamená — řeší to kolo podle IV.
             if (jeMegaForma(kand) !== jeMegaForma(imp)) continue;
@@ -22292,6 +22312,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         for (var q = 0; q < rows.length; q++) {
           var c = rows[q];
           if (taken.indexOf(c) !== -1) continue;
+          if (pridane.indexOf(c) !== -1) continue;
           if (!test(c)) continue;
           if (nalez) return null;        // víc než jeden → nevíme který, nesahat
           nalez = c;
@@ -22323,7 +22344,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           evolved++;
         }
       }
-      if (!target) { rows.push(imp); added++; poradiZeSkenu.push(imp); return; }
+      if (!target) { rows.push(imp); added++; pridane.push(imp); poradiZeSkenu.push(imp); return; }
 
       taken.push(target);
       poradiZeSkenu.push(target);

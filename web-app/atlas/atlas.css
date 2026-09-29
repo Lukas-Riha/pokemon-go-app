@@ -1794,7 +1794,7 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-drawer .atlas-ident-utoky{overflow:visible}
 /* Rada s utoky nesmela zalomit, takze "-> Volt Switch" vylezl z bloku ven
    a orezal se. Ted se v nouzi zalomi pod utoky. */
-.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-radek{flex-wrap:wrap;min-width:0}
+
 /* Sekce STATY je siroka a kdyz se zuzi, blok UTOKY se posune doleva k STROPu
    a ma vic mista na doporuceny utok. */
 .atlas-test .atlas-drawer .atlas-detail-identity .atlas-ident-s{min-width:0}
@@ -1817,3 +1817,14 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-sestava-plus .atlas-sestava-kdy{color:var(--series-1);font-size:12px;
   font-weight:800}
 .atlas-test .atlas-sestava-plus .d-move{opacity:.85}
+
+/* Claude 29. 9. (39): doporuceny utok se zalomi, ale nikdy neuseka.
+
+   Radka hlavicky je na 1349 px plna: kdyby blok UTOKY vzal sirku navic,
+   zalomi se pod ostatni sekce cely. Oriznuti teckami zbylo na "-> V..."
+   a to uz je k nicemu. Zustava proto zalomeni pod utok, ke kteremu
+   doporuceni patri; cele zneni je v bubline po najeti. */
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-radek{flex-wrap:wrap;min-width:0}
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi{min-width:0;margin-left:14px}
+/* V cisteni boxu je blok siroky dost, tam se nezalamuje nic. */
+.atlas-test #boxMode .atlas-ident-utoky .atlas-utok-radek{flex-wrap:nowrap}

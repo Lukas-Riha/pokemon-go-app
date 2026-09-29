@@ -520,7 +520,9 @@ try {
     }
     const out = {};
 
-    // a) tentýž kus naskenovaný dvakrát úplně stejně → jeden řádek
+    // a) dva úplně stejné řádky. Může to být jeden kus naskenovaný dvakrát
+    //    NEBO dva stejné kusy — appka to nemá jak poznat, takže nechá oba:
+    //    ztracený pokémon se nevrátí, řádek navíc se smaže.
     window.__pgo.importText([
       "Name,CP,Level,ØATT IV,ØDEF IV,ØHP IV",
       "Ampharos,1604,20,14,15,10",
@@ -529,6 +531,16 @@ try {
     document.getElementById("dedupeScans").checked = true;
     window.__pgo.finishImport(true);
     out.stejnySken = verdicts();
+
+    // a2) appraisal: tentýž kus jednou jako rozsah, podruhé přesně → jeden
+    window.__pgo.importText([
+      "Name,CP,Level,ØATT IV,ØDEF IV,ØHP IV,min IV%,ØIV%,max IV%",
+      "Ampharos,1604,20,14,15,10,60,75,88",
+      "Ampharos,1604,20,14,15,10,86.7,86.7,86.7",
+    ].join("\n"));
+    document.getElementById("dedupeScans").checked = true;
+    window.__pgo.finishImport(true);
+    out.poAppraisalu = verdicts();
 
     // b) dva OPRAVDU různé kusy: stejné CP i level, ale jiná IV → oba zůstanou
     window.__pgo.importText([
@@ -553,7 +565,9 @@ try {
     return out;
   });
 
-  eq("dvakrát stejný sken se sloučí do jednoho", rescanCases.stejnySken.length, 1);
+  eq("dva nerozeznatelné řádky zůstanou oba", rescanCases.stejnySken.length, 2);
+  eq("…zatímco appraisal téhož kusu se spojí do jednoho",
+    rescanCases.poAppraisalu.length, 1);
   eq("dva různé kusy se stejným CP zůstanou oba", rescanCases.ruzneKusy.length, 2);
   check("…a jeden z nich je označený jako horší kopie",
     rescanCases.ruzneKusy.some((r) => r.keep === "Zahodit – kopie"),
@@ -17840,13 +17854,15 @@ try {
   check("náhled importu roster nezmění",
     impNahled.poNahledu === impNahled.pred && impNahled.poCelemBoxu === impNahled.pred,
     impNahled.pred + " → " + impNahled.poNahledu + " / " + impNahled.poCelemBoxu);
-  check("proužek řekne, kolik je řádků a kolik z nich kusů",
-    /5 řádků/.test(impNahled.fakta) && /4 kusy/.test(impNahled.fakta), impNahled.fakta);
+  check("proužek řekne, kolik je v souboru kusů",
+    /5 kusů/.test(impNahled.fakta), impNahled.fakta);
   check("plán řekne, kolik přibude a kolik se aktualizuje",
-    /\+2\s*přibude/.test(impNahled.plan) && /2\s*se aktualizuje/.test(impNahled.plan),
+    /\+3\s*přibude/.test(impNahled.plan) && /2\s*se aktualizuje/.test(impNahled.plan),
     impNahled.plan);
-  check("…a že se dva opakované skeny spojí",
-    /1 opakovaný sken/.test(impNahled.plan), impNahled.plan);
+  // Dva stejné řádky Metagrosse můžou být dva kusy, takže se nesloučí
+  // a plán o žádném spojení nemluví.
+  check("…a o slučování nemluví, když není co spojit",
+    !/opakovan/.test(impNahled.plan), impNahled.plan);
   check("„celý box“ do plánu připíše, kolik kusů pustí",
     /1\s*pustím/.test(impNahled.planCelyBox), impNahled.planCelyBox);
   check("nahrazení a přidání nestojí vedle doporučeného tlačítka",
@@ -17857,7 +17873,7 @@ try {
   check("a náhled sedí s tím, co sloučení opravdu udělá",
     impNahled.poSlouceni.indexOf("Gyarados 2686") > -1
       && impNahled.poSlouceni.indexOf("Lapras 1700") > -1
-      && impNahled.poSlouceni.split("|").length === 5, impNahled.poSlouceni);
+      && impNahled.poSlouceni.split("|").length === 6, impNahled.poSlouceni);
 
   // ---- Nidoran: dva druhy, ne dvě pohlaví jednoho ------------------
   // Značka pohlaví se ze jména odstraňuje, protože je to údaj o kuse.
