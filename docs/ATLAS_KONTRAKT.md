@@ -238,6 +238,28 @@ to připravenost kusu.
 druhý, česky a jako věty (`["ujít 10 km jako buddy", "jen v noci"]`).
 Prázdné pole znamená „nic navíc než bonbóny".
 
+`atlasTypovka(jmeno)` → typová stránka druhu obojím směrem, nebo `null`
+u neznámého druhu.
+
+```
+{
+  typy: ["Fire", "Flying"],
+  obrana: [ { typ, nasobek } ],            // 18 záznamů, od nejhoršího
+  utok: { typy, sestava, dvojity, vyhoda, vyrusene } | null
+}
+```
+
+- `obrana` je, co ten druh schytá: násobek každého útočného typu proti
+  jeho **kombinaci** typů, ne proti jednotlivým. U dvojtypů se to jinak
+  plete — Fighting je proti Fire normální, ale Flying ho srazí na 0,625.
+- `utok` je, kam se hodí **jeho útoky** — bere se doporučená sestava
+  druhu, ne jeho typ. Druh typu Normal může mít nabitý útok jiného typu;
+  vydávat typ Pokémona za všechno, co umí, by lhalo. Když appka sestavu
+  nemá, je `utok` `null` a **nic se neodhaduje**.
+- `dvojity` / `vyhoda` / `vyrusene` jsou kombinace typů z pokrytí, tedy
+  proti čemu ta sestava opravdu funguje, počítané stejným výpočtem jako
+  v rozboru kusu.
+
 `window.__pgoProhlidkaRezim(rezim?)` → přepne Vyhledávání mezi `"druh"`
 a `"kus"` a vrátí, jak to teď stojí. V režimu `"druh"` se CP, level, IV ani
 útoky do výpočtu neberou, ale v polích zůstanou pro návrat. Režim patří

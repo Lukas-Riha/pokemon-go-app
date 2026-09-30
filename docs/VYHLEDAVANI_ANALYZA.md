@@ -163,3 +163,31 @@ součástí zadání.
 **Co zůstává z V2 a nemá cenu překreslovat:** záložky rolí s ikonami,
 ligové pilulky, výsledková tabulka (druh / pořadí / doporučené útoky),
 mřížka evolucí s obrázky, pruh „Údaje mého kusu". To je hotové a sedí.
+
+
+## Dodatek 30. 9.: sekce jsou záložky, ne kotvy
+
+Specifikace V3 počítá s kotvami a sbalenými sekcemi pod sebou. Po
+předvedení hotového pásu CP si uživatel vyžádal členění, jaké má
+`db.pokemongohub.net` (Stats / Counters / CP & IV / PvP / Moves) —
+a rovnou dodal, ať se to sjednotí s tím, jak appka vypadá jinde.
+
+Je to tedy **záměrná odchylka od V3**, ne opomenutí:
+
+- Místo kotev jsou **záložky sekcí** (Přehled · Evoluce · Rozbor ·
+  Můj kus) se stejným vzhledem jako záložky rolí uvnitř výsledků. Appka
+  se tím ovládá jedním způsobem, ne dvěma.
+- **Identita a pás CP zůstávají nad záložkami**, protože platí pro
+  všechny sekce — stejně jako hlavička druhu na pokemongohub.
+- Obsah se do záložek **přesouvá, nekopíruje** (`#prohOut` i formulář
+  kusu nesou posluchače enginu), jak V3 vyžaduje.
+- Tím odpadá požadavek „na širokém desktopu sekce 5–8 v pravém sloupci":
+  každá sekce má celou šířku. Výsledková tabulka tím přestala stát vedle
+  evolucí, takže u druhu se dvěma řádky (Magmar) vedle ní nezůstává
+  prázdné místo — což byl jeden z bodů V3.
+- Pořadí sekcí zůstává stabilní, jak V3 chce; jen se místo rolování
+  přepíná.
+
+Co z V3 platí dál beze změny: obsah jednotlivých sekcí, pravidla o
+datech (nic se nevymýšlí, tři stavy shiny, pořadí druhu ≠ IV rank),
+pás CP a jeho popisky, chování formuláře kusu a šest stavů k předání.

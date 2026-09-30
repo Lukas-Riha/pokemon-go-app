@@ -1220,8 +1220,74 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
       a svou vysku. V jedne karte se tabulka natahovala na vysku
       evolucniho panelu a pod dvema radky zustavalo prazdno. */
    el=document.createElement('div');el.className='atlas-vysledky';
+   panel('prehled').append(el);
+  }
+  return el;
+ }
+
+ /* Pas "CP pri 100 % IV" (V3, sekce 3).
+
+    Pet bunek se stejnym vyznamem: kolik ma dokonaly kus na tom levelu.
+    Vejce a raid maji tyz level schvalne — je to tyz vypocet ve dvou
+    kontextech, ne dve ruzna cisla. Pas NERIKA, ze druh z toho zdroje
+    prave pada; to plyne z rozpisu akci, ne z pokedexu. */
+ const CP_BUNKY=[
+  ['Raid · L20',20],
+  ['Raid s počasím · L25',25],
+  ['Vejce · L20',20],
+  ['Výzkum · L15',15],
+  ['Strop · L40',40]];
+ function cpPasBlok(){
+  let el=karta.querySelector('.atlas-cp-pas');
+  if(!el){el=document.createElement('section');el.className='atlas-cp-pas'}
+  const zalozky=karta.querySelector('.atlas-sekce');
+  if(zalozky){if(el.nextElementSibling!==zalozky)zalozky.before(el)}
+  else if(!el.parentElement)identita.after(el);
+  return el;
+ }
+ function vykresliCpPas(d,pocasi){
+  const el=cpPasBlok();
+  if(!d){el.hidden=true;el.innerHTML='';return}
+  el.hidden=false;
+  const bunky=CP_BUNKY.map(([popis,lvl])=>{
+   const cp=P.atlasCP?P.atlasCP(d.name,lvl):null;
+   return `<div class="atlas-cp-bunka"><b>${cp==null?'—':cp}</b><span>${esc(popis)}</span>`
+    +(cp==null?'<small>staty téhle formy nemáme</small>':'')+`</div>`;
+  }).join('');
+  el.innerHTML=`<h4 class="atlas-cp-nadpis" id="atlasKotvaCisla" tabindex="-1">CP při 100 % IV</h4>`
+   +`<div class="atlas-cp-mrizka">${bunky}</div>`
+   +`<p class="atlas-cp-pozn">Referenční CP pro uvedené levely; nejde o seznam dostupných úlovků.`
+   +(pocasi&&pocasi.length?` Počasí pro jeho typy: ${esc(pocasi.join(' / '))}.`:'')+`</p>`;
+ }
+
+ /* Sekce jako zalozky.
+
+    Drive to byl jeden dlouhy sloupec: vysledky, evoluce, rozbor a
+    formular pod sebou, takze se ke konci clovek prorolovaval pres celou
+    stranku. Ted se prepinaji zalozkami — stejnym ovladanim, jakym se uz
+    prepinaji role uvnitr vysledku. Identita a pas CP zustavaji nad nimi,
+    protoze plati pro vsechny sekce.
+
+    Obsah se do zalozek PRESOUVA, nekopiruje: `#prohOut` i formular kusu
+    nesou posluchace enginu a kopie by prestala zit. */
+ const SEKCE=[
+  ['prehled','Přehled'],
+  ['typy','Typy'],
+  ['evoluce','Evoluce'],
+  ['rozbor','Rozbor'],
+  ['kus','Můj kus']];
+ let sekce='prehled';
+ function sekceBlok(){
+  let el=karta.querySelector('.atlas-sekce');
+  if(!el){
+   el=document.createElement('div');el.className='atlas-sekce';
+   el.innerHTML='<div class="atlas-sekce-zalozky" role="tablist" aria-label="Části stránky"></div>'
+    +SEKCE.map(([k])=>`<div class="atlas-sekce-panel" data-sekce="${k}" role="tabpanel" tabindex="-1"></div>`).join('');
+   /* Jedna obsluha na cely blok: obsah sekci se prekresluje a posluchac
+      poveseny na jednotlivych tlacitkach by se s nim ztratil. */
    el.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.sekcePrepnout){prepniSekci(b.dataset.sekcePrepnout);return}
     if(b.dataset.role){role=b.dataset.role;zvyrazneny=null;vykresliVysledek();return}
     if(b.dataset.liga){liga=b.dataset.liga;ligaKlicVModelu=b.dataset.liga;
      zvyrazneny=null;vykresliVysledek();return}
@@ -1230,10 +1296,110 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     if(b.dataset.zvyraznit){zvyrazneny=b.dataset.zvyraznit;vykresliVysledek();return}
     if(b.dataset.podminky){podminkyVidet=!podminkyVidet;vykresliVysledek();return}
     if(b.hasAttribute('data-evo-vic')){evoVidet=!evoVidet;vykresliVysledek();return}
+    if(b.hasAttribute('data-zpet-vysledky')){prepniSekci('prehled');return}
+    /* Counter mod pracuje s TVYM rosterem — appka zadny vlastni seznam
+       protihracu nevymysli. Prazdny roster to rekne na miste. */
+    if(b.hasAttribute('data-counter-rezim')){
+     const jmenoDruhu=jmeno.value.trim();
+     if(!P.getRows().length){
+      b.insertAdjacentHTML('afterend',
+       '<p class="atlas-typy-pozn" data-counter-hlaska>Nejdřív si naimportuj roster — '
+       +'protihráče vybírá appka z toho, co máš ty.</p>');
+      b.disabled=true;return;
+     }
+     window.__atlasTest&&window.__atlasTest.go('roster');
+     const t=P.atlasProtiBossovi&&P.atlasProtiBossovi(jmenoDruhu);
+     if(!t||!t.length)window.__atlasTest&&window.__atlasTest.go('teams','cheatCard');
+     return;
+    }
    });
-   identita.after(el);
+   (karta.querySelector('.atlas-cp-pas')||identita).after(el);
   }
   return el;
+ }
+ function panel(k){return sekceBlok().querySelector('.atlas-sekce-panel[data-sekce="'+k+'"]')}
+ function prepniSekci(k,tise){
+  if(!SEKCE.some(([x])=>x===k))return;
+  sekce=k;
+  const el=sekceBlok();
+  el.querySelectorAll('.atlas-sekce-panel').forEach(x=>{x.hidden=x.dataset.sekce!==k});
+  el.querySelectorAll('[data-sekce-prepnout]').forEach(b=>{
+   const je=b.dataset.sekcePrepnout===k;
+   b.setAttribute('aria-selected',String(je));b.setAttribute('aria-pressed',String(je));
+  });
+  if(!tise){const x=panel(k);if(x)x.focus({preventScroll:true})}
+ }
+ /* Rozbor z enginu a formular kusu se PRESUNOU do svych zalozek. */
+ function presunDoSekci(){
+  const rozbor=panel('rozbor'),kus=panel('kus');
+  if(rozbor&&vysledek.parentElement!==rozbor)rozbor.append(vysledek);
+  if(kus&&udaje.parentElement!==kus){kus.append(udaje);udaje.open=true}
+ }
+ function vykresliKotvy(je){
+  const el=sekceBlok();
+  el.hidden=!je;
+  presunDoSekci();
+  el.querySelector('.atlas-sekce-zalozky').innerHTML=SEKCE.map(([k,popis])=>
+   '<button type="button" role="tab" data-sekce-prepnout="'+k+'" aria-selected="'+(sekce===k)+'"'
+   +' aria-pressed="'+(sekce===k)+'"><span>'+esc(popis)+'</span></button>').join('');
+  prepniSekci(sekce,true);
+ }
+
+ /* Typova stranka druhu (V3, sekce 5).
+
+    Dve casti, protoze jsou to dve ruzne otazky: cim ho zasahnes (jeho
+    obrana) a kam se hodi jeho utoky (jejich typy, ne jeho). Nasobky
+    pocita engine na KOMBINACI typu — vlastni tabulku si vrstva nedela. */
+ const TYP_SKUPINY=[
+  [2.5,'Dvojnásobná slabina','slabina2'],
+  [1.5,'Slabina','slabina'],
+  [0.9,'Normální zásah','normal'],
+  [0.5,'Odolnost','odolnost'],
+  [0,'Dvojnásobná odolnost','odolnost2']];
+ function skupinaNasobku(n){
+  for(const [mez,popis,tr] of TYP_SKUPINY)if(n>=mez)return [popis,tr];
+  return ['Dvojnásobná odolnost','odolnost2'];
+ }
+ function typChip(t){
+  const barvy=P.typeColors?P.typeColors():{};
+  return `<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`;
+ }
+ function vykresliTypy(d){
+  const cil=panel('typy');if(!cil)return;
+  const t=d&&P.atlasTypovka?P.atlasTypovka(d.name):null;
+  if(!t){cil.innerHTML='';return}
+  /* Radky se seskupi podle nasobku, at se to da precist bez pocitani. */
+  const skupiny=new Map();
+  t.obrana.forEach(x=>{
+   const [popis,tr]=skupinaNasobku(x.nasobek);
+   if(!skupiny.has(popis))skupiny.set(popis,{tr,nasobek:x.nasobek,typy:[]});
+   skupiny.get(popis).typy.push(x.typ);
+  });
+  const obranaHtml=[...skupiny.entries()].map(([popis,v])=>
+   `<div class="atlas-typy-radek" data-stupen="${v.tr}"><b>${esc(popis)}</b>`
+   +`<span class="atlas-typy-nasobek">×${String(v.nasobek).replace('.',',')}</span>`
+   +`<div class="atlas-typy-chipy">${v.typy.map(typChip).join('')}</div></div>`).join('');
+  const u=t.utok;
+  const utokHtml=u
+   ?`<p class="atlas-typy-pozn">Počítá se z doporučené sestavy druhu: `
+     +`<b>${esc(u.sestava.join(' + '))}</b> (${u.typy.map(esc).join(' · ')}).</p>`
+     +(u.dvojity.length?`<div class="atlas-typy-radek" data-stupen="slabina2" data-bez-cisla="1"><b>Dvojnásobně zasáhne</b>`
+       +`<div class="atlas-typy-chipy">${u.dvojity.map(x=>`<span class="atlas-typy-kombinace">${esc(x.klic)}</span>`).join('')}</div></div>`:'')
+     +(u.vyhoda.length?`<div class="atlas-typy-radek" data-stupen="slabina" data-bez-cisla="1"><b>Má výhodu proti</b>`
+       +`<div class="atlas-typy-chipy">${u.vyhoda.map(x=>`<span class="atlas-typy-kombinace">${esc(x.klic)}</span>`).join('')}</div></div>`:'')
+     +(u.vyrusene.length?`<div class="atlas-typy-radek" data-stupen="normal" data-bez-cisla="1"><b>Výhoda se vyruší u</b>`
+       +`<div class="atlas-typy-chipy">${u.vyrusene.map(x=>`<span class="atlas-typy-kombinace">${esc(x.klic)}</span>`).join('')}</div></div>`:'')
+   :'<p class="atlas-typy-pozn">Doporučenou sestavu appka pro tenhle druh nemá, takže o jeho útocích nic netvrdí.</p>';
+  cil.innerHTML=`<section class="atlas-typy">`
+   +`<h4>Čím ho zasáhneš</h4>`
+   +`<p class="atlas-typy-pozn">Násobky platí pro jeho kombinaci typů `
+   +`(${t.typy.map(esc).join(' · ')}), ne pro každý typ zvlášť.</p>`
+   +obranaHtml
+   +`<h4 class="atlas-typy-druhy">Kam se hodí jeho útoky</h4>`
+   +utokHtml
+   +`<button type="button" class="atlas-typy-counter" data-counter-rezim>`
+   +`Vybrat protihráče z mého rosteru</button>`
+   +`</section>`;
  }
 
  /* Raidova fakta: CP dokonaleho kusu a pocasi. Plni je `vykresli()`,
@@ -1243,12 +1409,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  function raidFaktaHtml(){
   if(!raidFakta)return '';
   const f=raidFakta;
-  const hodnoty=(f.cp20!=null||f.cp25!=null)
-   ?`${f.cp20!=null?`<span><b>${f.cp20}</b><small>100 % IV · L20</small></span>`:''}${f.cp25!=null?`<span><b>${f.cp25}</b><small>100 % IV · L25 s počasím</small></span>`:''}`
-   :'<span><b>—</b><small>staty téhle formy nemáme</small></span>';
-  return `<div class="atlas-vysledek-raid"><div class="atlas-vysledek-raid-cp">${hodnoty}</div>`
-   +`<p>${f.bossTed?'Boss potvrzený probíhající akcí.':'Referenční hodnoty pro raidový úlovek.'} `
-   +`Shiny z raidu: ${esc(f.shinyRaid)}. Počasí: ${esc(f.pocasi||'Neověřeno')}.</p></div>`;
+  /* CP uz stoji v pasu nahore — tady by to bylo tyz cislo podruhe.
+     Sem patri jen to, co plati zrovna o raidech. */
+  return `<div class="atlas-vysledek-raid">`
+   +`<p><b>${f.bossTed?'Boss potvrzený probíhající akcí.':'Že je druh v raidech, appka z dat neví.'}</b> `
+   +`Shiny z raidu: ${esc(f.shinyRaid)}.`
+   +(f.pocasi?` Počasí pro jeho typy: ${esc(f.pocasi)}.`:'')+`</p></div>`;
  }
 
  /* Evolucni moznosti vedle tabulky. Podminky jsou videt rovnou, ne az po
@@ -1365,9 +1531,14 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${kusovy?'<th>Tvůj kus</th>':''}<th></th></tr></thead><tbody>`
       +radky.map(r=>radekHtml(r,m.klic)).join('')+`</tbody></table>`
      :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`)
-   +`</div></section>`
-   +evoluceHtml(m);
+   +`</div></section>`;
+  /* Evoluce maji vlastni zalozku, takze uz nestoji vedle tabulky —
+     tabulka tim dostala celou sirku a u druhu se dvema radky nezustava
+     vedle ni prazdne misto. */
+  const evoPanel=panel('evoluce');
+  if(evoPanel)evoPanel.innerHTML=evoluceHtml(m);
   if(klicFokusu){const znovu=el.querySelector(klicFokusu);if(znovu)znovu.focus({preventScroll:true})}
+  vykresliKotvy(true);
  }
 
  // Počasí je v datech anglicky, protože tak se jmenuje v herním souboru.
@@ -1420,16 +1591,14 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      rekne, co se ptame. V polich udaje zustanou pro navrat. */
   window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim(k);
   vykresli();
-  /* Formular kusu stoji az pod vysledky a evolucemi, takze po prepnuti
-     nebylo videt, ze se neco stalo. Sekce se otevre, prijede do pohledu
-     a fokus sedne na CP — a zpatky nahoru vede vlastni tlacitko. */
+  /* Prepnuti na vlastni kus rovnou otevre zalozku s formularem a zameri
+     CP — jinak se zmeni rezim, ale na obrazovce se nic nestane. */
   if(k==='kus'){
    udaje.open=true;
+   prepniSekci('kus',true);
    const cp=document.getElementById('prohCp');
-   const plynule=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-   udaje.scrollIntoView({block:'start',behavior:plynule?'smooth':'auto'});
-   if(cp)setTimeout(()=>cp.focus({preventScroll:true}),plynule?260:0);
-  }
+   if(cp)setTimeout(()=>cp.focus({preventScroll:true}),60);
+  }else if(sekce==='kus')prepniSekci('prehled',true);
  }
  /* "Zpet na vysledky" z formulare kusu: bez nej se clovek musel
     prorolovat pres celou stranku zpatky nahoru. */
@@ -1457,7 +1626,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const hodnota=jmeno.value.trim();
   hlava.querySelector('[data-hledani-zrus]').hidden=!hodnota;
   const d=hodnota?P.dexEntry(hodnota):null;
-  if(!d){identita.hidden=true;identita.innerHTML='';vykresliVysledek();return}
+  if(!d){identita.hidden=true;identita.innerHTML='';vykresliCpPas(null);
+   vykresliVysledek();vykresliKotvy(false);return}
   const typy=(d.types||[]).filter(t=>t&&t!=='–');
   const barvy=P.typeColors()||{};
   const shiny=P.atlasShiny?P.atlasShiny(d.name):null;
@@ -1493,7 +1663,9 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    &&new Date(e[3])<=ted&&new Date(e[4])>ted
    &&(window.AtlasEventUI?.names(e)||[]).some(n=>P.dexKeyOf&&P.dexKeyOf(n)===P.dexKeyOf(d.name)));
   identita.hidden=false;
-  raidFakta={cp20:cp20,cp25:cp25,pocasi:pocasi.join(' / '),shinyRaid:shinyRaid,bossTed:bossTed};
+  raidFakta={pocasi:pocasi.join(' / '),shinyRaid:shinyRaid,bossTed:bossTed};
+  vykresliCpPas(d,pocasi);
+  vykresliTypy(d);
   identita.innerHTML=`<div class="atlas-hledani-kdo">
     ${P.atlasImage?P.atlasImage(d.name,'atlas-hledani-obr'):''}
     <div>

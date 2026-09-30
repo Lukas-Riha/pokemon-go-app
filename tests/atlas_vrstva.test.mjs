@@ -2247,9 +2247,12 @@ const dH = await pH.evaluate(async () => {
   return out;
 });
 await pH.close();
-check("hledání je nahoře a údaje kusu zavřené",
-  dH.poleVZahlavi && dH.udajeZavrene && dH.vymazatUvnitr && dH.identitaSkryta,
-  JSON.stringify(dH));
+// Formulář kusu má vlastní záložku, takže se neschovává do rozbalovátka —
+// schované je celou dobu, dokud si člověk tu záložku neotevře.
+check("hledání je nahoře a formulář kusu není v cestě",
+  dH.poleVZahlavi && dH.vymazatUvnitr && dH.identitaSkryta,
+  JSON.stringify({ pole: dH.poleVZahlavi, vymazat: dH.vymazatUvnitr,
+    identita: dH.identitaSkryta }));
 check("identita druhu řekne, jestli shiny je",
   /Shiny/.test(dH.identita) && dH.typuVIdentite === 2, dH.identita);
 check("…a odkud padá, to řekne po kliknutí",
@@ -2799,6 +2802,10 @@ const dVysl29 = await pVysl29.evaluate(async () => {
   pole.value = "Eevee";
   pole.dispatchEvent(new Event("input", { bubbles: true }));
   await cekej(1100);
+  {
+    const zal = document.querySelector('[data-sekce-prepnout="evoluce"]');
+    if (zal) { zal.click(); await cekej(500); }
+  }
   const evo = document.querySelector(".atlas-vysledek-evo");
   out.evo = { je: !!evo,
     kusu: evo ? evo.querySelectorAll(".atlas-vysledek-evo-kus").length : 0,
@@ -2806,12 +2813,8 @@ const dVysl29 = await pVysl29.evaluate(async () => {
     // Podminky jsou o tlacitko dal — dosahne na ne i klavesnice, ne jen mys.
     podminkyPred: evo ? evo.querySelectorAll(".atlas-vysledek-evo-pod dd").length : 0,
     tlacitko: !!(evo && evo.querySelector("[data-podminky]")),
-    vedle: (() => {
-      const tab = document.querySelector(".atlas-vysledek-telo");
-      if (!evo || !tab) return false;
-      return Math.round(evo.getBoundingClientRect().left)
-        >= Math.round(tab.getBoundingClientRect().right) - 2;
-    })() };
+    // Evoluce maji vlastni zalozku — nestoji vedle tabulky, ale misto ni.
+    vlastniZalozka: !!(evo && evo.closest('[data-sekce="evoluce"]')) };
   {
     const b = document.querySelector("[data-podminky]");
     if (b) { b.click(); await cekej(400); }
@@ -2841,14 +2844,15 @@ const dVysl29 = await pVysl29.evaluate(async () => {
 await pVysl29.close();
 check("raidová fakta nejsou v PvP ani v identitě",
   dVysl29.vPvp.raid === 0 && dVysl29.vPvp.identita === 0, JSON.stringify(dVysl29.vPvp));
-check("…ale pod Raidy stojí obě čísla i s popiskem",
-  dVysl29.vRaidu.je === true && dVysl29.vRaidu.cisel === 2
+check("…pod Raidy zůstane dostupnost a shiny, čísla ne",
+  dVysl29.vRaidu.je === true && dVysl29.vRaidu.cisel === 0
     && /Shiny z raidu/.test(dVysl29.vRaidu.text), JSON.stringify(dVysl29.vRaidu.cisel));
 check("…a neříká se, že je druh v raidech zrovna teď",
-  /Referenční hodnoty|Boss potvrzený/.test(dVysl29.vRaidu.text), dVysl29.vRaidu.text.slice(0, 60));
+  /appka z dat neví|Boss potvrzený/.test(dVysl29.vRaidu.text), dVysl29.vRaidu.text.slice(0, 60));
 check("fokus přežije přepnutí role", dVysl29.fokus === "gym", dVysl29.fokus);
-check("evoluční možnosti stojí vedle tabulky",
-  dVysl29.evo.je === true && dVysl29.evo.vedle === true, JSON.stringify(dVysl29.evo));
+check("evoluční možnosti mají vlastní záložku",
+  dVysl29.evo.je === true && dVysl29.evo.vlastniZalozka === true,
+  JSON.stringify({ je: dVysl29.evo.je, zalozka: dVysl29.evo.vlastniZalozka }));
 check("…jako mřížka obrázků, jeden za každou evoluci",
   dVysl29.evo.kusu === 8 && dVysl29.evo.obrazku === 8,
   JSON.stringify([dVysl29.evo.kusu, dVysl29.evo.obrazku]));
@@ -2884,10 +2888,12 @@ const dKus30 = await pKus30.evaluate(async () => {
   await cekej(1200);
   const cp = document.getElementById("prohCp");
   out.poPrepnuti = {
-    scroll: Math.round(window.scrollY),
     fokus: document.activeElement ? document.activeElement.id : "",
     otevrene: !!document.querySelector(".atlas-hledani-udaje[open]"),
-    // Formulář musí být po přepnutí vidět, ne někde pod stránkou.
+    // Přepnutí režimu otevře záložku s formulářem — musí být vidět.
+    zalozka: (document.querySelector('[data-sekce-prepnout="kus"]') || {})
+      .getAttribute ? document.querySelector('[data-sekce-prepnout="kus"]')
+        .getAttribute("aria-selected") : "",
     cpVidet: (() => { const r = cp.getBoundingClientRect();
       return r.top >= 0 && r.bottom <= window.innerHeight; })()
   };
@@ -2895,6 +2901,10 @@ const dKus30 = await pKus30.evaluate(async () => {
     e.dispatchEvent(new Event("input", { bubbles: true })); };
   nastav("prohCp", "1400"); nastav("prohA", "0"); nastav("prohD", "15"); nastav("prohS", "15");
   await cekej(1400);
+  {
+    const zal = document.querySelector('[data-sekce-prepnout="prehled"]');
+    if (zal) { zal.click(); await cekej(500); }
+  }
   const bunka = () => (document.querySelector(".atlas-vysledek-tab tr.je-vstup td:nth-child(4)") || {})
     .textContent || "";
   out.great = bunka();
@@ -2907,15 +2917,19 @@ const dKus30 = await pKus30.evaluate(async () => {
   // Zpátky na výsledky.
   const pvp = document.querySelector('[data-role="pvp"]');
   if (pvp) { pvp.click(); await cekej(400); }
+  const zalKus = document.querySelector('[data-sekce-prepnout="kus"]');
+  if (zalKus) { zalKus.click(); await cekej(500); }
   const zpet = document.querySelector("[data-zpet-vysledky]");
   out.tlacitkoZpet = !!zpet;
-  if (zpet) { zpet.click(); await cekej(900); }
-  out.poZpet = { scroll: Math.round(window.scrollY) };
+  if (zpet) { zpet.click(); await cekej(600); }
+  out.poZpet = { zalozka: (document.querySelector('[data-sekce-prepnout="prehled"]') || {})
+    .getAttribute ? document.querySelector('[data-sekce-prepnout="prehled"]')
+      .getAttribute("aria-selected") : "" };
   return out;
 });
 await pKus30.close();
-check("přepnutí na vlastní kus formulář otevře a přijede k němu",
-  dKus30.poPrepnuti.otevrene === true && dKus30.poPrepnuti.scroll > dKus30.pred.scroll
+check("přepnutí na vlastní kus otevře jeho záložku a formulář je vidět",
+  dKus30.poPrepnuti.otevrene === true && dKus30.poPrepnuti.zalozka === "true"
     && dKus30.poPrepnuti.cpVidet === true, JSON.stringify(dKus30.poPrepnuti));
 check("…a fokus sedne na CP", dKus30.poPrepnuti.fokus === "prohCp", dKus30.poPrepnuti.fokus);
 check("IV rank v tabulce nese jméno vybrané ligy",
@@ -2925,8 +2939,167 @@ check("IV rank v tabulce nese jméno vybrané ligy",
 check("…a v roli bez ligového limitu se nepočítá",
   !/IV #/.test(dKus30.raid), dKus30.raid);
 check("z formuláře vede cesta zpátky na výsledky",
-  dKus30.tlacitkoZpet === true && dKus30.poZpet.scroll < dKus30.poPrepnuti.scroll,
-  JSON.stringify([dKus30.tlacitkoZpet, dKus30.poZpet.scroll, dKus30.poPrepnuti.scroll]));
+  dKus30.tlacitkoZpet === true && dKus30.poZpet.zalozka === "true",
+  JSON.stringify([dKus30.tlacitkoZpet, dKus30.poZpet.zalozka]));
+
+console.log("\n31) Pás CP při 100 % IV a kotvy na sekce");
+const pCp31 = await otevri(1440, [
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
+]);
+const dCp31 = await pCp31.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const P = window.__pgo;
+  window.__pgoZalozka("prohlidkaCard");
+  await cekej(1200);
+  const pole = document.getElementById("prohName");
+  pole.value = "Eevee";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(1400);
+  const pas = document.querySelector(".atlas-cp-pas");
+  const bunky = pas ? [...pas.querySelectorAll(".atlas-cp-bunka")] : [];
+  const out = {
+    je: !!pas,
+    // Pás patří mezi identitu a výsledky, ne až pod ně.
+    poradi: pas ? [pas.previousElementSibling.className, pas.nextElementSibling.className] : [],
+    popisky: bunky.map((b) => (b.querySelector("span") || {}).textContent || ""),
+    hodnoty: bunky.map((b) => (b.querySelector("b") || {}).textContent || ""),
+    // Čísla musí sedět s tím, co spočítá engine.
+    sediSEnginem: [20, 25, 20, 15, 40].every((lvl, i) => {
+      const cp = P.atlasCP("Eevee", lvl);
+      return String(cp == null ? "—" : cp) === (bunky[i]
+        ? (bunky[i].querySelector("b") || {}).textContent : "");
+    }),
+    pozn: (pas && pas.querySelector(".atlas-cp-pozn") || {}).textContent || "",
+    kotvy: [...document.querySelectorAll(".atlas-sekce-zalozky button")].map((b) => b.textContent.trim())
+  };
+  // Pod Raidy se pás CP neopakuje.
+  const raid = document.querySelector('[data-role="raid"]');
+  if (raid) { raid.click(); await cekej(600); }
+  const blok = document.querySelector(".atlas-vysledek-raid");
+  out.raidBlok = blok ? blok.textContent.replace(/\s+/g, " ").trim() : "";
+  out.raidCisla = blok ? blok.querySelectorAll(".atlas-vysledek-raid-cp").length : -1;
+  const pvp = document.querySelector('[data-role="pvp"]');
+  if (pvp) { pvp.click(); await cekej(400); }
+  return out;
+});
+await pCp31.close();
+check("pás CP stojí mezi identitou a záložkami sekcí",
+  dCp31.je === true && /identita/.test(dCp31.poradi[0]) && /sekce/.test(dCp31.poradi[1]),
+  JSON.stringify(dCp31.poradi));
+check("…má pět buněk se svým levelem v popisku",
+  dCp31.popisky.length === 5
+    && /Raid · L20/.test(dCp31.popisky[0]) && /L25/.test(dCp31.popisky[1])
+    && /Vejce · L20/.test(dCp31.popisky[2]) && /Výzkum · L15/.test(dCp31.popisky[3])
+    && /Strop · L40/.test(dCp31.popisky[4]),
+  JSON.stringify(dCp31.popisky));
+check("…čísla sedí s tím, co spočítá engine", dCp31.sediSEnginem === true,
+  JSON.stringify(dCp31.hodnoty));
+check("…a pod pásem stojí, že jsou to referenční hodnoty",
+  /Referenční CP/.test(dCp31.pozn) && /nejde o seznam dostupných/.test(dCp31.pozn),
+  dCp31.pozn.slice(0, 70));
+check("pod Raidy se pás CP neopakuje",
+  dCp31.raidCisla === 0 && !/L20|L25/.test(dCp31.raidBlok) && /Shiny z raidu/.test(dCp31.raidBlok),
+  dCp31.raidBlok.slice(0, 80));
+check("záložky sekcí stojí v pevném pořadí",
+  dCp31.kotvy.join("|") === "Přehled|Typy|Evoluce|Rozbor|Můj kus",
+  JSON.stringify(dCp31.kotvy));
+
+console.log("\n31b) Záložka sekce přepne obsah a přenese fokus");
+const pKot31 = await otevri(820, [
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
+]);
+const dKot31 = await pKot31.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.__pgoZalozka("prohlidkaCard");
+  await cekej(1200);
+  const pole = document.getElementById("prohName");
+  pole.value = "Eevee";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(1400);
+  const panel = (k) => document.querySelector('.atlas-sekce-panel[data-sekce="' + k + '"]');
+  const out = { prehledVidet: panel("prehled") ? !panel("prehled").hidden : null,
+    evoluceVidet: panel("evoluce") ? !panel("evoluce").hidden : null };
+  const b = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
+    .find((x) => /Evoluce/.test(x.textContent));
+  out.kotvaJe = !!b;
+  if (b) { b.click(); await cekej(700); }
+  out.poKliknuti = { prehled: panel("prehled") ? !panel("prehled").hidden : null,
+    evoluce: panel("evoluce") ? !panel("evoluce").hidden : null,
+    obrazku: document.querySelectorAll(".atlas-vysledek-evo-obr").length };
+  out.fokus = document.activeElement
+    ? (document.activeElement.className || document.activeElement.tagName) : "";
+  return out;
+});
+await pKot31.close();
+check("na začátku je vidět Přehled, ne evoluce",
+  dKot31.prehledVidet === true && dKot31.evoluceVidet === false,
+  JSON.stringify([dKot31.prehledVidet, dKot31.evoluceVidet]));
+check("…záložka Evoluce obsah přepne",
+  dKot31.kotvaJe === true && dKot31.poKliknuti.evoluce === true
+    && dKot31.poKliknuti.prehled === false && dKot31.poKliknuti.obrazku === 8,
+  JSON.stringify(dKot31.poKliknuti));
+check("…a přenese na ni fokus", /atlas-sekce-panel/.test(dKot31.fokus), dKot31.fokus);
+
+console.log("\n32) Záložka Typy: obojím směrem a bez vymyšlených counterů");
+const pTyp32 = await otevri(1440, []);
+const dTyp32 = await pTyp32.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.__pgoZalozka("prohlidkaCard");
+  await cekej(1200);
+  const pole = document.getElementById("prohName");
+  pole.value = "Charizard";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(1400);
+  const zal = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
+    .find((b) => /Typy/.test(b.textContent));
+  const out = { zalozkaJe: !!zal };
+  if (zal) { zal.click(); await cekej(600); }
+  const sek = document.querySelector(".atlas-typy");
+  out.je = !!sek;
+  out.nadpisy = sek ? [...sek.querySelectorAll("h4")].map((h) => h.textContent) : [];
+  out.radky = sek ? [...sek.querySelectorAll(".atlas-typy-radek")].map((r) => ({
+    popis: (r.querySelector("b") || {}).textContent,
+    nasobek: (r.querySelector(".atlas-typy-nasobek") || {}).textContent || "",
+    chipu: r.querySelectorAll(".d-type, .atlas-typy-kombinace").length
+  })) : [];
+  // Chipy nesmi stat kazdy na vlastnim radku.
+  out.chipyVRadku = sek ? (() => {
+    const r = sek.querySelector('[data-bez-cisla] .atlas-typy-chipy');
+    if (!r) return null;
+    const y = [...r.children].map((c) => Math.round(c.getBoundingClientRect().top));
+    return new Set(y).size;
+  })() : null;
+  out.pozn = sek ? [...sek.querySelectorAll(".atlas-typy-pozn")].map((x) => x.textContent) : [];
+  // Prazdny roster: tlacitko to rekne, nevykresli vymysleny tym.
+  const b = document.querySelector("[data-counter-rezim]");
+  out.tlacitko = !!b;
+  if (b) { b.click(); await cekej(500); }
+  out.poKliknuti = {
+    hlaska: (document.querySelector("[data-counter-hlaska]") || {}).textContent || "",
+    rosterBeze: window.__pgo.getRows().length
+  };
+  return out;
+});
+await pTyp32.close();
+check("Typy mají vlastní záložku a dvě části",
+  dTyp32.zalozkaJe === true && dTyp32.je === true
+    && /Čím ho zasáhneš/.test(dTyp32.nadpisy.join(" "))
+    && /Kam se hodí jeho útoky/.test(dTyp32.nadpisy.join(" ")),
+  JSON.stringify(dTyp32.nadpisy));
+check("…obrana je po skupinách s násobkem",
+  dTyp32.radky.some((r) => /Dvojnásobná slabina/.test(r.popis) && /2,56/.test(r.nasobek))
+    && dTyp32.radky.some((r) => /Dvojnásobná odolnost/.test(r.popis)),
+  JSON.stringify(dTyp32.radky.slice(0, 3)));
+check("…a říká se, že násobky platí pro kombinaci typů",
+  /kombinaci typů/.test(dTyp32.pozn.join(" ")), dTyp32.pozn[0] || "");
+check("…útočná část se počítá z doporučené sestavy",
+  /doporučené sestavy/.test(dTyp32.pozn.join(" ")), dTyp32.pozn[1] || "");
+check("…kombinace typů stojí vedle sebe, ne po jedné na řádek",
+  dTyp32.chipyVRadku !== null && dTyp32.chipyVRadku <= 2, String(dTyp32.chipyVRadku));
+check("counter vede do rosteru a u prázdného to řekne",
+  dTyp32.tlacitko === true && /naimportuj roster/.test(dTyp32.poKliknuti.hlaska)
+    && dTyp32.poKliknuti.rosterBeze === 0,
+  JSON.stringify(dTyp32.poKliknuti));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

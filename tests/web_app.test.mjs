@@ -18299,6 +18299,43 @@ try {
       s275.hlaska);
   }
 
+  console.log("\n281) Typova stranka druhu: obrana z kombinace, utok ze sestavy");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s281 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const ch = P.atlasTypovka("Charizard");
+    const najdi = (t, typ) => t.obrana.filter((x) => x.typ === typ)[0];
+    return {
+      typy: ch.typy,
+      // Fire/Flying: Rock je 1,6 x 1,6 = 2,56; Grass 0,625 x 0,625 = 0,39.
+      rock: najdi(ch, "Rock"), grass: najdi(ch, "Grass"),
+      // Fighting je proti Fire normalni, ale Flying ho srazi na 0,625 —
+      // prave proto se pocita kombinace, ne jednotlive typy.
+      fighting: najdi(ch, "Fighting"),
+      serazene: ch.obrana.every((x, i, a) => i === 0 || a[i - 1].nasobek >= x.nasobek),
+      pocet: ch.obrana.length,
+      utokTypy: ch.utok ? ch.utok.typy : null,
+      utokSestava: ch.utok ? ch.utok.sestava : null,
+      // Utocna cast se pocita z TYPU UTOKU, ne z typu druhu.
+      utokNeniTypDruhu: ch.utok
+        ? ch.utok.typy.join() !== ch.typy.join() || ch.utok.typy.length < ch.typy.length : null,
+      neznamy: P.atlasTypovka("Tenhle druh neexistuje")
+    };
+  });
+  check("obrana se pocita na kombinaci typu, ne na jednotlive",
+    s281.rock.nasobek === 2.56 && s281.grass.nasobek === 0.391
+      && s281.fighting.nasobek === 0.625,
+    JSON.stringify([s281.rock, s281.grass, s281.fighting]));
+  check("...a vsech osmnact typu je serazenych od nejhorsiho",
+    s281.pocet === 18 && s281.serazene === true, String(s281.pocet));
+  check("utocna cast vychazi z doporucene sestavy, ne z typu druhu",
+    Array.isArray(s281.utokTypy) && s281.utokTypy.length >= 1
+      && Array.isArray(s281.utokSestava) && s281.utokSestava.length === 2
+      && s281.utokNeniTypDruhu === true,
+    JSON.stringify([s281.utokTypy, s281.utokSestava]));
+  eq("neznamy druh vrati null", String(s281.neznamy), "null");
+
   console.log("\n280) IV rank je vzdycky o jedne lize");
   await page.goto(URL);
   await page.waitForTimeout(700);

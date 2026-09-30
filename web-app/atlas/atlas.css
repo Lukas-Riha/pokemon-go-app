@@ -2231,3 +2231,82 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 @media(max-width:650px){
   .atlas-test #prohlidkaCard .atlas-hledani-zpet{min-height:44px;width:100%;justify-content:center}
 }
+
+/* Claude 30. 9. (53): V3 sekce 3 (pas CP) a kotvy.
+
+   Pet bunek se stejnym vyznamem: kolik ma dokonaly kus na tom levelu.
+   Cislo velke, popisek pod nim, na telefonu mrizka 2+2+1 a posledni
+   bunka pres sirku. Kotvy vedou jen na sekce, ktere na strance opravdu
+   jsou. */
+.atlas-test .atlas-cp-pas{margin:0 0 16px;border:1px solid var(--border);border-radius:14px;
+  background:var(--surface-1);padding:14px 18px}
+.atlas-test .atlas-cp-pas[hidden]{display:none}
+.atlas-test .atlas-cp-nadpis{margin:0 0 10px;font-size:13px;color:var(--text-primary)}
+.atlas-test .atlas-cp-nadpis:focus-visible{outline:2px solid var(--series-1);outline-offset:3px}
+.atlas-test .atlas-cp-mrizka{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.atlas-test .atlas-cp-bunka{min-height:60px;display:flex;flex-direction:column;justify-content:center;
+  padding:8px 10px;border-radius:10px;background:var(--page)}
+.atlas-test .atlas-cp-bunka b{font-size:24px;line-height:1.1;color:var(--text-primary);
+  font-variant-numeric:tabular-nums}
+.atlas-test .atlas-cp-bunka span{font-size:12px;color:var(--text-secondary);margin-top:3px}
+.atlas-test .atlas-cp-bunka small{font-size:11px;color:var(--text-muted);margin-top:2px}
+.atlas-test .atlas-cp-pozn{margin:10px 0 0;font-size:12px;color:var(--text-muted)}
+/* Zalozky sekci — stejne ovladani jako role uvnitr vysledku, aby se
+   stranka ovladala jednim zpusobem, ne dvema. */
+.atlas-test .atlas-sekce[hidden]{display:none}
+.atlas-test .atlas-sekce-zalozky{display:flex;gap:0;border-bottom:1px solid var(--border);
+  margin:0 0 16px;overflow-x:auto;scrollbar-width:none}
+.atlas-test .atlas-sekce-zalozky::-webkit-scrollbar{display:none}
+.atlas-test .atlas-sekce-zalozky button{flex:0 0 auto;border:0;border-bottom:2px solid transparent;
+  border-radius:0;background:none;color:var(--text-secondary);padding:11px 18px;font-size:13.5px;
+  display:inline-flex;align-items:center;gap:8px;min-height:46px;cursor:pointer}
+.atlas-test .atlas-sekce-zalozky button .atlas-icon{width:17px;height:17px}
+.atlas-test .atlas-sekce-zalozky button[aria-selected=true]{border-bottom-color:var(--series-1);
+  color:var(--series-1);font-weight:650}
+.atlas-test .atlas-sekce-panel[hidden]{display:none}
+.atlas-test .atlas-sekce-panel:focus-visible{outline:2px solid var(--series-1);outline-offset:4px}
+/* Vysledky uz nestoji vedle evoluci — tabulka ma celou sirku. */
+.atlas-test .atlas-sekce .atlas-vysledky{grid-template-columns:minmax(0,1fr);margin-top:0}
+.atlas-test .atlas-sekce-panel[data-sekce=evoluce] .atlas-vysledek-evo{max-width:none}
+.atlas-test .atlas-sekce-panel[data-sekce=evoluce] .atlas-vysledek-evo-mrizka{
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.atlas-test .atlas-cp-pas,.atlas-test .atlas-vysledek-evo{scroll-margin-top:96px}
+@media(max-width:650px){
+  /* 2 + 2 + 1: posledni bunka pres sirku, at cisla zustanou citelna. */
+  .atlas-test .atlas-cp-mrizka{grid-template-columns:1fr 1fr}
+  .atlas-test .atlas-cp-mrizka>.atlas-cp-bunka:last-child{grid-column:1/-1}
+  .atlas-test .atlas-cp-bunka b{font-size:22px}
+}
+
+/* Claude 30. 9. (54): zalozka Typy (V3 sekce 5).
+
+   Dve casti: cim ho zasahnes (jeho obrana) a kam se hodi jeho utoky.
+   Radky se seskupuji podle nasobku, at se to da precist bez pocitani;
+   nasobky pocita engine na kombinaci typu, vrstva zadnou vlastni
+   tabulku nema. */
+.atlas-test .atlas-typy h4{margin:0 0 6px;font-size:14px;color:var(--text-primary)}
+.atlas-test .atlas-typy-druhy{margin-top:22px}
+.atlas-test .atlas-typy-pozn{margin:0 0 12px;font-size:12px;color:var(--text-muted);line-height:1.5}
+.atlas-test .atlas-typy-radek{display:grid;grid-template-columns:170px 62px minmax(0,1fr);
+  gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--border)}
+.atlas-test .atlas-typy-radek b{font-size:12.5px;color:var(--text-primary)}
+.atlas-test .atlas-typy-radek[data-bez-cisla]{grid-template-columns:170px minmax(0,1fr)}
+.atlas-test .atlas-typy-nasobek{font-size:13px;font-variant-numeric:tabular-nums;
+  color:var(--text-secondary)}
+.atlas-test .atlas-typy-radek[data-stupen=slabina2] b{color:var(--status-bad)}
+.atlas-test .atlas-typy-radek[data-stupen=slabina] b{color:var(--status-warning)}
+.atlas-test .atlas-typy-radek[data-stupen=odolnost] b,
+.atlas-test .atlas-typy-radek[data-stupen=odolnost2] b{color:var(--status-good)}
+.atlas-test .atlas-typy-chipy{display:flex;flex-wrap:wrap;gap:5px}
+.atlas-test .atlas-typy-chipy .d-type{font-size:10.5px;padding:3px 8px}
+.atlas-test .atlas-typy-kombinace{font-size:11.5px;color:var(--text-secondary);
+  border:1px solid var(--border);border-radius:7px;padding:3px 8px}
+.atlas-test .atlas-typy-counter{margin-top:18px;border:1px solid var(--series-1);
+  border-radius:9px;background:var(--atlas-soft);color:var(--series-1);padding:10px 16px;
+  font-size:13px;cursor:pointer;min-height:42px}
+.atlas-test .atlas-typy-counter[disabled]{opacity:.55;cursor:default}
+@media(max-width:650px){
+  .atlas-test .atlas-typy-radek{grid-template-columns:1fr auto;gap:6px}
+  .atlas-test .atlas-typy-chipy{grid-column:1/-1}
+  .atlas-test .atlas-typy-counter{width:100%;min-height:44px}
+}

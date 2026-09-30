@@ -27631,6 +27631,42 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     atlasIvRank: function (jmeno, a, d, st, ligaKlic) {
       return ivRankVLize(jmeno, a, d, st, ligaKlic);
     },
+    /**
+     * Typová stránka druhu — obojí směrem.
+     *
+     * `obrana` je, co schytá ON: pro každý útočný typ násobek proti jeho
+     * KOMBINACI typů, ne proti jednotlivým. U dvojtypů se to jinak plete:
+     * Fighting je proti Ice super efektivní, ale proti Ice/Flying to
+     * Flying vyruší na 1,0.
+     *
+     * `utok` je, kam se hodí JEHO útoky — ne jeho typ. Druh typu Normal
+     * může mít nabitý útok jiného typu a naopak; vydávat typ Pokémona za
+     * všechny útoky, které umí, by lhalo. Bere se doporučená sestava
+     * druhu; když ji appka nemá, `utok` je `null`.
+     */
+    atlasTypovka: function (jmeno) {
+      var d = dexEntry(jmeno);
+      if (!d) return null;
+      var klic = dexKey(jmeno);
+      var obrana = ALL_TYPES.map(function (t) {
+        return { typ: t, nasobek: Math.round(offenseVs(t, d.types || []) * 1000) / 1000 };
+      }).sort(function (a, b) { return b.nasobek - a.nasobek; });
+      var utok = null;
+      var set = bestMoveset(d, klic);
+      if (set && set.fast && set.charged) {
+        var typy = [];
+        [set.fast, set.charged].forEach(function (m) {
+          if (m && m.type && typy.indexOf(m.type) === -1) typy.push(m.type);
+        });
+        var pok = typy.length ? pokrytiKombinaci(typy) : null;
+        if (pok) {
+          utok = { typy: typy, sestava: [set.fast.name, set.charged.name],
+            dvojity: pok.dvojity.slice(0, 8), vyhoda: pok.vyhoda.slice(0, 10),
+            vyrusene: pok.vyrusene.slice(0, 6) };
+        }
+      }
+      return { typy: (d.types || []).slice(), obrana: obrana, utok: utok };
+    },
     /* Hlídač nové verze. `verzeZkontroluj` dostane to, co by jinak přišlo
        z `verze.json` — dá se tím vyzkoušet celý pruh bez sítě. */
     verzeZkontroluj: verzeZkontroluj,
