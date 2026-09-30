@@ -2191,3 +2191,27 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test .atlas-vysledek button,
   .atlas-test .atlas-vysledek-ligy button{min-height:44px}
 }
+
+/* Claude 30. 9. (51): sipka u doporuceneho utoku podle toho, kde ten
+   utok opravdu stoji.
+
+   Koleno "↳" mirilo dolu i tam, kde doporuceni zustalo na temze radku —
+   sipka pak ukazovala nekam pod sebe misto na utok vedle. V plachte
+   detailu ma doporuceni vzdycky vlastni radek pod utokem, ke kteremu
+   patri, a tam koleno sedi. V cisteni boxu je blok siroky a doporuceni
+   stoji na radku vedle, takze tam patri rovna sipka.
+
+   Koleno visi v levem okraji, ne v radku: kdyz doporuceni nese vlastni
+   chip utoku, musi zacinat na tez svislici jako utoky nad nim. */
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-radek{flex-wrap:wrap}
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi{flex:1 1 100%;min-width:0;
+  margin-left:0;padding-left:52px;position:relative}
+.atlas-test .atlas-drawer .atlas-ident-utoky .atlas-utok-lepsi::before{
+  content:"↳";position:absolute;left:36px;top:0;display:block;overflow:hidden;
+  width:11px;height:15px;font-size:16px;line-height:12px}
+.atlas-test #boxMode .atlas-ident-utoky .atlas-utok-radek{flex-wrap:nowrap}
+.atlas-test #boxMode .atlas-ident-utoky .atlas-utok-lepsi{flex:0 1 auto;margin-left:14px;
+  position:static}
+.atlas-test #boxMode .atlas-ident-utoky .atlas-utok-lepsi::before{
+  content:"→ ";position:static;display:inline;width:auto;height:auto;
+  font-size:inherit;line-height:inherit;overflow:visible}
