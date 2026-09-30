@@ -132,7 +132,30 @@ await stranka.evaluate(async () => {
 });
 await snimek('druhy-nabity', ['.atlas-drawer .atlas-ident-utoky > *'], 14);
 
-// 5) Pruh „je nová verze". Číslo je ilustrativní — ukazuje se verze,
+// 5) Vyhledávání: jedna výsledková tabulka místo seznamu lig.
+await stranka.evaluate(async () => {
+  window.__atlasTest.closeDetail();
+  await new Promise((r) => setTimeout(r, 400));
+  window.__pgoZalozka('prohlidkaCard');
+  await new Promise((r) => setTimeout(r, 1200));
+  const pole = document.getElementById('prohName');
+  pole.value = 'Eevee';
+  pole.dispatchEvent(new Event('input', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 1300));
+  pole.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  pole.blur();
+  await new Promise((r) => setTimeout(r, 500));
+});
+{
+  const blok = await stranka.$('.atlas-vysledek');
+  const cesta = path.join(CIL, 'hledani-vysledky.png');
+  if (blok) {
+    await blok.screenshot({ path: cesta });
+    console.log('hledani-vysledky', Math.round(fs.statSync(cesta).size / 1024) + ' kB');
+  } else console.log('hledani-vysledky PŘESKOČENO — blok nenalezen');
+}
+
+// 6) Pruh „je nová verze". Číslo je ilustrativní — ukazuje se verze,
 //    která zrovna vyšla; tady se nastaví ručně, aby bylo co nasnímat.
 await stranka.evaluate(async () => {
   window.__atlasTest.closeDetail();

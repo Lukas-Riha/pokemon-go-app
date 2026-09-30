@@ -119,6 +119,18 @@ produkce už odejde s novým číslem. Ručně není potřeba dělat nic.
 a u ražítka sestavení dole pod tabulkou (`Verze 2.1 · 2026-09-23 22:47`).
 Když si nejsi jistý, kterou sestavu máš otevřenou, stačí se podívat tam.
 
+## Novinky ve verzi
+
+`data/novinky.json` drží historii po verzích, do appky ale jde **jen
+záznam pro její vlastní číslo** — okno ukazuje vždycky jen tu jednu verzi
+a starší by v souboru jen ležely. Se snímky by navíc každé vydání appku
+nafouklo o desítky kilobajtů; takhle se velikost drží.
+
+Snímky pořizuje `tools/novinky_snimky.mjs` z testovací sestavy, do WebP
+je převádí `tools/novinky_obrazky.py` a `sync_reference.py` je zapeče jako
+data: URI. Test hlídá, že v appce nezůstane jméno souboru místo obrázku
+a že se do ní netahá starší verze.
+
 ## Otevřená záložka a nová verze
 
 Kdo si appku nechá otevřenou, může na ní zůstat dny — soubor se pod ním

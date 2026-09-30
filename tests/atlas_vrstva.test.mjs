@@ -2618,14 +2618,17 @@ check("…zavření si appka zapamatuje",
    ať je otevřená kterákoli verze. */
 const novinkyData = JSON.parse(
   fs.readFileSync(path.join(ROOT, "data", "novinky.json"), "utf8"));
-const sObrazkem = Object.keys(novinkyData)
-  .filter((k) => k !== "_meta")
-  .reduce((n, k) => n + (novinkyData[k].body || [])
-    .filter((b) => b && b.obrazek).length, 0);
+const verzeTestu = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "data", "verze.json"), "utf8")).test;
+const sObrazkem = ((novinkyData[verzeTestu] || {}).body || [])
+  .filter((b) => b && b.obrazek).length;
 const zdrojNovinek = fs.readFileSync(TEST_APP, "utf8");
 const zapecenych = (zdrojNovinek.match(/"obrazek":"data:image\//g) || []).length;
 check("snímky z novinek jsou zapečené v appce, ne odkazem na soubor",
-  sObrazkem > 0 && zapecenych === sObrazkem, zapecenych + " z " + sObrazkem);
+  sObrazkem > 0 && zapecenych === sObrazkem,
+  zapecenych + " z " + sObrazkem + " (verze " + verzeTestu + ")");
+check("…a starší verze se do appky netahají",
+  !zdrojNovinek.includes('"2.8":{"nadpis"'), "2.8 by v appce lezelo zbytecne");
 check("…a jméno souboru v appce nezůstalo",
   !/"obrazek":"[a-z0-9-]+"/.test(zdrojNovinek), "");
 

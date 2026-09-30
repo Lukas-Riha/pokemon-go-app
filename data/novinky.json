@@ -38,7 +38,16 @@
       {
         "text": "**Appka si všimne, že vyšla nová verze.** Nahoře se objeví pruh a stránka se sama obnoví — ale až ve chvíli, kdy nemáš nic rozdělaného. Při čištění boxu, úpravě kusu nebo otevřeném importu počká. Obnovení nic neztratí: roster je uložený v prohlížeči, ne ve stránce. Když se ti to zrovna nehodí, dej „Teď ne“ a obnov si ji, až budeš chtít.",
         "obrazek": "nova-verze"
-      }
+      },
+      {
+        "text": "**Vyhledávání se přestavělo.** Dřív se pod sebe skládaly všechny evoluce a všechny ligy — u Eevee to byla stránka a půl, ve které nešlo nic najít. Teď si vybereš roli (PvP, raidy, gym, mega) a v PvP ligu, a k tomu je jedna tabulka: druh, jeho pořadí a doporučené útoky. Hledaný druh je v ní zvýrazněný, vedle stojí evoluční možnosti i s podmínkami.",
+        "obrazek": "hledani-vysledky"
+      },
+      "**Raidová čísla jsou pod záložkou Raidy**, kam patří: CP dokonalého kusu z raidu a v boostujícím počasí zvlášť, a k tomu, jestli z raidu padá shiny. Dřív stála nad každým hledáním, i když ses ptal na ligu.",
+      "**Shiny má tři stavy místo dvou.** „Zatím ne\" teď znamená, že shiny ve hře opravdu není; když o něm data nic neříkají, řekne appka „neověřeno\" — dřív to vypadalo stejně.",
+      "**Kalendář:** rozsah týdne přes přelom měsíce už nelže („28. září – 4. října\"), vícedenní akce se neschovávají a jsou seřazené podle toho, co končí dřív. Náhled akce říká konkrétní obsah z toho okna, které pro vybraný den platí, a u akce s víc bossy si vybereš, na koho připravit tým.",
+      "**Přehled:** karty „Dnes a brzy\" se čtou po řádcích a každá říká, co akce přináší — platný bonus nebo potvrzený druh. Nahoře stojí dnešní krátká akce, ne sezóna, která běží tři měsíce.",
+      "**Čištění boxu** má kratší příkazy (Vyvinutý, Vylepšený, Očištění, Upravit), takže se všechny vejdou na jeden řádek a nepřekrývají evoluční řadu."
     ]
   }
 }

@@ -1212,9 +1212,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   shinyVic=false,evoVidet=false;
 
  function vysledekBlok(){
-  let el=karta.querySelector('.atlas-vysledek');
+  let el=karta.querySelector('.atlas-vysledky');
   if(!el){
-   el=document.createElement('section');el.className='atlas-vysledek';
+   /* Dve karty vedle sebe, ne jedna: v navrhu ma kazda svuj ramecek
+      a svou vysku. V jedne karte se tabulka natahovala na vysku
+      evolucniho panelu a pod dvema radky zustavalo prazdno. */
+   el=document.createElement('div');el.className='atlas-vysledky';
    el.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.dataset.role){role=b.dataset.role;zvyrazneny=null;vykresliVysledek();return}
@@ -1337,7 +1340,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const nadpis=role==='pvp'?`Výsledky pro ${skupina?skupina.nazev:'ligu'}`
    :`Výsledky pro ${ROLE_POPIS[role]}`;
   const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
-  el.innerHTML=`<div class="atlas-vysledek-ovladani" role="tablist" aria-label="Role">`
+  el.innerHTML=`<section class="atlas-vysledek"><div class="atlas-vysledek-ovladani" role="tablist" aria-label="Role">`
    +Object.keys(ROLE_POPIS).map(k=>`<button type="button" role="tab" data-role="${k}" aria-selected="${role===k}" aria-pressed="${role===k}">${ikona(k)}<span>${ROLE_POPIS[k]}</span></button>`).join('')
    +`</div>`
    +(role==='pvp'?`<div class="atlas-vysledek-ligy" role="group" aria-label="Liga">`
@@ -1352,7 +1355,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${kusovy?'<th>Tvůj kus</th>':''}<th></th></tr></thead><tbody>`
       +radky.map(r=>radekHtml(r,m.klic)).join('')+`</tbody></table>`
      :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`)
-   +`</div>`
+   +`</div></section>`
    +evoluceHtml(m);
   if(klicFokusu){const znovu=el.querySelector(klicFokusu);if(znovu)znovu.focus({preventScroll:true})}
  }
@@ -1436,6 +1439,20 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    :(shiny.zdroje.includes('raid')?'Ano':'Zatím ne');
   /* Čísla CP jsou referenční — o tom, jestli druh PRÁVĚ TEĎ v raidech je,
      rozhoduje rozpis akcí, ne pokédex. */
+  /* Prostredni bunka navrhu: kde druh v appce stoji. Neni to hodnoceni
+     vymyslene vrstvou — role se ctou z tehoz modelu jako tabulka. */
+  const model=P.prohlidkaModel?P.prohlidkaModel(d.name):null;
+  const kdeStoji=(()=>{
+   if(!model)return '';
+   const ven=[];
+   (model.poradiLig||[]).forEach(k=>{
+    const lg=model.role.pvp[k];
+    if(lg&&lg.radky.some(r=>r.klic===model.klic))ven.push(lg.nazev);
+   });
+   if(model.role.raid.radky.some(r=>r.klic===model.klic))ven.push('raidy');
+   if(model.role.gym.radky.some(r=>r.klic===model.klic))ven.push('obrana gymu');
+   return ven.length?ven.join(' · '):'';
+  })();
   const ted=new Date();
   const bossTed=(P.eventsData?.().events||[]).some(e=>/raid|max/.test(String(e[1]))
    &&new Date(e[3])<=ted&&new Date(e[4])>ted
@@ -1445,10 +1462,14 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   identita.innerHTML=`<div class="atlas-hledani-kdo">
     ${P.atlasImage?P.atlasImage(d.name,'atlas-hledani-obr'):''}
     <div>
-     <span class="atlas-hledani-rezim-znacka">${kusovy?'Výpočet konkrétního kusu':'Hodnocení druhu'}</span>
      <h3>${esc(d.name)}</h3>
      <div class="atlas-hledani-typy">${typy.map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('')}</div>
     </div>
+   </div>
+   <div class="atlas-hledani-kde">
+    <span class="atlas-hledani-rezim-znacka">${kusovy?'Výpočet konkrétního kusu':'Hodnocení druhu'}</span>
+    <b>${kdeStoji?esc(kdeStoji):'žádnou roli nezastane'}</b>
+    <small>${kdeStoji?'v čem appka tenhle druh vede':'ani v lize, ani v raidech, ani v gymu'}</small>
    </div>
    <dl class="atlas-hledani-fakta">
     <div data-shiny="${shinyStav}">

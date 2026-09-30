@@ -133,7 +133,18 @@ def _novinky_obrazky(data):
     return data
 
 
-novinky = _novinky_obrazky(novinky)
+def _novinky_pro_verzi(data, verze):
+    """Do appky jde jen zaznam pro JEJI verzi.
+
+    Okno ukazuje vzdycky `NOVINKY[VERZE]`, takze starsi zaznamy by v
+    souboru jen lezely — a se snimky by kazda dalsi verze appku nafoukla
+    o dalsi desitky kilobajtu. Historie zustava v `data/novinky.json`.
+    """
+    zaznam = data.get(verze)
+    return {verze: zaznam} if zaznam else {}
+
+
+novinky = _novinky_obrazky(_novinky_pro_verzi(novinky, app_verze))
 
 BLOCKS = [
     ("// === REFERENCE DATA START", "// === REFERENCE DATA END ===", "REFERENCE", reference),

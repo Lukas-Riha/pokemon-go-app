@@ -2150,3 +2150,44 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test .atlas-vysledek-ovladani::-webkit-scrollbar{display:none}
   .atlas-test .atlas-vysledek-ovladani button{flex:0 0 auto;padding:10px 12px}
 }
+
+/* Claude 30. 9. (50): blize navrhu — dve karty, tri bunky identity.
+
+   Vysledky a evolucni moznosti jsou dve samostatne karty vedle sebe,
+   kazda se svym ramem a svou vyskou. Drive to byla jedna karta a tabulka
+   se v ni natahovala na vysku evolucniho panelu: u druhu se dvema radky
+   zustavalo pod nimi prazdno pres pul obrazovky. */
+.atlas-test .atlas-vysledky{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,320px);
+  gap:18px;align-items:start;margin-top:18px}
+.atlas-test .atlas-vysledky[hidden]{display:none}
+.atlas-test .atlas-vysledek{display:block;margin:0;grid-template-columns:none}
+.atlas-test .atlas-vysledek-telo{grid-area:auto}
+.atlas-test .atlas-vysledek-evo{grid-area:auto;margin:0;border:1px solid var(--border);
+  border-radius:13px;background:var(--surface-1);padding:16px 18px}
+/* Ligy vetsi a na stred, jako v navrhu. */
+.atlas-test .atlas-vysledek-ligy{justify-content:center;gap:9px;margin:4px 0 14px}
+.atlas-test .atlas-vysledek-ligy button{padding:9px 18px;font-size:13px;min-height:40px}
+.atlas-test .atlas-vysledek-ligy button[aria-pressed=true]{background:var(--series-1);
+  border-color:var(--series-1);color:#fff}
+/* Prostredni bunka identity: kde druh v appce stoji. */
+.atlas-test #prohlidkaCard .atlas-hledani-identita{grid-template-columns:auto 1fr auto}
+.atlas-test #prohlidkaCard .atlas-hledani-kde{border-left:1px solid var(--border);
+  padding-left:22px;min-width:0}
+.atlas-test #prohlidkaCard .atlas-hledani-kde b{display:block;font-size:15px;
+  color:var(--text-primary);margin-top:3px}
+.atlas-test #prohlidkaCard .atlas-hledani-kde small{display:block;font-size:11px;
+  color:var(--text-muted);margin-top:2px}
+/* Radek tabulky je vzdusnejsi a obrazek vetsi, at se to cte jako v navrhu. */
+.atlas-test .atlas-vysledek-tab td{padding:11px 12px 11px 0}
+.atlas-test .atlas-vysledek-obr{width:42px;height:42px}
+@media(max-width:1100px){
+  .atlas-test .atlas-vysledky{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:650px){
+  .atlas-test #prohlidkaCard .atlas-hledani-identita{grid-template-columns:1fr}
+  .atlas-test #prohlidkaCard .atlas-hledani-kde{border-left:0;padding-left:0;
+    border-top:1px solid var(--border);padding-top:12px}
+  .atlas-test .atlas-vysledek-ligy{justify-content:flex-start}
+  .atlas-test .atlas-vysledek button,
+  .atlas-test .atlas-vysledek-ligy button{min-height:44px}
+}
