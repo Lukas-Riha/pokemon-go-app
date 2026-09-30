@@ -4367,6 +4367,53 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     return best;
   }
 
+  var spMrizkaCache = {};
+  /**
+   * Pořadí konkrétní kombinace IV mezi 4096 možnými — v JEDNÉ lize.
+   *
+   * Tohle NENÍ pořadí druhu v lize a není to připravenost kusu. Je to
+   * odpověď na „jak dobrá je zrovna tahle kombinace IV pro tuhle ligu",
+   * a počítá se ze stat productu na nejvyšším levelu, který se do limitu
+   * vejde. Bez limitu (Master) stat product smysl nedává, takže tam
+   * žádné pořadí není — a appka ho nemá čím nahradit.
+   *
+   * Vrací `{ rank, z, pct, liga }`, nebo `null`, když se spočítat nedá.
+   */
+  function ivRankVLize(jmeno, a, d, st, ligaKlic) {
+    var dex = dexEntry(jmeno);
+    if (!dex) return null;
+    var liga = null;
+    LEAGUES.forEach(function (l) { if (l.meta === ligaKlic) liga = l; });
+    if (!liga || !liga.cap) return null;
+    var cisla = [a, d, st].map(Number);
+    if (cisla.some(function (x) { return !isFinite(x) || x < 0 || x > 15; })) return null;
+    var klic = dexKey(jmeno) + "|" + liga.cap;
+    var mrizka = spMrizkaCache[klic];
+    if (!mrizka) {
+      mrizka = [];
+      for (var i = 0; i <= 15; i++) {
+        for (var j = 0; j <= 15; j++) {
+          for (var k = 0; k <= 15; k++) {
+            var idx = bestLevelIndex(dex, i, j, k, liga.cap);
+            mrizka.push(idx < 0 ? 0 : statProduct(dex, i, j, k, CPM_LEVELS[idx][1]));
+          }
+        }
+      }
+      mrizka.sort(function (x, y) { return y - x; });
+      spMrizkaCache[klic] = mrizka;
+    }
+    var mujIdx = bestLevelIndex(dex, cisla[0], cisla[1], cisla[2], liga.cap);
+    if (mujIdx < 0) return null;      // do limitu se ten kus nevejde vůbec
+    var muj = statProduct(dex, cisla[0], cisla[1], cisla[2], CPM_LEVELS[mujIdx][1]);
+    var lepsich = 0;
+    for (var q = 0; q < mrizka.length; q++) {
+      if (mrizka[q] > muj) lepsich++; else break;
+    }
+    var nej = mrizka[0] || 0;
+    return { rank: lepsich + 1, z: mrizka.length,
+      pct: nej ? Math.round((muj / nej) * 1000) / 10 : null, liga: liga.nazev };
+  }
+
   // Ligy s CP limitem. Master (bez limitu) se tu neřeší — stat product tam
   // nedává smysl. Pořadí = od nejmenšího limitu, kvůli výpisům.
   var LEAGUES = [
@@ -24522,12 +24569,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // Verdikt „nechat / pustit" sem nepatří: ten je o rozpočtu rosteru.
         out.innerHTML = bezVerdiktu(detailHtml(b, c));
         /* Fakta o zadaném kusu pro vzhledovou vrstvu. Jen to, co se dá
-           spočítat: IV rank je pořadí té kombinace IV mezi 4096 možnými
-           u téhož druhu — není to pořadí druhu v lize ani připravenost
-           kusu. Bez CP a IV zůstává `null` a vrstva nic nedopočítává. */
-        kusFakta = { ivRank: b.bestRank == null ? null : b.bestRank,
-          ivPct: c.ivPct == null ? null : Math.round(c.ivPct * 1000) / 10,
-          cp: cp, level: lv,
+           spočítat z toho, co člověk vyplnil.
+
+           IV rank tu SCHVÁLNĚ není: je vždycky o jedné konkrétní lize
+           a bez jejího jména by to bylo číslo, které tvrdí něco jiného,
+           než se zdá. Vrstva si ho vyžádá přes `atlasIvRank` pro ligu,
+           kterou má člověk zrovna vybranou. */
+        kusFakta = { ivPct: c.ivPct == null ? null : Math.round(c.ivPct * 1000) / 10,
+          cp: cp, level: lv, iv: { a: a, d: d, s: st },
           jmeno: jm, klic: dexKey(jm) };
       } finally { soloProhlidka = false; }
       vystreditVse(out);
@@ -27577,6 +27626,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     /* Co hra vyžaduje, aby se `odKlic` stal `naKlic` — česky, jako věty.
        Prázdné pole znamená „nic navíc než bonbóny". */
     evoPodminky: function (odKlic, naKlic) { return evoPodminky(odKlic, naKlic); },
+    /* Pořadí téhle kombinace IV mezi 4096 možnými v JEDNÉ lize. Bez ligy
+       s limitem (Master) vrací null — a nic se za to nedosazuje. */
+    atlasIvRank: function (jmeno, a, d, st, ligaKlic) {
+      return ivRankVLize(jmeno, a, d, st, ligaKlic);
+    },
     /* Hlídač nové verze. `verzeZkontroluj` dostane to, co by jinak přišlo
        z `verze.json` — dá se tím vyzkoušet celý pruh bez sítě. */
     verzeZkontroluj: verzeZkontroluj,

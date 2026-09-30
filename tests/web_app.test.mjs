@@ -18299,6 +18299,41 @@ try {
       s275.hlaska);
   }
 
+  console.log("\n280) IV rank je vzdycky o jedne lize");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s280 = await page.evaluate(() => {
+    const P = window.__pgo;
+    return {
+      // Azumarill se do limitu Great League vejde, takze o poradi
+      // rozhoduje stat product: nizky utok je tam lepsi nez 15/15/15.
+      hundo: P.atlasIvRank("Azumarill", 15, 15, 15, "great"),
+      nizkyUtok: P.atlasIvRank("Azumarill", 0, 15, 15, "great"),
+      // Druh, ktery na limit nedosahne, ma poradi obracene: vic IV = lip.
+      maly: P.atlasIvRank("Eevee", 15, 15, 15, "great"),
+      malyHorsi: P.atlasIvRank("Eevee", 0, 0, 0, "great"),
+      // Master nema limit — stat product tam nedava smysl.
+      master: P.atlasIvRank("Azumarill", 15, 15, 15, "master"),
+      neznamy: P.atlasIvRank("Tenhle druh neexistuje", 15, 15, 15, "great"),
+      spatneIV: P.atlasIvRank("Azumarill", 16, 15, 15, "great"),
+      // Kusova fakta uz rank beze jmena ligy nevozi.
+      kusKlice: Object.keys(window.__pgoProhlidkaKus ? (window.__pgoProhlidkaKus() || {}) : {})
+    };
+  });
+  check("IV rank nese jmeno ligy i velikost mrizky",
+    s280.hundo && s280.hundo.z === 4096 && /Great League/.test(s280.hundo.liga)
+      && s280.hundo.rank >= 1 && s280.hundo.rank <= 4096, JSON.stringify(s280.hundo));
+  check("...v lize s limitem neni 15/15/15 automaticky nejlepsi",
+    s280.hundo.rank > s280.nizkyUtok.rank, JSON.stringify([s280.hundo.rank, s280.nizkyUtok.rank]));
+  check("...u druhu, ktery na limit nedosahne, plati opak",
+    s280.maly.rank < s280.malyHorsi.rank, JSON.stringify([s280.maly.rank, s280.malyHorsi.rank]));
+  check("...bez ligoveho limitu zadne poradi neni", s280.master === null, JSON.stringify(s280.master));
+  check("...a nesmysly vrati null",
+    s280.neznamy === null && s280.spatneIV === null,
+    JSON.stringify([s280.neznamy, s280.spatneIV]));
+  check("kusova fakta uz nevozi rank beze jmena ligy",
+    s280.kusKlice.indexOf("ivRank") === -1, JSON.stringify(s280.kusKlice));
+
   console.log("\n279) Naseptavac druhu se zavre a sam se neotevira");
   await page.setViewportSize({ width: 1400, height: 950 });
   await page.goto(URL);

@@ -1208,6 +1208,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   gym:'M7 21V4m0 1 11 3-11 3',
   mega:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z'};
  const ikona=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${ROLE_IKONA[k]}"/></svg>`;
+ /* Klic ligy, kterou ma clovek vybranou — stejny, jakym ji zna engine. */
+ let ligaKlicVModelu='great';
  let role='pvp',liga='great',zvyrazneny=null,podminkyVidet=false,
   shinyVic=false,evoVidet=false;
 
@@ -1221,7 +1223,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    el.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.dataset.role){role=b.dataset.role;zvyrazneny=null;vykresliVysledek();return}
-    if(b.dataset.liga){liga=b.dataset.liga;zvyrazneny=null;vykresliVysledek();return}
+    if(b.dataset.liga){liga=b.dataset.liga;ligaKlicVModelu=b.dataset.liga;
+     zvyrazneny=null;vykresliVysledek();return}
     /* Klepnuti na evoluci jen zvyrazni jeji radek. Vstup ani roster to
        prepsat nesmi — clovek se pta na druh, ne ze ho chce zmenit. */
     if(b.dataset.zvyraznit){zvyrazneny=b.dataset.zvyraznit;vykresliVysledek();return}
@@ -1286,10 +1289,17 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const k=window.__pgoProhlidkaKus&&window.__pgoProhlidkaKus();
   if(!k||r.klic!==vstupKlic)return '<td class="atlas-vysledek-nezname">—</td>';
   const casti=[];
-  if(k.ivRank!=null)casti.push(`IV <b>#${k.ivRank}</b> ze 4096`);
+  /* IV rank je vzdycky o JEDNE lize — o te, kterou ma clovek vybranou.
+     Bez jejiho jmena by to bylo cislo, ktere tvrdi neco jineho, nez se
+     zda. V rolich bez ligoveho limitu (Master, raidy, gym) se nepocita
+     a nic se za nej nedosazuje. */
+  const liga=role==='pvp'?ligaKlicVModelu:null;
+  const rank=(liga&&k.iv&&P.atlasIvRank)
+   ?P.atlasIvRank(k.jmeno,k.iv.a,k.iv.d,k.iv.s,liga):null;
+  if(rank)casti.push(`IV <b>#${rank.rank}</b> z ${rank.z} · ${esc(rank.liga)}`);
   if(k.ivPct!=null)casti.push(`${k.ivPct} % IV`);
   if(!casti.length)return '<td class="atlas-vysledek-nezname">nedá se spočítat</td>';
-  return `<td>${casti.join(' · ')}</td>`;
+  return `<td>${casti.join('<br>')}</td>`;
  }
 
  /* Typy druhu jako barevne ovaly — stejne jako v identite a v rosteru.
@@ -1391,6 +1401,10 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  // Tlacitko Vymazat sedi vedle mrizky, ne v ni — patri k udajum kusu,
  // takze jde do rozbalovatka s nimi.
  const akce=karta.querySelector('.actions');if(akce)udaje.append(akce);
+ /* Cesta zpatky nahoru: formular stoji pod vysledky a evolucemi. */
+ {const zpet=document.createElement('button');zpet.type='button';
+  zpet.className='atlas-hledani-zpet';zpet.dataset.zpetVysledky='1';
+  zpet.textContent='↑ Zpět na výsledky';udaje.append(zpet);}
 
  // --- identita druhu ----------------------------------------------------
  const identita=document.createElement('section');identita.className='atlas-hledani-identita';identita.hidden=true;
@@ -1406,7 +1420,28 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      rekne, co se ptame. V polich udaje zustanou pro navrat. */
   window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim(k);
   vykresli();
+  /* Formular kusu stoji az pod vysledky a evolucemi, takze po prepnuti
+     nebylo videt, ze se neco stalo. Sekce se otevre, prijede do pohledu
+     a fokus sedne na CP — a zpatky nahoru vede vlastni tlacitko. */
+  if(k==='kus'){
+   udaje.open=true;
+   const cp=document.getElementById('prohCp');
+   const plynule=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+   udaje.scrollIntoView({block:'start',behavior:plynule?'smooth':'auto'});
+   if(cp)setTimeout(()=>cp.focus({preventScroll:true}),plynule?260:0);
+  }
  }
+ /* "Zpet na vysledky" z formulare kusu: bez nej se clovek musel
+    prorolovat pres celou stranku zpatky nahoru. */
+ function zpetNaVysledky(){
+  const cil=karta.querySelector('.atlas-vysledky')||identita;
+  const plynule=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  cil.scrollIntoView({block:'start',behavior:plynule?'smooth':'auto'});
+ }
+ udaje.addEventListener('click',e=>{
+  if(e.target.closest('[data-zpet-vysledky]'))zpetNaVysledky();
+ });
+
  hlava.addEventListener('click',e=>{
   const b=e.target.closest('[data-rezim]');if(b){prepni(b.dataset.rezim);return}
   if(e.target.closest('[data-hledani-zrus]')){

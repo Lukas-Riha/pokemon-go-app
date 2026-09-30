@@ -317,3 +317,41 @@ Současný screenshot: štítek první karty Raidová hodina je níž než ští
 ### 7. Hotovo znamená
 
 Postupovat po malých celcích: 2 + 3, potom 4, potom 5. Ke každému dodat screenshot a stav testů; nemíchat s dalším redesignem rosteru. Ověřit 1920, 1440, 820 a 390 px. Případy: Eevee se všemi evolucemi; bez evoluce; regionální a Shadow forma; neznámý druh; shiny null/false/true; CP chybí; konfliktní CP/level/IV; návrat kus → druh → kus bez ztráty údajů; klávesnicové hledání; dlouhý název akce; akce bez druhů; žádné akce; přelom měsíců a roku; filtr bez výsledků; více bossů; výběr dne bez skoku scrollu. Ověřit existující kalendářovou a UI regresní sadu na naplněném testovacím profilu. Bez změny uživatelského rosteru při hledání. Správnost externího rozpisu akcí je oddělená od správnosti jeho vykreslení.
+## A-016 — Kontrola Claudových změn + zadání Vyhledávání V3 (30. 9.)
+
+Samostatné aktuální předání. Přečíst tuto sekci a `docs/navrhy/VYHLEDAVANI_V3_SPEC.md`; staré A-015 není nutné opakovat. V3 reaguje na `docs/VYHLEDAVANI_ANALYZA.md`, bod 5, který uživatel výslovně zadal během tohoto kola. Astra v tomto kole mění pouze návrhy a dokumentaci, nikoli aplikaci, roster nebo produkci.
+
+### Co už je hotové
+
+Ověřeny změny do 5db9f74 a otevřen TEST v2.9 z 30. 9. Prohlédnuty Přehled, týden Kalendáře a Vyhledávání Eevee na desktopu a 390 px. Nový kompletní běh regresních testů neproběhl; počty v commitech jsou Claudovo hlášení.
+
+- Vyhledávání: společný `prohlidkaModel`, jedna tabulka po rolích/ligách, přepnutí režimu v enginu, raidová fakta pod Raidy, viditelné podmínky evolucí a zavírání našeptávače po Tab fungují v kontrolovaném scénáři. Zachovat tyto mechanismy.
+- Přehled: karty mají srovnané řádky a skutečný přínos; dnešní raidová hodina už stojí před LEGO/sezónou. Návrh dál dolaďovat, nikoli začít znovu.
+- Kalendář: rozsah „28. září – 4. října 2026“ je opraven, pruhy se řadí, detail má konkrétní obsah a pojmenovaného bosse. Bez opětovného zavádění sbalování všech vícedenních akcí: nový commit uvádí uživatelské přání je vidět a tento audit jeho změnu nenavrhuje.
+
+### P1 — opravit před vizuálním dokončením Vyhledávání
+
+1. Pod novou tabulkou zůstává starý plný rozbor `#prohOut` včetně všech původních ligových tabulek. Potvrzeno DOMem i stylem display:block, výška starého bloku 2780 px u Eevee. Zachovat jeho výpočetní/observer úlohu, ale novému UI předat jen potřebné unikátní sekce a validaci; neduplikovat tabulky ani evoluce. Viz V3 spec, „Aktuální nálezy“.
+2. V kusovém režimu jsou CP/IV až za tabulkou a evolucemi, CP při měření kolem y=1283. V3 zachovává požadované pořadí osmi sekcí, ale přepnutí na vlastní kus otevře sekci 8, posune ji do pohledu a zaměří CP. Přidat návrat na výsledky.
+3. `__pgoProhlidkaKus` vrací `b.bestRank`, který pochází z importovaných rankových polí přes `bestRankOf`, ne z výpočtu pro vybranou ligu. Dočasný řádek ve Vyhledávání tato ranková pole neplní. Ověřit a upravit kontrakt: konkrétní ligový IV rank s kontextem, nebo pravdivě nedostupný údaj. Neoznačovat nejlepší rank napříč ligami za rank aktuální záložky. Tento bod je z kontroly kódu; interaktivní vyplnění CP nebylo dokončeno kvůli timeoutu ovládání, takže nejde o potvrzení konkrétního chybného číselného výsledku.
+
+### P2 — Přehled a Kalendář, poslední dotažení
+
+- Přehled: čerstvě viditelný přínos Harvest Festival je anglicky. Překládat pouze známé strukturované bonusy ověřenými šablonami; neznámý text zachovat a označit jako text zdroje. Nedělat volnou parafrázi, která by změnila násobek, trvání nebo shiny šanci.
+- Dnešní budoucí raidová hodina má „Chystá se“. Srozumitelnější „Dnes · 18:00“ a stav „Probíhá“ teprve v okně. Datum ponechat přístupné. Neplést dnes se zvoleným dnem.
+- Při prvním screenshotu karty Harvest byly v DOM tři druhy, ale obrázky ještě nebyly vidět. Prověřit načítání/fallback (není doložena trvalá chyba obrázků). Rezervovat rozměry, bez runtime měření spritů a poskakování textu.
+- Kalendář nyní ukazuje všech 13 vícedenních pruhů; časové akce jsou pod prvním viewportem. Zachovat všechny pruhy, ale přesunout „Akce v konkrétní čas“ nad vícedenní část. Obě části používají stejné denní sloupce; denní hlavička sticky. Pruhy kompaktní 28–32 px desktop, dostatečné dotykové cíle na mobilu. Názvy krátkých úseků zpřístupnit detail panelem a focus tooltipem, ne jen title při hoveru.
+- Detail má nyní Xerneas jako jméno i v jediném bodu „Bossové: Xerneas“. Shodný bod vynechat, když už nic dalšího neříká. Zachovat jeden hlavní CTA s konkrétním cílem a vedlejší Detail události.
+- Kalendář dnes používá denní průnik oken, homepage okamžik. U bonusů s hodinovým omezením uvést konkrétní okno; neprezentovat část dne jako celodenní. Test dvě navazující okna téhož dne. Datum bez času zpracovat sjednoceně s inkluzivním koncem celodenní události.
+
+### V3 — výstup pro implementaci
+
+Autoritativní zadání: `docs/navrhy/VYHLEDAVANI_V3_SPEC.md`. Obrazové listy ve stejné složce:
+
+1. `vyhledavani-v3-01-druhy.png` — Eevee a Magmar, desktop/mobil.
+2. `vyhledavani-v3-02-raid-mega.png` — raidový boss a Mega, desktop/mobil.
+3. `vyhledavani-v3-03-kus-prazdne.png` — vlastní kus, prázdný a neznámý vstup, desktop/mobil.
+
+V3 vrací společný pás referenčních CP nad výsledky, protože nové zadání zahrnuje raid, vejce a výzkum. Nezdvojovat ho pod Raidy. Pořadí osmi sekcí a jejich data určuje specifikace. Generované obrázky jsou kompozice, ne zdroj herních údajů ani přesných textů. Žádné celkové „skóre druhu“, žádná šance na shiny, žádní vymyšlení counterové; pouze odkaz na vlastní roster. Cena musí být konkrétní cesta a levely, ne „z 0 na max“.
+
+Kontrolovat 1440×900, 390×844 a mezilehlých 820 px, všech šest stavů, přístupnost a regresi bez zápisu hledaného kusu do rosteru. Předání zpět: snímky + přesný seznam hotových bodů a omezení; ne pouze počet prošlých testů.

@@ -221,10 +221,18 @@ výpočet jako rozbor druhu, jen vrací data místo HTML. **UI z něj jen kresl�
   žádné pořadí není, takže se žádné nevymýšlí).
 
 `window.__pgoProhlidkaKus()` → co appka spočítala o zadaném kusu ve
-Vyhledávání: `{ivRank, ivPct, cp, level, jmeno, klic}`, nebo `null`, když
-se kus nezadal nebo spočítat nedá. `ivRank` je pořadí té kombinace IV mezi
-4096 možnými u téhož druhu — **není to** pořadí druhu v lize ani
-připravenost kusu. Bez CP a IV vrstva o kusu netvrdí nic a nic nedopočítává.
+Vyhledávání: `{ivPct, cp, level, iv:{a,d,s}, jmeno, klic}`, nebo `null`,
+když se kus nezadal nebo spočítat nedá. Bez CP a IV vrstva o kusu netvrdí
+nic a nic nedopočítává. **IV rank tu schválně není**: je vždycky o jedné
+konkrétní lize, a bez jejího jména by to bylo číslo, které tvrdí něco
+jiného, než se zdá.
+
+`atlasIvRank(jmeno, ivA, ivD, ivS, liga)` → `{rank, z, pct, liga}` —
+pořadí téhle kombinace IV mezi 4096 možnými **v té jedné lize**, počítané
+ze stat productu na nejvyšším levelu, který se do limitu vejde. `null`
+dostaneš, když liga limit nemá (Master), když se kus do limitu nevejde,
+u neznámého druhu nebo u IV mimo 0–15. Není to pořadí druhu v lize a není
+to připravenost kusu.
 
 `evoPodminky(odKlic, naKlic)` → co hra vyžaduje, aby se z prvního stal
 druhý, česky a jako věty (`["ujít 10 km jako buddy", "jen v noci"]`).

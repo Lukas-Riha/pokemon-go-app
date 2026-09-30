@@ -2215,3 +2215,19 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test #boxMode .atlas-ident-utoky .atlas-utok-lepsi::before{
   content:"→ ";position:static;display:inline;width:auto;height:auto;
   font-size:inherit;line-height:inherit;overflow:visible}
+
+/* Claude 30. 9. (52): kusovy rezim podle A-016.
+
+   Formular kusu stoji az pod vysledky a evolucemi, takze po prepnuti
+   nebylo videt, ze se neco stalo. Sekce se otevre, prijede do pohledu
+   a fokus sedne na CP; zpatky nahoru vede vlastni tlacitko. */
+.atlas-test #prohlidkaCard .atlas-hledani-udaje{scroll-margin-top:96px}
+.atlas-test #prohlidkaCard .atlas-hledani-zpet{display:inline-flex;align-items:center;gap:8px;
+  margin-top:14px;border:1px solid var(--border);border-radius:9px;background:var(--surface-1);
+  color:var(--text-secondary);padding:9px 14px;font-size:12.5px;cursor:pointer;min-height:40px}
+.atlas-test #prohlidkaCard .atlas-hledani-zpet:hover{border-color:var(--series-1);
+  color:var(--series-1)}
+.atlas-test .atlas-vysledky{scroll-margin-top:96px}
+@media(max-width:650px){
+  .atlas-test #prohlidkaCard .atlas-hledani-zpet{min-height:44px;width:100%;justify-content:center}
+}

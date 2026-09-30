@@ -2867,6 +2867,67 @@ check("…a řekne o něm jen to, co jde spočítat",
 check("…v režimu druhu ten sloupec zase zmizí", dVysl29.druh.sloupcu === 4,
   String(dVysl29.druh.sloupcu));
 
+console.log("\n30) Vlastní kus: formulář přijede do pohledu a IV rank nese ligu");
+const pKus30 = await otevri(1440, [
+  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
+]);
+const dKus30 = await pKus30.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.__pgoZalozka("prohlidkaCard");
+  await cekej(1200);
+  const pole = document.getElementById("prohName");
+  pole.value = "Azumarill";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(1300);
+  const out = { pred: { scroll: Math.round(window.scrollY) } };
+  document.querySelector('[data-rezim="kus"]').click();
+  await cekej(1200);
+  const cp = document.getElementById("prohCp");
+  out.poPrepnuti = {
+    scroll: Math.round(window.scrollY),
+    fokus: document.activeElement ? document.activeElement.id : "",
+    otevrene: !!document.querySelector(".atlas-hledani-udaje[open]"),
+    // Formulář musí být po přepnutí vidět, ne někde pod stránkou.
+    cpVidet: (() => { const r = cp.getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= window.innerHeight; })()
+  };
+  const nastav = (id, v) => { const e = document.getElementById(id); e.value = v;
+    e.dispatchEvent(new Event("input", { bubbles: true })); };
+  nastav("prohCp", "1400"); nastav("prohA", "0"); nastav("prohD", "15"); nastav("prohS", "15");
+  await cekej(1400);
+  const bunka = () => (document.querySelector(".atlas-vysledek-tab tr.je-vstup td:nth-child(4)") || {})
+    .textContent || "";
+  out.great = bunka();
+  const ul = document.querySelector('[data-liga="ultra"]');
+  if (ul) { ul.click(); await cekej(600); }
+  out.ultra = bunka();
+  const raid = document.querySelector('[data-role="raid"]');
+  if (raid) { raid.click(); await cekej(600); }
+  out.raid = bunka();
+  // Zpátky na výsledky.
+  const pvp = document.querySelector('[data-role="pvp"]');
+  if (pvp) { pvp.click(); await cekej(400); }
+  const zpet = document.querySelector("[data-zpet-vysledky]");
+  out.tlacitkoZpet = !!zpet;
+  if (zpet) { zpet.click(); await cekej(900); }
+  out.poZpet = { scroll: Math.round(window.scrollY) };
+  return out;
+});
+await pKus30.close();
+check("přepnutí na vlastní kus formulář otevře a přijede k němu",
+  dKus30.poPrepnuti.otevrene === true && dKus30.poPrepnuti.scroll > dKus30.pred.scroll
+    && dKus30.poPrepnuti.cpVidet === true, JSON.stringify(dKus30.poPrepnuti));
+check("…a fokus sedne na CP", dKus30.poPrepnuti.fokus === "prohCp", dKus30.poPrepnuti.fokus);
+check("IV rank v tabulce nese jméno vybrané ligy",
+  /Great League/.test(dKus30.great) && /Ultra League/.test(dKus30.ultra)
+    && dKus30.great !== dKus30.ultra,
+  JSON.stringify([dKus30.great, dKus30.ultra]));
+check("…a v roli bez ligového limitu se nepočítá",
+  !/IV #/.test(dKus30.raid), dKus30.raid);
+check("z formuláře vede cesta zpátky na výsledky",
+  dKus30.tlacitkoZpet === true && dKus30.poZpet.scroll < dKus30.poPrepnuti.scroll,
+  JSON.stringify([dKus30.tlacitkoZpet, dKus30.poZpet.scroll, dKus30.poPrepnuti.scroll]));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();
