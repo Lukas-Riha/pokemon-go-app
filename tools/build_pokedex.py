@@ -368,8 +368,11 @@ def main():
                 p["tradeZdarma"] = 1
             if ev.get("upside_down"):
                 p["vzhuruNohama"] = 1
-            if p:
-                pozadavky.setdefault(key, {})[cil] = p
+            # Zapisuje se i prázdný objekt. Je to taky údaj: zdroj ten
+            # přechod zná a žádnou další podmínku u něj neuvádí. Chybějící
+            # cíl pak znamená, že o něm data nemáme — appka v takovém
+            # případě nesmí tvrdit „stačí bonbóny“.
+            pozadavky.setdefault(key, {})[cil] = p
 
     # Úkoly z GAME_MASTERu se přilepí na tytéž přechody. Nepřepisují — jen
     # doplňují, co pogoapi nemá (a `km` bere, jen když tam ještě není).
@@ -548,6 +551,9 @@ def main():
             m.get("type", []),
             m.get("mega_energy_required"),
             "Primal" if str(m["mega_name"]).startswith("Primal") else "Mega",
+            # Poprvé je to dražší (200), každá další proměna už jen 40.
+            # Bez toho druhého čísla by cena mega formy byla nepravdivá.
+            m.get("first_time_mega_energy_required"),
         ])
 
     # Mega formy, které pogoapi ještě nemá. Niantic je přidává dřív, než se
@@ -640,9 +646,12 @@ def main():
             "stazeno": date.today().isoformat(),
             "pozn": "Regeneruj přes: python tools/build_pokedex.py --refresh",
             "schema_species": "klíč -> [id, jméno, [typy], base_attack, base_defense, base_stamina, umí_se_vyvinout(0/1), klíč finální evoluce nebo \"\", vzácnost L/M/U nebo \"\", cena evoluce v bonbónech (0 = nevyvíjí se)]",
-            "schema_mega": "klíč -> [[jméno, atk, def, sta, [typy], mega_energie, Mega|Primal], …]",
+            "schema_mega": "klíč -> [[jméno, atk, def, sta, [typy], mega_energie,"
+                           " Mega|Primal, mega_energie_poprvé], …]",
             "schema_evoPozadavky": "klíč -> {cílový klíč: {km, buddy, item, lure,"
-                                   " pohlavi, den, noc, tradeZdarma, vzhuruNohama, ukol}}",
+                                   " pohlavi, den, noc, tradeZdarma, vzhuruNohama, ukol}}."
+                                   " Prázdný objekt = zdroj ten přechod zná a žádná další"
+                                   " podmínka u něj není. Chybějící cíl = data nemáme.",
             "zdroj_evoPozadavky_ukol": "herní GAME_MASTER (PokeMiners) — pogoapi"
                                        " úkoly před evolucí nemá",
             "schema_buddyKm": "klíč -> kolik km ujdeš na jeden bonbón",
@@ -662,8 +671,11 @@ def main():
         # protože ty žádnou jednoznačnou koncovou formu nemají.
         "evoluce": evoluce,
     }
+    s_podminkou = sum(1 for cile in pozadavky.values() if any(cile.values()))
     out["_meta"]["pocty"] = {"species": len(species), "mega": len(mega),
-                             "evoPozadavky": len(pozadavky), "buddyKm": len(buddy_km),
+                             "evoPozadavky": len(pozadavky),
+                             "evoPozadavky_s_podminkou": s_podminkou,
+                             "buddyKm": len(buddy_km),
                              "cpm": len(cpm),
                              "evolucnich_kroku": len(out["evoluce"]),
                              "finalnich_evoluci": sum(1 for v in species.values() if v[6] == 0),

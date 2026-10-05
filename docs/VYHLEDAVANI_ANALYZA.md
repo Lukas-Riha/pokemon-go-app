@@ -191,3 +191,37 @@ Je to tedy **záměrná odchylka od V3**, ne opomenutí:
 Co z V3 platí dál beze změny: obsah jednotlivých sekcí, pravidla o
 datech (nic se nevymýšlí, tři stavy shiny, pořadí druhu ≠ IV rank),
 pás CP a jeho popisky, chování formuláře kusu a šest stavů k předání.
+
+## Sekce 6 — Evoluce a náklady (hotovo 30. 9.)
+
+Záložka Evoluce ukazuje vlevo strom celé řady, vpravo podrobnosti
+**jedné** vybrané cesty. Plná šipka je evoluce; mega visí na
+přerušované větvi pod popiskem „Dočasná mega forma" — není to evoluce
+a platí se energií, ne bonbóny (energie se proto s bonbóny nikdy
+nesčítá a stojí ve vlastním bloku s cenou poprvé i za každou další
+proměnu).
+
+Co se muselo dorovnat v datech, ne jen v UI:
+
+- `evoPozadavky` se dřív zapisovalo jen u přechodů, kde zdroj něco měl.
+  Z chybějícího záznamu tak nešlo poznat „ověřeně nic navíc" od „data
+  nemáme" — a appka u obojího tvrdila „stačí bonbóny". Teď se zapisuje
+  i prázdný objekt (= zdroj přechod zná a žádnou podmínku neuvádí) a
+  chybějící cíl znamená, že se neví. Engine to vrací jako
+  `evoPodminkyStav` → `jsou` / `zadne` / `nevime`; vrstva k tomu má tři
+  různé věty a žádnou nedomýšlí. V dnešních datech je pokrytých všech
+  576 hran (457 bez podmínky, 119 s podmínkou), ale rozlišení musí
+  existovat, aby appka nelhala, až se data změní.
+- Mega energie má ve hře dvě ceny — poprvé 200, pak 40. Zapékala se jen
+  jedna, takže by cena mega formy byla nepravdivá; teď se pečou obě
+  (`schema_mega` má osmý člen) a ručně doplněná mega bez toho údaje
+  zůstane „neznámo".
+
+Cena se počítá jen pro vybranou cestu (`atlasEvoCena`), nikdy jako
+součet všech větví — u Eevee by to bylo osm evolucí, které nikdo
+neudělá. Prach, běžné bonbóny, XL a předmět stojí každé zvlášť;
+neznámý člen zůstává neznámý a součet se pak neoznačí za úplný.
+V druhovém režimu je to výslovně **ukázkový model od L1** (appka o
+inventáři nic neví), v kusovém se počítá od skutečného levelu zadaného
+kusu a bere se i dražší vylepšení u shadow forem.
+

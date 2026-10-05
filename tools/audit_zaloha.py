@@ -137,7 +137,9 @@ def main():
     obnoveno = []
     if OBNOVIT:
         kroky = [("akce a raid bossové", [sys.executable, "tools/build_events.py", "--refresh"]),
-                 ("ligové žebříčky z PvPoke", [sys.executable, "tools/build_meta.py", "--refresh"])]
+                 ("ligové žebříčky z PvPoke", [sys.executable, "tools/build_meta.py", "--refresh"]),
+                 ("Dynamax žebříček z Pokémon GO Hubu",
+                  [sys.executable, "tools/build_dmax.py", "--refresh"])]
         if OBNOVIT_VSE:
             kroky = [("pokédex", [sys.executable, "tools/build_pokedex.py", "--refresh"])] + kroky \
                 + [("útoky", [sys.executable, "tools/build_moves.py"])]

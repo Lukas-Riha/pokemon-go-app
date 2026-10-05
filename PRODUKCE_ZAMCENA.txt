@@ -1,0 +1,7 @@
+Produkce je zamcena.
+
+Dokud tenhle soubor lezi v korenu, `tools/deploy.ps1` nic neposle
+na GitHub Pages ani do OneDrivu. Odemyka se jen vedomym
+`deploy.ps1 -Odemknout`, a to az na pokyn.
+
+Naposledy nasazeno: 2026-10-05, verze 2.9.

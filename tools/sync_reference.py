@@ -58,6 +58,13 @@ TYPE_ICONS_P = ROOT / "data" / "type_icons.json"
 type_icons_all = json.loads(TYPE_ICONS_P.read_text(encoding="utf-8"))
 type_icons = {k: type_icons_all[k] for k in ("viewBox", "ikony")}
 
+# Žebříček Dynamax útočníků po typech (Pokémon GO Hub). Jediný zdroj, ze
+# kterého appka ví, které druhy Dynamax vůbec umí — a čím se v Max Battle
+# měří. Čísla jsou JEJICH model, ne výpočet appky.
+DMAX = ROOT / "data" / "dmax.json"
+dmax_all = json.loads(DMAX.read_text(encoding="utf-8")) if DMAX.exists() else {}
+dmax = {k: dmax_all.get(k) for k in ("typy", "druhy") if dmax_all.get(k)}
+
 META = ROOT / "data" / "meta.json"
 meta_all = json.loads(META.read_text(encoding="utf-8"))
 meta = {"leagues": meta_all["leagues"],
@@ -85,6 +92,7 @@ data_info = {
     "moves": moves_all["_meta"].get("stazeno", ""),
     "events": events_all["_meta"].get("stazeno", ""),
     "raketa": (raketa_all.get("_meta") or {}).get("stazeno", ""),
+    "dmax": (dmax_all.get("_meta") or {}).get("staženo", ""),
 }
 
 # Razítko sestavení. Bez něj se u sdíleného souboru nepozná, jestli má druhý
@@ -153,6 +161,7 @@ BLOCKS = [
     ("// === MOVES START", "// === MOVES END ===", "MOVES", moves),
     ("// === EVENTS START", "// === EVENTS END ===", "EVENTS", events),
     ("// === RAKETA START", "// === RAKETA END ===", "RAKETA", raketa),
+    ("// === DMAX START", "// === DMAX END ===", "DMAX", dmax),
     ("// === SPRITES START", "// === SPRITES END ===", "SPRITES", sprites),
     ("// === TYPE ICONS START", "// === TYPE ICONS END ===", "TYPE_ICONS", type_icons),
     ("// === DATA INFO START", "// === DATA INFO END ===", "DATA_INFO", data_info),

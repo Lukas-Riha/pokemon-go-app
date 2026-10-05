@@ -574,7 +574,9 @@ try {
     rescanCases.ruzneKusy.map((r) => r.iv + ":" + r.keep).join(" / "));
   eq("stejná IV při jiném CP se neslučují naslepo", rescanCases.poVylepseni.length, 2);
   check("…ale appka varuje místo doporučení zahodit",
-    rescanCases.poVylepseni.some((r) => r.keep === "Duplikát?"),
+    // Duplikát už nepřepisuje verdikt — je to štítek navíc a pojistka
+    // „Nechat – ověř duplikát“, aby se kus nepustil nedopatřením.
+    rescanCases.poVylepseni.some((r) => /ověř duplikát/.test(r.keep || "")),
     rescanCases.poVylepseni.map((r) => r.cp + ":" + r.keep).join(" / "));
   check("…a nikomu neradí zahodit",
     !rescanCases.poVylepseni.some((r) => r.keep === "Zahodit – kopie"),
@@ -1504,6 +1506,12 @@ try {
       { pokemon: "Registeel", forma: "Shadow", level: 30, ivAtk: 4, ivDef: 15, ivSta: 15, fastMove: "Lock On", charged1: "Focus Blast" },
       { pokemon: "Ralts", forma: "Shadow", level: 12, ivAtk: 8, ivDef: 9, ivSta: 7, fastMove: "Confusion", charged1: "Psychic" },
       { pokemon: "Metagross", level: 35, ivAtk: 15, ivDef: 14, ivSta: 13, fastMove: "Bullet Punch", charged1: "Meteor Mash" },
+      // Konkurence na Psychic a Fairy: bez ni by i Ralts drzel raidovy slot
+      // (v ctyrkusovem rosteru ho neni kym obsadit) a pravidlo "shadow kus,
+      // ktery drzi raid, se nepurifikuje" by u nej platilo pravem.
+      { pokemon: "Alakazam", level: 40, ivAtk: 15, ivDef: 14, ivSta: 14, fastMove: "Confusion", charged1: "Psychic" },
+      { pokemon: "Gardevoir", level: 40, ivAtk: 15, ivDef: 15, ivSta: 14, fastMove: "Charm", charged1: "Dazzling Gleam" },
+      { pokemon: "Mewtwo", level: 40, ivAtk: 15, ivDef: 15, ivSta: 15, fastMove: "Psycho Cut", charged1: "Psystrike" },
     ]);
     const c = window.__pgo.getComputed();
     const out = {};
@@ -1521,10 +1529,17 @@ try {
   eq("raidový shadow kus se nepurifikuje", purify["Machamp"].verdict, "Nechat");
   check("…a je vidět proč", purify["Machamp"].sub.indexOf("+20 %") > -1, purify["Machamp"].sub);
   eq("PvP kus se purifikovat má", purify["Registeel"].verdict, "Ano");
-  eq("nepoužitelný druh taky", purify["Ralts"].verdict, "Ano");
+  // Ralts drží raidový slot na Fairy — jako budoucí Gardevoir a právě díky
+  // +20 % útoku. Purifikací by o něj přišel, takže „Nechat" je správně.
+  eq("…a stejně tak kus, který slot drží až po evoluci", purify["Ralts"].verdict, "Nechat");
   eq("běžný kus dostane křížek", purify["Metagross"].verdict, "Ne");
-  check("filtr „jen purifikovat“ ukáže právě je",
-    purify.__filtered.length === 2 && purify.__filtered.indexOf("Machamp") === -1,
+  check("filtr „jen purifikovat“ ukáže právě ty, kterým se to vyplatí",
+    // Filtr ukazuje ty, u kterych purifikace dava smysl ("Ano"): Registeel.
+    // Machamp ani Ralts v nem byt nesmi — oba drzi raidovy slot diky shadow.
+    purify.__filtered.length >= 1
+      && purify.__filtered.join(",").indexOf("Registeel") > -1
+      && purify.__filtered.indexOf("Machamp") === -1
+      && purify.__filtered.indexOf("Ralts") === -1,
     purify.__filtered.join(","));
 
 
@@ -2186,7 +2201,13 @@ try {
   // 2,00 MB: snímky v okně „Co je nového" (~45 kB). Ukázat změnu obrázkem
   // je srozumitelnější než ji popsat dvěma řádky; obrázky jdou přes WebP
   // a drží se do 1000 px, protože v okně jsou vidět na ~700 px.
-  check("appka se drží pod 2,00 MB", velikostSouboru < 2000000, String(velikostSouboru));
+  // 2,15 MB: přibyl žebříček Dynamax útočníků (18 typů, 97 druhů — 36 kB dat,
+  // jediný zdroj, ze kterého appka ví, které druhy Dynamax umí), přestavené
+  // vyhledávání se záložkami a shadow žebříčky. Pořád platí to hlavní:
+  // žádné další obrázky a soubor se otevře z disku bez čekání.
+  // Po překlopení na 2.9 nesou novinky pět snímků obrazovky — ty se s další
+  // verzí zase ztratí (zapéká se vždycky jen aktuální verze).
+  check("appka se drží pod 2,25 MB", velikostSouboru < 2250000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {
@@ -10314,8 +10335,10 @@ try {
   check("Excellent hody (Galarian Farfetch’d → Sirfetch’d)",
     ukoly.sirfetchd.indexOf("trefit 10× Excellent hod") > -1, ukoly.sirfetchd);
   check("dvě větve, dva různé úkoly (Galarian Slowpoke)",
-    ukoly.slowpokeG.indexOf("Slowbro [chytit 30 pokémonů typu Poison]") > -1
-      && ukoly.slowpokeG.indexOf("Slowking [chytit 30 pokémonů typu Psychic]") > -1,
+    // Forma se v řadě pojmenovává: galarský Slowbro má jiné typy i staty
+    // než běžný, takže „Slowbro“ samo o sobě by lhalo.
+    /Slowbro \(Galarian\) \[chytit 30 pokémonů typu Poison\]/.test(ukoly.slowpokeG)
+      && /Slowking \(Galarian\) \[chytit 30 pokémonů typu Psychic\]/.test(ukoly.slowpokeG),
     ukoly.slowpokeG);
 
   console.log("\n179) výběr útoků bez vybraného druhu nabízí celou hru");
@@ -12992,7 +13015,8 @@ try {
       return Array.from(document.querySelectorAll(".druh-napoveda .dn-jmeno"))
         .map((x) => x.textContent);
     };
-    return { vivillon: await nabidka("Vivillon"), sandslash: await nabidka("Sandslash") };
+    // Rozepsane jmeno: napsane cele uz nabidka zavira (nema co nabidnout).
+    return { vivillon: await nabidka("Vivillo"), sandslash: await nabidka("Sandsla") };
   });
   eq("kosmetické vzory seznam nezaplevelí", seznam.vivillon.length, 1);
   check("…ale regionální forma v něm je",
@@ -16801,8 +16825,12 @@ try {
     const P = window.__pgo;
     P.setDiscarded([]);
     P.setRows([
-      { pokemon: "Rhyhorn", cp: 800, level: 20, ivAtk: 14, ivDef: 14, ivSta: 14, forma: "Shadow" },
-      { pokemon: "Machop", cp: 700, level: 18, ivAtk: 13, ivDef: 13, ivSta: 13, forma: "Shadow" },
+      /* Shadow kusy, kterym se purifikace vyplati: Registeel zadny raidovy
+         slot nedrzi (do raidu se nehodi), takze u nej karta "Purifikovat"
+         opravdu je. Shadow kus, ktery slot drzi, ji nema — drzi ho prave
+         diky +20 % utoku a purifikovat se nema. */
+      { pokemon: "Registeel", level: 30, ivAtk: 4, ivDef: 15, ivSta: 15, forma: "Shadow", fastMove: "Lock On", charged1: "Focus Blast" },
+      { pokemon: "Registeel", level: 25, ivAtk: 2, ivDef: 12, ivSta: 12, forma: "Shadow", fastMove: "Lock On", charged1: "Focus Blast" },
       { pokemon: "Blissey", cp: 2700, level: 40, ivAtk: 10, ivDef: 15, ivSta: 15 }
     ]);
     await new Promise((r) => setTimeout(r, 900));
@@ -18298,6 +18326,604 @@ try {
       /novinky/i.test(s275.hlaska) && !/[a-z_]+\.(js|json|html)/.test(s275.hlaska),
       s275.hlaska);
   }
+
+  console.log("\n283) Simulace vylepseni, elitni utok a formy druhu");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s283 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const v = P.atlasVylepseni("Omanyte", "", 20, 40, 14, 13, 12);
+    const vShadow = P.atlasVylepseni("Omanyte", "Shadow", 20, 40, 14, 13, 12);
+    const v50 = P.atlasVylepseni("Omanyte", "", 20, 50, 14, 13, 12);
+    const krok = v ? v.kroky[0] : null;
+    return {
+      kroku: v ? v.kroky.length : 0,
+      prvni: krok,
+      roste: v ? v.kroky.every((k, i, a) => i === 0 || a[i - 1].cp <= k.cp) : null,
+      soucetSedi: v ? v.kroky[v.kroky.length - 1].celkemPrach === v.prach : null,
+      cpNa: v ? v.cpNa : null,
+      cpOd: v ? v.cpOd : null,
+      // Shadow kus se vylepsuje draz — to hra dela, ne appka.
+      shadowDrazsi: v && vShadow ? vShadow.prach > v.prach : null,
+      // XL az nad L40.
+      xlDoCtyricitky: v ? v.xl : null,
+      xlNaPadesatku: v50 ? v50.xl : null,
+      // Nesmysly vrati null, nic se nedosazuje.
+      pozpatku: P.atlasVylepseni("Omanyte", "", 40, 20, 14, 13, 12),
+      neznamy: P.atlasVylepseni("Tenhle druh neexistuje", "", 1, 40),
+      // Elitni utok bezny TM nenauci.
+      elitni: P.atlasElitniUtok("Zapdos", "Thunder Shock"),
+      bezny: P.atlasElitniUtok("Zapdos", "Charge Beam"),
+      neznamyUtok: P.atlasElitniUtok("Zapdos", "Tenhle utok neexistuje"),
+      // Formy druhu: ze dvou klicu se stejnymi staty ten jednodussi.
+      formy: (P.prohlidkaModel("Zygarde").druhy || [])
+        .filter((x) => x.vztah === "forma").map((x) => x.jmeno)
+    };
+  });
+  check("simulace jde po pul levelech a cisla sedi",
+    s283.kroku === 40 && s283.prvni && s283.prvni.z === 20 && s283.prvni.na === 20.5
+      && s283.prvni.prach > 0 && s283.roste === true && s283.soucetSedi === true
+      && s283.cpNa > s283.cpOd,
+    JSON.stringify([s283.kroku, s283.prvni]));
+  check("...shadow kus je drazsi a XL az nad L40",
+    s283.shadowDrazsi === true && s283.xlDoCtyricitky === 0 && s283.xlNaPadesatku > 0,
+    JSON.stringify([s283.shadowDrazsi, s283.xlDoCtyricitky, s283.xlNaPadesatku]));
+  check("...a nesmyslny vstup vrati null",
+    String(s283.pozpatku) === "null" && String(s283.neznamy) === "null",
+    JSON.stringify([s283.pozpatku, s283.neznamy]));
+  check("elitni utok se pozna (Thunder Shock u Zapdose)",
+    s283.elitni === true && s283.bezny === false && s283.neznamyUtok === null,
+    JSON.stringify([s283.elitni, s283.bezny, s283.neznamyUtok]));
+  check("formy druhu maji ctitelne jmeno a zadne dvojce",
+    s283.formy.length >= 2 && s283.formy.some((x) => /10 %/.test(x))
+      && !s283.formy.some((x) => /percent/i.test(x)),
+    JSON.stringify(s283.formy));
+
+  console.log("\n284) Rozdelane cisteni boxu prezije zavreni prohlizece");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rows = [];
+    for (let i = 0; i < 5; i++) {
+      rows.push({ pokemon: "Pidgey", cp: 300 + i * 10, level: 15, ivAtk: 5 + i, ivDef: 5,
+        ivSta: 5, fastMove: "Quick Attack", charged1: "Aerial Ace" });
+    }
+    window.__pgo.setRows(rows);
+    await cekej(1500);
+    document.getElementById("boxModeBtn").click();
+    await cekej(900);
+    const ok = document.getElementById("appOknoOk");
+    if (ok && !document.getElementById("appOkno").hidden) { ok.click(); await cekej(500); }
+    document.getElementById("bmKeep").click();
+    await cekej(400);
+    document.getElementById("bmDrop").click();
+    await cekej(500);
+  });
+  const s284pred = await page.evaluate(() => ({
+    pozice: (document.getElementById("bmPos") || {}).textContent || "",
+    // Rozhodnuti se zapisuji az na konci — roster se zatim nemeni.
+    rosteru: window.__pgo.getRows().length
+  }));
+  // „Pad prohlizece": nacteni stranky znovu, bez zavirani cisteni.
+  await page.reload();
+  await page.waitForFunction(() => window.__pgo, null, { timeout: 60000 });
+  await page.waitForTimeout(900);
+  const s284 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    // Nabizi se pruhem nahore, ne modalem: rika totez a necha pracovat dal.
+    const out = { pruhVidet: !document.getElementById("bmSchovane").hidden,
+      nabidka: document.getElementById("bmSchovaneText").textContent,
+      ok: document.getElementById("bmSchovanePokracovat").textContent,
+      zrusit: document.getElementById("bmSchovaneKonec").textContent };
+    document.getElementById("bmSchovanePokracovat").click();
+    await cekej(1200);
+    const hlaska = document.getElementById("appOkno");
+    if (hlaska && !hlaska.hidden) { document.getElementById("appOknoOk").click(); await cekej(600); }
+    out.pozice = (document.getElementById("bmPos") || {}).textContent || "";
+    out.otevreno = !document.getElementById("boxMode").hidden;
+    return out;
+  });
+  check("rozdelane cisteni se po nacteni nabidne pruhem nahore",
+    s284.pruhVidet === true && /edokon/.test(s284.nabidka)
+      && /Pokracovat|Pokračovat/.test(s284.ok)
+      && /znovu/.test(s284.zrusit), JSON.stringify(s284));
+  check("...a pokracuje se tam, kde to skoncilo",
+    s284.otevreno === true && s284.pozice === s284pred.pozice,
+    JSON.stringify([s284pred.pozice, s284.pozice]));
+
+  console.log("\n285) Strop ligy a prepinaci stitek Duplikat");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s285 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    // Strop ligy: nejvyssi pulllevel, kde se kus jeste vejde pod limit.
+    const gl = P.atlasStropLigy("Zygarde (Complete)", 1500, 11, 13, 15);
+    const ul = P.atlasStropLigy("Zygarde (Complete)", 2500, 11, 13, 15);
+    const nad = P.atlasStropLigy("Zygarde (Complete)", 10, 15, 15, 15);
+    const neznamy = P.atlasStropLigy("Neexistuje", 1500, 15, 15, 15);
+    // Forma ma vlastni staty, takze i vlastni strop.
+    const gl50 = P.atlasStropLigy("Zygarde (50 %)", 1500, 11, 13, 15);
+    // Dva skeny jednoho kusu: stejna presna IV, jine CP.
+    P.setRows([
+      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
+      { pokemon: "Rattata", cp: 240, level: 15, ivAtk: 3, ivDef: 3, ivSta: 3 },
+      { pokemon: "Rattata", cp: 310, level: 20, ivAtk: 4, ivDef: 5, ivSta: 6 },
+      { pokemon: "Rattata", cp: 320, level: 21, ivAtk: 7, ivDef: 5, ivSta: 6 }
+    ]);
+    await cekej(1400);
+    const comp = () => P.getComputed();
+    const id = Object.keys(comp()).filter((k) => comp()[k].duplikatPodezreni)[0];
+    const stitky = (cc) => (cc.duvody || []).map((d) => d.stitek);
+    const out = { gl: gl, ul: ul, nad: nad, neznamy: neznamy, gl50: gl50, id: id };
+    out.pred = { keep: comp()[id].keep, over: !!comp()[id].duplikatOver,
+      stitky: stitky(comp()[id]) };
+    P.atlasDuplikatPrepni(id);
+    await cekej(600);
+    out.po = { keep: comp()[id].keep, over: !!comp()[id].duplikatOver,
+      stitky: stitky(comp()[id]),
+      // Podezreni se drzi u kusu dal — jen uz neplati a ve verdiktu neni.
+      podezreni: !!comp()[id].duplikatPodezreni };
+    P.atlasDuplikatPrepni(id);
+    await cekej(600);
+    out.zpatky = { keep: comp()[id].keep, over: !!comp()[id].duplikatOver };
+    return out;
+  });
+  check("strop ligy je nejvyssi pullevel pod limitem",
+    s285.gl && s285.gl.cp <= 1500 && s285.ul && s285.ul.cp <= 2500
+      && s285.gl.level < s285.ul.level, JSON.stringify([s285.gl, s285.ul]));
+  check("jina forma ma vlastni strop",
+    !!s285.gl50 && s285.gl50.level !== s285.gl.level,
+    JSON.stringify([s285.gl, s285.gl50]));
+  check("nesplnitelny limit i neznamy druh vraci null",
+    s285.nad === null && s285.neznamy === null,
+    JSON.stringify([s285.nad, s285.neznamy]));
+  check("stitek Duplikat? je posledni v rade",
+    s285.pred.stitky.length > 0
+      && s285.pred.stitky[s285.pred.stitky.length - 1] === "Duplikát?",
+    JSON.stringify(s285.pred.stitky));
+  check("odbaveni duplikatu vrati verdikt k rozpoctu",
+    /ověř duplikát/.test(s285.pred.keep) && s285.pred.over === false
+      && s285.po.over === true && !/duplikát/.test(s285.po.keep),
+    JSON.stringify([s285.pred.keep, s285.po.keep]));
+  check("...a stitek z verdiktu zmizi, podezreni ale zustane u kusu",
+    s285.po.stitky.indexOf("Duplikát?") === -1 && s285.po.podezreni === true,
+    JSON.stringify(s285.po));
+  check("druhe prepnuti podezreni vrati",
+    s285.zpatky.over === false && /ověř duplikát/.test(s285.zpatky.keep),
+    JSON.stringify(s285.zpatky));
+
+  console.log("\n286) Pole vymen pred cistenim naseptava jen moje druhy");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s286 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    /* Rozdelane cisteni z driveji by se jen obnovilo a uvodni dialog
+       (vcetne pole na vymeny) by vubec nepadl. Pruh nahore uz je vykresleny,
+       takze nestaci smazat ulozeny prubeh — musi se zavrit i on. */
+    try { localStorage.removeItem("pgo_box_rozdelano"); } catch (e) { /* nevadi */ }
+    {
+      const pruh = document.getElementById("bmSchovane");
+      if (pruh && !pruh.hidden) {
+        document.getElementById("bmSchovaneKonec").click();
+        await cekej(300);
+      }
+      /* Rozdeleni na sekce je NASTAVENI a drzi se mezi testy. Pri "vse
+         v jedne sekci" se uvodni dialog neohlasi (neni co oddelovat)
+         a pole na vymeny by nebylo kde hledat. */
+      const sek = document.getElementById("boxSekce");
+      if (sek) { sek.value = "3"; sek.dispatchEvent(new Event("change", { bubbles: true })); }
+      await cekej(200);
+    }
+    /* Dost slabych kusu na hromadnou sekci a jeden silny, ktery se drzi —
+       pri jedine sekci se uvodni dialog (a s nim pole na vymeny) neohlasi. */
+    P.setRows([
+      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
+      { pokemon: "Rattata", cp: 240, level: 15, ivAtk: 4, ivDef: 4, ivSta: 4 },
+      { pokemon: "Pidgey", cp: 180, level: 12, ivAtk: 2, ivDef: 2, ivSta: 2 },
+      { pokemon: "Pidgey", cp: 190, level: 13, ivAtk: 3, ivDef: 2, ivSta: 2 },
+      { pokemon: "Caterpie", cp: 90, level: 6, ivAtk: 2, ivDef: 3, ivSta: 2 },
+      { pokemon: "Weedle", cp: 95, level: 6, ivAtk: 3, ivDef: 2, ivSta: 3 },
+      { pokemon: "Zubat", cp: 120, level: 8, ivAtk: 4, ivDef: 3, ivSta: 3 },
+      { pokemon: "Metagross", cp: 3700, level: 40, ivAtk: 15, ivDef: 15, ivSta: 14 }
+    ]);
+    await cekej(1400);
+    document.getElementById("boxModeBtn").click();
+    await cekej(900);
+    const napoveda = document.getElementById("appOknoNapoveda");
+    const vstup = document.getElementById("appOknoVstup");
+    const out = {};
+    // Prazdne pole nabidku neotvira: rozbaleny seznam celeho rosteru prekryl
+    // pulku dialogu a nebylo v nem co vybirat.
+    out.prazdne = napoveda.hidden;
+    // Kdyby dialog nebyl ten uvodni (pole na vymeny ma jen prvni sekce),
+    // at je z vysledku poznat proc.
+    out.dialog = (document.getElementById("appOknoText") || {}).textContent || "";
+    out.maVstup = !(document.getElementById("appOknoVstupBox") || {}).hidden;
+    vstup.value = "rat";
+    vstup.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(250);
+    out.filtr = [...napoveda.querySelectorAll("button")].map((x) => x.textContent.trim());
+    const prvni = napoveda.querySelector("button");
+    if (prvni) prvni.click();
+    await cekej(200);
+    out.cipy = [...document.querySelectorAll(".app-okno-cip")]
+      .map((x) => x.textContent.replace("\u00d7", "").trim());
+    // Enter v poli stitek PRIDA a dialog nechá otevreny.
+    vstup.value = "pidg";
+    vstup.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(150);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await cekej(250);
+    out.cipy2 = [...document.querySelectorAll(".app-okno-cip")]
+      .map((x) => x.textContent.replace("\u00d7", "").trim());
+    out.oknoOtevrene = !document.getElementById("appOkno").hidden;
+    document.getElementById("appOknoOk").click();
+    await cekej(1000);
+    const hlaska = document.getElementById("appOkno");
+    if (hlaska && !hlaska.hidden) { document.getElementById("appOknoOk").click(); await cekej(500); }
+    // Chraneny kus nepatri do hromadneho pusteni (sekce 2).
+    out.sekce = P.bmSeznam().map((x) => ({ jm: x.row.pokemon, sekce: x.sekce }));
+    return out;
+  });
+  check("prazdne pole nabidku neotvira",
+    s286.prazdne === true && s286.maVstup === true,
+    JSON.stringify([s286.prazdne, s286.maVstup, (s286.dialog || "").slice(0, 60)]));
+  check("psani nabidne jen druhy, ktere clovek ma, s poctem kusu",
+    s286.filtr.length === 1 && /Rattata 2 kusy/.test(s286.filtr[0])
+      && !/Bulbasaur|Pikachu/.test(s286.filtr.join("|")), JSON.stringify(s286.filtr));
+  check("vyber prida stitek, Enter dalsi a dialog nezavre",
+    s286.cipy.join(",") === "Rattata" && s286.cipy2.join(",") === "Rattata,Pidgey"
+      && s286.oknoOtevrene === true, JSON.stringify([s286.cipy, s286.cipy2]));
+  check("chranene kusy nespadnou do hromadneho pusteni",
+    s286.sekce.filter((x) => /Rattata|Pidgey/.test(x.jm)).every((x) => x.sekce !== 2),
+    JSON.stringify(s286.sekce));
+
+  console.log("\n292) Dmax zebricek z Pokemon GO Hubu");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s292 = await page.evaluate(() => {
+    const P = window.__pgo;
+    return {
+      snorlax: P.atlasDmax("Snorlax"),
+      charizard: P.atlasDmax("Charizard"),
+      neznamy: P.atlasDmax("Neexistuje"),
+      zdroj: P.atlasDmaxZdroj()
+    };
+  });
+  check("zebricek zna G-max druhy i jejich poradi po typech",
+    !!s292.snorlax && s292.snorlax.forma === "Gigantamax"
+      && s292.snorlax.role.length > 0 && s292.snorlax.role[0].typ === "Normal"
+      && s292.snorlax.role[0].poradi === 1, JSON.stringify(s292.snorlax));
+  check("druh muze stat ve vic typech, serazeno od nejlepsiho",
+    !!s292.charizard && s292.charizard.role.length > 1
+      && s292.charizard.role[0].poradi <= s292.charizard.role[1].poradi,
+    JSON.stringify((s292.charizard || {}).role));
+  check("neznamy druh vraci null, nic se nedomysli",
+    s292.neznamy === null, JSON.stringify(s292.neznamy));
+  check("u cisel je napsane, odkud jsou a k jakemu dni",
+    !!s292.zdroj && /Hub/.test(s292.zdroj.zdroj) && /^\d{4}-\d{2}-\d{2}$/.test(s292.zdroj.datum),
+    JSON.stringify(s292.zdroj));
+
+  console.log("\n291) Shadow varianta ve vyhledavani");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s291 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const out = {};
+    // Napsane jmeno se rozlozi na druh a formu.
+    out.rozklad = P.atlasRozlozFormu("Shadow Snorlax");
+    out.bezPredpony = P.atlasRozlozFormu("Snorlax");
+    // Prepinac se nabizi jen tam, kde shadow zebricek opravdu je.
+    out.maShadow = { snorlax: P.atlasMaShadow("Snorlax"),
+      shadowSnorlax: P.atlasMaShadow("Shadow Snorlax") };
+    const rank = (jm) => {
+      const m = P.prohlidkaModel(jm);
+      const r = (m.role.pvp.great.radky || []).filter((x) => x.klic === m.klic)[0];
+      return { rank: r ? r.rank : null, forma: m.forma };
+    };
+    out.bezny = rank("Snorlax");
+    out.shadow = rank("Shadow Snorlax");
+    return out;
+  });
+  check("„Shadow Snorlax\" se rozlozi na druh a formu",
+    s291.rozklad.jmeno === "Snorlax" && s291.rozklad.forma === "Shadow"
+      && s291.bezPredpony.forma === "", JSON.stringify(s291.rozklad));
+  check("prepinac se nabizi jen u druhu se shadow zebrickem",
+    s291.maShadow.snorlax === true && s291.maShadow.shadowSnorlax === true,
+    JSON.stringify(s291.maShadow));
+  check("shadow varianta ma vlastni poradi, ne prepocet bezneho",
+    s291.bezny.forma === "" && s291.shadow.forma === "Shadow"
+      && s291.bezny.rank != null && s291.shadow.rank != null
+      && s291.bezny.rank !== s291.shadow.rank,
+    JSON.stringify([s291.bezny, s291.shadow]));
+
+  console.log("\n290) Novinky se ctou po sekcich");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s290 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.getElementById("novinkyOkno")?.remove();
+    document.getElementById("novinkyBtn").click();
+    await cekej(600);
+    const okno = document.getElementById("novinkyOkno");
+    if (!okno) return null;
+    const out = {
+      sekce: [...okno.querySelectorAll(".novinky-sekce h3")].map((x) => x.textContent.trim()),
+      bodu: okno.querySelectorAll(".novinky-seznam > li:not(.novinky-sekce)").length,
+      // Nadpis sekce neni novinka — nesmi mit odrazku ani tucny text z **.
+      hvezdicky: /\*\*/.test(okno.textContent || "")
+    };
+    okno.remove();
+    return out;
+  });
+  check("novinky maji sekce a vejdou se do rozumneho poctu bodu",
+    !!s290 && s290.sekce.length >= 3 && s290.bodu > 0 && s290.bodu <= 40,
+    JSON.stringify(s290));
+  check("v novinkach nezustaly hvezdicky z formatovani",
+    !!s290 && s290.hvezdicky === false, JSON.stringify(s290 && s290.hvezdicky));
+
+  console.log("\n289) Rucni pridani: forma je znacka jako ostatni");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s289 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([]);
+    await cekej(900);
+    document.getElementById("addRowBtn").click();
+    await cekej(700);
+    const out = {};
+    out.znacky = [...document.querySelectorAll(".rb-znacky .rarity-chip, .rb-znacky .rb-forma")]
+      .map((e) => e.textContent.trim());
+    out.zadnySelect = !document.querySelector("select#rbForma");
+    const vypln = (id, v) => {
+      const el = document.getElementById(id);
+      el.value = v; el.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    vypln("rbName", "Machop");
+    vypln("rbCp", String(P.atlasCP("Machop", 20, 14, 13, 12)));
+    vypln("rbA", "14"); vypln("rbD", "13"); vypln("rbS", "12");
+    await cekej(700);
+    const shadow = document.querySelector('[data-rb-forma="Shadow"]');
+    shadow.click();
+    await cekej(150);
+    out.poShadow = document.getElementById("rbForma").value;
+    // Druha forma prvni zhasne - je to jeden stav, ne dva prepinace.
+    document.querySelector('[data-rb-forma="Lucky"]').click();
+    await cekej(150);
+    out.poLucky = { hodnota: document.getElementById("rbForma").value,
+      shadowJe: shadow.classList.contains("je") };
+    document.querySelector('[data-rb-forma="Lucky"]').click();
+    await cekej(150);
+    out.poVypnuti = document.getElementById("rbForma").value;
+    shadow.click();
+    document.getElementById("rbCute").checked = true;
+    await cekej(200);
+    const pridat = document.getElementById("rbAdd");
+    out.lzePridat = !pridat.disabled;
+    if (!pridat.disabled) { pridat.click(); await cekej(1200); }
+    const r = P.getRows()[0];
+    out.pridany = r ? { jm: r.pokemon, forma: r.forma, cute: r.cute } : null;
+    return out;
+  });
+  check("znacky formy stoji dole u ostatnich, rozbalovatko uz neni",
+    s289.zadnySelect === true
+      && s289.znacky.slice(0, 3).join(",") === "SHADOW,PURIFIED,LUCKY"
+      && s289.znacky.indexOf("DMAX") > 2, JSON.stringify(s289.znacky));
+  check("formy se navzajem vypinaji a daji se zhasnout",
+    s289.poShadow === "Shadow" && s289.poLucky.hodnota === "Lucky"
+      && s289.poLucky.shadowJe === false && s289.poVypnuti === "",
+    JSON.stringify([s289.poShadow, s289.poLucky, s289.poVypnuti]));
+  check("pridany kus si formu i znacku odnese do rosteru",
+    s289.lzePridat === true && s289.pridany && s289.pridany.forma === "Shadow"
+      && s289.pridany.cute === "Ano", JSON.stringify(s289.pridany));
+
+  console.log("\n288) Vymena pred cistenim prebije verdikt v celem rozboru");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s288 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    /* Rozdelane cisteni z driveji by se jen obnovilo a uvodni dialog
+       (vcetne pole na vymeny) by vubec nepadl. Pruh nahore uz je vykresleny,
+       takze nestaci smazat ulozeny prubeh — musi se zavrit i on. */
+    try { localStorage.removeItem("pgo_box_rozdelano"); } catch (e) { /* nevadi */ }
+    {
+      const pruh = document.getElementById("bmSchovane");
+      if (pruh && !pruh.hidden) {
+        document.getElementById("bmSchovaneKonec").click();
+        await cekej(300);
+      }
+      /* Rozdeleni na sekce je NASTAVENI a drzi se mezi testy. Pri "vse
+         v jedne sekci" se uvodni dialog neohlasi (neni co oddelovat)
+         a pole na vymeny by nebylo kde hledat. */
+      const sek = document.getElementById("boxSekce");
+      if (sek) { sek.value = "3"; sek.dispatchEvent(new Event("change", { bubbles: true })); }
+      await cekej(200);
+    }
+    /* Tri Xerneasove (treti uz je kopie navic) a par slabych kusu, aby
+       vznikla hromadna sekce — jinak se uvodni dialog neohlasi. */
+    P.setRows([
+      { pokemon: "Xerneas", cp: 3400, level: 30, ivAtk: 15, ivDef: 14, ivSta: 14 },
+      { pokemon: "Xerneas", cp: 2124, level: 20, ivAtk: 14, ivDef: 12, ivSta: 12 },
+      { pokemon: "Xerneas", cp: 1800, level: 18, ivAtk: 10, ivDef: 10, ivSta: 10 },
+      { pokemon: "Pidgey", cp: 180, level: 12, ivAtk: 2, ivDef: 2, ivSta: 2 },
+      { pokemon: "Caterpie", cp: 90, level: 6, ivAtk: 2, ivDef: 3, ivSta: 2 },
+      { pokemon: "Weedle", cp: 95, level: 6, ivAtk: 3, ivDef: 2, ivSta: 3 },
+      { pokemon: "Zubat", cp: 120, level: 8, ivAtk: 4, ivDef: 3, ivSta: 3 }
+    ]);
+    await cekej(1400);
+    const verdikty = () => {
+      const c = P.getComputed();
+      return P.getRows().map((r) => r.pokemon + " " + r.cp + ": " + c[r.id].keep);
+    };
+    const out = { pred: verdikty() };
+    document.getElementById("boxModeBtn").click();
+    await cekej(1000);
+    const vstup = document.getElementById("appOknoVstup");
+    vstup.value = "xern";
+    vstup.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(250);
+    const nab = document.getElementById("appOknoNapoveda").querySelector("button");
+    if (nab) nab.click();
+    await cekej(250);
+    document.getElementById("appOknoOk").click();
+    await cekej(1200);
+    if (!document.getElementById("appOkno").hidden) {
+      document.getElementById("appOknoOk").click();
+      await cekej(600);
+    }
+    out.po = verdikty();
+    // Po skonceni cisteni volba konci — verdikty se vrati k rozpoctu.
+    document.getElementById("bmClose").click();
+    await cekej(400);
+    const zahodit = document.getElementById("bmZahodit");
+    if (zahodit) { zahodit.click(); await cekej(800); }
+    out.potom = verdikty();
+    return out;
+  });
+  check("kus druhu na vymenu ma 'Nechat na vymenu' v celem rozboru, ne jen v cisteni",
+    s288.pred.some((x) => /Xerneas.*Zahodit/.test(x))
+      && !s288.po.some((x) => /Xerneas.*Zahodit/.test(x))
+      && s288.po.filter((x) => /Nechat na výměnu/.test(x)).length >= 1,
+    JSON.stringify(s288.po));
+  check("...a ostatnich druhu se to netyka",
+    s288.po.some((x) => /Pidgey.*Zahodit/.test(x)), JSON.stringify(s288.po));
+  check("po skonceni cisteni volba konci",
+    JSON.stringify(s288.potom) === JSON.stringify(s288.pred),
+    JSON.stringify(s288.potom));
+
+  console.log("\n287) Cisteni jde schovat a kopie druhu jsou videt");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s287 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
+      { pokemon: "Rattata", cp: 310, level: 20, ivAtk: 4, ivDef: 5, ivSta: 6 },
+      { pokemon: "Rattata", cp: 320, level: 21, ivAtk: 7, ivDef: 5, ivSta: 6 },
+      { pokemon: "Pidgey", cp: 180, level: 12, ivAtk: 2, ivDef: 2, ivSta: 2 },
+      { pokemon: "Dialga", cp: 3800, level: 40, ivAtk: 14, ivDef: 14, ivSta: 15 }
+    ]);
+    await cekej(1400);
+    const out = {};
+    // Master League ma v bubline cely nazev i vetu o tom, ze nema strop CP.
+    const comp = P.getComputed();
+    const dialga = P.getRows().filter((r) => r.pokemon === "Dialga")[0];
+    const html = P.atlasDuvody(comp[dialga.id]) || "";
+    const m = html.match(/data-tip="([^"]*)"/g) || [];
+    out.mlTip = m.filter((x) => /ML/.test(x)).join(" ").slice(0, 400);
+    // Cisteni: schovat, vratit se na tentyz kus.
+    document.getElementById("boxModeBtn").click();
+    await cekej(900);
+    if (!document.getElementById("appOkno").hidden) {
+      document.getElementById("appOknoZrusit").click();
+      await cekej(700);
+    }
+    document.getElementById("bmKeep").click();
+    await cekej(500);
+    out.pozicePred = document.getElementById("bmPos").textContent;
+    document.getElementById("bmMin").click();
+    await cekej(600);
+    out.schovane = { panelSkryty: document.getElementById("boxMode").hidden,
+      pruhVidet: !document.getElementById("bmSchovane").hidden,
+      text: document.getElementById("bmSchovaneText").textContent };
+    // Druhy klik na „Cistit box" se jen vrati, nic se neptá.
+    document.getElementById("boxModeBtn").click();
+    await cekej(800);
+    out.navrat = { panelVidet: !document.getElementById("boxMode").hidden,
+      pruhSkryty: document.getElementById("bmSchovane").hidden,
+      pozice: document.getElementById("bmPos").textContent,
+      dialog: !document.getElementById("appOkno").hidden };
+    document.getElementById("bmClose").click();
+    await cekej(400);
+    const zahodit = document.getElementById("bmZahodit");
+    if (zahodit) { zahodit.click(); await cekej(600); }
+    return out;
+  });
+  check("Master League ma v bubline cely nazev a vysvetleni",
+    /Master League/.test(s287.mlTip) && /nemá strop CP|nem.* strop/.test(s287.mlTip),
+    s287.mlTip.slice(0, 120));
+  check("cisteni jde schovat, rozdelane zustane",
+    s287.schovane.panelSkryty === true && s287.schovane.pruhVidet === true
+      && /projito/.test(s287.schovane.text), JSON.stringify(s287.schovane));
+  check("navrat pokracuje na tomtez kusu a bez ptani",
+    s287.navrat.panelVidet === true && s287.navrat.pruhSkryty === true
+      && s287.navrat.dialog === false && s287.navrat.pozice === s287.pozicePred,
+    JSON.stringify([s287.pozicePred, s287.navrat]));
+
+  console.log("\n282) Evolucni strom a cena JEDNE cesty");
+  await page.goto(URL);
+  await page.waitForTimeout(700);
+  const s282 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const ee = P.atlasEvoStrom("Eevee");
+    const ch = P.atlasEvoStrom("Charmander");
+    const hrana = (t, od, na) => t.hrany.filter((h) => h.od === od && h.na === na)[0];
+    return {
+      // Patra: Eevee a osm vetvi v jednom patre.
+      eeveePatra: ee.stupne.map((x) => x.length),
+      // Podminka patri KONKRETNIMU prechodu, ne druhu.
+      espeon: hrana(ee, "eevee", "espeon"),
+      vaporeon: hrana(ee, "eevee", "vaporeon"),
+      // Overene nic navic vs. data nemame.
+      stavy: [P.evoPodminkyStav("eevee", "espeon"), P.evoPodminkyStav("eevee", "vaporeon"),
+        P.evoPodminkyStav("eevee", "pikachu"), P.evoPodminkyStav("neexistuje", "pikachu")],
+      // Mega je bokem a nese obe ceny energie.
+      charMega: ch.mega.map((m) => [m.jmeno, m.energie, m.energiePoprve, m.od]),
+      eeveeMega: ee.mega.length,
+      // Cena jedne cesty; Eevee se nikdy nescita pres vsechny vetve.
+      naEspeon: P.atlasEvoCena("eevee", "espeon", 1, 40, ""),
+      naVaporeon: P.atlasEvoCena("eevee", "vaporeon", 1, 40, ""),
+      dvaKroky: P.atlasEvoCena("charmander", "charizard", 1, 40, ""),
+      l50: P.atlasEvoCena("charmander", "charizard", 1, 50, ""),
+      shadow: P.atlasEvoCena("charmander", "charizard", 1, 40, "Shadow"),
+      predmet: P.atlasEvoCena("slowpoke", "slowking", 1, 40, ""),
+      nevede: P.atlasEvoCena("eevee", "charizard", 1, 40, ""),
+      bezLevelu: P.atlasEvoCena("charmander", "charizard", null, null, ""),
+      neznamy: P.atlasEvoStrom("Tenhle druh neexistuje")
+    };
+  });
+  check("strom drzi patra evolucni rady",
+    JSON.stringify(s282.eeveePatra) === "[1,8]" && s282.eeveeMega === 0
+      && String(s282.neznamy) === "null", JSON.stringify(s282.eeveePatra));
+  check("podminka patri konkretnimu prechodu, ne druhu",
+    s282.espeon.stav === "jsou" && /10 km/.test(s282.espeon.podminky.join(" "))
+      && /ve dne/.test(s282.espeon.podminky.join(" "))
+      && s282.vaporeon.stav === "zadne" && s282.vaporeon.podminky.length === 0,
+    JSON.stringify([s282.espeon, s282.vaporeon]));
+  check("...a overene nic navic se odlisi od chybejicich dat",
+    JSON.stringify(s282.stavy) === JSON.stringify(["jsou", "zadne", "nevime", "nevime"]),
+    JSON.stringify(s282.stavy));
+  check("mega stoji bokem a nese cenu poprve i dalsi",
+    s282.charMega.length === 2 && s282.charMega[0][1] === 40 && s282.charMega[0][2] === 200
+      && s282.charMega[0][3] === "charizard", JSON.stringify(s282.charMega));
+  check("cena je za jednu cestu, ne za vsechny vetve dohromady",
+    s282.naEspeon.polozky.bonbony.hodnota === s282.naVaporeon.polozky.bonbony.hodnota
+      && s282.naEspeon.kroky.length === 1 && s282.dvaKroky.kroky.length === 2
+      // Charizard stoji 25 + 100 bonbonu navic proti holemu vylepseni.
+      && s282.dvaKroky.polozky.bonbony.hodnota
+        === s282.naEspeon.polozky.bonbony.hodnota + 100,
+    JSON.stringify([s282.naEspeon.polozky.bonbony, s282.dvaKroky.polozky.bonbony]));
+  check("XL se pocitaji zvlast a az nad L40",
+    s282.dvaKroky.polozky.xl.hodnota === 0 && s282.l50.polozky.xl.hodnota > 0
+      && s282.l50.polozky.bonbony.hodnota === s282.dvaKroky.polozky.bonbony.hodnota
+      && s282.l50.polozky.prach.hodnota > s282.dvaKroky.polozky.prach.hodnota,
+    JSON.stringify(s282.l50.polozky));
+  check("shadow kus je drazsi, protoze to tak ma hra",
+    s282.shadow.polozky.prach.hodnota > s282.dvaKroky.polozky.prach.hodnota,
+    JSON.stringify([s282.shadow.polozky.prach, s282.dvaKroky.polozky.prach]));
+  check("predmet je vlastni polozka, ne veta v textu",
+    s282.predmet && /Rock/.test((s282.predmet.polozky.predmety || []).join(" ")),
+    JSON.stringify(s282.predmet && s282.predmet.polozky.predmety));
+  check("cesta, ktera nevede, vrati null a bez levelu se nic nedosazuje",
+    String(s282.nevede) === "null" && s282.bezLevelu.polozky.prach.hodnota === 0
+      && s282.bezLevelu.polozky.bonbony.hodnota === 125,
+    JSON.stringify(s282.bezLevelu && s282.bezLevelu.polozky));
 
   console.log("\n281) Typova stranka druhu: obrana z kombinace, utok ze sestavy");
   await page.goto(URL);

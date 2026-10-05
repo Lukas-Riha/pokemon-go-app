@@ -122,9 +122,16 @@ for k, e in species.items():
     if len(e) != 11:
         chyba("species", "%s má %d polí, čekáno 11" % (k, len(e)))
         continue
-    # Poslední pole je souhrn zdrojů shiny (0 = shiny zatím není).
+    # Poslední pole je souhrn zdrojů shiny: součet bitů (wild 1, raid 2,
+    # vejce 4, výzkum 8, evoluce 16, photobomb 32), 0 = shiny zatím není,
+    # 64 = shiny je, ale zdroj neuvádí odkud, -1 = zdroj na ten druh ještě
+    # nedosáhl. Viz SHINY_ZDROJE v tools/build_pokedex.py.
+    SHINY_MAX_BITY = 63
+    SHINY_BEZ_ZDROJE = 64
     _id, jmeno, ts, atk, dfn, sta, evolvuje, final, vzacnost, candy, shiny = e
-    if not isinstance(shiny, int) or shiny < 0 or shiny > 31:
+    if (not isinstance(shiny, int)
+            or not (shiny == -1 or shiny == SHINY_BEZ_ZDROJE
+                    or 0 <= shiny <= SHINY_MAX_BITY)):
         chyba("species", "%s má nesmyslný příznak shiny %r" % (k, shiny))
     if not jmeno:
         chyba("species", "%s nemá jméno" % k)
@@ -202,8 +209,12 @@ for k, formy in mega.items():
     if k not in species:
         chyba("mega", "mega forma pro neznámý druh %r" % k)
     for m in formy:
-        if len(m) != 7:
-            chyba("mega", "%s: záznam má %d polí, čekáno 7" % (k, len(m)))
+        # Schéma (viz _meta.schema_mega): jméno, atk, def, sta, [typy],
+        # mega_energie, Mega|Primal, mega_energie_poprvé. Osmé pole přibylo
+        # s cenou prvního přeměnění — audit do teď čekal sedm a hlásil
+        # chybu u všech 48 záznamů.
+        if len(m) != 8:
+            chyba("mega", "%s: záznam má %d polí, čekáno 8" % (k, len(m)))
             continue
         for t in m[4]:
             if t not in typy:

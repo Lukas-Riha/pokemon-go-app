@@ -71,6 +71,15 @@ je obojí jeho veřejnou součástí.
 | `atlasPoradi()` | pořadí kusů (pole `id`) tak, jak zrovna prochází hledáním, filtrem a řazením |
 | `atlasImage(jmeno, trida)` | obrázek druhu jako hotová značka `<img>` i se záložním zdrojem |
 | `atlasDuvody(id nebo computed)` | štítky k verdiktu jako hotové HTML (`.dv-radek` se štítky a bublinami `data-tip`). Ponechaný kus: důvody. Pouštěný kus: štítky „pod čarou" (`.dv-radek-pod`, `.dv-chip.dv-pod`, kvalita `.dv-kvalita`) — kde se nevešel; `""`, když nemá kde |
+| `atlasRozlozFormu(text)` | „Shadow Snorlax" → `{jmeno:"Snorlax", forma:"Shadow"}`; jedno místo pro motor i vrstvu |
+| `atlasMaShadow(jmeno)` | vede PvPoke pro ten druh shadow žebříček? jen tehdy má smysl nabízet přepnutí |
+| `prohlidkaModel(jmeno, forma?)` | model druhu pro vyhledávání; nese `forma`, `maShadow` a CELOU evoluční řadu |
+| `atlasDmax(jmeno)` | pořadí druhu mezi Dynamax útočníky po typech, nebo `null`. Čísla jsou model Pokémon GO Hubu, ne appky |
+| `atlasDmaxZdroj()` | odkud a k jakému dni Dmax čísla jsou — musí stát u každého místa, kde se ukazují |
+| `atlasStropLigy(jmeno, limit, iva, ivd, ivs)` | nejvyšší půllevel, kde se kus ještě vejde pod limit ligy |
+| `atlasRankLimit()` | do kolikátého místa v lize bere člověk druh vážně (z nastavení) |
+| `atlasCounterStav()` / `atlasCounterZrus()` | proti kterému druhu se roster zrovna poměřuje; druhé to vypne |
+| `atlasDuplikatPrepni(id, hodnota?)` | přepne odbavení podezření na duplikát (štítek u kusu zůstává) |
 | `srovnejDuvody(kontejner)` | po vložení štítků schová, co se do šířky nevejde, do „+N" s bublinou |
 | `utokyDruhu(jmeno)` | útoky, které se druh může naučit: `{fast: [jména], charged: [jména], znamy}`; neznámý druh vrátí všechny |
 | `atlasSort("liga:LC"/"liga:GL"/"liga:UL"/"liga:ML", 1/-1)` | řazení podle pořadí druhu v jedné lize; kdo ji nehraje, je na konci v obou směrech |
@@ -236,7 +245,90 @@ to připravenost kusu.
 
 `evoPodminky(odKlic, naKlic)` → co hra vyžaduje, aby se z prvního stal
 druhý, česky a jako věty (`["ujít 10 km jako buddy", "jen v noci"]`).
-Prázdné pole znamená „nic navíc než bonbóny".
+**Prázdné pole samo o sobě nic neznamená** — vrátí ho i přechod, o kterém
+data nemáme. Kdo to potřebuje rozlišit, ptá se `evoPodminkyStav`.
+
+`evoPodminkyStav(odKlic, naKlic)` → `"jsou"`, `"zadne"` nebo `"nevime"`.
+`zadne` je ověřený údaj: zdroj ten přechod zná a žádnou další podmínku
+u něj neuvádí. `nevime` znamená, že o tom přechodu data nejsou — appka
+pak nesmí tvrdit „stačí bonbóny". (V datech to drží `evoPozadavky`:
+prázdný objekt = ověřeně nic navíc, chybějící cíl = nevíme.)
+
+`atlasImage(jmeno, trida, vzhled)` → `<img>` druhu. `vzhled.shiny` přepne
+na shiny podobu; adresa se liší jen příponou a když ji mirror nemá, spadne
+zpátky na běžnou ikonu. Shiny je **jiná barva, ne jiný druh** — žádné číslo,
+pořadí ani sestava se tím nemění.
+
+`atlasVylepseni(jmeno, forma, odLevel, naLevel, ivA, ivD, ivS)` → co stojí
+vylepšení **po půl levelech** a jaké je po každém kroku CP; `null`, když druh
+nebo levely nedávají smysl.
+
+```
+{
+  odLevel, naLevel,
+  kroky: [ { z, na, prach, bonbony, xl, celkemPrach, celkemBonbony, celkemXl, cp } ],
+  prach, bonbony, xl, cpOd, cpNa, nasobekPrachu, duvodCeny
+}
+```
+
+`forma` (Shadow, Purified, Lucky) mění cenu a je započítaná; `duvodCeny`
+říká proč. Slouží simulaci na detailu kusu — **nic nemění**, jen počítá.
+
+`atlasElitniUtok(jmenoDruhu, jmenoUtoku)` → `true`, když ten útok u toho druhu
+dává jen **elitní** TM, `false` u běžně dostupného a `null`, když appka ten druh
+nebo útok nezná. Bez toho by rada „přeuč na X" byla u elitního útoku nesplnitelná.
+
+`atlasStaty(jmeno)` → `{utok, obrana, hp, max:{utok, obrana, hp}}` — základní
+staty DRUHU (ne kusu) a nejvyšší hodnoty, jaké se v pokédexu vyskytují, aby
+šel nakreslit poměr. `null` u neznámého druhu.
+
+`atlasEvoStrom(jmeno)` → celá evoluční řada pro stránku druhu, nebo
+`null` u neznámého druhu.
+
+```
+{
+  klic,
+  stupne: [ [ { klic, jmeno, popis, typy, vstup, bonbonuNaEvoluci } ] ],
+  hrany:  [ { od, na, stav, podminky: [...], bonusy: [...], bonbony } ],
+  mega:   [ { od, jmeno, druh: "Mega"|"Primal", typy, energie,
+              energiePoprve, obrazek } ]
+}
+```
+
+- `stupne` jsou patra řady (Eevee má osm větví v jednom patře), `popis`
+  nese formu (`Slowpoke (Galarian)`).
+- `hrany` popisují **každý přechod zvlášť** — podmínka patří konkrétní
+  cestě, ne druhu (Espeon ve dne, Umbreon v noci). `stav` je totéž co
+  `evoPodminkyStav`.
+- `mega` stojí bokem: **není to evoluce**, ale dočasná forma, a platí se
+  energií, ne bonbóny. `energiePoprve` je `null`, když ho data nemají.
+  `obrazek` je hotové `<img>` mega formy (vrstva si adresu nestaví).
+
+`atlasEvoCena(odKlic, naKlic, odLevel, naLevel, forma)` → cena **jedné**
+vybrané cesty, nebo `null`, když cesta nevede. Součet přes všechny větve
+(osm evolucí Eevee) se nikdy nedělá.
+
+```
+{
+  cesta: [klice…], kroky: [ { od, na, jmeno, bonbony, stav, podminky, bonusy } ],
+  odLevel, naLevel,
+  polozky: {
+    prach:   { hodnota, znamo },
+    bonbony: { hodnota, znamo },   // evoluce i vylepšení dohromady
+    xl:      { hodnota, znamo },   // nikdy se nesčítá s běžnými
+    predmety: ["King's Rock", …]
+  },
+  uplne: true|false, chybi: ["bonbóny za evoluci …"]
+}
+```
+
+- Neznámý člen zůstane neznámý (`znamo:false`) a `uplne` je pak `false`:
+  takový součet se nesmí vydávat za úplný.
+- `forma` je stav kusu (`Shadow`, `Purified`, …) — hra u něj počítá
+  vylepšení dráž a engine to zohlední.
+- Bez levelů (`null`) se počítají jen bonbóny za evoluci; nic se za
+  uživatele nedosazuje a žádný stav inventáře se nepředpokládá.
+- **Mega energie tu schválně není** — viz `atlasEvoStrom().mega`.
 
 `atlasTypovka(jmeno)` → typová stránka druhu obojím směrem, nebo `null`
 u neznámého druhu.

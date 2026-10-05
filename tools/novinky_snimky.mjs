@@ -155,6 +155,49 @@ await stranka.evaluate(async () => {
   } else console.log('hledani-vysledky PŘESKOČENO — blok nenalezen');
 }
 
+// 5b) Záložky stránky druhu: co bylo jeden dlouhý sloupec, je teď pět karet.
+await snimek('hledani-zalozky', ['.atlas-sekce-zalozky', '.atlas-vysledek-tab'], 12);
+
+// 5c) Záložka Typy. Charizard je Fire/Flying — na dvojtypu je vidět,
+//     proč se násobky počítají z kombinace (Rock 2,56×, Fighting 0,625×).
+await stranka.evaluate(async () => {
+  const pole = document.getElementById('prohName');
+  pole.value = 'Charizard';
+  pole.dispatchEvent(new Event('input', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 1600));
+  pole.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  pole.blur();
+  const zalozka = [...document.querySelectorAll('.atlas-sekce-zalozky button')]
+    .find((b) => /Typy/.test(b.textContent));
+  if (zalozka) zalozka.click();
+  await new Promise((r) => setTimeout(r, 900));
+  // Vyrez se bere z okna, ne z cele stranky: co je pod hranou, by se uselo.
+  document.querySelector('.atlas-typy').scrollIntoView({ block: 'center' });
+  await new Promise((r) => setTimeout(r, 400));
+});
+await snimek('hledani-typy', ['.atlas-typy'], 12);
+
+// 5d) Evoluce a náklady. Charmander má obě mega formy, takže je na něm
+//     vidět i čárkovaná větev „dočasná mega forma".
+await stranka.evaluate(async () => {
+  const pole = document.getElementById('prohName');
+  pole.value = 'Charmander';
+  pole.dispatchEvent(new Event('input', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 1600));
+  pole.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  pole.blur();
+  const zalozka = [...document.querySelectorAll('.atlas-sekce-zalozky button')]
+    .find((b) => /Evoluce/.test(b.textContent));
+  if (zalozka) zalozka.click();
+  await new Promise((r) => setTimeout(r, 900));
+  const cil = document.querySelector('[data-evo-cil="charizard"]');
+  if (cil) cil.click();
+  await new Promise((r) => setTimeout(r, 700));
+  document.querySelector('.atlas-evo').scrollIntoView({ block: 'center' });
+  await new Promise((r) => setTimeout(r, 400));
+});
+await snimek('hledani-evoluce', ['.atlas-evo'], 12);
+
 // 6) Pruh „je nová verze". Číslo je ilustrativní — ukazuje se verze,
 //    která zrovna vyšla; tady se nastaví ručně, aby bylo co nasnímat.
 await stranka.evaluate(async () => {

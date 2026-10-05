@@ -15,9 +15,10 @@ Tím pádem stárnou — po skončení eventu je potřeba spustit tohle znovu:
     python tools/sync_reference.py
 """
 import json
+import re
 import sys
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -104,6 +105,66 @@ def fetch(refresh):
                 path.write_bytes(r.read())
         out[klic] = json.loads(path.read_text(encoding="utf-8"))
     return out
+
+
+# Štítky, které LeekDuck dává nad nadpis akce. Co neznáme, projde dál tak,
+# jak to na stránce stojí — vymýšlet si k tomu překlad by lhalo.
+STITKY_CZ = {
+    "event": "Akce",
+    "location-specific": "Jen v některých zemích",
+    "community-day": "Community Day",
+    "pokemon-spotlight-hour": "Spotlight Hour",
+    "raid-battles": "Raidy",
+    "raid-day": "Raid Day",
+    "raid-hour": "Raid Hour",
+    "research": "Výzkum",
+    "timed-research": "Časový výzkum",
+    "ticketed-event": "Za vstupenku",
+    "live-event": "Živá akce",
+    "go-battle-league": "GO Battle League",
+    "season": "Sezóna",
+    "max-battles": "Max souboje",
+    "pokemon-go-fest": "GO Fest",
+}
+
+
+def stitky_akce(html):
+    """Štítky a omezení ze stránky akce.
+
+    Štítky jsou pilulky nad nadpisem (`Event`, `Location-specific`).
+    Omezení je věta ze stránky („This event is available only in Indonesia.") —
+    bere se doslova a česky se k ní jen dopíše, odkud je. Přeložit cizí větu
+    za zdroj by znamenalo tvrdit něco, co tam nestojí.
+    """
+    if not html:
+        return [], ""
+    stitky = []
+    # Za blokem štítků následuje podle šablony jednou <hr>, jindy <section>.
+    # Spolehlivé je vzít kousek textu za „page-tags" a posbírat z něj pilulky.
+    zacatek = html.find('class="page-tags"')
+    blok = html[zacatek:zacatek + 800] if zacatek >= 0 else ""
+    if blok:
+        for kus in re.finditer(r'<div class="tag ([^"]+)"[^>]*>(.*?)</div>', blok, re.S):
+            klic = kus.group(1).strip().split()[0]
+            popis = re.sub(r"<[^>]+>", "", kus.group(2)).strip()
+            if not popis:
+                continue
+            stitky.append([klic, STITKY_CZ.get(klic, popis)])
+    omezeni = ""
+    telo = re.search(r'<div class="event-description">(.*?)</div>', html, re.S)
+    if telo:
+        text = re.sub(r"<[^>]+>", " ", telo.group(1))
+        text = re.sub(r"\s+", " ", text).replace("&nbsp;", " ")
+        for veta in re.split(r"(?<=[.!])\s+", text):
+            veta = veta.strip()
+            # Dlouhý odstavec (rozpis vstupenek u placených akcí) není omezení,
+            # jen v něm ta slova náhodou padnou. Bereme jen krátkou větu.
+            if len(veta) > 180:
+                continue
+            if re.search(r"available only in|only available in|exclusive to", veta, re.I):
+                omezeni = veta
+                break
+    return stitky, omezeni
 
 
 def stranka(odkaz, refresh):
@@ -199,8 +260,10 @@ def main():
         zac = (e.get("start") or "")[:16]
         kon = (e.get("end") or "")[:16]
         prazdne = []
-        okna = rozebrat_okna(stranka(e.get("link") or "", refresh), zac, kon,
+        html = stranka(e.get("link") or "", refresh)
+        okna = rozebrat_okna(html, zac, kon,
                              UVODNI_SEKCE.get(e.get("eventType") or ""), prazdne)
+        stitky, omezeni = stitky_akce(html)
         # Sekce, kterou stránka má, ale parser z ní nic nevytáhl. Znamená to,
         # že si LeekDuck přepsal šablonu — bez téhle hlášky by kus akce
         # v kalendáři tiše chyběl a nikdo by si toho nevšiml.
@@ -217,7 +280,40 @@ def main():
             e.get("link") or "",
             spawny(e),
             okna,
+            # Devátý sloupec: štítky ze stránky akce a věta o omezení.
+            {"stitky": stitky, "omezeni": omezeni},
         ])
+    # Akce, ktere ze zdroje vypadly, ale skoncily nedavno: kalendar ma
+    # umet i krok zpatky. Drzi se tri mesice — starsi uz nikdo nehleda
+    # a soubor nese cela appka.
+    ARCHIV_DNU = 90
+    hranice = (date.today() - timedelta(days=ARCHIV_DNU)).isoformat()
+    nove_klice = set((e[0], e[3]) for e in eventy)
+    archiv = 0
+    if OUT.exists():
+        try:
+            stare = json.loads(OUT.read_text(encoding="utf-8")).get("events") or []
+        except Exception:
+            stare = []
+        for e in stare:
+            if not isinstance(e, list) or len(e) < 5:
+                continue
+            if (e[0], e[3]) in nove_klice:
+                continue
+            konec = str(e[4] or "")[:10]
+            if not konec or konec < hranice:
+                continue
+            # Deváté pole říká, že je to otisk z dřívějšího stažení — obsah
+            # se od té doby nikde neověřoval.
+            if len(e) < 9:
+                e = e + [{}] * (9 - len(e))
+            if isinstance(e[8], dict):
+                e[8] = dict(e[8])
+                e[8]["archiv"] = True
+            eventy.append(e)
+            archiv += 1
+    if archiv:
+        print("  z archivu doplněno akcí (už nejsou ve zdroji): %d" % archiv)
     eventy.sort(key=lambda x: x[3])
 
     # u bosse stačí jméno, úroveň, typy a CP při chycení — counter se pak
@@ -243,7 +339,8 @@ def main():
                     " Regeneruj přes: python tools/build_events.py --refresh",
             "stazeno": date.today().isoformat(),
             "schema_event": "[název, typ, nadpis, začátek, konec, odkaz,"
-                            " [[druh, shiny 0/1], …], [okno, …]]",
+                            " [[druh, shiny 0/1], …], [okno, …],"
+                            " {stitky: [[klíč, popis]], omezeni: věta ze zdroje}]",
             "schema_okno": "[od, do, {sekce: [[jméno, shiny 0/1], …]}] — sekce je"
                            " spawn/vejce/raid/vyzkum/bonus/shiny, shiny -1 značí"
                            " mezinadpis seznamu, a datum bez „T“ znamená, že"

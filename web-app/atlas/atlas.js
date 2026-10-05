@@ -38,9 +38,13 @@
   };
 })();
 
+/* Barvu verdiktu urcuje ENGINE (`keepTone`). Vrstva ji uz nepreklapi kvuli
+   znacce Lucky: kus, ktery drzi misto v rozpoctu, je zeleny — role vazi vic
+   nez sleva na prach. Zlutou si lucky zaslouzi jen tam, kde ma jit pryc, a
+   presne to engine sam nastavuje ("Zahodit – ale je Lucky"). */
 window.AtlasVerdict=c=>({
   label:c.validationIssues?.length?'Ověřit data':c.cuteOnly?'CUTE · sbírka':c.keep||'K posouzení',
-  tone:c.validationIssues?.length||c.lucky?'warning':c.cuteOnly?'collection':['good','warning','critical'].includes(c.keepTone)?c.keepTone:c.keepGood?'good':'critical'
+  tone:c.validationIssues?.length?'warning':c.cuteOnly?'collection':['good','warning','critical'].includes(c.keepTone)?c.keepTone:c.keepGood?'good':'critical'
 });
 window.AtlasPohlavi=(r={})=>{const g=__pgo.atlasPohlavi?__pgo.atlasPohlavi(r):null;
  return g?` <span class="atlas-pohlavi atlas-pohlavi-${g}" aria-label="${g==='f'?'Samice':'Samec'}">${g==='f'?'♀':'♂'}</span>`:''};
@@ -86,9 +90,9 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
     return `<img src="${adresa}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy"${styl} ${extra}>`;
   };
   window.AtlasMonImage=monImage;
-  const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář'],['catchCard','Co chytat']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
-  const nav=[['home','home','Přehled'],['roster','box','Pokémoni'],['teams','team','Týmy'],['invest','invest','Investice'],['events','calendar','Události']];
-  const headings={home:['Tvůj box. Jasný plán.','Co ponechat, připravit a použít při příštím hraní.'],roster:['Moji Pokémoni','Co si necháváš a co pustit. Podrobnosti otevřeš u konkrétního kusu.'],teams:['Připraveni do boje','Týmy, role a pokrytí z tvého současného rosteru.'],invest:['Každý prach má svůj cíl','Naplánuj vylepšení podle svého rozpočtu.'],events:['Příležitosti pro tvůj box','Události, rotace a tipy na chytání.'],settings:['Data a pravidla','Profily, prahy a vysvětlení výpočtů.']};
+  const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
+  const nav=[['home','home','Přehled'],['roster','box','Pokémoni'],['events','calendar','Kalendář'],['teams','team','Týmy'],['invest','invest','Investice']];
+  const headings={home:['Tvůj box. Jasný plán.','Co ponechat, připravit a použít při příštím hraní.'],roster:['Moji Pokémoni','Co si necháváš a co pustit. Podrobnosti otevřeš u konkrétního kusu.'],teams:['Připraveni do boje','Týmy, role a pokrytí z tvého současného rosteru.'],invest:['Každý prach má svůj cíl','Naplánuj vylepšení podle svého rozpočtu.'],events:['Kalendář akcí','Co zrovna běží, co začíná a kdy je spotlight nebo raid hodina.'],settings:['Data a pravidla','Profily, prahy a vysvětlení výpočtů.']};
   let view='home',route='roster',page=0,dialogId=null,previousFocus=null,refreshTimer=null,missingOnly=false,cache={rows:[],computed:{}};
   // Úplná tabulka se zrušila — dlaždice jsou jediný pohled na roster,
   // takže je `compact` natvrdo a uložená volba se ignoruje.
@@ -109,13 +113,16 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const app=$('.app');app.prepend(heading,subnav,home);
   const rosterCard=$('.card.roster'),mode=document.createElement('div');mode.className='atlas-mode';mode.innerHTML='<div class="atlas-mode-controls"><label for="atlasSort">Řazení</label><select id="atlasSort" aria-label="Řazení stručného seznamu"><option value="">Původní řazení</option><optgroup label="Základní"><option value="pokemon:1">Jméno A–Z</option><option value="pokemon:-1">Jméno Z–A</option><option value="cp:-1">CP od nejvyššího</option><option value="cp:1">CP od nejnižšího</option><option value="ivPct:-1">IV od nejvyššího</option><option value="ivPct:1">IV od nejnižšího</option><option value="level:-1">Level od nejvyššího</option><option value="level:1">Level od nejnižšího</option></optgroup><optgroup label="Čas"><option value="scanDate:-1">Naposledy naskenované</option><option value="scanDate:1">Nejdéle nenaskenované</option><option value="catchDate:-1">Nejnověji chycené</option><option value="catchDate:1">Nejdéle chycené</option></optgroup><optgroup label="PvP ligy"><option value="pvpRec:1">Všechny ligy po pořadí</option><option value="liga:LC:1">Little Cup: nejlepší první</option><option value="liga:LC:-1">Little Cup: nejhorší první</option><option value="liga:GL:1">Great League: nejlepší první</option><option value="liga:GL:-1">Great League: nejhorší první</option><option value="liga:UL:1">Ultra League: nejlepší první</option><option value="liga:UL:-1">Ultra League: nejhorší první</option><option value="liga:ML:1">Master League: nejlepší první</option><option value="liga:ML:-1">Master League: nejhorší první</option></optgroup></select><button data-atlas-action="mode"></button></div>';
   const list=document.createElement('div');list.id='atlasRoster';list.className='atlas-roster';const table=$('#rosterTable').closest('.table-wrap');table.before(mode,list);
-  function sync(g,r){view=g;route=r||route;document.body.dataset.atlasView=g;const [title,subtitle]=headings[g];heading.innerHTML=`<div><h1>${title}</h1></div>${g==='home'?`<button class="atlas-cta" data-click="boxModeBtn">${icon('spark')} Projít pokémony</button>`:''}`;subnav.innerHTML=groups[g].length>1?groups[g].map(([id,t])=>`<button data-atlas-route="${id}" class="${id===r?'active':''}" ${id===r?'aria-current="page"':''}>${t}</button>`).join(''):'';document.querySelectorAll('[data-atlas-nav]').forEach(b=>{b.classList.toggle('active',b.dataset.atlasNav===g);if(b.dataset.atlasNav===g)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});$('#atlasCrumb').textContent='/ '+(nav.find(n=>n[0]===g)?.[2]||'Data a pravidla');try{localStorage.setItem('pgo_atlas_view',g)}catch{}if(g==='home')renderHome();}
+  function sync(g,r){view=g;route=r||route;document.body.dataset.atlasView=g;const [title,subtitle]=headings[g];heading.innerHTML=`<div><h1>${title}</h1></div>${g==='home'?`<button class="atlas-cta" data-click="boxModeBtn">${icon('spark')} Projít pokémony</button>`:''}`;subnav.innerHTML=groups[g].length>1?groups[g].map(([id,t])=>`<button data-atlas-route="${id}" class="${id===r?'active':''}" ${id===r?'aria-current="page"':''}>${t}</button>`).join(''):'';document.querySelectorAll('[data-atlas-nav]').forEach(b=>{b.classList.toggle('active',b.dataset.atlasNav===g);if(b.dataset.atlasNav===g)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});$('#atlasCrumb').textContent='/ '+(nav.find(n=>n[0]===g)?.[2]||'Data a pravidla');/* Ukladat jen skupinu nestacilo: po obnoveni stranky se otevrela prvni
+     polozka skupiny, takze z Vyhledavani se clovek probudil v Tahaku. */
+  try{localStorage.setItem('pgo_atlas_view',g);
+   if(route)localStorage.setItem('pgo_atlas_route',route)}catch{}if(g==='home')renderHome();}
   function go(g,r){closeDetail();if(g==='home')sync('home');else window.__pgoZalozka(r||groups[g][0][0]);window.scrollTo({top:0,behavior:'instant'});}
   window.addEventListener('atlas:route',e=>{const g=Object.keys(groups).find(g=>groups[g].some(p=>p[0]===e.detail));if(g)sync(g,e.detail)});
   function role(c){return window.AtlasRole(c)}
   function decision(c){return window.AtlasVerdict(c).label;}
   function next(c,r){if(c.validationIssues?.length)return 'Ověřit CP, level a IV';if(c.cuteOnly)return 'Ponechat pro radost';if(!r.fastMove||!r.charged1)return 'Doplnit útoky';if(c.powerup&&c.powerup.startsWith('Ano'))return 'Otevřít plán vylepšení';if(c.evolve&&c.evolve.startsWith('Ano'))return 'Ověřit cestu evoluce';return 'Prohlédnout doporučení';}
-  function rowHTML(r){const c=cache.computed[r.id]||{},iv=c.ivPct;return `<button class="atlas-row atlas-roster-tile"${c.posledniSken?' data-sken="1"':''} data-atlas-detail="${esc(r.id)}" aria-label="Detail ${esc(r.pokemon)}"><span class="atlas-tile-heading"><b>${esc(P.atlasJmeno?P.atlasJmeno(r):r.pokemon)}${window.AtlasPohlavi(r)}</b><span class="atlas-num"><small>CP</small>${fmt(r.cp)}</span></span><span class="atlas-poke">${monImage(r)}<span class="atlas-tile-info"><span class="atlas-tile-stats"><b>${iv==null?'IV neznámé':Math.round(iv*100)+' % IV'}</b><span>L${esc(r.level||'?')}</span></span><span class="atlas-tile-tags">${window.AtlasTags(c,r)}</span></span></span><span class="atlas-decision"><span class="atlas-pill" data-verdict="${window.AtlasVerdict(c).tone}">${decision(c)}</span>${(P.atlasDuvody&&P.atlasDuvody(c))||'<small>'+esc(role(c))+'</small>'}</span><span class="atlas-arrow" aria-hidden="true">${icon('next')}</span></button>`;}
+  function rowHTML(r){const c=cache.computed[r.id]||{},iv=c.ivPct;return `<button class="atlas-row atlas-roster-tile"${c.posledniSken?' data-sken="1"':''} data-atlas-detail="${esc(r.id)}" aria-label="Detail ${esc(r.pokemon)}"><span class="atlas-tile-heading"><b>${esc(P.atlasJmeno?P.atlasJmeno(r):r.pokemon)}${window.AtlasPohlavi(r)}</b><span class="atlas-num"><small>CP</small>${fmt(r.cp)}</span></span><span class="atlas-poke">${monImage(r)}<span class="atlas-tile-info"><span class="atlas-tile-stats"><b>${iv==null?'IV neznámé':Math.round(iv*100)+' % IV'}</b><span>L${esc(r.level||'?')}</span></span><span class="atlas-tile-tags">${c.counter&&c.counter.pct!=null?'<span class="rarity-chip atlas-proti-skore" title="Jak dobre se tenhle kus hodi proti vybranemu druhu. 100 % = nejlepsi, co mas.">'+Math.round(c.counter.pct*100)+' %</span>':''}${window.AtlasTags(c,r)}</span></span></span><span class="atlas-decision"><span class="atlas-pill" data-verdict="${window.AtlasVerdict(c).tone}">${decision(c)}</span>${(P.atlasDuvody&&P.atlasDuvody(c))||'<small>'+esc(role(c))+'</small>'}</span><span class="atlas-arrow" aria-hidden="true">${icon('next')}</span></button>`;}
 
   // Poradi bere appka primo z motoru (`atlasPoradi`). Radky tabulky jsou
   // jen zaloha pro pripad, ze by motor tu funkci jeste nemel.
@@ -125,7 +132,29 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   // kusy se pak „sekalo". Když se pořadí ani počet nezmění, vymění se jen ty
   // dlaždice, jejichž HTML je jiné — obvykle jedna nebo dvě.
   let posledniHtml = [], posledniPoradi = '';
-  function renderRoster(){const rows=renderedRows(),scroll=list.scrollTop,first=new Map([...list.querySelectorAll('.atlas-roster-tile')].map(el=>[el.dataset.atlasDetail,el.getBoundingClientRect()]));const previousIds=[...first.keys()].join('|'),nextIds=rows.map(r=>String(r.id)).join('|');
+  /* Rezim "protihraci": roster se seradi podle toho, jak se kusy hodi
+     proti vybranemu druhu. Dokud o tom nic nestalo na obrazovce, vypadalo
+     to, ze se jen necekane prehazelo poradi. */
+  function vykresliProtiPruh(){
+    const stav=P.atlasCounterStav?P.atlasCounterStav():null;
+    let pruh=document.getElementById('atlasProtiPruh');
+    if(!stav){if(pruh)pruh.remove();return}
+    if(!pruh){
+      pruh=document.createElement('div');pruh.id='atlasProtiPruh';
+      pruh.className='atlas-proti-pruh';
+      pruh.addEventListener('click',e=>{
+        if(!e.target.closest('[data-proti-zrus]'))return;
+        P.atlasCounterZrus&&P.atlasCounterZrus();
+        refresh();
+      });
+      list.before(pruh);
+    }
+    pruh.innerHTML='<span><b>Proti '+esc(stav.jmeno)+'</b> ('+stav.typy.map(esc).join(' · ')
+      +') — kusy jsou seřazené podle toho, jak se na něj hodí.</span>'
+      +'<button type="button" data-proti-zrus>Zrušit</button>';
+  }
+
+  function renderRoster(){vykresliProtiPruh();const rows=renderedRows(),scroll=list.scrollTop,first=new Map([...list.querySelectorAll('.atlas-roster-tile')].map(el=>[el.dataset.atlasDetail,el.getBoundingClientRect()]));const previousIds=[...first.keys()].join('|'),nextIds=rows.map(r=>String(r.id)).join('|');
   const noveHtml=rows.map(rowHTML);
   if(!missingOnly&&rows.length&&previousIds===nextIds&&posledniPoradi===nextIds
     &&posledniHtml.length===rows.length){
@@ -179,7 +208,8 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const cisloKusu=v=>v===''||v==null?'?':(isNaN(Number(v))?String(v):String(Number(v)));
   const ivKusu=id=>{const c=(P.getComputed()||{})[id]||{};const t=c.ivUncertain&&c.ivRange?c.ivRange:(c.ivPct==null?'':Math.round(c.ivPct*100)+' %');return t?' · '+esc(t):''};
   // Hlavička kusu (obrázek, jméno, CP, IV) — stejná v detailu i v čištění boxu.
-  window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}${String(r.pokemon||'').length>13?' class="atlas-jmeno-dlouhe"':''}>${esc(__pgo.atlasJmeno?__pgo.atlasJmeno(r):r.pokemon)}${window.AtlasPohlavi(r)}</h2><p class="atlas-ident-radek">${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}${ivKusu(r.id)}</p></div></div>`;
+  window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}${(j=>j.length>16?' class="atlas-jmeno-dlouhe atlas-jmeno-velmi-dlouhe"'
+      :j.length>11?' class="atlas-jmeno-dlouhe"':'')(String(r.pokemon||''))}>${esc(__pgo.atlasJmeno?__pgo.atlasJmeno(r):r.pokemon)}${window.AtlasPohlavi(r)}</h2><p class="atlas-ident-radek">${fmt(r.cp)} CP · L${esc(cisloKusu(r.level))}${ivKusu(r.id)}</p></div></div>`;
   /* Hlavička se při listování překresluje celá, takže i obrázek dostal nový
      uzel — a ten problikne, i když je to ten samý druh. Když se adresa
      obrázku nemění, původní <img> se do nové hlavičky přesune. */
@@ -213,7 +243,13 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   if(P.verze){const v=P.verze();
     const pata=$('#atlasVerze');if(pata)pata.textContent='verze '+v;
     const hlava=$('#atlasCrumbVerze');if(hlava)hlava.textContent='v'+v;}
-  refresh();let start='home';try{start=localStorage.getItem('pgo_atlas_view')||'home'}catch{}go(headings[start]?start:'home');
+  refresh();let start='home',startRoute='';
+  try{start=localStorage.getItem('pgo_atlas_view')||'home';
+   startRoute=localStorage.getItem('pgo_atlas_route')||''}catch{}
+  if(!headings[start])start='home';
+  // Ulozena stranka plati jen tehdy, kdyz do te skupiny opravdu patri.
+  if(!(groups[start]||[]).some(x=>x[0]===startRoute))startRoute='';
+  go(start,startRoute||undefined);
   if(window.__atlasStorageUnavailable){const note=document.createElement('p');note.className='atlas-notice';note.textContent='Prohlížeč zablokoval ukládání. Data a změny si exportuj do souboru.';heading.after(note)}
   // Explicit local-only surface: production cloud controls retain their code,
   // but cannot be activated accidentally in the test design.
@@ -331,7 +367,7 @@ globalThis.AtlasBudget = (() => {
     const title=main.querySelector('.detail-title');
     if(title){const typy=[...title.querySelectorAll('.d-type')];for(let i=typy.length;i<2;i++){const mezera=document.createElement('span');mezera.className='d-type atlas-typ-mezera';mezera.setAttribute('aria-hidden','true');mezera.textContent='—';const posledni=title.querySelectorAll('.d-type');if(posledni.length)posledni[posledni.length-1].after(mezera);else title.prepend(mezera)}}
     if(title){title.setAttribute('aria-label','Vlastnosti a osobní značky');title.querySelector('.d-name')?.remove();title.querySelectorAll('button:not(.detail-close)').forEach(button=>button.setAttribute('aria-pressed',String(!button.classList.contains('vypnuto'))));}
-    if(title){title.querySelectorAll('.d-flag,.sto-znacka').forEach(el=>{if(el.textContent.trim().toLowerCase()==='lucky')el.remove()});const lucky=document.createElement('button');lucky.type='button';lucky.className='atlas-lucky-tag'+(computed.lucky?' active':'');lucky.textContent='LUCKY';lucky.setAttribute('aria-label','Přepnout Lucky stav');lucky.setAttribute('aria-pressed',String(!!computed.lucky));lucky.addEventListener('click',()=>{const current=window.__pgo.getRows().find(r=>r.id===row.id);if(!current)return;current.forma=computed.lucky?'Normal':'Lucky';window.__pgo.prekreslit();window.__pgo.persistNow();window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));});title.append(lucky);/* Automatické značky (LEG, MYT, UB, 100 %) patří až za osobní — jinak je legendární kus posune a oko je hledá pokaždé jinde. */title.querySelectorAll('.rarity-chip.r-L:not(.r-L2),.rarity-chip.r-M,.rarity-chip.r-U,.rarity-chip.r-H').forEach(el=>title.append(el));}
+    if(title){title.querySelectorAll('.d-flag,.sto-znacka').forEach(el=>{if(el.textContent.trim().toLowerCase()==='lucky')el.remove()});const lucky=document.createElement('button');lucky.type='button';lucky.className='atlas-lucky-tag'+(computed.lucky?' active':'');lucky.textContent='LUCKY';lucky.setAttribute('aria-label','Přepnout Lucky stav');lucky.setAttribute('aria-pressed',String(!!computed.lucky));lucky.addEventListener('click',()=>{const current=window.__pgo.getRows().find(r=>r.id===row.id);if(!current)return;current.forma=computed.lucky?'Normal':'Lucky';window.__pgo.prekreslit();window.__pgo.persistNow();window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));});title.append(lucky);/* Automatické značky (LEG, MYT, UB, 100 %) patří až za osobní — jinak je legendární kus posune a oko je hledá pokaždé jinde. */title.querySelectorAll('.rarity-chip.r-L:not(.r-L2),.rarity-chip.r-M,.rarity-chip.r-U,.rarity-chip.r-H,.rarity-chip.r-DUP').forEach(el=>title.append(el));}
     const sections=[];let active=null;
     [...main.children].forEach(el=>{
       if(el.matches('.d-sec-h')){
@@ -361,10 +397,15 @@ globalThis.AtlasBudget = (() => {
        neexistuje — `host.querySelector` na nem spadl a tlacitko Upravit
        se tvarilo, ze nedela nic. */
     const plachtaOtevrena=!!document.querySelector('#atlasModal:not([hidden])');
+    /* V cisteni boxu nema formular kam: vlozeny do sloupce s evoluci rozhodi
+       celou radu a odsune zbytek stranky. Patri proto NAD cisteni jako
+       modalni okno. V plachte detailu zustava vedle ni, jak bylo. */
+    const vCisteni=!plachtaOtevrena&&!!document.querySelector('#boxMode:not([hidden])');
     const host=(plachtaOtevrena?document.querySelector('#atlasDetailContent'):null)
       ||document.querySelector('#boxMode .atlas-box-rozbor')
       ||document.querySelector('#atlasDetailContent')||document.body;
     document.getElementById('atlasRowEditor')?.remove();
+    document.getElementById('atlasRowEditorDialog')?.remove();
     const form=document.createElement('form');form.id='atlasRowEditor';form.className='atlas-row-editor';
     const fields=[['pokemon','Pokémon','text'],['cp','CP','number',10,99999,1],['level','Level','number',1,50,.5],['ivAtk','IV útok','number',0,15,1],['ivDef','IV obrana','number',0,15,1],['ivSta','IV HP','number',0,15,1],['fastMove','Rychlý útok','text'],['charged1','Nabitý útok 1','text'],['charged2','Nabitý útok 2','text']];
     const forms=[...new Set([row.forma||'Normal','Normal','Lucky','Shadow','Purified'])];
@@ -374,7 +415,8 @@ globalThis.AtlasBudget = (() => {
     const pohlavi=[...new Set([row.pohlavi||'—','—','Samec','Samice'])];
     form.innerHTML='<div class="atlas-eyebrow">UPRAVUJEŠ JEDEN KUS</div><h3>'+esc(row.pokemon)+'</h3><div class="atlas-editor-grid">'+fields.map(([key,label,type,min,max,step])=>`<label>${label}<input name="${key}" type="${type}" value="${esc(row[key])}" ${min!=null?`min="${min}" max="${max}" step="${step}"`:''} ${key==='pokemon'?'required':''}></label>`).join('')+'<label>Stav / forma<select name="forma">'+forms.map(f=>`<option value="${esc(f)}" ${f===(row.forma||'Normal')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>'+(maPohlavi?'<label>Pohlaví<select name="pohlavi">'+pohlavi.map(f=>`<option value="${f==='—'?'':esc(f)}" ${f===(row.pohlavi||'—')?'selected':''}>${esc(f)}</option>`).join('')+'</select></label>':'')+'<label class="atlas-editor-note">Poznámka<textarea name="note">'+esc(row.note)+'</textarea></label></div>'+'<div class="atlas-editor-actions"><button type="submit" class="atlas-cta">Uložit</button><button type="button" class="atlas-mini-btn" data-editor-cancel>Zrušit</button><p role="status" id="atlasEditorStatus"></p></div>';
     // Útoky se vybírají stejným výběrem jako ve Vyhledávání (typ, síla, ★ elitní) — engine __pgoUtoky.vyber na dočasném objektu; hodnota jde do skrytého pole formuláře. Při změně druhu se výběr postaví znovu.
-    const utoky={pokemon:row.pokemon,fastMove:row.fastMove||'',charged1:row.charged1||'',charged2:row.charged2||'',__docasny:true};const vyberUtoku=()=>{if(!window.__pgoUtoky)return;utoky.pokemon=form.elements.pokemon.value;['fastMove','charged1','charged2'].forEach(k=>{const input=form.elements[k];let obal=form.querySelector('[data-utok-obal="'+k+'"]');if(!obal){obal=document.createElement('div');obal.className='atlas-utok-vyber';obal.dataset.utokObal=k;input.after(obal);input.type='hidden'}obal.innerHTML='';window.__pgoUtoky.vyber(obal,utoky,k,()=>{input.value=utoky[k]||''})})};vyberUtoku();form.elements.pokemon.addEventListener('change',vyberUtoku);
+    /* Frustration (shadow) a Return (purified) nedava druh, ale STAV kusu — engine je do nabidky pridava podle `forma`. Bez nej v ni u shadow Reshirama Frustration chybel, prestoze ho ten kus ma. */
+    const utoky={pokemon:row.pokemon,forma:row.forma||'',fastMove:row.fastMove||'',charged1:row.charged1||'',charged2:row.charged2||'',__docasny:true};const vyberUtoku=()=>{if(!window.__pgoUtoky)return;utoky.pokemon=form.elements.pokemon.value;utoky.forma=form.elements.forma?form.elements.forma.value:'';['fastMove','charged1','charged2'].forEach(k=>{const input=form.elements[k];let obal=form.querySelector('[data-utok-obal="'+k+'"]');if(!obal){obal=document.createElement('div');obal.className='atlas-utok-vyber';obal.dataset.utokObal=k;input.after(obal);input.type='hidden'}obal.innerHTML='';window.__pgoUtoky.vyber(obal,utoky,k,()=>{input.value=utoky[k]||''})})};vyberUtoku();form.elements.pokemon.addEventListener('change',vyberUtoku);if(form.elements.forma)form.elements.forma.addEventListener('change',vyberUtoku);
     /* Level se nezadava, dopocitava se z CP a IV. CP je funkce (staty druhu,
        IV, level) a nic jineho, takze level z nich vyjde zpetne — a zaroven
        to hlida, ze zadana kombinace ve hre vubec muze existovat. Kdyz na ni
@@ -389,6 +431,15 @@ globalThis.AtlasBudget = (() => {
      poleLevel.classList.add('atlas-editor-dopocet');
      poleLevel.title='Dopočítá se z CP a IV — zadávat se nedá.';
     }
+    let okno=null;
+    /* Zavreni je na jednom miste: formular muze byt v plachte, vedle ni
+       nebo v modalnim okne a kazda cesta ho musi uklidit stejne. */
+    const zavrit=()=>{
+     if(window.AtlasZavritNabidkuUtoku)window.AtlasZavritNabidkuUtoku();
+     form.remove();
+     if(okno){okno.remove();okno=null}
+     document.body.classList.remove('atlas-edituje');
+    };
     const hlaska=form.querySelector('[role=status]');
     const dopocitejLevel=()=>{
      if(!poleLevel||!P.levelZCP)return;
@@ -412,7 +463,7 @@ globalThis.AtlasBudget = (() => {
     });
     dopocitejLevel();
     const baseline=new Map([...form.elements].filter(e=>e.name).map(e=>[e.name,e.type==='checkbox'?e.checked:e.value]));
-    form.querySelector('[data-editor-cancel]').addEventListener('click',()=>{form.remove();document.body.classList.remove('atlas-edituje');document.querySelector('.atlas-drawer-header button')?.focus()});
+    form.querySelector('[data-editor-cancel]').addEventListener('click',()=>{zavrit();document.querySelector('.atlas-drawer-header button')?.focus()});
     form.addEventListener('submit',e=>{e.preventDefault();const current=P.getRows().find(r=>r.id===id);if(!current||profile!==P.getProfile()){form.querySelector('[role=status]').textContent='Kus nebo profil se změnil. Zavři detail a zkontroluj roster.';return}if(!form.reportValidity())return;
       for(const input of form.elements){if(!input.name)continue;const value=input.type==='checkbox'?input.checked:input.value;if(value!==baseline.get(input.name))current[input.name]=input.type==='checkbox'?(value?'Ano':'Ne'):value;}
       // Dalsi ulozeni uz nemelo co zapsat: porovnavalo se porad proti stavu,
@@ -421,8 +472,9 @@ globalThis.AtlasBudget = (() => {
       // posune na to, co se prave zapsalo — pole, ktera clovek nesahnul,
       // dal nic neprepisuji.
       P.prekreslit();P.persistNow();
-      form.remove();document.body.classList.remove('atlas-edituje');
-      window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));document.querySelector('.atlas-drawer').scrollTop=0;
+      zavrit();
+      window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));
+      const plocha2=document.querySelector('.atlas-drawer');if(plocha2)plocha2.scrollTop=0;
       document.querySelector('.atlas-drawer-header button')?.focus();
     });
     const plachta=document.getElementById('atlasModal'),plocha=document.querySelector('.atlas-drawer');
@@ -431,6 +483,7 @@ globalThis.AtlasBudget = (() => {
     // zúžit. Když vedle místo není (úzké okno), zůstane úprava v detailu.
     const umistit=()=>{
       if(!form.isConnected){window.removeEventListener('resize',umistit);document.body.classList.remove('atlas-edituje');return}
+      if(okno)return;
       const plocha=document.querySelector('.atlas-drawer');
       const misto=plocha?Math.round(plocha.getBoundingClientRect().left):0;
       if(!plachta||misto<300){                       // úzké okno: zpátky do detailu
@@ -446,13 +499,189 @@ globalThis.AtlasBudget = (() => {
       form.style.top=Math.max(12,Math.round(hlavicka?hlavicka.getBoundingClientRect().top:92))+'px';
       if(form.parentElement!==plachta)plachta.append(form);
     };
-    host.prepend(form);        // ať je formulář v dokumentu, než se rozhodne, kam patří
-    umistit();
+    if(vCisteni){
+     /* Vlastni vrstva, ne nativni modal: ten se kresli nad vsim ostatnim
+        vcetne rozbalene nabidky utoku (ta zije mimo formular, primo na
+        strance), takze se nabidka schovala za ztmaveni a nesla z ni
+        vybrat. */
+     okno=document.createElement('div');
+     okno.id='atlasRowEditorDialog';okno.className='atlas-edit-okno';
+     okno.setAttribute('role','dialog');okno.setAttribute('aria-modal','true');
+     okno.append(form);document.body.append(okno);
+     /* Zkratky cisteni (D, P, sipky, Esc) chytaji klavesy na dokumentu.
+        Co se pise sem, se k nim dostat nesmi — jinak by psani jmena
+        rozhodovalo o kusech pod oknem. */
+     okno.addEventListener('keydown',e=>{
+      e.stopPropagation();
+      if(e.key!=='Escape')return;
+      /* Esc zavira nejdriv rozbalenou nabidku utoku, teprve pak okno —
+         jinak by clovek prisel o rozepsanou upravu jen proto, ze chtel
+         zavrit seznam. */
+      if(window.AtlasZavritNabidkuUtoku&&window.AtlasZavritNabidkuUtoku())return;
+      e.preventDefault();zavrit();
+     });
+     okno.addEventListener('click',e=>{if(e.target===okno)zavrit()});
+    }else{
+     host.prepend(form);       // ať je formulář v dokumentu, než se rozhodne, kam patří
+     umistit();
+     window.addEventListener('resize',umistit);
+     if(!form.classList.contains('atlas-editor-vedle'))form.scrollIntoView({block:'start'});
+    }
     document.body.classList.add('atlas-edituje');
-    window.addEventListener('resize',umistit);
-    if(!form.classList.contains('atlas-editor-vedle'))form.scrollIntoView({block:'start'});
     form.querySelector('[name="'+(field||'pokemon')+'"]').focus({preventScroll:true});
   };
+  /* Simulace vylepšení.
+
+     „Na jak silného ho dotáhnu a za co?" se dosud dalo zjistit jen tak, že
+     si člověk vyrobil kopii kusu, vyvinul ji a vylepšil — a pak ji mazal.
+     Tohle okno počítá totéž bez zásahu do rosteru: vybereš cílový druh
+     (kus sám nebo to, čím se stane) a cílový level, a vedle stojí cena po
+     půl levelech i dohromady.
+
+     Nic se neukládá a nic se nepřepočítává podruhé: čísla dává engine
+     (`atlasVylepseni`, `atlasEvoCena`), vrstva je jen kreslí. */
+  const CISLO=n=>Number(n||0).toLocaleString('cs-CZ');
+
+  window.AtlasSimulace=(id)=>{
+    const P=window.__pgo,row=P.getRows().find(r=>r.id===id);
+    if(!row)return;
+    const esc2=s2=>String(s2??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const iv=[row.ivAtk,row.ivDef,row.ivSta].map(x=>x===''||x==null?null:Number(x));
+    const odLevel=Number(row.level)||1;
+    /* Kam se dá dojít: kus sám a druhy, kterými se může stát. Jiné formy
+       (Zygarde) mezi ně nepatří — to není cesta vylepšením. */
+    const strom=P.atlasEvoStrom?P.atlasEvoStrom(row.pokemon):null;
+    const cile=[{klic:P.dexKeyOf(row.pokemon),jmeno:row.pokemon,evoluce:false}];
+    if(strom)strom.stupne.forEach(patro=>patro.forEach(u=>{
+      if(u.klic===cile[0].klic)return;
+      if(P.atlasEvoCena&&P.atlasEvoCena(cile[0].klic,u.klic))
+        cile.push({klic:u.klic,jmeno:u.jmeno,evoluce:true});
+    }));
+    /* Jine formy tehoz druhu (Zygarde). CP se spocitat da — staty forma ma —
+       ale co prepnuti stoji, appka nevi, takze se o cene nic netvrdi. */
+    const modelFormy=P.prohlidkaModel?P.prohlidkaModel(row.pokemon):null;
+    const soucetStatu=jm=>{const st=P.atlasStaty?P.atlasStaty(jm):null;
+     return st?st.utok+st.obrana+st.hp:0};
+    ((modelFormy&&modelFormy.druhy)||[]).filter(x=>x.vztah==='forma')
+     // Od nejslabsi formy po nejsilnejsi — jine poradi z dat neplyne.
+     .sort((a2,b2)=>soucetStatu(a2.jmeno)-soucetStatu(b2.jmeno))
+     .forEach(x=>{
+      if(cile.some(c=>c.klic===x.klic))return;
+      cile.push({klic:x.klic,jmeno:x.jmeno,forma:true});
+     });
+    let cilDruh=cile[0].jmeno,cilLevel=Math.min(50,Math.max(odLevel,40));
+    document.getElementById('atlasSimOkno')?.remove();
+    const okno=document.createElement('div');
+    okno.id='atlasSimOkno';okno.className='atlas-edit-okno atlas-sim-okno';
+    okno.setAttribute('role','dialog');okno.setAttribute('aria-modal','true');
+    const zavrit=()=>{
+     document.removeEventListener('keydown',escHlidac,true);
+     okno.remove();document.body.classList.remove('atlas-edituje');
+    };
+    okno.addEventListener('click',e=>{if(e.target===okno)zavrit()});
+    okno.addEventListener('keydown',e=>{
+     e.stopPropagation();
+     if(e.key==='Escape'){e.preventDefault();zavrit()}
+    });
+    /* Escape se musi chytit i tehdy, kdyz fokus zustal mimo okno — jinak ho
+       dostane detail pod simulaci a zavre se spatna vrstva. Posloucha se
+       v zachytne fazi, takze jsme na rade drive nez plachta. */
+    const escHlidac=e=>{
+     if(e.key!=='Escape'||!okno.isConnected)return;
+     e.preventDefault();e.stopPropagation();
+     zavrit();
+    };
+    document.addEventListener('keydown',escHlidac,true);
+
+    function vykresli(){
+      const v=P.atlasVylepseni
+       ?P.atlasVylepseni(cilDruh,row.forma||'',odLevel,cilLevel,iv[0],iv[1],iv[2]):null;
+      const jeForma=cile.some(c=>c.jmeno===cilDruh&&c.forma);
+      const evo=!jeForma&&cilDruh!==cile[0].jmeno&&P.atlasEvoCena
+       ?P.atlasEvoCena(cile[0].klic,P.dexKeyOf(cilDruh),null,null,row.forma||''):null;
+      const bonbonyEvo=evo?evo.polozky.bonbony.hodnota:0;
+      const predmety=evo&&evo.polozky.predmety.length?evo.polozky.predmety:[];
+      const neuplne=evo&&!evo.uplne;
+      const kroky=v?v.kroky:[];
+      /* Kam az se da vylepsovat, aby kus neprerostl ligu. U jine formy nebo
+         evoluce se pocita z jejich statu — po zmene uz je to jiny kus a
+         strop plati pro nej. */
+      const LIGY=[['Great League',1500],['Ultra League',2500]];
+      const stropy=P.atlasStropLigy
+       ?LIGY.map(([nazev,limit])=>{
+         const st=P.atlasStropLigy(cilDruh,limit,iv[0],iv[1],iv[2]);
+         return st?`${esc2(nazev)} (${CISLO(limit)}) do L${esc2(st.level)}`
+          :`${esc2(nazev)}: nevejde se ani na L1`;
+        }):[];
+      const stropyHtml=stropy.length
+       ?`<p class="atlas-sim-pozn">Strop ligy pro ${esc2(cilDruh)}: ${stropy.join(' · ')}.`
+        +` Nad ním už tě liga nepustí — u jiné formy se počítá z jejích statů,`
+        +` takže se hlídá, než formu přepneš.</p>`:'';
+      const radky=kroky.map(k=>`<tr><td>L${esc2(k.z)} → L${esc2(k.na)}</td>`
+        +`<td>${k.cp==null?'—':esc2(CISLO(k.cp))}</td>`
+        +`<td>${esc2(CISLO(k.prach))}</td>`
+        +`<td>${k.xl?esc2(CISLO(k.xl))+' XL':esc2(CISLO(k.bonbony))}</td>`
+        +`<td>${esc2(CISLO(k.celkemPrach))}</td>`
+        +`<td>${esc2(CISLO(k.celkemBonbony))}${k.celkemXl?' + '+esc2(CISLO(k.celkemXl))+' XL':''}</td></tr>`).join('');
+      okno.innerHTML=`<section class="atlas-sim">
+       <div class="atlas-eyebrow">SIMULACE — NIC SE NEULOŽÍ</div>
+       <h3>${esc2(row.pokemon)} ${esc2(row.cp||'?')} CP · L${esc2(odLevel)}</h3>
+       <p class="atlas-sim-pozn">Počítá se s IV tohohle kusu (${iv.map(x=>x==null?'?':x).join('/')}).
+        Roster to nijak nemění — je to jen propočet.</p>
+       <div class="atlas-sim-volby">
+        <div><span>Co z něj bude</span><div class="atlas-sim-prepinac">`
+        +cile.map(c=>`<button type="button" data-sim-druh="${esc2(c.jmeno)}"`
+          +` aria-pressed="${c.jmeno===cilDruh}">${esc2(c.jmeno)}`
+          +(c.evoluce?'<small>evoluce</small>'
+            :c.forma?'<small>jiná forma</small>':'<small>beze změny</small>')+`</button>`).join('')
+        +`</div></div>
+        <div><span>Cílový level</span><div class="atlas-sim-prepinac">
+         <button type="button" data-sim-krok="-0.5" aria-label="O půl levelu níž">−½</button>
+         <b class="atlas-sim-level">L${esc2(cilLevel)}</b>
+         <button type="button" data-sim-krok="0.5" aria-label="O půl levelu výš">+½</button>
+         <button type="button" data-sim-level="40" aria-pressed="${cilLevel===40}">L40</button>
+         <button type="button" data-sim-level="50" aria-pressed="${cilLevel===50}">L50</button>
+        </div></div>
+       </div>
+       <div class="atlas-sim-souhrn">
+        <div><span>CP po vylepšení</span><b>${v&&v.cpNa!=null?esc2(CISLO(v.cpNa)):'—'}</b>
+         <i>z ${v&&v.cpOd!=null?esc2(CISLO(v.cpOd)):'—'} na L${esc2(odLevel)}</i></div>
+        <div><span>Prach</span><b>${v?esc2(CISLO(v.prach)):'—'}</b>
+         <i>${v&&v.nasobekPrachu!==1?esc2(v.duvodCeny||'jiná cena podle stavu kusu'):'běžná cena'}</i></div>
+        <div><span>Bonbóny</span><b>${v?esc2(CISLO(v.bonbony+bonbonyEvo)):'—'}</b>
+         <i>${bonbonyEvo?'z toho '+esc2(CISLO(bonbonyEvo))+' za evoluci':'jen vylepšení'}</i></div>
+        <div><span>XL bonbóny</span><b>${v?esc2(CISLO(v.xl)):'—'}</b>
+         <i>${v&&v.xl?'nad L40':'do L40 nejsou'}</i></div>
+       </div>
+       ${predmety.length?`<p class="atlas-sim-pozn">K evoluci je potřeba ${esc2(predmety.join(' · '))}.</p>`:''}
+       ${stropyHtml}
+       ${jeForma?`<p class="atlas-sim-pozn">Je to jiná forma téhož druhu, ne evoluce — CP se spočítat dá, ale co přepnutí formy stojí, appka z dat neví. V ceně je proto jen vylepšení.</p>`:''}
+       ${neuplne?`<p class="atlas-sim-pozn atlas-evo-chybi">Součet není úplný — chybí: ${esc2(evo.chybi.join(', '))}.</p>`:''}
+       ${radky?`<div class="atlas-sim-tabulka"><table>
+        <thead><tr><th>Krok</th><th>CP</th><th>Prach</th><th>Bonbóny</th><th>Prach celkem</th><th>Bonbóny celkem</th></tr></thead>
+        <tbody>${radky}</tbody></table></div>`
+        :`<p class="atlas-sim-pozn">Na tomhle levelu už je — vyber vyšší cíl.</p>`}
+       <div class="atlas-editor-actions"><button type="button" class="atlas-cta" data-sim-zavrit>Zavřít</button></div>
+      </section>`;
+      if(P.vystreditSprity)P.vystreditSprity(okno);
+    }
+
+    okno.addEventListener('click',e=>{
+     const b=e.target.closest('button');if(!b)return;
+     if(b.hasAttribute('data-sim-zavrit')){zavrit();return}
+     if(b.dataset.simDruh){cilDruh=b.dataset.simDruh;vykresli();return}
+     if(b.dataset.simLevel){cilLevel=Number(b.dataset.simLevel);vykresli();return}
+     if(b.dataset.simKrok){
+      cilLevel=Math.min(50,Math.max(odLevel,Math.round((cilLevel+Number(b.dataset.simKrok))*2)/2));
+      vykresli();
+     }
+    });
+    vykresli();
+    document.body.append(okno);
+    document.body.classList.add('atlas-edituje');
+    okno.querySelector('button')?.focus();
+  };
+
   // Rozbalena nabidka utoku zije mimo okno (position:fixed na <body>), takze
   // se zavrenim okna sama nezmizi — musi se zavrit rucne.
   function zavritNabidkuUtoku(){
@@ -538,7 +767,7 @@ globalThis.AtlasBudget = (() => {
 
 (() => {
   const $=s=>document.querySelector(s),api=window.__atlasTest;
-  const items=[['home',null,'Přehled'],['roster','roster','Pokémoni'],['invest','dustCard','Rozpočet'],['teams','prohlidkaCard','Vyhledávání'],['teams','cheatCard','Tahák'],['teams',null,'Bojové nástroje',[['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['friendCard','Výměna']]],['events',null,'Události',[['eventsCard','Kalendář'],['catchCard','Co chytat']]],['settings',null,'Data a pravidla',[['settings-card','Nastavení'],['docsCard','Metodika a zdroje']]]];
+  const items=[['home',null,'Přehled'],['roster','roster','Pokémoni'],['events','eventsCard','Kalendář'],['teams','prohlidkaCard','Vyhledávání'],['invest','dustCard','Rozpočet'],['teams','cheatCard','Tahák'],['teams',null,'Bojové nástroje',[['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['friendCard','Výměna']]],['settings',null,'Data a pravidla',[['settings-card','Nastavení'],['docsCard','Metodika a zdroje']]]];
   const glyph=key=>'<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="'+({home:'M3 10 12 3l9 7v10h-6v-7H9v7H3Z',roster:'M3 7h18v14H3ZM3 7l3-4h12l3 4M9 12h6',invest:'M4 20h16M7 16v-5m5 5V7m5 9V3',prohlidkaCard:'M15 15l6 6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0',cheatCard:'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6ZM9 12l2 2 4-4',events:'M4 5h16v16H4ZM8 3v4m8-4v4M4 10h16',settings:'M4 7h16M4 17h16M8 4v6m8 4v6'}[key]||'M5 5h14v14H5ZM9 9h6M9 13h6')+'"/></svg>';
   const symbol=glyph('tools');
   const button=(group,route,label)=>`<button data-menu-group="${group}" ${route?`data-menu-route="${route}"`:''}>${glyph(['prohlidkaCard','cheatCard'].includes(route)?route:group)}<span>${label}</span></button>`;
@@ -636,6 +865,16 @@ globalThis.AtlasBudget = (() => {
  const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  $('.atlas-drawer>div:last-child button[data-atlas-action="edit"]')?.parentElement.remove();
  const close=$('.atlas-drawer-header [data-atlas-action="close"]'),edit=document.createElement('button');edit.id='atlasEditPokemon';edit.dataset.atlasAction='edit';edit.textContent='Upravit tohoto Pokémona';edit.className='atlas-mini-btn';close.before(edit);
+ /* Simulace vylepseni: "na jak silneho ho dotahnu a za co" bez vyrabeni
+    pokusne kopie. Stoji vedle Upravit, protoze je to tataz otazka o tomhle
+    kusu — jen "co kdyby" misto "oprav". */
+ const sim=document.createElement('button');sim.id='atlasSimPokemon';sim.className='atlas-mini-btn';
+ sim.textContent='Simulace vylepšení';
+ sim.addEventListener('click',()=>{
+  const id=window.__atlasTest&&window.__atlasTest.getState?window.__atlasTest.getState().dialogId:null;
+  if(id&&window.AtlasSimulace)window.AtlasSimulace(id);
+ });
+ edit.before(sim);
  // Krizek patri za prikazy, ne pred ne — jinak si bral vlastni radek.
  close.parentElement.append(close);
  {const smaz=document.createElement('button');smaz.id='atlasSmazatPokemona';smaz.dataset.atlasAction='smazat';
@@ -674,23 +913,33 @@ globalThis.AtlasBudget = (() => {
      jenze ta oblast v mrizce neexistuje — prvek skoncil v implicitni stope
      nekde u hlavicky a podle sirky okna zmizel z dohledu. Ted sedi primo
      ve sloupci s evoluci, jako jeho prvni radek. */
-  if(bar&&!vPlachte&&window.innerWidth>650){
-   const sloupec=document.querySelector('#boxMode .atlas-box-rozbor');
-   if(sloupec){
+  if(bar&&!vPlachte){
+   /* Upravit kus je v plachte hned vedle techhle prikazu; v cisteni boxu
+      chybelo uplne, prestoze je to tataz otazka ("tohle nesedi, oprav").
+      Patri tam i na telefonu — tam se opravuje nejcasteji. */
+   if(!bar.querySelector('[data-box-edit]')){
+    const uprav=document.createElement('button');
+    uprav.type='button';uprav.className='hra-btn';uprav.dataset.boxEdit='1';
+    uprav.textContent='Upravit';
+    uprav.title='Otevře úpravu tohohle kusu — CP, level, IV, útoky, forma.';
+    uprav.addEventListener('click',()=>{window.AtlasEditRow&&window.AtlasEditRow(row.id)});
+    bar.append(uprav);
+   }
+   /* Kam lista patri, zalezi na sirce okna: na sirokem nad evolucni radu,
+      na telefonu do sloupce s verdiktem — rozbor se tam vubec nekresli a
+      lista by v nem zmizela i s prikazy. */
+   const siroke=window.innerWidth>900;
+   const cil=siroke?document.querySelector('#boxMode .atlas-box-rozbor')
+    :document.querySelector('#boxMode .bm-body');
+   if(cil){
     document.querySelectorAll('#boxMode .bm-top .hra-pruh,#boxMode .atlas-box-rozbor .hra-pruh')
-      .forEach(e=>e.remove());
-    bar.classList.add('atlas-hra-nad-evoluci');
-    /* Upravit kus je v plachte hned vedle techhle prikazu; v cisteni boxu
-       chybelo uplne, prestoze je to tataz otazka ("tohle nesedi, oprav"). */
-    if(!bar.querySelector('[data-box-edit]')){
-     const uprav=document.createElement('button');
-     uprav.type='button';uprav.className='hra-btn';uprav.dataset.boxEdit='1';
-     uprav.textContent='Upravit';
-     uprav.title='Otevře úpravu tohohle kusu — CP, level, IV, útoky, forma.';
-     uprav.addEventListener('click',()=>{window.AtlasEditRow&&window.AtlasEditRow(row.id)});
-     bar.append(uprav);
+      .forEach(e=>{if(e!==bar)e.remove()});
+    bar.classList.toggle('atlas-hra-nad-evoluci',siroke);
+    if(siroke)cil.append(bar);
+    else{
+     const pod=cil.querySelector('.bm-why')||cil.querySelector('.bm-roles');
+     if(pod)pod.before(bar);else cil.append(bar);
     }
-    sloupec.append(bar);
    }
   }
   if(bar&&vPlachte){bar.setAttribute('aria-label','Zapsat změnu ve hře');bar.querySelectorAll('[aria-pressed]').forEach(b=>b.removeAttribute('aria-pressed'));const editBtn=$('#atlasEditPokemon');if(editBtn)editBtn.before(bar);else $('.atlas-drawer-header').append(bar)}
@@ -796,6 +1045,27 @@ globalThis.AtlasBudget = (() => {
       const popisek=document.createElement('small');popisek.className='atlas-sestava-kdy';popisek.textContent=kdy;radek.append(popisek);
       const sloupec=document.createElement('div');sloupec.className='atlas-sestava-utoky';
       const sTeckou=kdy==='má';
+      /* Kdyz na dva sloty vychazi tataz nahrada, dostane ji ten utok, ktery
+         ji potrebuje vic: cerveny (preucit) pred oranzovym (dobry). Driv
+         rozhodovalo poradi v radku, takze navrh sebral ten lepsi z nich. */
+      if(sTeckou){
+       const poradi={preucit:0,dobry:1};
+       jmena.map((jm,i)=>({jm,i,stav:stavUtoku(String(jm).trim())}))
+        .filter(x=>poradi[x.stav]!==undefined)
+        .sort((a2,b2)=>poradi[a2.stav]-poradi[b2.stav])
+        .forEach(x=>{
+         const cist=cisteJmeno(String(x.jm)).trim().toLowerCase();
+         const zeSestavy=(doporucene&&doporucene.length)
+          ?(x.i===0?doporucene.slice(0,1):doporucene.slice(1)):[];
+         let kand=zeSestavy.find(y=>y&&y.toLowerCase()!==cist
+           &&!jmena.some(z=>cisteJmeno(String(z)).trim().toLowerCase()===y.toLowerCase()));
+         if(!kand)kand=nahrady.get(cist)||'';
+         if(!kand)return;
+         if(navrzeno.has(kand.toLowerCase()))return;
+         navrzeno.add(kand.toLowerCase());
+         prideleno.set(cist,kand);
+        });
+      }
       jmena.forEach((jm,i)=>{const radek=document.createElement('div');radek.className='atlas-utok-radek';
         if(!sTeckou){const mezera=document.createElement('i');mezera.className='atlas-utok-tecka atlas-utok-mezera';radek.append(mezera)}
         if(sTeckou){const tecka=document.createElement('i');tecka.className='atlas-utok-tecka';
@@ -803,19 +1073,27 @@ globalThis.AtlasBudget = (() => {
           tecka.dataset.tip={nej:'Nejlepší útok, jaký tenhle druh má.',dobry:'Použitelný, ale nejlepší to není.',preucit:'Slabý útok — stojí za přeučení.',nezna:'Kvalita útoku se nedá posoudit.'}[stav]||'';
           radek.append(tecka)}
         radek.append(chipUtoku(String(jm).trim(),i===0));
-        if(sTeckou&&doporucene&&doporucene.length){
+        if(sTeckou){
           const stav=stavUtoku(String(jm).trim());
           const cist=cisteJmeno(String(jm)).trim().toLowerCase();
-          // Rychlý útok se mění za rychlý, nabitý za nabitý.
-          const nabidka=i===0?doporucene.slice(0,1):doporucene.slice(1);
-          const lepsi=nabidka.find(x=>x&&x.toLowerCase()!==cist&&!jmena.some(y=>cisteJmeno(String(y)).trim().toLowerCase()===x.toLowerCase()));
+          /* Čím ten útok nahradit. Nejdřív doporučená sestava (rychlý za
+             rychlý, nabitý za nabitý), a když z ní nic nezbývá, vezme se
+             náhrada od enginu — ta je i u oranžového útoku, kde dřív šipka
+             nebyla a barva tím pádem neříkala, co s tím. */
+          const lepsi=prideleno.get(cist)||'';
           // U `poEvoluci` engine rika "ted neprecuj" — sipka na lepsi utok
           // by mu primo odporovala.
           if(stav!=='nej'&&stav!=='poEvoluci'&&lepsi){
             const sip=document.createElement('em');sip.className='atlas-utok-lepsi';
             sip.textContent=lepsi;
             const proc=duvody.get(cist)||'';
-            sip.dataset.tip=(proc?proc+' ':'')+'Lepší volba: '+lepsi+' — přeučení stojí TM.';
+            /* Elitni utok bezny TM nenauci. Bez teto vety to byla rada,
+               ktera nejde splnit — a vedle ni stalo "tenhle nech". */
+            const elitni=P.atlasElitniUtok?P.atlasElitniUtok(row.pokemon,lepsi):null;
+            sip.dataset.tip=(proc?proc+' ':'')+'Lepší volba: '+lepsi
+             +(elitni?' — jenže ten jde naučit jen elitním TM, běžný ho nedá.'
+               :' — přeučení stojí TM.');
+            if(elitni)sip.dataset.elitni='1';
             radek.append(sip);
           }
         }
@@ -823,10 +1101,11 @@ globalThis.AtlasBudget = (() => {
       radek.append(sloupec);box.append(radek);
     };
     // Mapa „jméno útoku → jak je dobrý" z útoků, které engine vypsal v detailu.
-    const stavy=new Map(),duvody=new Map();
+    const stavy=new Map(),duvody=new Map(),nahrady=new Map(),navrzeno=new Set(),prideleno=new Map();
     // Hodnocení i důvod má engine přímo v datech kusu — spolehlivější než
     // číst je ze značek, které si vrstva vzápětí přestavuje.
     if(c&&Array.isArray(c.utoky))c.utoky.forEach(u=>{
+      if(u&&u.jm&&u.nahrada)nahrady.set(cisteJmeno(String(u.jm)).trim().toLowerCase(),u.nahrada);
       const k=cisteJmeno(u.jm||'').toLowerCase();
       if(!k)return;
       if(u.stav&&!stavy.has(k))stavy.set(k,u.stav);
@@ -1032,9 +1311,14 @@ globalThis.AtlasBudget = (() => {
  }
  const bmBody=$('#bmBody');
  if(bmBody){
-   // Vlastní vložený rozbor observer ignoruje — jinak by se přestavoval pořád dokola.
+   /* Co si vrstva vlozi sama, observer ignoruje — jinak by se prestavoval
+      porad dokola. Krome rozboru je to lista "ve hre jsem s nim neco
+      udelal": na telefonu se stehuje sem, a bez teto vyjimky se prestavba
+      volala donekonecna a stranka zamrzla. */
+   const naseUzly=n=>n.nodeType===1&&n.classList
+     &&(n.classList.contains('atlas-box-rozbor')||n.classList.contains('hra-pruh'));
    new MutationObserver(zaznamy=>{
-     const jenNase=zaznamy.every(z=>[...z.addedNodes,...z.removedNodes].every(n=>n.nodeType===1&&n.classList&&n.classList.contains('atlas-box-rozbor')));
+     const jenNase=zaznamy.every(z=>[...z.addedNodes,...z.removedNodes].every(naseUzly));
      if(!jenNase&&!boxPrestavba)boxRozbor();
    }).observe(bmBody,{childList:true});
    window.addEventListener('atlas:refresh-detail',()=>{if(!document.getElementById('boxMode')?.hidden)boxRozbor()});
@@ -1146,7 +1430,19 @@ globalThis.AtlasBudget = (() => {
  return `<button class="atlas-event-card" data-event-kind="${kind}" data-event-state="${b&&b<=tomorrow?'ending':a&&a>now?'upcoming':'live'}" data-event-index="${events.indexOf(e)}" title="${esc(e[0])}"><span class="atlas-event-visual"><span class="atlas-event-status">${label}</span><span class="atlas-event-art">${names.map(image).join('')||'<span class="atlas-event-bez-obrazku" aria-hidden="true">◇</span>'}</span></span><span class="atlas-event-copy"><span class="atlas-event-category">${{max:'Max souboje',raid:'Raidy',research:'Výzkum',event:'Událost'}[kind]}</span><h3>${esc(title)}</h3><span class="atlas-event-prinos">${esc(prinos(e))}</span><span class="atlas-event-date">${format(e[3])} → ${format(e[4])}</span><span class="atlas-event-link">Prohlédnout akci <span aria-hidden="true">→</span></span></span></button>`;
  }
  function list(items,kind){return `<div class="atlas-event-species">${items.map(([name,shiny])=>shiny===-1?`<h4>${esc(name)}</h4>`:`<div class="atlas-event-specimen">${['spawn','raid','vejce','shiny'].includes(kind)?image(name):''}<span>${esc(name)}${shiny===1?' <small>✦ shiny dostupné</small>':''}</span></div>`).join('')}</div>`}
- function openEvent(i){const e=events[i];if(!e)return;const url=safeUrl(e[5]);modal.innerHTML=`<header><div><span class="atlas-eyebrow">TAHÁK AKCE</span><h2 id="atlasEventTitle">${esc(e[0])}</h2><p>${format(e[3])} — ${format(e[4])}</p></div><button class="atlas-mini-btn" data-event-close aria-label="Zavřít detail akce">✕</button></header><div class="atlas-event-body">${(e[7]||[]).map(w=>`<section class="atlas-event-window"><p class="atlas-small-note">Platnost této části: ${format(w[0])} — ${format(w[1])}</p>${Object.entries(w[2]||{}).filter(([k,v])=>Array.isArray(v)&&v.length).map(([k,v])=>`<details open><summary>${esc(sections[k]||k)}</summary>${list(v,k)}</details>`).join('')}</section>`).join('')||'<p>Podrobný obsah není ve zdroji k dispozici.</p>'}<p class="atlas-small-note">Seznam popisuje obsah akce, nikoli živé spawny v okolí. Dostupné shiny neznamená zvýšenou šanci. Podmínky a zvláštní časová okna ověř ve zdroji.</p><div class="atlas-event-actions"><button class="atlas-mini-btn" data-event-teams>Otevřít Tahák soubojů</button>${url?`<a class="atlas-mini-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Zdroj akce ↗</a>`:''}</div></div>`;modal.showModal();}
+ /* Stitky akce (Akce, Raidy, Jen v nekterych zemich) a veta o omezeni.
+    Oboji je ze stranky zdroje; veta se neprekláda — co tam stoji, stoji tam
+    anglicky, a prepsat ji za zdroj by znamenalo tvrdit neco jineho. */
+ function stitkyAkce(e){
+  const d=e&&e[8]||{};
+  const stitky=(d.stitky||[]).map(([klic,popis])=>
+   `<span class="atlas-event-stitek" data-stitek="${esc(klic)}">${esc(popis)}</span>`).join('');
+  const omezeni=d.omezeni
+   ?`<p class="atlas-event-omezeni">Omezení podle zdroje: ${esc(d.omezeni)}</p>`:'';
+  return (stitky?`<div class="atlas-event-stitky">${stitky}</div>`:'')+omezeni;
+ }
+
+ function openEvent(i){const e=events[i];if(!e)return;const url=safeUrl(e[5]);modal.innerHTML=`<header><div><span class="atlas-eyebrow">TAHÁK AKCE</span><h2 id="atlasEventTitle">${esc(e[0])}</h2><p>${format(e[3])} — ${format(e[4])}</p>${stitkyAkce(e)}</div><button class="atlas-mini-btn" data-event-close aria-label="Zavřít detail akce">✕</button></header><div class="atlas-event-body">${(e[7]||[]).map(w=>`<section class="atlas-event-window"><p class="atlas-small-note">Platnost této části: ${format(w[0])} — ${format(w[1])}</p>${Object.entries(w[2]||{}).filter(([k,v])=>Array.isArray(v)&&v.length).map(([k,v])=>`<details open><summary>${esc(sections[k]||k)}</summary>${list(v,k)}</details>`).join('')}</section>`).join('')||'<p>Podrobný obsah není ve zdroji k dispozici.</p>'}<p class="atlas-small-note">Seznam popisuje obsah akce, nikoli živé spawny v okolí. Dostupné shiny neznamená zvýšenou šanci. Podmínky a zvláštní časová okna ověř ve zdroji.</p><div class="atlas-event-actions"><button class="atlas-mini-btn" data-event-teams>Otevřít Tahák soubojů</button>${url?`<a class="atlas-mini-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Zdroj akce ↗</a>`:''}</div></div>`;modal.showModal();}
  modal.addEventListener('click',e=>{if(e.target.closest('[data-event-close]'))modal.close();if(e.target.closest('[data-event-teams]')){modal.close();__atlasTest.go('teams','cheatCard')}});
  // Keep Escape in the native modal; it must not reach the underlying Pokémon drawer.
  modal.addEventListener('keydown',e=>e.stopPropagation());
@@ -1195,23 +1491,53 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  const jmeno=$('#prohName');if(!mrizka||!vysledek||!jmeno)return;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+ /* Obrazek druhu v ramecku.
+
+    Sprity z hry maji kazdy jinou pozici v pruhlednem platne a engine je
+    dorovnava pres `transform` na samotnem <img> — posune ho a az o pulku
+    zvetsi. Ramecek proto nesmi byt na obrazku: zvetseni by roztahlo i
+    jeho pozadi a posun v procentech by se meril z jineho boxu, takze
+    sprite vylezl z dlazdice a sedel nakrivo. Obal drzi rozmer, obrazek
+    se v nem hybe. Stejne to ma identita kusu (`.atlas-ident-obr`). */
+ const obrazekRam=(jmeno,trida,hotove,vzhled)=>hotove||P.atlasImage
+  ?`<span class="atlas-obr-ram ${trida}">${hotove||P.atlasImage(jmeno,'',vzhled)}</span>`:'';
+
  /* Výsledková tabulka. Jedna role, jedna liga, jedna tabulka — dřív se
     všechny evoluce a všechny ligy skládaly pod sebe a v tom seznamu
     nešlo nic najít. Data dává engine (`prohlidkaModel`); vrstva z nich
     jen kreslí, nic nepočítá znovu. */
- const ROLE_POPIS={pvp:'PvP',raid:'Raidy',gym:'Gym',mega:'Mega'};
+ const ROLE_POPIS={pvp:'PvP',raid:'Raidy',gym:'Gym',mega:'Mega',max:'Max'};
  /* Vlastni ikonky zalozek: `icon()` z hlavni vrstvy sem nedosahne (jiny
     uzaver) a ctyri cary staci. Navrh V2 od Astry. */
  const ROLE_IKONA={
   pvp:'M5 19 19 5M5 5l4 4m10 10-4-4',
   raid:'M12 3l7 7-7 11-7-11z',
   gym:'M7 21V4m0 1 11 3-11 3',
-  mega:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z'};
+  mega:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z',
+  max:'M12 3v18M4 8l8-5 8 5v8l-8 5-8-5Z'};
  const ikona=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${ROLE_IKONA[k]}"/></svg>`;
  /* Klic ligy, kterou ma clovek vybranou — stejny, jakym ji zna engine. */
  let ligaKlicVModelu='great';
- let role='pvp',liga='great',zvyrazneny=null,podminkyVidet=false,
-  shinyVic=false,evoVidet=false;
+ let role='pvp',liga='great',shinyVic=false;
+ /* Ke kteremu druhu patri to, co je zrovna v tabulce, a proc se pripadne
+    ukazuje jina role, nez byla vybrana. Vysledek se prekresluje vickrat
+    (engine si o tom rekne sam), takze si to hlaseni musi pamatovat —
+    jinak probliklo a zmizelo. */
+ let vysledekDruh=null,presunZprava='';
+ /* Prepnuty shiny obrazek. Meni se JEN obrazek — jina barva neni jiny druh,
+    takze cisla, poradi ani sestavy zustavaji. Po zmene druhu se vraci na
+    bezny obrazek: shiny u predchoziho druhu o tomhle nic nerika. */
+ let shinyObrazek=false,shinyDruh=null;
+ /* Forma, ve ktere se druh zrovna prohlizi. Drzi ji text v poli, takze je
+    jen jedno misto pravdy — prepinac pole prepise. */
+ let formaStav='';
+ /* Uz natazene shiny obrazky — at se to u tehoz druhu nedela pokazde znovu. */
+ const shinyPredem=new Set();
+ /* Evoluce a naklady (V3, sekce 6). `evoCil` je JEDNA vybrana cesta;
+    bez ni se zadna cena neukazuje — soucet vsech osmi vetvi Eevee je
+    cislo, ktere nikdo nikdy nezaplati. `evoDruh` hlida, ze vyber patri
+    k pravé zobrazenemu druhu: po zmene hledani se zahodi. */
+ let evoCil=null,evoMega=null,evoLevel=40,evoDruh=null;
 
  function vysledekBlok(){
   let el=karta.querySelector('.atlas-vysledky');
@@ -1231,11 +1557,28 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     Vejce a raid maji tyz level schvalne — je to tyz vypocet ve dvou
     kontextech, ne dve ruzna cisla. Pas NERIKA, ze druh z toho zdroje
     prave pada; to plyne z rozpisu akci, ne z pokedexu. */
+ /* Od nejnizsiho levelu po nejvyssi — cisla pak jdou vzestupne a da se
+    v nich cist. Raid a vejce jsou tataz hodnota (oboji chytas na L20),
+    takze stoji v jedne bunce; dve stejna cisla vedle sebe jen matla. */
+ /* Ikonky pocasi. Ve hre je kazde pocasi obrazkem, takze samotny nazev
+    u "Raid s pocasim" clovek hleda dvakrat. Kresli se stejne jako ostatni
+    ikony vrstvy: tah, zadna vypln. */
+ const POCASI_IKONA={
+  'Jasno':'M12 5V2M12 22v-3M5 12H2M22 12h-3M6.3 6.3 4.2 4.2M19.8 19.8l-2.1-2.1M17.7 6.3l2.1-2.1M4.2 19.8l2.1-2.1M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  'Polojasno':'M8 6a3.5 3.5 0 1 1 3.4 4.4M8 3.5V2M4.5 6H3M5.5 3.5 4.4 2.4M17 19H8a4 4 0 0 1 0-8 5 5 0 0 1 9.4 1.5A3.3 3.3 0 0 1 17 19Z',
+  'Zataženo':'M17 18H8a4 4 0 0 1 0-8 5 5 0 0 1 9.4 1.5A3.3 3.3 0 0 1 17 18Z',
+  'Déšť':'M17 15H8a4 4 0 0 1 0-8 5 5 0 0 1 9.4 1.5A3.3 3.3 0 0 1 17 15ZM9 18l-1 3M13 18l-1 3M17 18l-1 3',
+  'Vítr':'M3 8h10a3 3 0 1 0-3-3M3 12h14a3 3 0 1 1-3 3M3 16h7',
+  'Sníh':'M12 4v16M4.5 8l15 8M19.5 8l-15 8',
+  'Mlha':'M3 9h18M5 13h14M3 17h12'};
+ const pocasiChip=n=>`<span class="atlas-pocasi" title="${esc(n)}">`
+  +`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${POCASI_IKONA[n]||''}"/></svg>`
+  +`${esc(n)}</span>`;
+
  const CP_BUNKY=[
-  ['Raid · L20',20],
-  ['Raid s počasím · L25',25],
-  ['Vejce · L20',20],
   ['Výzkum · L15',15],
+  ['Raid a vejce · L20',20],
+  ['Raid s počasím · L25',25],
   ['Strop · L40',40]];
  function cpPasBlok(){
   let el=karta.querySelector('.atlas-cp-pas');
@@ -1249,15 +1592,25 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const el=cpPasBlok();
   if(!d){el.hidden=true;el.innerHTML='';return}
   el.hidden=false;
+  const seznamPocasi=(pocasi||[]).filter(Boolean);
   const bunky=CP_BUNKY.map(([popis,lvl])=>{
    const cp=P.atlasCP?P.atlasCP(d.name,lvl):null;
-   return `<div class="atlas-cp-bunka"><b>${cp==null?'—':cp}</b><span>${esc(popis)}</span>`
+   /* Popisek nad cislem a barevny prouzek vlevo — stejna karta jako
+      "Na co je" v rozboru. Barva je u vsech stejna: jsou to referencni
+      cisla, ne hodnoceni, a barva podle vyznamu by tu lhala. */
+   const [co,kdy]=popis.split(' · ');
+   /* U "Raid s pocasim" patri k cislu i to, PRI JAKEM pocasi plati —
+      jinak je to cislo bez podminky. Stoji vedle nadpisu bunky, aby cislo
+      a level zustaly na stejne vysce jako v ostatnich bunkach. */
+   const pocasiHtml=lvl===25&&seznamPocasi.length
+    ?`<span class="atlas-cp-pocasi">${seznamPocasi.map(pocasiChip).join('')}</span>`:'';
+   return `<div class="atlas-cp-bunka"><span class="atlas-cp-hlava">${esc(co)}${pocasiHtml}</span>`
+    +`<b>${cp==null?'—':cp}</b>`
+    +`<i>${esc(kdy||'')}</i>`
     +(cp==null?'<small>staty téhle formy nemáme</small>':'')+`</div>`;
   }).join('');
   el.innerHTML=`<h4 class="atlas-cp-nadpis" id="atlasKotvaCisla" tabindex="-1">CP při 100 % IV</h4>`
-   +`<div class="atlas-cp-mrizka">${bunky}</div>`
-   +`<p class="atlas-cp-pozn">Referenční CP pro uvedené levely; nejde o seznam dostupných úlovků.`
-   +(pocasi&&pocasi.length?` Počasí pro jeho typy: ${esc(pocasi.join(' / '))}.`:'')+`</p>`;
+   +`<div class="atlas-cp-mrizka">${bunky}</div>`;
  }
 
  /* Sekce jako zalozky.
@@ -1288,14 +1641,38 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    el.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.dataset.sekcePrepnout){prepniSekci(b.dataset.sekcePrepnout);return}
-    if(b.dataset.role){role=b.dataset.role;zvyrazneny=null;vykresliVysledek();return}
+    if(b.dataset.role){role=b.dataset.role;presunZprava='';
+     vykresliVysledek();return}
     if(b.dataset.liga){liga=b.dataset.liga;ligaKlicVModelu=b.dataset.liga;
-     zvyrazneny=null;vykresliVysledek();return}
-    /* Klepnuti na evoluci jen zvyrazni jeji radek. Vstup ani roster to
-       prepsat nesmi — clovek se pta na druh, ne ze ho chce zmenit. */
-    if(b.dataset.zvyraznit){zvyrazneny=b.dataset.zvyraznit;vykresliVysledek();return}
-    if(b.dataset.podminky){podminkyVidet=!podminkyVidet;vykresliVysledek();return}
-    if(b.hasAttribute('data-evo-vic')){evoVidet=!evoVidet;vykresliVysledek();return}
+     presunZprava='';vykresliVysledek();return}
+    /* Vyber cesty ve stromu. Mega je jina vec nez evoluce, takze se
+       nevybiraji obe najednou. */
+    if(b.dataset.evoCil){
+     evoCil=evoCil===b.dataset.evoCil?null:b.dataset.evoCil;evoMega=null;
+     vykresliVysledek();return}
+    if(b.dataset.evoMega){
+     evoMega=evoMega===b.dataset.evoMega?null:b.dataset.evoMega;evoCil=null;
+     vykresliVysledek();return}
+    if(b.dataset.evoLevel){evoLevel=Number(b.dataset.evoLevel);vykresliVysledek();return}
+    /* Vyhledat jiny clanek rady: prepise se pole a pusti se tyz vypocet
+       jako pri psani — vrstva si nic vlastniho nepocita. */
+    if(b.dataset.evoHledat){
+     jmeno.value=b.dataset.evoHledat;
+     /* Napoveda jmen patri psani, ne klepnuti: druh uz je vybrany, takze
+        by jen prekryla vysledek, ktery si clovek vyzadal. */
+     jmeno.dataset.tiseVybrano='1';
+     jmeno.dispatchEvent(new Event('input',{bubbles:true}));
+     evoCil=null;evoMega=null;
+     window.scrollTo({top:0,behavior:'smooth'});
+     return}
+    /* Jina forma je jiny druh se svymi staty — otevre se jako samostatne
+       hledani, ne jako vetev teto stranky. */
+    if(b.dataset.evoForma){
+     jmeno.value=b.dataset.evoForma;
+     jmeno.dispatchEvent(new Event('input',{bubbles:true}));
+     jmeno.dispatchEvent(new Event('change',{bubbles:true}));
+     return;
+    }
     if(b.hasAttribute('data-zpet-vysledky')){prepniSekci('prehled');return}
     /* Counter mod pracuje s TVYM rosterem — appka zadny vlastni seznam
        protihracu nevymysli. Prazdny roster to rekne na miste. */
@@ -1321,6 +1698,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  function prepniSekci(k,tise){
   if(!SEKCE.some(([x])=>x===k))return;
   sekce=k;
+  /* Zalozka "Muj kus" rezim ZAPINA, a to jen pri skutecnem kliknuti:
+     `tise` znamena prekresleni, a to by rezim porad vracelo zpatky, i kdyz
+     uz je formular prazdny. Vypina ho vymazani CP a IV, ne odchod ze
+     zalozky — jinak by clovek o svuj kus prisel tim, ze se jde podivat
+     do vysledku. */
+  if(!tise&&k==='kus'&&rezim()!=='kus')prepni('kus');
   const el=sekceBlok();
   el.querySelectorAll('.atlas-sekce-panel').forEach(x=>{x.hidden=x.dataset.sekce!==k});
   el.querySelectorAll('[data-sekce-prepnout]').forEach(b=>{
@@ -1330,10 +1713,27 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   if(!tise){const x=panel(k);if(x)x.focus({preventScroll:true})}
  }
  /* Rozbor z enginu a formular kusu se PRESUNOU do svych zalozek. */
+ /* Co v Rozboru nema byt: hlavicka s nazvem a rolemi (stoji uplne nahore
+    v karte druhu) a zavirajici odstavce, ktere posilaly do zalozek, ktere
+    jsou na dosah. Engine je kresli do sveho vystupu, vrstva je odebira. */
+ function uklidRozbor(){
+  const out=karta.querySelector('.proh-out');if(!out)return;
+  out.querySelectorAll('.d-verdict-row,.proh-hint,.d-utoky-druh .d-note')
+   .forEach(x=>x.remove());
+ }
  function presunDoSekci(){
   const rozbor=panel('rozbor'),kus=panel('kus');
   if(rozbor&&vysledek.parentElement!==rozbor)rozbor.append(vysledek);
+  /* Typove zasahy maji vlastni zalozku, takze v rozboru uz nestoji —
+     ale musi se odsud dat dojit, jinak by to vypadalo, ze zmizely. */
+  /* Odkaz na zalozku Typy tu byl, dokud zalozky nebyly videt. Ted stoji
+     nad obsahem, takze veta jen opakovala, co je na obrazovce. */
+  rozbor&&rozbor.querySelectorAll('.atlas-rozbor-pozn').forEach(x=>x.remove());
   if(kus&&udaje.parentElement!==kus){kus.append(udaje);udaje.open=true}
+  /* V zalozce uz neni co schovavat: obsah zalozky se otevira zalozkou,
+     druhe rozbalovatko nad nim bylo navic. */
+  if(kus){udaje.open=true;udaje.classList.add('atlas-hledani-udaje-vzdy')}
+  uklidRozbor();
  }
  function vykresliKotvy(je){
   const el=sekceBlok();
@@ -1384,11 +1784,11 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    ?`<p class="atlas-typy-pozn">Počítá se z doporučené sestavy druhu: `
      +`<b>${esc(u.sestava.join(' + '))}</b> (${u.typy.map(esc).join(' · ')}).</p>`
      +(u.dvojity.length?`<div class="atlas-typy-radek" data-stupen="slabina2" data-bez-cisla="1"><b>Dvojnásobně zasáhne</b>`
-       +`<div class="atlas-typy-chipy">${u.dvojity.map(x=>`<span class="atlas-typy-kombinace">${esc(x.klic)}</span>`).join('')}</div></div>`:'')
+       +`<div class="atlas-typy-chipy">${u.dvojity.map(x=>kombinaceChip(x.klic)).join('')}</div></div>`:'')
      +(u.vyhoda.length?`<div class="atlas-typy-radek" data-stupen="slabina" data-bez-cisla="1"><b>Má výhodu proti</b>`
-       +`<div class="atlas-typy-chipy">${u.vyhoda.map(x=>`<span class="atlas-typy-kombinace">${esc(x.klic)}</span>`).join('')}</div></div>`:'')
+       +`<div class="atlas-typy-chipy">${u.vyhoda.map(x=>kombinaceChip(x.klic)).join('')}</div></div>`:'')
      +(u.vyrusene.length?`<div class="atlas-typy-radek" data-stupen="normal" data-bez-cisla="1"><b>Výhoda se vyruší u</b>`
-       +`<div class="atlas-typy-chipy">${u.vyrusene.map(x=>`<span class="atlas-typy-kombinace">${esc(x.klic)}</span>`).join('')}</div></div>`:'')
+       +`<div class="atlas-typy-chipy">${u.vyrusene.map(x=>kombinaceChip(x.klic)).join('')}</div></div>`:'')
    :'<p class="atlas-typy-pozn">Doporučenou sestavu appka pro tenhle druh nemá, takže o jeho útocích nic netvrdí.</p>';
   cil.innerHTML=`<section class="atlas-typy">`
    +`<h4>Čím ho zasáhneš</h4>`
@@ -1402,50 +1802,167 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`</section>`;
  }
 
- /* Raidova fakta: CP dokonaleho kusu a pocasi. Plni je `vykresli()`,
-    protoze je pocita ze stejnych dat jako identitu — a ukazuji se jen
-    pod zalozkou Raidy, kam patri. */
- let raidFakta=null;
- function raidFaktaHtml(){
-  if(!raidFakta)return '';
-  const f=raidFakta;
-  /* CP uz stoji v pasu nahore — tady by to bylo tyz cislo podruhe.
-     Sem patri jen to, co plati zrovna o raidech. */
-  return `<div class="atlas-vysledek-raid">`
-   +`<p><b>${f.bossTed?'Boss potvrzený probíhající akcí.':'Že je druh v raidech, appka z dat neví.'}</b> `
-   +`Shiny z raidu: ${esc(f.shinyRaid)}.`
-   +(f.pocasi?` Počasí pro jeho typy: ${esc(f.pocasi)}.`:'')+`</p></div>`;
+
+ /* Evoluce a naklady (V3, sekce 6).
+
+    Vlevo strom cele rady, vpravo podrobnosti JEDNE vybrane cesty. Plna
+    sipka je evoluce; mega visi na prerusovane vetvi zvlast, protoze to
+    neni evoluce, ale docasna forma — a plati se energii, ne bonbony.
+
+    Nic se tu nepocita: cestu, podminky i cenu dava engine
+    (`atlasEvoStrom`, `atlasEvoCena`). Vrstva jen kresli. */
+ const cislo=n=>Number(n||0).toLocaleString('cs-CZ');
+
+ /* Veta o podminkach. Prazdny seznam sam o sobe nic nerika — proto se
+    ptame enginu na STAV: „zadne" je overeny udaj, „nevime" je poctive
+    priznani, ze data chybi. */
+ function evoPodminkyVeta(h){
+  if(h.stav==='jsou')return esc(h.podminky.join(' · '));
+  if(h.stav==='zadne')return 'Kromě bonbónů nic dalšího — u téhle evoluce žádnou další podmínku data neuvádějí.';
+  return 'O podmínkách téhle evoluce data nemáme. Ověř si je ve hře.';
  }
 
- /* Evolucni moznosti vedle tabulky. Podminky jsou videt rovnou, ne az po
-    najeti mysi — na telefonu by je jinak nikdo nenasel. */
+ function evoDlazdice(u,odKlic,dosazitelny){
+  const zdroj=u.klic===odKlic,vybrany=u.klic===evoCil&&!evoMega;
+  const vnitrek=obrazekRam(u.jmeno,'atlas-evo-obr')
+   +`<b>${esc(u.popis)}</b>`
+   +(zdroj?'<small>odsud</small>':dosazitelny?'':'<small>vyhledat</small>');
+  if(dosazitelny)return `<button type="button" class="atlas-evo-dlazdice" data-evo-cil="${esc(u.klic)}" aria-pressed="${vybrany}">${vnitrek}</button>`;
+  if(zdroj)return `<div class="atlas-evo-dlazdice" data-mimo="1" data-zdroj="1">${vnitrek}</div>`;
+  /* Clanek, ze ktereho se k hledanemu druhu nedojde (je PRED nim nebo
+     v jine vetvi), uz neni mrtvy obrazek: otevre se v hledani. Cesta
+     a naklady se pocitaji jen dopredu, zpatky se evolvovat neda. */
+  return `<button type="button" class="atlas-evo-dlazdice atlas-evo-jinam" data-mimo="1"`
+   +` data-evo-hledat="${esc(u.jmeno)}" title="Vyhledat ${esc(u.popis)}">${vnitrek}</button>`;
+ }
+
+ function evoCenaHtml(c,odUzel,naJmeno,odLevel){
+  const pol=c.polozky;
+  const radek=(nazev,v,jednotka)=>`<div class="atlas-evo-radek"><dt>${esc(nazev)}</dt>`
+   +`<dd>${v.znamo?esc(cislo(v.hodnota)+(jednotka?' '+jednotka:'')):'neznámo'}</dd></div>`;
+  const predmety=pol.predmety.length
+   ?`<div class="atlas-evo-radek"><dt>Předmět</dt><dd>${esc(pol.predmety.join(' · '))}</dd></div>`
+   :'';
+  const uroven=odLevel>=evoLevel
+   ?`<p class="atlas-evo-pozn">Na L${esc(String(odLevel))} už je — vylepšení se do ceny nepočítá.</p>`:'';
+  return `<h6 class="atlas-evo-nadpis">Co to stojí</h6><dl class="atlas-evo-cena">`
+   +radek('Prach',pol.prach,'')
+   +radek('Bonbóny',pol.bonbony,'')
+   +(evoLevel>40||pol.xl.hodnota?radek('XL bonbóny',pol.xl,''):'')
+   +predmety
+   +`</dl>`
+   +uroven
+   +(c.uplne
+     ?`<p class="atlas-evo-pozn">Bonbóny za evoluci i za vylepšení dohromady. XL se s běžnými nesčítají.</p>`
+     :`<p class="atlas-evo-pozn atlas-evo-chybi">Součet není úplný — chybí: ${esc(c.chybi.join(', '))}.</p>`);
+ }
+
  function evoluceHtml(m){
-  const evo=m.druhy.filter(x=>x.vztah==='evoluce');
-  if(!evo.length)return '';
-  /* Mrizka s obrazky, ne seznam jmen: na co se Eevee vyvine, se pozna
-     rychleji podle obrazku. Podminky jsou o tlacitko dal — vidi je
-     i klavesnice, nejen mys. (Navrh V2 od Astry.) */
-  /* Na telefonu je panel sbaleny: osm obrazku pod tabulkou by znamenalo,
-     ze se ke zbytku stranky clovek prorolovava. Na sirokem okne stoji
-     vedle tabulky a schovavat ho neni proc. */
-  return `<aside class="atlas-vysledek-evo" data-otevreno="${evoVidet}">`
-   +`<h4><button type="button" data-evo-vic aria-expanded="${evoVidet}">Evoluční možnosti`
-   +`<span class="atlas-vysledek-evo-sip" aria-hidden="true">›</span></button></h4>`
-   +`<div class="atlas-vysledek-evo-mrizka">`
-   +evo.map(x=>`<button type="button" class="atlas-vysledek-evo-kus" data-zvyraznit="${esc(x.klic)}"${x.klic===zvyrazneny?' aria-pressed="true"':' aria-pressed="false"'}>`
-     +`${P.atlasImage?P.atlasImage(x.jmeno,'atlas-vysledek-evo-obr'):''}<b>${esc(x.jmeno)}</b></button>`).join('')
-   +`</div>`
-   +`<div class="atlas-vysledek-evo-pod"><h5>Podmínky evoluce</h5>`
-   +`<p>Podmínky podle herních dat.</p>`
-   +(podminkyVidet
-     ?`<dl>`+evo.map(x=>{
-       const pod=(P.evoPodminky?P.evoPodminky(m.klic,x.klic):[])||[];
-       return `<dt>${esc(x.jmeno)}</dt><dd>${pod.length?esc(pod.join(' · ')):'stačí bonbóny'}</dd>`;
-      }).join('')+`</dl>`
-     :'')
-   +`<button type="button" class="atlas-vysledek-evo-vic" data-podminky="1" aria-expanded="${podminkyVidet}">`
-   +`${podminkyVidet?'Skrýt podrobnosti':'Zobrazit podrobnosti'} <span aria-hidden="true">›</span></button>`
-   +`</div></aside>`;
+  const strom=P.atlasEvoStrom?P.atlasEvoStrom(m.jmeno):null;
+  if(!strom)return '';
+  /* Po zmene druhu nesmi zustat vybrana evoluce predchoziho — ukazovala
+     by cenu cesty, ktera s tímhle druhem nesouvisi. */
+  if(evoDruh!==strom.klic){evoDruh=strom.klic;evoCil=null;evoMega=null}
+  const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
+  const kus=window.__pgoProhlidkaKus&&window.__pgoProhlidkaKus();
+  /* Kusovy rezim pocita od skutecneho levelu zadaneho kusu; druhovy je
+     schvalne jen UKAZKA od L1 — appka netusi, co mas v inventari, a
+     tvarit se, ze zna „tvoji cenu", by bylo vymysleni. */
+  const odKlic=kusovy&&kus&&kus.klic?kus.klic:strom.klic;
+  /* Level kusu se dopocitava z CP a IV — a kdyz spolu nesedi, nevyjde.
+     Pak se pocita od L1 jako ukazka a rekne se to; tvarit se, ze L1 je
+     level toho kusu, by byla lez. */
+  const kusLevel=kusovy&&kus&&Number(kus.level)?Number(kus.level):null;
+  const odLevel=kusLevel||1;
+  /* Jine formy tehoz druhu (Zygarde 10 % / 50 % / Complete, Giratina,
+     Deoxys). Nejsou to evoluce — meni se ve hre jinak a appka o tom, jak,
+     nic nevi. Stoji proto bokem a jen odkazuji na svou stranku, kde ma
+     kazda forma vlastni staty i poradi. */
+  const formy=(m.druhy||[]).filter(x=>x.vztah==='forma');
+  const formyHtml=formy.length
+   ?`<div class="atlas-evo-mega atlas-evo-formy"><p class="atlas-evo-mega-popis">Jiné formy téhož druhu</p>`
+    +`<div class="atlas-evo-mega-radek">`
+    +formy.map(x=>`<button type="button" class="atlas-evo-dlazdice" data-forma="1"`
+      +` data-evo-forma="${esc(x.jmeno)}">`
+      +obrazekRam(x.jmeno,'atlas-evo-obr')
+      +`<b>${esc(x.jmeno)}</b><small>otevřít</small></button>`).join('')
+    +`</div>`
+    +`<p class="atlas-evo-pozn">Každá forma má vlastní staty i pořadí. Evoluce to není`
+    +` a jak se mezi nimi ve hře přepíná, appka z dat neví.</p></div>`
+   :'';
+  const jednoPatro=strom.stupne.length<2&&!strom.mega.length&&!formy.length;
+  if(jednoPatro)return `<section class="atlas-evo"><p class="atlas-vysledek-prazdno">`
+   +`Tenhle druh se nevyvíjí, mega formu nemá a jinou formu taky ne.</p></section>`;
+  const dosazitelne={};
+  strom.stupne.forEach(patro=>patro.forEach(u=>{
+   dosazitelne[u.klic]=u.klic!==odKlic&&!!(P.atlasEvoCena&&P.atlasEvoCena(odKlic,u.klic));
+  }));
+  const stromHtml=strom.stupne.map((patro,i)=>
+   (i?`<div class="atlas-evo-sipka" aria-hidden="true">↓</div>`:'')
+   +`<div class="atlas-evo-patro"${patro.length>2?' data-mrizka="1"':''}>`
+   +patro.map(u=>evoDlazdice(u,odKlic,dosazitelne[u.klic])).join('')
+   +`</div>`).join('');
+  const megaHtml=strom.mega.length
+   ?`<div class="atlas-evo-mega"><p class="atlas-evo-mega-popis">Dočasná mega forma</p>`
+    +`<div class="atlas-evo-mega-radek">`
+    +strom.mega.map(x=>`<button type="button" class="atlas-evo-dlazdice" data-mega="1"`
+      +` data-evo-mega="${esc(x.jmeno)}" aria-pressed="${evoMega===x.jmeno}">`
+      +obrazekRam(x.jmeno,'atlas-evo-obr',x.obrazek)
+      +`<b>${esc(x.jmeno)}</b></button>`).join('')
+    +`</div></div>`
+   :'';
+  /* Podrobnosti vybrane cesty. Bez vyberu se necha prazdno s pokynem —
+     nic se nedosazuje za cloveka. */
+  let detail;
+  if(evoMega){
+   const mg=strom.mega.filter(x=>x.jmeno===evoMega)[0];
+   detail=`<h5>${esc(mg.jmeno)}</h5>`
+    +`<p class="atlas-evo-pozn">Dočasná forma na jeden boj, ne evoluce. `
+    +`Kus zůstane tím, čím je, a mega energie se s bonbóny nesčítá.</p>`
+    +`<dl class="atlas-evo-cena">`
+    +`<div class="atlas-evo-radek"><dt>Mega energie poprvé</dt>`
+    +`<dd>${mg.energiePoprve?esc(cislo(mg.energiePoprve)):'neznámo'}</dd></div>`
+    +`<div class="atlas-evo-radek"><dt>Každá další proměna</dt>`
+    +`<dd>${mg.energie?esc(cislo(mg.energie)):'neznámo'}</dd></div></dl>`;
+  }else if(evoCil){
+   const c=P.atlasEvoCena?P.atlasEvoCena(odKlic,evoCil,odLevel,evoLevel,''):null;
+   if(!c)detail='<p class="atlas-evo-pozn">Tahle cesta z vybraného druhu nevede.</p>';
+   else{
+    const odUzel=strom.stupne.reduce((a,p2)=>a||p2.filter(u=>u.klic===odKlic)[0],null);
+    const naUzel=strom.stupne.reduce((a,p2)=>a||p2.filter(u=>u.klic===evoCil)[0],null);
+    detail=`<h5>${esc((odUzel?odUzel.popis:odKlic)+' L'+odLevel)} → `
+     +`${esc((naUzel?naUzel.popis:evoCil)+' L'+evoLevel)}</h5>`
+     +(kusLevel?''
+       :`<p class="atlas-evo-pozn">${kusovy
+         ?'Level kusu se z CP a IV spočítat nedá, tak je to ukázka od L1.'
+         :'Ukázkový model od L1 — o tom, co máš v inventáři, appka nic neví.'}</p>`)
+     +`<h6 class="atlas-evo-nadpis">Co to vyžaduje</h6>`
+     +`<div class="atlas-evo-kroky">`
+     +c.kroky.map(k=>`<div class="atlas-evo-krok">`
+       +`<b>${esc(k.jmeno)}${k.bonbony?esc(' · '+cislo(k.bonbony)+' bonbónů'):''}</b>`
+       +`<span>${evoPodminkyVeta(k)}</span>`
+       +(k.bonusy.length?`<small>${esc(k.bonusy.join(' · '))}</small>`:'')
+       +`</div>`).join('')
+     +`</div>`
+     +evoCenaHtml(c,odUzel,naUzel?naUzel.popis:evoCil,odLevel);
+   }
+  }else detail='<p class="atlas-evo-pozn" data-evo-vyzva>Vyber evoluci a cílový level.</p>';
+  const levely=[40,50].map(l=>`<button type="button" data-evo-level="${l}"`
+   +` aria-pressed="${evoLevel===l}">L${l}</button>`).join('');
+  /* Vyhledat vybranou evoluci. Bez toho se dalo hledat jen to, co uz je
+     v poli — a z Machopa se nedalo prejit na Machampa jinak nez ho
+     vypsat rucne. */
+  const cilUzel=evoCil?strom.stupne.reduce((a,p2)=>a||p2.filter(u=>u.klic===evoCil)[0],null):null;
+  const hledatCil=cilUzel
+   ?`<button type="button" class="atlas-evo-hledat" data-evo-hledat="${esc(cilUzel.jmeno)}">`
+     +`Vyhledat ${esc(cilUzel.popis)}</button>`
+   :'';
+  return `<section class="atlas-evo">`
+   +`<div class="atlas-evo-strom">${stromHtml}${megaHtml}${formyHtml}</div>`
+   +`<div class="atlas-evo-detail"><div class="atlas-evo-hlava"><h4>Cesta a náklady</h4>`
+   +hledatCil
+   +`<div class="atlas-evo-levely" role="group" aria-label="Cílový level">${levely}</div></div>`
+   +detail+`</div></section>`;
  }
 
  /* Co appka spocitala o zadanem kusu. Patri jen k radku hledaneho druhu:
@@ -1468,6 +1985,21 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   return `<td>${casti.join('<br>')}</td>`;
  }
 
+ /* Kombinace dvou typu jako JEDEN stitek pulenky prebarveny: vlevo prvni
+    typ, vpravo druhy. Dva samostatne ovaly vedle sebe by vypadaly jako dva
+    ruzni protivnici, ne jako jedna dvojice. */
+ function kombinaceChip(klic){
+  const barvy=P.typeColors?P.typeColors():{};
+  const casti=String(klic).split('/').map(x=>x.trim()).filter(Boolean);
+  const ikona=t=>(P.typIkona?P.typIkona(t):'')+esc(t);
+  if(casti.length<2)return `<span class="d-type atlas-typ-kombi" style="background:${esc(barvy[casti[0]]||'')}">${ikona(casti[0])}</span>`;
+  /* Barva se riznе presne na delici care: kazda pulka ma vlastni pozadi.
+     Prechod pres cely stitek rezal jinde, nez kde cara opravdu je. */
+  return `<span class="d-type atlas-typ-kombi atlas-typ-kombi2">`
+   +`<span style="background:${esc(barvy[casti[0]]||'#555')}">${ikona(casti[0])}</span>`
+   +`<span style="background:${esc(barvy[casti[1]]||'#555')}">${ikona(casti[1])}</span></span>`;
+ }
+
  /* Typy druhu jako barevne ovaly — stejne jako v identite a v rosteru.
     Radek tim rovnou rika, proti cemu se ten druh hodi. */
  function typyHtml(klic){
@@ -1475,23 +2007,87 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   return ((d&&d.types)||[]).map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('');
  }
 
+ /* Utok jako bublina s barvou typu — stejne jako v rozboru kusu.
+    Typ se ptame enginu (`fastByNameOf` / `chargedByNameOf`); co nenajde,
+    zustane textem. Nic se neodhaduje: sestava "mimo metu — sestavu appka
+    nema" neni jmeno utoku a bublinu nedostane. */
+ function utokChip(jmeno){
+  const m=(P.fastByNameOf&&P.fastByNameOf(jmeno))||(P.chargedByNameOf&&P.chargedByNameOf(jmeno));
+  if(!m||!m.type)return null;
+  const barvy=P.typeColors?P.typeColors():{};
+  return `<span class="atlas-utok-chip"><span class="atlas-utok-typ" `
+   +`style="background:${esc(barvy[m.type]||'')}">${P.typIkona?P.typIkona(m.type):''}</span>`
+   +`${esc(m.name)}</span>`;
+ }
+ function utokySestava(text){
+  const casti=String(text).split(/\s*([+/])\s*/);
+  const kusy=casti.map(c=>c==='+'||c==='/'
+   ?`<span class="atlas-utok-spoj">${c}</span>`:utokChip(c.trim()));
+  // Kdyz se nepozna ani jeden nazev, je to veta, ne sestava — necha se text.
+  if(!kusy.some((x,i)=>x&&casti[i]!=='+'&&casti[i]!=='/'))return esc(text);
+  return `<span class="atlas-utok-sada">`
+   +kusy.map((x,i)=>x||esc(casti[i])).join('')+`</span>`;
+ }
+
+ /* Typ utocnika u raidu. Kdyz je to tyz typ, jaky druh sam ma, stoji
+    vedle bubliny tehoz jmena dvakrat — to se vynecha. Jiny typ (druh mlati
+    cizimi utoky) je naopak novy udaj a zustava. */
+ /* U raidu se tyz druh objevi v kazdem typu, na ktery se hodi — bez
+    oznaceni pak v tabulce stoji dva stejne vypadajici radky. Typ se proto
+    u raidu pise vzdycky, jinde jen kdyz to NENI jeho vlastni typ. */
+ function typNavic(r,vzdy){
+  if(!r.typ)return '';
+  const barvy=P.typeColors?P.typeColors():{};
+  const d=P.dexByKey?P.dexByKey(r.klic):null;
+  const vlastni=((d&&d.types)||[]).map(t=>String(t).toLowerCase());
+  const vlastniTyp=vlastni.includes(String(r.typ).toLowerCase());
+  if(vlastniTyp&&!vzdy)return '';
+  return ` <span class="atlas-vysledek-role-typ d-type" style="background:${esc(barvy[r.typ]||'')}">`
+   +`${P.typIkona?P.typIkona(r.typ):''}${esc(r.typ)}</span>`;
+ }
+
  function radekHtml(r,vstupKlic){
-  const poradi=r.rank==null?'<span class="atlas-vysledek-nezname">neměří se</span>'
+  const poradi=r.rank==null
+   ?`<span class="atlas-vysledek-nezname">${role==='pvp'
+     ?'v téhle lize nemá pořadí':'v tomhle žebříčku není'}</span>`
    :`<b>#${r.rank}</b>${r.pct!=null?` <small>${r.pct} % nejlepšího</small>`:''}`;
-  const utoky=r.utoky?esc(r.utoky)
+  const utoky=r.utoky?utokySestava(r.utoky)
    :(r.priorita?`priorita do raidů: ${esc(r.priorita)}`
     :(r.jeMeta===false?'<span class="atlas-vysledek-nezname">mimo metu — sestavu appka nemá</span>'
      :'<span class="atlas-vysledek-nezname">sestavu appka nemá</span>'));
-  const znacka=r.vztah==='vstup'?' <span class="atlas-vysledek-znacka">Hledaný druh</span>'
-   :(r.vztah==='forma'?' <small>jiná forma</small>':' <small>až po evoluci</small>');
+  /* U Max Battle je forma soucast radku: tyz druh stoji v jednom typu
+     jednou jako Dynamax a jednou jako Gigantamax. */
+  /* Forma jako stitek, ne jako text: DMAX uz appka pouziva u kusu, takze
+     Gigantamax dostal stejny tvar o stupen sytejsi. V tabulce se to cte
+     na prvni pohled. */
+  const maxForma=r.maxForma
+   ?` <span class="rarity-chip ${r.maxForma==='Gigantamax'?'r-GM':'r-D'} atlas-max-forma"`
+    +` title="${esc(r.maxForma)}">${r.maxForma==='Gigantamax'?'GMAX':'DMAX'}</span>`
+   :'';
+  const znacka=(r.vztah==='vstup'?' <span class="atlas-vysledek-znacka">Hledaný druh</span>'
+   :(r.vztah==='forma'?' <small>jiná forma</small>'
+     :(r.vztah==='drive'?' <small>dřívější stupeň</small>':' <small>až po evoluci</small>')))+maxForma;
   const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
-  return `<tr data-klic="${esc(r.klic)}"${r.klic===vstupKlic?' class="je-vstup"':''}${r.klic===zvyrazneny?' data-zvyrazneno="1"':''}>`
-   +`<td class="atlas-vysledek-druh">${P.atlasImage?P.atlasImage(r.jmeno,'atlas-vysledek-obr'):''}`
-    +`<span><button type="button" data-zvyraznit="${esc(r.klic)}">${esc(r.jmeno)}</button>${znacka}${r.typ?` <small>${esc(r.typ)}</small>`:''}`
-    +`<span class="atlas-vysledek-typy">${typyHtml(r.klic)}</span></span></td>`
+  /* Klepnuti na jmeno otevre ten druh v hledani. Driv jen zvyraznilo radek,
+     coz nikam nevedlo — a oznaceni, ktere nic nedela, jen plete. */
+  const jmenoHtml=r.vztah==='vstup'
+   ?`<b>${esc(r.jmeno)}</b>`
+   :`<button type="button" class="atlas-vysledek-jmeno" data-evo-hledat="${esc(r.jmeno)}"`
+    +` title="Vyhledat ${esc(r.jmeno)}">${esc(r.jmeno)}</button>`;
+  return `<tr data-klic="${esc(r.klic)}"${r.klic===vstupKlic?' class="je-vstup"':''}>`
+   +`<td class="atlas-vysledek-druh">${obrazekRam(r.jmeno,'atlas-vysledek-obr')}`
+    +`<span>${jmenoHtml}${znacka}${typNavic(r,role==='raid'||role==='max')}`
+    /* V raidech se typ uz pise za jmenem (za ktery typ ten radek stoji),
+       takze vlastni typy druhu by byly podruhe — u Centiskorche vysel
+       "Bug Fire Bug". Jinde se typy hodi: rikaji, proti cemu se druh postavi. */
+    +`<span class="atlas-vysledek-typy">${role==='raid'||role==='max'?'':typyHtml(r.klic)}</span></span></td>`
    +`<td>${poradi}</td><td>${utoky}</td>${kusovy?kusBunka(r,vstupKlic):''}`
-   +`<td><button type="button" class="atlas-vysledek-sip" data-zvyraznit="${esc(r.klic)}"`
-    +` aria-label="Zvýraznit ${esc(r.jmeno)}">›</button></td></tr>`;
+   /* Misto holé sipky pojmenovany prikaz: samotna sipka nerikala, co udela,
+      a zvyrazneni radku uz umi klepnuti na jmeno. U hledaneho druhu nic —
+      hledat to, co uz je v poli, nema smysl. */
+   +`<td class="atlas-vysledek-akce">${r.vztah==='vstup'?''
+     :`<button type="button" class="atlas-vysledek-hledat" data-evo-hledat="${esc(r.jmeno)}">`
+      +`Vyhledat ${esc(r.jmeno)}</button>`}</td></tr>`;
  }
 
  function vykresliVysledek(){
@@ -1504,39 +2100,79 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const klicFokusu=aktivni&&el.contains(aktivni)
    ?(aktivni.dataset.role?'[data-role="'+aktivni.dataset.role+'"]'
      :aktivni.dataset.liga?'[data-liga="'+aktivni.dataset.liga+'"]'
-     :aktivni.dataset.zvyraznit?'[data-zvyraznit="'+CSS.escape(aktivni.dataset.zvyraznit)+'"]':null)
+     :null)
    :null;
   const m=hodnota&&P.prohlidkaModel?P.prohlidkaModel(hodnota):null;
   if(!m){el.hidden=true;el.innerHTML='';return}
   el.hidden=false;
+  /* Novy druh a v zapamatovane roli o nem appka nic nema: misto prazdne
+     tabulky se prepne tam, kde poradi opravdu je. Rucni volbu to nepresune
+     — prepina se jen pri zmene druhu a rekne se, proc. */
+  if(vysledekDruh!==m.klic){
+   vysledekDruh=m.klic;presunZprava='';
+   /* Prazdna je i tabulka, ve ktere sice radky jsou, ale nikdo v ni nema
+      poradi — od te doby, co se ukazuje cela evolucni rada, takovy pripad
+      existuje ("v tehle lize nema poradi" u vsech clanku). */
+   const prazdna=k=>{const g=k==='pvp'?m.role.pvp[liga]:m.role[k];
+    return !(g&&g.radky&&g.radky.some(r=>r.rank!=null))};
+   if(prazdna(role)){
+    const kandidati=[];
+    if(role==='pvp')m.poradiLig.forEach(k=>kandidati.push(['pvp',k]));
+    m.poradiLig.forEach(k=>{if(role!=='pvp')kandidati.push(['pvp',k])});
+    ['raid','gym','mega','max'].forEach(k=>{if(k!==role)kandidati.push([k,null])});
+    const nalez=kandidati.filter(([r,l])=>{
+     const g=r==='pvp'?m.role.pvp[l]:m.role[r];
+     // Stejne jako `prazdna`: radek bez poradi se nepocita, jinak by appka
+     // "nasla" ligu, ve ktere taky nikdo z rady poradi nema.
+     return g&&g.radky&&g.radky.some(x=>x.rank!=null);
+    })[0];
+    if(nalez){
+     const puvodni=role==='pvp'?m.role.pvp[liga].nazev:ROLE_POPIS[role];
+     role=nalez[0];if(nalez[1])liga=ligaKlicVModelu=nalez[1];
+     presunZprava=`Pro ${puvodni} appka o tomhle druhu pořadí nemá — ukazuje se `
+      +(role==='pvp'?m.role.pvp[liga].nazev:ROLE_POPIS[role])+'.';
+    }
+   }
+  }
   const skupina=role==='pvp'?m.role.pvp[liga]:m.role[role];
   const radky=(skupina&&skupina.radky)||[];
   /* Nadpis rika, CO se pocita — ne ze to druh "hraje". Jestli ho hrat,
      plyne z poradi v tabulce, ne z nadpisu. */
-  const nadpis=role==='pvp'?`Výsledky pro ${skupina?skupina.nazev:'ligu'}`
-   :`Výsledky pro ${ROLE_POPIS[role]}`;
+  // Nadpis bere cely nazev role z modelu ("Max Battle"), ne zkratku ze zalozky.
+  const nadpis=`Výsledky pro ${skupina&&skupina.nazev?skupina.nazev:ROLE_POPIS[role]}`;
   const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
-  el.innerHTML=`<section class="atlas-vysledek"><div class="atlas-vysledek-ovladani" role="tablist" aria-label="Role">`
+  /* Zalozky roli a vyber ligy stoji v jednom radku: kdyz byly pod sebou,
+     prepnuti z PvP na Raidy ten radek zrusilo a cela tabulka poskocila. */
+  el.innerHTML=`<section class="atlas-vysledek"><div class="atlas-vysledek-hlava">`
+   +`<div class="atlas-vysledek-ovladani" role="tablist" aria-label="Role">`
    +Object.keys(ROLE_POPIS).map(k=>`<button type="button" role="tab" data-role="${k}" aria-selected="${role===k}" aria-pressed="${role===k}">${ikona(k)}<span>${ROLE_POPIS[k]}</span></button>`).join('')
    +`</div>`
    +(role==='pvp'?`<div class="atlas-vysledek-ligy" role="group" aria-label="Liga">`
      +m.poradiLig.map(k=>`<button type="button" data-liga="${k}" aria-pressed="${liga===k}">${esc(m.role.pvp[k].nazev)}</button>`).join('')
      +`</div>`:'')
+   +`</div>`
    +`<h4 class="atlas-vysledek-nadpis">${esc(nadpis)}</h4>`
    +`<div class="atlas-vysledek-telo">`
-   /* Raidova fakta patri k raidum. V PvP zabirala prvni obrazovku a
-      s ligou nemela nic spolecneho. */
-   +(role==='raid'?raidFaktaHtml():'')
    +(radky.length
      ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${kusovy?'<th>Tvůj kus</th>':''}<th></th></tr></thead><tbody>`
       +radky.map(r=>radekHtml(r,m.klic)).join('')+`</tbody></table>`
      :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`)
+   +(presunZprava?`<p class="atlas-vysledek-presun">${esc(presunZprava)}</p>`:'')
+   /* U shadow formy musi byt jasne, ktera cisla se tim zmenila a ktera ne. */
+   +(role==='max'?`<p class="atlas-vysledek-presun">Pořadí i poškození počítá`
+     +` <b>Pokémon GO Hub</b>, ne appka${(P.atlasDmaxZdroj&&P.atlasDmaxZdroj())
+       ?' (staženo '+esc(P.atlasDmaxZdroj().datum)+')':''}.`
+     +` Je to žebříček druhů — o tvých kusech nic neříká.</p>`:'')
+   +(m.forma==='Shadow'?`<p class="atlas-vysledek-presun">${role==='pvp'
+     ?'Pořadí je ze shadow žebříčku PvPoke — je to vlastní tabulka, ne přepočet běžné.'
+     :'Tenhle žebříček appka počítá mezi běžnými formami, takže se do něj shadow nepromítá.'}</p>`:'')
    +`</div></section>`;
   /* Evoluce maji vlastni zalozku, takze uz nestoji vedle tabulky —
      tabulka tim dostala celou sirku a u druhu se dvema radky nezustava
      vedle ni prazdne misto. */
   const evoPanel=panel('evoluce');
-  if(evoPanel)evoPanel.innerHTML=evoluceHtml(m);
+  if(evoPanel){evoPanel.innerHTML=evoluceHtml(m);if(P.vystreditSprity)P.vystreditSprity(evoPanel)}
+  if(P.vystreditSprity)P.vystreditSprity(el);
   if(klicFokusu){const znovu=el.querySelector(klicFokusu);if(znovu)znovu.focus({preventScroll:true})}
   vykresliKotvy(true);
  }
@@ -1552,10 +2188,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    <span data-hledani-slot></span>
    <button type="button" class="atlas-hledani-zrus" data-hledani-zrus aria-label="Vymazat hledání" hidden>✕</button>
   </div>
-  <div class="atlas-hledani-rezim" role="group" aria-label="Co chceš zjistit">
-   <button type="button" data-rezim="druh" aria-pressed="true">Prozkoumat druh</button>
-   <button type="button" data-rezim="kus" aria-pressed="false">Posoudit můj kus</button>
-  </div>`;
+`;
  mrizka.before(hlava);
  // Pole se PŘESOUVÁ, ne kopíruje — engine na něm poslouchá a kopie by
  // vypadala funkčně, ale nic by nepočítala.
@@ -1581,9 +2214,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  const identita=document.createElement('section');identita.className='atlas-hledani-identita';identita.hidden=true;
  udaje.before(identita);
 
- const rezim=()=>hlava.querySelector('[data-rezim][aria-pressed=true]').dataset.rezim;
+ /* Rezim uz nema vlastni prepinac — rika ho zalozka: "Muj kus" znamena
+    pocitat s udaji kusu, cokoli jineho znamena mluvit o druhu. */
+ let rezimStav='druh';
+ const rezim=()=>rezimStav;
  function prepni(k){
-  hlava.querySelectorAll('[data-rezim]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rezim===k)));
+  rezimStav=k;
   udaje.open=k==='kus';
   karta.dataset.atlasRezim=k;
   /* Rezim rozhoduje o vypoctu, ne jen o nadpisu: v "Prozkoumat druh" se
@@ -1595,10 +2231,10 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      CP — jinak se zmeni rezim, ale na obrazovce se nic nestane. */
   if(k==='kus'){
    udaje.open=true;
-   prepniSekci('kus',true);
+   if(sekce!=='kus')prepniSekci('kus',true);
    const cp=document.getElementById('prohCp');
    if(cp)setTimeout(()=>cp.focus({preventScroll:true}),60);
-  }else if(sekce==='kus')prepniSekci('prehled',true);
+  }
  }
  /* "Zpet na vysledky" z formulare kusu: bez nej se clovek musel
     prorolovat pres celou stranku zpatky nahoru. */
@@ -1609,6 +2245,16 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  }
  udaje.addEventListener('click',e=>{
   if(e.target.closest('[data-zpet-vysledky]'))zpetNaVysledky();
+ });
+ /* O rezimu rozhoduji VYPLNENE UDAJE, ne to, na ktere zalozce clovek stoji.
+    Zalozka ho zapne (otevre formular), ale kdyz se CP a IV vymazou, neni uz
+    s cim pocitat a appka se vrati k druhu — jinak by sloupec "Tvuj kus"
+    zustal viset prazdny. */
+ const kusMaUdaje=()=>['prohCp','prohA','prohD','prohS']
+  .some(id=>String((document.getElementById(id)||{}).value||'').trim()!=='');
+ udaje.addEventListener('input',()=>{
+  const chce=kusMaUdaje()?'kus':'druh';
+  if(rezim()!==chce)prepni(chce);
  });
 
  hlava.addEventListener('click',e=>{
@@ -1623,11 +2269,28 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     z něj může padnout shiny, jaké CP má dokonalý kus (běžně a v boostu)
     a jaké počasí ho boostuje. */
  function vykresli(){
-  const hodnota=jmeno.value.trim();
-  hlava.querySelector('[data-hledani-zrus]').hidden=!hodnota;
-  const d=hodnota?P.dexEntry(hodnota):null;
-  if(!d){identita.hidden=true;identita.innerHTML='';vykresliCpPas(null);
+  const syrove=jmeno.value.trim();
+  /* Do pole se da napsat i forma ("Shadow Snorlax"). Co je druh a co forma,
+     rozhoduje motor — vrstva si to necte po svem. */
+  const rozklad=P.atlasRozlozFormu?P.atlasRozlozFormu(syrove):{jmeno:syrove,forma:''};
+  const hodnota=rozklad.jmeno;
+  formaStav=rozklad.forma||'';
+  hlava.querySelector('[data-hledani-zrus]').hidden=!syrove;
+  const zaznam=hodnota?P.dexEntry(hodnota):null;
+  if(!zaznam){
+   /* Prazdne pole = uklid. Rozepsany nebo prekleply text ale NENI duvod
+      zahodit, co uz je na obrazovce: pri mazani "shadow " ze "shadow
+      Snover" projde pole stavy, ktere zadnemu druhu neodpovidaji, a cela
+      stranka by zablikala. */
+   if(syrove)return;
+   identita.hidden=true;identita.innerHTML='';vykresliCpPas(null);
    vykresliVysledek();vykresliKotvy(false);return}
+  /* `dexEntry` u formy vrati spravne staty, ale `name` je jmeno ZAKLADNIHO
+     druhu — "Muk (Alolan)" mel proto obrazek, CP i typovou stranku bezneho
+     Muka. Dal se pracuje se jmenem formy, jak ho vede motor. */
+  const model=P.prohlidkaModel?P.prohlidkaModel(syrove):null;
+  const d=model&&model.jmeno&&model.jmeno!==zaznam.name
+   ?Object.assign({},zaznam,{name:model.jmeno}):zaznam;
   const typy=(d.types||[]).filter(t=>t&&t!=='–');
   const barvy=P.typeColors()||{};
   const shiny=P.atlasShiny?P.atlasShiny(d.name):null;
@@ -1640,43 +2303,78 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      "nevíme" o datech. A obecné shiny ANO neříká nic o tom, jestli shiny
      padá z raidu — u raidového úlovku se proto ptáme zvlášť. */
   const shinyStav=shiny?shiny.stav:'neověřeno';
-  const shinyRaid=shinyStav==='neověřeno'?'Neověřeno'
-   :(shiny.zdroje.includes('raid')?'Ano':'Zatím ne');
   /* Čísla CP jsou referenční — o tom, jestli druh PRÁVĚ TEĎ v raidech je,
      rozhoduje rozpis akcí, ne pokédex. */
   /* Prostredni bunka navrhu: kde druh v appce stoji. Neni to hodnoceni
      vymyslene vrstvou — role se ctou z tehoz modelu jako tabulka. */
-  const model=P.prohlidkaModel?P.prohlidkaModel(d.name):null;
   const kdeStoji=(()=>{
    if(!model)return '';
    const ven=[];
+   /* Samotny zaznam v zebricku nic nerika: Chandelure je v Great League
+      #802 a to neni role, to je misto v poradi. Bere se proto stejny prah,
+      jakym se ridi cely rozpocet — "do kolikateho mista brat druh vazne". */
+   const prah=P.atlasRankLimit?P.atlasRankLimit():50;
    (model.poradiLig||[]).forEach(k=>{
     const lg=model.role.pvp[k];
-    if(lg&&lg.radky.some(r=>r.klic===model.klic))ven.push(lg.nazev);
+    const radek=lg&&lg.radky.filter(r=>r.klic===model.klic)[0];
+    if(radek&&radek.rank!=null&&radek.rank<=prah)ven.push({nazev:lg.nazev,rank:radek.rank});
    });
-   if(model.role.raid.radky.some(r=>r.klic===model.klic))ven.push('raidy');
-   if(model.role.gym.radky.some(r=>r.klic===model.klic))ven.push('obrana gymu');
-   return ven.length?ven.join(' · '):'';
+   // Od nejlepsiho poradi po nejhorsi — jinak to bylo poradi lig, ne sily.
+   ven.sort((a,b2)=>a.rank-b2.rank);
+   const vse=ven.map(x=>x.nazev);
+   /* Raidy a gym nemaji poradi srovnatelne s ligou, takze stoji za nimi
+      v poradi, v jakem se o nich mluvi jinde. */
+   if(model.role.raid.radky.some(r=>r.klic===model.klic))vse.push('raidy');
+   if(model.role.gym.radky.some(r=>r.klic===model.klic))vse.push('obrana gymu');
+   /* Max Battle je jediny zebricek, ktery appka nepocita sama. Byt na nem
+      znamena "patri mezi desitku na ten typ" — proto staci zminka s typem. */
+   const dm=P.atlasDmax?P.atlasDmax(d.name):null;
+   if(dm&&dm.role.length)vse.push('Max Battle ('+dm.role[0].typ+' #'+dm.role[0].poradi+')');
+   return vse.length?vse.join(' · '):'';
   })();
-  const ted=new Date();
-  const bossTed=(P.eventsData?.().events||[]).some(e=>/raid|max/.test(String(e[1]))
-   &&new Date(e[3])<=ted&&new Date(e[4])>ted
-   &&(window.AtlasEventUI?.names(e)||[]).some(n=>P.dexKeyOf&&P.dexKeyOf(n)===P.dexKeyOf(d.name)));
   identita.hidden=false;
-  raidFakta={pocasi:pocasi.join(' / '),shinyRaid:shinyRaid,bossTed:bossTed};
   vykresliCpPas(d,pocasi);
   vykresliTypy(d);
+  if(shinyDruh!==d.name){shinyDruh=d.name;shinyObrazek=false}
+  /* Shiny sprite se predem natahne do pameti prohlizece. Bez toho se po
+     prepnuti na okamzik ukazala nahradni ikona, nez se obrazek stahl. */
+  if(P.atlasImage&&!shinyObrazek){
+   const html=P.atlasImage(d.name,'',{shiny:true})||'';
+   const src=(html.match(/src="([^"]+)"/)||[])[1];
+   if(src&&!shinyPredem.has(src)){shinyPredem.add(src);const i=new Image();i.src=src}
+  }
+  /* Prepinac se nabizi jen tam, kde shiny opravdu existuje. U "zatim ne"
+     nebo "neoveureno" by slibil obrazek, ktery ve hre nikdo nema. */
+  const shinyLze=shinyStav==='ano';
+  const staty=P.atlasStaty?P.atlasStaty(d.name):null;
+  const pruh=(popis,hodnota,max,tr)=>`<div class="atlas-staty-radek" data-stat="${tr}">`
+   +`<span>${esc(popis)}</span><span class="atlas-staty-drah">`
+   +`<i style="width:${Math.round(Math.min(1,hodnota/(max||1))*100)}%"></i></span>`
+   +`<b>${hodnota}</b></div>`;
   identita.innerHTML=`<div class="atlas-hledani-kdo">
-    ${P.atlasImage?P.atlasImage(d.name,'atlas-hledani-obr'):''}
+    <div class="atlas-hledani-obal">
+     ${obrazekRam(d.name,'atlas-hledani-obr',null,shinyObrazek?{shiny:true}:null)}
+     ${shinyLze?`<button type="button" class="atlas-shiny-prepinac" data-shiny-obrazek`
+       +` aria-pressed="${shinyObrazek}">`
+       +`✦ ${shinyObrazek?'Běžný':'Shiny'}</button>`:''}
+    </div>
     <div>
      <h3>${esc(d.name)}</h3>
+     ${P.atlasMaShadow&&P.atlasMaShadow(d.name)?`<div class="atlas-forma-prepinac" role="group" aria-label="Forma">`
+       +`<button type="button" data-forma="" aria-pressed="${formaStav!=='Shadow'}">Běžný</button>`
+       +`<button type="button" data-forma="Shadow" aria-pressed="${formaStav==='Shadow'}">Shadow</button>`
+       +`</div>`:''}
      <div class="atlas-hledani-typy">${typy.map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('')}</div>
+     ${staty?`<div class="atlas-staty">`
+       +pruh('Útok',staty.utok,staty.max.utok,'utok')
+       +pruh('Obrana',staty.obrana,staty.max.obrana,'obrana')
+       +pruh('HP',staty.hp,staty.max.hp,'hp')
+       +`</div>`:''}
     </div>
    </div>
    <div class="atlas-hledani-kde">
     <span class="atlas-hledani-rezim-znacka">${kusovy?'Výpočet konkrétního kusu':'Hodnocení druhu'}</span>
     <b>${kdeStoji?esc(kdeStoji):'žádnou roli nezastane'}</b>
-    <small>${kdeStoji?'v čem appka tenhle druh vede':'ani v lize, ani v raidech, ani v gymu'}</small>
    </div>
    <dl class="atlas-hledani-fakta">
     <div data-shiny="${shinyStav}">
@@ -1689,15 +2387,41 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
        ne:'ve hře se zatím neobjevil'}[shinyStav]||'o tomhle druhu zdroj nic neříká')}</small>`:''}
     </div>
    </dl>`;
+  /* Sprity z hry maji kazdy jinou pozici v pruhlednem platne; engine je
+     umi vystredit, ale musi se mu o novem obrazku rict. Jinak sedi
+     nakrivo a prelezaji ramecek. */
+  if(P.vystreditSprity)P.vystreditSprity(identita);
   vykresliVysledek();
  }
 
  /* Zdroje shiny jsou o klik dal, jak je v navrhu; klik prekresli
     identitu, takze se posluchac vesi na cely blok, ne na tlacitko. */
  identita.addEventListener('click',e=>{
-  if(e.target.closest('[data-shiny-vic]')){shinyVic=!shinyVic;vykresli()}
+  if(e.target.closest('[data-shiny-vic]')){shinyVic=!shinyVic;vykresli();return}
+  /* Meni se jen obrazek: zadne cislo, poradi ani sestava na barve nezalezi,
+     takze se prekresli identita a nic jineho. */
+  const fp=e.target.closest('[data-forma]');
+  if(fp){
+   /* Prepnuti prepise text v poli — ten je jediny zdroj pravdy o tom, co se
+      hleda, takze se stav nemuze rozejit s tim, co je videt. */
+   const zaklad=P.atlasRozlozFormu?P.atlasRozlozFormu(jmeno.value).jmeno:jmeno.value;
+   const nova=fp.dataset.forma;
+   jmeno.value=(nova?nova+' ':'')+zaklad;
+   jmeno.dataset.tiseVybrano='1';
+   jmeno.dispatchEvent(new Event('input',{bubbles:true}));
+   return;
+  }
+  if(e.target.closest('[data-shiny-obrazek]')){shinyObrazek=!shinyObrazek;vykresli()}
  });
  ['input','change'].forEach(u=>jmeno.addEventListener(u,vykresli));
+ /* Vybrany druh = hledani skoncilo. Kurzor v poli uz jen prekazi: nabidka
+    pod nim prekryva obsah a prvni klik do stranky padne na ni, ne na to,
+    kam clovek miril. Fokus proto jde z pole pryc, jakmile v nem stoji druh,
+    ktery appka zna. */
+ jmeno.addEventListener('change',()=>{
+  const d=P.prohlidkaModel&&P.prohlidkaModel(jmeno.value.trim());
+  if(d&&document.activeElement===jmeno)jmeno.blur();
+ });
  // Engine si výsledek překresluje sám; identita se veze s ním.
  new MutationObserver(vykresli).observe(vysledek,{childList:true});
  prepni('druh');

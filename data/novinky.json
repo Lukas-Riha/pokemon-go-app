@@ -36,18 +36,139 @@
     "nadpis": "Co je nového",
     "body": [
       {
-        "text": "**Appka si všimne, že vyšla nová verze.** Nahoře se objeví pruh a stránka se sama obnoví — ale až ve chvíli, kdy nemáš nic rozdělaného. Při čištění boxu, úpravě kusu nebo otevřeném importu počká. Obnovení nic neztratí: roster je uložený v prohlížeči, ne ve stránce. Když se ti to zrovna nehodí, dej „Teď ne“ a obnov si ji, až budeš chtít.",
-        "obrazek": "nova-verze"
+        "sekce": "Vyhledávání druhu"
       },
       {
-        "text": "**Vyhledávání se přestavělo.** Dřív se pod sebe skládaly všechny evoluce a všechny ligy — u Eevee to byla stránka a půl, ve které nešlo nic najít. Teď si vybereš roli (PvP, raidy, gym, mega) a v PvP ligu, a k tomu je jedna tabulka: druh, jeho pořadí a doporučené útoky. Hledaný druh je v ní zvýrazněný, vedle stojí evoluční možnosti i s podmínkami.",
+        "text": "**Záložka Max Battle ve výsledcích.** Vedle PvP, Raidů, Gymu a Megy je nově **Max** — pořadí druhu mezi Dynamax útočníky po typech, včetně sestavy a procenta špičky. Formu nese štítek **GMAX** / **DMAX** přímo v řádku: Charizard stojí ve Fire dvakrát — jako G-Max #2 a jako Dynamax #10. Pod tabulkou je napsané, že to počítá Pokémon GO Hub, ne appka."
+      },
+      {
+        "text": "**Vyhledávání se přestavělo a má záložky** — Přehled, Typy, Evoluce, Rozbor a Můj kus. Dřív se pod sebe skládaly všechny evoluce a všechny ligy; u Eevee to byla stránka a půl, ve které nešlo nic najít. Teď si vybereš roli a ligu a vidíš jen ji. Tabulka má ve všech ligách stejné sloupce a vybraný řádek se podbarví proužkem místo obtahu, který na hranách buněk dělal schody. V tabulce rolí stojí vždy **celá evoluční řada** — hledaný druh je podbarvený a u ostatních je příkaz „Vyhledat\". Dřív se po přepnutí na Alakazama ztratila Abra i Kadabra a nešlo je porovnat. Klepnutí na jméno v tabulce ten druh rovnou vyhledá a výběr ligy stojí v jedné řádce se záložkami rolí, takže přepnutí na Raidy už tabulkou nepohne.",
         "obrazek": "hledani-vysledky"
       },
-      "**Raidová čísla jsou pod záložkou Raidy**, kam patří: CP dokonalého kusu z raidu a v boostujícím počasí zvlášť, a k tomu, jestli z raidu padá shiny. Dřív stála nad každým hledáním, i když ses ptal na ligu.",
-      "**Shiny má tři stavy místo dvou.** „Zatím ne\" teď znamená, že shiny ve hře opravdu není; když o něm data nic neříkají, řekne appka „neověřeno\" — dřív to vypadalo stejně.",
-      "**Kalendář:** rozsah týdne přes přelom měsíce už nelže („28. září – 4. října\"), vícedenní akce se neschovávají a jsou seřazené podle toho, co končí dřív. Náhled akce říká konkrétní obsah z toho okna, které pro vybraný den platí, a u akce s víc bossy si vybereš, na koho připravit tým.",
-      "**Přehled:** karty „Dnes a brzy\" se čtou po řádcích a každá říká, co akce přináší — platný bonus nebo potvrzený druh. Nahoře stojí dnešní krátká akce, ne sezóna, která běží tři měsíce.",
-      "**Čištění boxu** má kratší příkazy (Vyvinutý, Vylepšený, Očištění, Upravit), takže se všechny vejdou na jeden řádek a nepřekrývají evoluční řadu."
+      {
+        "text": "**Záložka Typy ukazuje obojí směr:** čím ho zasáhneš (násobky platí pro jeho kombinaci typů, ne pro každý typ zvlášť) a kam se hodí jeho útoky. Dvojice typů jsou půlené štítky — jeden štítek přebarvený napůl, přesně v dělicí čáře a se stejným tvarem i velikostí jako štítek jednoho typu.",
+        "obrazek": "hledani-typy"
+      },
+      {
+        "text": "**Evoluce má vlastní strom i cenu.** Vybereš cestu — u Eevee některou z osmi — a appka řekne, co vyžaduje a co stojí: prach, bonbóny, XL i předmět každého kroku. Jiné formy druhu (Zygarde 10 % / Complete) stojí vedle stromu, protože evoluce to není. Kterýkoli článek řady jde klepnutím otevřít v hledání, i ten předchozí.",
+        "obrazek": "hledani-evoluce"
+      },
+      {
+        "text": "**Pás „CP při 100 % IV\"** je hned nahoře: výzkum, raid a vejce, raid v boostujícím počasí (včetně toho, při jakém počasí to platí) a strop na L40. Jsou to referenční čísla pro dané levely, ne seznam toho, co kde padá.",
+        "obrazek": "hledani-zalozky"
+      },
+      {
+        "text": "**Shiny jde přepnout na obrázku** u druhů, kde opravdu existuje. A rozlišuje se „zatím ne\" (ve hře není) od „neověřeno\" (zdroj o něm nic neříká) — dřív to vypadalo stejně. Přepnutí je okamžité — obrázek se natáhne předem, takže už mezi tím neprobliknou náhradní ikony."
+      },
+      {
+        "text": "**U vlastního kusu appka řekne pořadí jeho IV v lize**, kterou máš vybranou — kolikátá je ta kombinace ze 4096 možných. Režim říká záložka: **Můj kus** počítá s tvým kusem, cokoli jiného mluví o druhu."
+      },
+      {
+        "text": "**„Vybrat protihráče z mého rosteru\" konečně něco ukáže.** Nad rosterem se objeví pruh **Proti Machoke (Fighting)** a u každého kusu procento, jak se na něj hodí (100 % = nejlepší, co máš). Pruh jde zrušit."
+      },
+      {
+        "text": "**„Hodnocení druhu\" bere jen ligy, kde druh opravdu stojí za řeč.** Dřív stačil jakýkoli záznam v žebříčku, takže u Chandelure svítila Great League, i když je v ní #802. Platí stejný práh jako pro celý rozpočet — „do kolikátého místa brát druh vážně\" z nastavení. Řadí se od nejlepšího umístění po nejhorší."
+      },
+      {
+        "text": "**Shadow varianta ve vyhledávání.** PvPoke vede pro shadow formy vlastní žebříček a appka ho teď umí ukázat: v kartě druhu je přepínač **Běžný / Shadow** (jen u druhů, kde ten žebříček opravdu existuje) a do pole jde rovnou napsat „Shadow Snorlax\". Když začneš psát „shadow\", nabídnou se shadow druhy; když napíšeš jméno, nabídnou se obě varianty. Snorlax je v Great League #27, jako shadow #40 — je to vlastní tabulka, ne přepočet. Raidy, gym a mega se dál počítají mezi běžnými formami a je to u nich napsané."
+      },
+      {
+        "text": "**V raidech každý řádek říká, za který typ stojí.** Týž druh se v žebříčku objeví za každý typ, na který se hodí — u Muka (Alolan) to je Poison i Dark a bez označení vypadaly řádky stejně."
+      },
+      {
+        "text": "**Rozepsaný text už nesmazá výsledek.** Když jsi u „Shadow Snover“ začal mazat „shadow“, pole na chvíli neodpovídalo žádnému druhu a celá stránka zmizela. Teď zůstane poslední nalezený druh až do chvíle, kdy napíšeš jiný — uklidí se jen po úplném vymazání pole. A nabídka jmen už při přepnutí Běžný/Shadow neproblíkne."
+      },
+      {
+        "text": "**Vyhledávání na telefonu.** Tabulka výsledků se už neláme po jednom slově (řádek je o třetinu nižší), příkaz **Vyhledat** je vidět i tam a v pásu CP se **Strop** vešel vedle **Raidu s počasím**."
+      },
+      {
+        "sekce": "Čištění boxu"
+      },
+      {
+        "text": "**Čištění jde schovat a nic se neztratí.** Vedle křížku je pomlčka: panel zmizí, rozdělané zůstane a nahoře visí pruh „Čištění je schované — projito 12 z 146\" s tlačítkem zpátky. Stejný pruh se ozve i po zavření prohlížeče nebo pádu — pokračuje se přesně tam, kde jsi skončil."
+      },
+      {
+        "text": "**Před čištěním si můžeš nechat druhy na výměnu.** Pole našeptává jen to, co doopravdy máš, a přidává je jako štítky. Takové kusy se v tom čištění nepustí a verdikt u nich všude říká **Nechat na výměnu**. Platí to jen pro to jedno čištění."
+      },
+      {
+        "text": "**Čištění jde i na telefonu** a úprava kusu se otevírá jako okno nad ním — dřív rozhodila evoluční řadu a odsunula zbytek stránky. Příkazy mají kratší názvy, takže se vejdou na jeden řádek."
+      },
+      {
+        "sekce": "Rozhodování a verdikty"
+      },
+      {
+        "text": "**Přepočet po ruční změně v čištění zapomínal, co už jsi označil k puštění.** Počítal z celého rosteru, takže kus, který se předtím dostal do uvolněného slotu, o něj zase přišel — a vyskočil jako „vypadl“, i když se mu nic nestalo. Proto to vypadalo divně, když se u očištěného kusu verdikt vůbec nezměnil."
+      },
+      {
+        "text": "**Když při čištění vypadne kus, kterého sis už nechal, appka řekne proč.** Ruční změna u kusu (DMAX, CUTE, očištění, úprava útoků) přepočítá rozpočet **celého rosteru**, ne jen toho kusu — takže se může posunout napříč boxem. Pruh teprve teď přidá „po změně u <kus>“, aby to nevypadalo jako chyba."
+      },
+      {
+        "text": "**Simulace vylepšení přímo na detailu.** Vybereš, co z kusu bude (on sám, evoluce, jiná forma) a na jaký level — appka spočítá CP i cenu po půl levelech a řekne, kam až se dá jít, aby nepřerostl ligu. Nic přitom nevytváří ani nemění."
+      },
+      {
+        "text": "**Duplikát je štítek navíc, ne verdikt.** Dřív přepsal celé rozhodnutí a zmizely s ním důvody. Podezření jde navíc odbavit značkou **DUPLIKÁT?** u kusu — zešedne a verdikt se vrátí k rozpočtu, ale zůstane, takže omyl jde vrátit."
+      },
+      {
+        "text": "**Verdikty, které si odporovaly, jsou opravené.** Lucky kus, kterého drží role, je zelený. U shadow kusu, který drží místo v raidu, už appka nedoporučuje očištění — roli drží právě tím útokem navíc."
+      },
+      {
+        "text": "**U „#3 ze 4\" je vidět, které ty kusy jsou** — najedeš na to a vyjede pořadí všech tvých kusů toho druhu s CP, levelem, IV a verdiktem. Dřív se u třetí kopie nedalo zjistit, že ty dvě lepší existují."
+      },
+      {
+        "text": "**Útoky mluví pravdu o přeučení.** Shadow kus nabízí Frustration (očištěný Return), u útoku jen za elitní TM je to napsané, u oranžového je vidět čím ho nahradit — a tentýž útok se nenavrhne na dva sloty."
+      },
+      {
+        "sekce": "Kalendář a akce"
+      },
+      {
+        "text": "**Kalendář si pamatuje i akce, které skončily** (tři měsíce zpátky) — zdroj je po skončení zahodí, takže týden zpátky býval prázdný. Rozsah týdne přes přelom měsíce už nelže a vícedenní akce se neschovávají."
+      },
+      {
+        "text": "**U akcí jsou štítky ze zdroje** — „Akce\", „Raidy\", „Jen v některých zemích\" — a omezení na jednu zemi stojí pod nimi větou. Na přehledu stojí nahoře dnešní krátká akce, ne sezóna, která běží tři měsíce."
+      },
+      {
+        "text": "**Kalendář je v nabídce hned pod Pokémony**, za ním Vyhledávání a teprve pak Rozpočet. Sekce „Co chytat\" se nepoužívala, takže je pryč."
+      },
+      {
+        "sekce": "Data a zdroje"
+      },
+      {
+        "text": "**Appka zná žebříček Dynamax útočníků.** Doteď si pořadí Dmax kusů počítala sama, protože Max Battle neřešil žádný zdroj, ze kterého čte. Teď bere žebříček z **Pokémon GO Hubu** (18 typů, 97 druhů) — a s ním konečně ví, **které druhy Dynamax vůbec umí**. U Snorlaxe se tak ve vyhledávání objeví „Max Battle (Normal #1)\" a u značky Dynamax stojí, jak je na tom ten druh. Čísla jsou JEJICH model, ne výpočet appky, a je to u nich napsané. Stahuje se denně stejnou úlohou jako akce a ligy; když se stránka přestaví, obnova skončí chybou a data se vrátí ze zálohy."
+      },
+      {
+        "text": "**Import pozná shadow i ze sloupce ShadowForm** (Calcy IV), ne jen podle jména. Když ho sken neoznačí vůbec, appka o něm neví — to se musí doskenovat nebo přepnout ručně."
+      },
+      {
+        "text": "**O žebříčku Max Battle se už netvrdí, že neexistuje.** Nemá ho žádný zdroj, ze kterého appka čte; lidské žebříčky existují, jen počítají s jinými předpoklady."
+      },
+      {
+        "text": "**Master League má v bublině celý název i vysvětlení** — jako jediná liga nemá strop CP, takže o pořadí rozhoduje čistá síla na maximálním levelu."
+      },
+      {
+        "sekce": "Vzhled a ovládání"
+      },
+      {
+        "text": "**Formy v evoluční řadě měly jméno i obrázek základního druhu.** Alolanský Dugtrio se v řadě jmenoval „Dugtrio“ a měl sprite bežného — nedalo se poznat, že jde o jinou formu. Platí to pro všechny formy (Alolan, Galarian, Hisuian, Paldean). Teď má každý článek řady správné jméno i obrázek."
+      },
+      {
+        "text": "**Obnovení stránky tě nechá tam, kde jsi byl.** Dřív se pamatovala jen sekce, takže z Vyhledávání ses po F5 probudil v Taháku."
+      },
+      {
+        "text": "**Obrázky druhů sedí uprostřed rámečku a neořezávají se.** Mawile přicházela o půlku čelisti; každý sprite je ve hře posazený jinak, takže se dorovnává."
+      },
+      {
+        "text": "**Nic už nepodskakuje.** Hlavička detailu nemění výšku podle počtu útoků, dlouhé jméno se vejde na jeden řádek, značka ♀/♂ se s ním nezmenšuje a sloupec s útoky nemá krátký posuvník."
+      },
+      {
+        "text": "**Klávesy dělají, co mají.** Escape zavírá po vrstvách (nejdřív simulaci nebo úpravu, až potom detail) a Enter uloží okno „vylepšil jsi…\" odkudkoli."
+      },
+      {
+        "text": "**Ruční přidání kusu má značky pohromadě** — SHADOW, PURIFIED a LUCKY (navzájem se vypínají, je to jeden stav) a za nimi DMAX, SHINY a CUTE."
+      },
+      {
+        "text": "**Appka si všimne, že vyšla nová verze.** Nahoře se objeví pruh a stránka se sama obnoví — ale až ve chvíli, kdy nemáš nic rozdělaného. Při čištění boxu, úpravě kusu nebo otevřeném importu počká.",
+        "obrazek": "nova-verze"
+      }
     ]
   }
 }

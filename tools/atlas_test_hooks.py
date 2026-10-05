@@ -31,4 +31,11 @@ def prepare_atlas_test(html):
     # před nasazením našla i v produkčním souboru a nasazení by zastavila.
     vlajky = ("<script>window.__ATLAS_TEST_BUILD=true;"
               "window.__ATLAS_TEST_NAZEV='[" + "TEST] ';</script>")
-    return html.replace("<body", vlajky + "<body", 1)
+    # Kotva je znacka <body> na zacatku radku. Prosty replace("<body")
+    # trefil i zminku v komentari vzhledove vrstvy (ta se vklada do
+    # hlavicky, tedy driv) — vlajka pak skoncila uvnitr komentare a
+    # testovaci sestaveni se tvarilo jako produkcni.
+    html2, pocet = re.subn(r"(?m)^<body", vlajky + "<body", html, count=1)
+    if not pocet:
+        raise SystemExit("STOP: v souboru neni znacka <body> na zacatku radku.")
+    return html2
