@@ -1,5 +1,5 @@
 /* Generováno tools/build_publish.py — needitovat ručně. */
-var VERZE = "pgo-1eeb6b727b4a";
+var VERZE = "pgo-c0cd6476796b";
 var SOUBORY = ["./", "index.html", "manifest.webmanifest",
   "ikona-192.png", "ikona-512.png", "strop.html"];
 
@@ -28,6 +28,12 @@ self.addEventListener("fetch", function (e) {
   // z Microsoft Graphu, tedy roster stažený z OneDrivu — ten by pak ležel
   // v prohlížeči navíc a přežil by i odhlášení.
   var vlastni = e.request.url.indexOf(self.location.origin) === 0;
+  // Soubor s číslem verze se NIKDY nebere z cache — právě podle něj se
+  // pozná, že je nová verze, a odpověď z cache by pořád tvrdila to samé.
+  if (vlastni && /verze\.json($|\?)/.test(e.request.url)) {
+    e.respondWith(fetch(e.request, { cache: "no-store" }));
+    return;
+  }
   // Samotnou appku si prohlížeč drží v HTTP mezipaměti (Pages posílají
   // `Cache-Control: max-age=600`), takže ještě deset minut po nasazení umí
   // i obnovení stránky vrátit starou verzi — a člověk pak kouká na změnu,
