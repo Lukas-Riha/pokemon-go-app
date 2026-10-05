@@ -80,19 +80,36 @@ const ROSTER = [
   { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 }
 ];
 
+/* Cekani na podminku misto pevneho spanku. Horni mez je stejna jako
+   puvodni pevne cekani, takze test neni netrpelivejsi nez driv — jen se
+   nepreceka, kdyz uz je hotovo. */
+const AZ = `(async (podminka, max) => {
+  const konec = Date.now() + max;
+  while (Date.now() < konec) {
+    try { if (podminka()) return true; } catch (e) { /* jeste se kresli */ }
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  try { return !!podminka(); } catch (e) { return false; }
+})`;
+
 async function otevri(sirka, radky = ROSTER) {
   const page = await browser.newPage({ viewport: { width: sirka, height: 950 } });
   page.on("pageerror", (e) => chyby.push(sirka + " px: " + String(e)));
   await page.goto(`http://localhost:${PORT}/`);
   await page.waitForFunction(() => window.__pgo && window.__atlasTest, null, { timeout: 60000 });
-  await page.evaluate(async (rows) => {
+  await page.evaluate(async ({ rows, azSrc }) => {
     const P = window.__pgo, A = window.__atlasTest;
+    const az = eval(azSrc);
     P.setRows(rows);
-    await new Promise((r) => setTimeout(r, 1200));
+    // Rozbor je hotovy, kdyz zna kazdy kus; u prazdneho rosteru hned.
+    await az(() => Object.keys(P.getComputed()).length >= rows.length, 1200);
     A.go("roster");
     A.refresh();
-    await new Promise((r) => setTimeout(r, 900));
-  }, radky);
+    // Vykresleno je, kdyz stoji dlazdice za kazdy kus.
+    await az(() => document.querySelectorAll(".atlas-roster-tile").length >= rows.length, 900);
+    // I u prazdneho rosteru se necha vrstva dokreslit.
+    await new Promise((r) => setTimeout(r, 120));
+  }, { rows: radky, azSrc: AZ });
   return page;
 }
 
@@ -2633,8 +2650,11 @@ const sObrazkem = ((novinkyData[verzeTestu] || {}).body || [])
   .filter((b) => b && b.obrazek).length;
 const zdrojNovinek = fs.readFileSync(TEST_APP, "utf8");
 const zapecenych = (zdrojNovinek.match(/"obrazek":"data:image\//g) || []).length;
+/* Hned po nasazení má nová testovací verze novinky prázdné — to není chyba.
+   Hlídá se tedy obojí: když snímky jsou, musí být zapečené jako data;
+   když nejsou, nesmí v appce zůstat ani odkaz na soubor. */
 check("snímky z novinek jsou zapečené v appce, ne odkazem na soubor",
-  sObrazkem > 0 && zapecenych === sObrazkem,
+  sObrazkem > 0 ? zapecenych === sObrazkem : zapecenych === 0,
   zapecenych + " z " + sObrazkem + " (verze " + verzeTestu + ")");
 check("…a starší verze se do appky netahají",
   !zdrojNovinek.includes('"2.8":{"nadpis"'), "2.8 by v appce lezelo zbytecne");

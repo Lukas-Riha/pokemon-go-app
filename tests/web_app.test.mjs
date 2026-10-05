@@ -66,6 +66,19 @@ function eq(name, actual, expected) {
   check(name, actual === expected, `čekáno "${expected}", dostal "${actual}"`);
 }
 
+/** Stranka je nactena, kdyz appka vystavi svoje rozhrani.
+ *
+ *  Driv se na kazdem miste cekalo pevnych 700-900 ms. Bylo to zbytecne
+ *  dlouhe (appka se ohlasi driv) a zaroven krehke: na pomalejsim stroji
+ *  by to nemuselo stacit. Kratke dokresleni navic drzi puvodni jistotu,
+ *  ze se stihlo i prvni vykresleni.
+ */
+async function nacteno(page) {
+  await page.waitForFunction(() => !!(window.__pgo && window.__pgo.getRows),
+    null, { timeout: 30000 });
+  await page.waitForTimeout(80);
+}
+
 // --- testovací data ve stylu exportu z Poké Genie ---
 const SAMPLE_CSV = [
   "Index,Name,Form,Pokemon,Gender,CP,HP,Atk IV,Def IV,Sta IV,IV Avg,Level,Quick Move,Charge Move,Charge Move 2,Shadow/Purified,Lucky,Great League Rank,Ultra League Rank,Master League Rank",
@@ -10873,6 +10886,15 @@ try {
     const c = window.__pgo.getComputed();
     const id = window.__pgo.getRows()[0].id;
     const out = { keep: c[id].keep, sub: c[id].keepSub || "", why: c[id].keepTitle || "" };
+    /* Poradi se bere z motoru, ne z pameti: PvPoke ho prepocitava a kazde
+       cislo natvrdo v testu je casovana bomba. */
+    const model = window.__pgo.prohlidkaModel("Dusclops");
+    const radek = (liga, klic) => ((model.role.pvp[liga] || {}).radky || [])
+      .filter((r) => r.klic === klic)[0] || null;
+    const ul = radek("ultra", "dusknoir");
+    const gl = radek("great", "dusclops");
+    out.ultraRank = ul ? ul.rank : null;
+    out.greatRank = gl ? gl.rank : null;
     rl.value = puvodni;
     rl.dispatchEvent(new Event("change", { bubbles: true }));
     await new Promise((r) => setTimeout(r, 200));
@@ -10880,14 +10902,19 @@ try {
   });
   check("důvod mluví o lize, kde je kus nejlíp",
     duvodNejlepsi.why.indexOf("Ultra League") > -1
-      && duvodNejlepsi.why.indexOf("#24") > -1, duvodNejlepsi.why);
+      && duvodNejlepsi.ultraRank != null
+      && duvodNejlepsi.why.indexOf("#" + duvodNejlepsi.ultraRank) > -1,
+    duvodNejlepsi.why + " | UL #" + duvodNejlepsi.ultraRank);
   check("…a přizná, že je to až po evoluci",
     duvodNejlepsi.why.indexOf("po evoluci") > -1, duvodNejlepsi.why);
   // Tohle byla ta chyba: psalo se GL #45, protože se koukalo jen na druh,
   // který držíš teď — a vedle v tabulce lig přitom svítilo UL #24.
   check("…a necituje horší pořadí dnešní formy",
-    duvodNejlepsi.why.indexOf("#45") === -1, duvodNejlepsi.why);
-  eq("podtitulek říká totéž", duvodNejlepsi.sub, "druh je až #24");
+    duvodNejlepsi.greatRank == null
+      || duvodNejlepsi.why.indexOf("#" + duvodNejlepsi.greatRank) === -1,
+    duvodNejlepsi.why + " | GL #" + duvodNejlepsi.greatRank);
+  eq("podtitulek říká totéž", duvodNejlepsi.sub,
+    "druh je až #" + duvodNejlepsi.ultraRank);
 
   console.log("\n191) hláška o přepočtu jen při skutečné změně rozhodnutí");
   const prepocetHlaska = await page.evaluate(async () => {
@@ -11065,7 +11092,7 @@ try {
     };
   });
   await page.goto(URL);
-  await page.waitForTimeout(900);
+  await nacteno(page);
 
   const zalohaSlozka = await page.evaluate(async () => {
     window.__pgo.setRows([
@@ -11114,7 +11141,7 @@ try {
     sdilena.trida.indexOf("warn") > -1, sdilena.trida);
 
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   console.log("\n194) mobilní režim");
   await page.goto(URL);
@@ -11215,7 +11242,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   console.log("\n195) časová osa akcí");
   await page.goto(URL);
@@ -11323,7 +11350,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n196) kalendář akcí jako běžící časová osa");
   await page.goto(URL);
@@ -11489,7 +11516,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n198) spodní lišta místo pruhu záložek");
   await page.goto(URL);
@@ -11657,11 +11684,11 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n200) roster v cloudu (OneDrive)");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   const cloudUI = await page.evaluate(() => {
     const karta = document.getElementById("cloudCard");
@@ -11709,7 +11736,7 @@ try {
   // Zrušené přesměrování nechá kartu na prázdném dokumentu, kde sessionStorage
   // číst nejde — appka se proto načte zpátky. Úložiště relace to přežije.
   await page.goto(URL);
-  await page.waitForTimeout(500);
+  await nacteno(page);
   const odkaz = {
     cil: prihlasovaciUrl,
     pkce: await page.evaluate(() => {
@@ -11731,7 +11758,7 @@ try {
     odkaz.pkce.slice(0, 40));
 
   await page.goto(URL);
-  await page.waitForTimeout(600);
+  await nacteno(page);
   const sync = await page.evaluate(async () => {
     // Podstrčený fetch: token i soubor v cloudu.
     const volani = [];
@@ -11806,11 +11833,11 @@ try {
     odhlas.stav.indexOf("cloudu zůstala") > -1, odhlas.stav);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n201) prázdný roster vedle plné zálohy");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const navrat = await page.evaluate(async () => {
     window.__pgo.setRows([]);
     await new Promise((r) => setTimeout(r, 300));
@@ -11846,7 +11873,7 @@ try {
 
   console.log("\n202) tlačítko cloudu nikdy nemlčí");
   await page.goto(URL);
-  await page.waitForTimeout(600);
+  await nacteno(page);
   const mlceni = await page.evaluate(async () => {
     let hlaska = "";
     window.alert = (t) => { hlaska = String(t); };
@@ -11895,7 +11922,7 @@ try {
     || /rgba\([^)]*,\s*1\)$/.test(pruh.pozadi), pruh.pozadi);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n204) dvě různá procenta se nesmí psát stejně");
   await page.goto(URL);
@@ -11998,7 +12025,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n207) v rozpočtu je u každé úrovně i CP");
   await page.goto(URL);
@@ -12063,7 +12090,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n208) roster na telefonu drží u všech kusů stejnou mřížku");
   await page.goto(URL);
@@ -12135,7 +12162,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n209) na telefonu je první pokémon vidět hned");
   await page.goto(URL);
@@ -12197,7 +12224,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n210) nic nevyčuhuje z karet a hlášky patří ke své záložce");
   await page.goto(URL);
@@ -12318,7 +12345,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n211) na telefonu se kontroluje, nevysvětluje");
   await page.goto(URL);
@@ -12427,7 +12454,7 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n212) stránka se načítá rovnou v záložkách");
   // Karty jsou v HTML pod sebou a menu je staví vedle sebe až po doběhnutí
@@ -12441,7 +12468,7 @@ try {
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(URL);
-  await page.waitForTimeout(1500);
+  await nacteno(page);
   const nacitani = await page.evaluate(() => ({
     vyska: window.__vyskaPriNacteni || 0,
     karet: window.__karetVidet,
@@ -12511,11 +12538,11 @@ try {
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n214) refaktor: co zmizelo a co přibylo");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
   const refaktor = await page.evaluate(async () => {
     window.__pgoZalozka("roster");
     window.__pgo.setRows([
@@ -12671,11 +12698,11 @@ try {
   check("…a rotace lig taky", udalosti214.maLigy);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n215) žebříček bossů, překlopený verdikt, mega bez duplicity");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   const bossi = await page.evaluate(async () => {
     window.__pgoZalozka("eventsCard");
@@ -12808,11 +12835,11 @@ try {
   eq("…a tlačítko je vrátí zpátky", zrusit.po, "all/verdict");
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n216) bossové podle data akce, širší filtr, hláška po smazání");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // `EVENTS.raids` ze ScrapedDucku je snímek bez dat a zpožďuje se o celou
   // rotaci. Datumy zná rozpis akcí — z něj se pozná, co běží DNESKA.
@@ -12938,11 +12965,11 @@ try {
   check("…i proč vyhraje kus s nižším IV", dok.iv && dok.tiebreak);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n217) Vyhledávání zná formy druhu");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Pokédex má pro Zaciana tři klíče a všechny se jmenují „Zacian".
   // Vyhledávání proto ukazovalo jedno pořadí a byla to Crowned Sword,
@@ -13023,11 +13050,11 @@ try {
     seznam.sandslash.some((x) => /Alolan/.test(x)), seznam.sandslash.join(" | "));
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n218) bossové bez duplicit a ukázkový řádek, který si neodporuje");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Rozpis akcí píše „Zacian (Hero of Many Battles)", snímek ze ScrapedDucku
   // „Zacian (Hero)" — a Zacian pak stál v žebříčku dvakrát, na 3. a 4. místě.
@@ -13079,11 +13106,11 @@ try {
     ukazka.cpVzorec, ukazka.cp);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n219) nálezy z auditu: ceny, shadow žebříčky, gym, countery, formáty");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // 1) Cena vylepšení zná stav kusu. Lucky = půlka prachu, shadow +20 %,
   //    purified −10 %. Dřív se sčítala jen základní tabulka, takže u lucky
@@ -13305,11 +13332,11 @@ try {
     JSON.stringify(sp));
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n220) „čím nahradit“ se počítá, ruční seznam je jen záloha");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Jméno v bublině u náplasti je jediné místo, kde appka radí „tohle chytej".
   // Bralo se z ručního seznamu ze srpna; teď ze stejného spočítaného žebříčku
@@ -13373,11 +13400,11 @@ try {
     /už jen záloha/.test(zdrojeTab), zdrojeTab.slice(0, 200));
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n221) rozpočet: značkové kusy ven, rozdělaná kopie napřed");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Z Anetina rosteru: v rozpočtu se nabízeli pokémoni, které si nechala jako
   // CUTE, a Gyarados za 300 CP na vylepšení, přestože vedle stál Gyarados
@@ -13455,11 +13482,11 @@ try {
     anet.slabyMaPoznamku, String(anet.slabyMaPoznamku));
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n222) kontrakt pro vzhledovou vrstvu");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Vzhled drží někdo jiný a v jiném souboru. Tenhle blok je smlouva:
   // dokud tyhle věci existují a znamenají totéž, dá se na engine stavět.
@@ -13521,11 +13548,11 @@ try {
   check("v souboru není zapečený roster", !nasypano, String(nasypano));
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n223) skutečný export z Poké Genie (jiné sloupce než Calcy IV)");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Poké Genie má sloupec `Pokemon`, jenže v něm je ČÍSLO z pokédexu (608)
   // a jméno druhu drží ve sloupci `Name`. Podle hlavičky to vypadalo
@@ -13616,11 +13643,11 @@ try {
     calcyPoOprave.pocet + " kusů, " + calcyPoOprave.cisla + " čísel");
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n224) filtry na Typy a Silný proti + posudek jednotlivých útoků");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Filtry na Typy a Silný proti se přidaly do funkce, která začínala
   // „když není zapnutý ligový filtr, pusť všechno" — obě větve se tím
@@ -13733,11 +13760,11 @@ try {
     utokyDet.map((u) => u.tip.slice(0, 60)).join(" | "));
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n225) bublina útoků v řádku a DPS ve výběru útoku");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Bublina u buňky Útoky nesla jen jednu větu o celé sestavě. Z „62 %
   // nejlepšího movesetu" se nedalo poznat, který ze tří útoků je ten špatný,
@@ -13840,11 +13867,11 @@ try {
     (vyberUt.polozky[0] || {}).tip);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   console.log("\n226) Vyhledávání: nejlepší útoky druhu");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Ve vyhledávání není konkrétní kus, takže se nedá říct „tenhle nech
   // a tenhle přeuč". Otázka je jiná: co má ten druh umět, až ho chytíš.
@@ -13927,7 +13954,7 @@ try {
 
   console.log("\n227) API pro vzhledovou vrstvu: razeni, detail, zalozka");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Vrstva ma vlastni ovladani: razeni rozbalovatkem misto klikani do
   // hlavicky a detail kusu ve vlastni plachte. Drive se to do enginu
@@ -14175,7 +14202,7 @@ try {
 
   console.log("\n228) uprava kusu podle hry");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Vyvinuty nebo vylepseny kus znamenal dosud novy sken a import. Tohle je
   // zkratka: rict appce, co se ve hre stalo, a nechat ji dopocitat zbytek.
@@ -14295,7 +14322,7 @@ try {
 
   console.log("\n229) utoky: finalni forma, Enter a nabidka podle druhu");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Sestava se dosud pocitala jen pro druh, kterym kus JE. S Fletchlingem
   // ale nikdo do raidu nejde — jde tam Talonflame a ten umi neco jineho.
@@ -14402,7 +14429,7 @@ try {
 
   console.log("\n230) obrazky forem a odznacek roli");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   // Shellos ma vychodni a zapadni more a herni ikona BEZ te pripony vubec
   // neexistuje. Adresa se proto musela nejdriv pokazit a teprve pak spadnout
@@ -14486,7 +14513,7 @@ try {
 
   console.log("\n231) hromadne doplneni utoku");
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
 
   const doplnit = await page.evaluate(async () => {
     const P = window.__pgo;
@@ -14672,7 +14699,7 @@ try {
     zapis.jmeno + " -> " + zapis.ulozeno);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   /* ------------------------------------------------------------------
      232) KOMU PATRI MEGA — v tabulce i v dokumentaci
@@ -14833,7 +14860,7 @@ try {
   await page.waitForTimeout(200);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   /* ------------------------------------------------------------------
      234) NASTAVIT DOPORUCENE VRATI VSECHNO
@@ -14896,7 +14923,7 @@ try {
     resetVolby.nesedi.length === 0, resetVolby.nesedi.join(", "));
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   /* ------------------------------------------------------------------
      235) SHADOW A ZAKLADNI FORMY V RAIDOVE ROLI
@@ -14966,7 +14993,7 @@ try {
     formyRaid.darmanitan.movesBest);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   /* ------------------------------------------------------------------
      236) KUS, KTERY DRZI SLOT AZ PO EVOLUCI, SE MA VYVINOUT
@@ -15017,7 +15044,7 @@ try {
     String(slotPoEvo.rattata.evolve).indexOf("Ne") === 0, slotPoEvo.rattata.evolve);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   /* ------------------------------------------------------------------
      237) V CISTENI BOXU MUSI BYT VIDET, KOMU SE TIM VERDIKT PREKLOPIL
@@ -15375,7 +15402,7 @@ try {
   // Herni ikony forem, slouceni mega skenu a neviditelne znaky ve zdrojich.
   console.log("\n243) Ikony forem, mega pri slouceni, ridici znaky");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const ikonyForem = await page.evaluate(() => {
     const P = window.__pgo;
     const soubor = (j) => ((/src="([^"]+)"/.exec(P.atlasImage(j) || "") || [])[1] || "")
@@ -15456,7 +15483,7 @@ try {
   // popiskem, takze se pri cisteni nedalo zjistit, proc se #7 nevejde.
   console.log("\n244) Odznacky lig v cisteni boxu");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const cisteniLigy = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -15554,7 +15581,7 @@ try {
   // kopii" z dokumentace a na ukor druhu, ktery by v tymu opravdu chybel.
   console.log("\n245) Predevoluce a hotova forma drzi v lize jedno misto");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const jedenDruh = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -15604,7 +15631,7 @@ try {
   // stupen hned dalsi, takze Machop -> Machamp byly dve kolecka dialogu.
   console.log("\n246) Evoluce rovnou na posledni stupen");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const evoNaKonec = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -15691,7 +15718,7 @@ try {
   // se nastavi podle toho, kde druh dnes je.
   console.log("\n247) Rezerva v lize a pamet poradi");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const rezerva = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -15854,7 +15881,7 @@ try {
   // tu nastavi natvrdo, aby vysledek nevisel na tom, jak se PvPoke hybe.
   console.log("\n248) Liga: kdo je nejbliz pod carou a proc");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const podCarou = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -15960,7 +15987,7 @@ try {
   // Bublina rekne, proc zrovna tenhle kus, u raidu, gymu a lig i s poradim.
   console.log("\n249) Duvody verdiktu jako stitky");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const stitky = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -16218,7 +16245,7 @@ try {
   // Řazení podle jedné ligy („liga:GL") a útoky druhu do nabídky úpravy.
   console.log("\n252) Razeni podle ligy a utoky druhu");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const razeniLiga = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -16276,7 +16303,7 @@ try {
   // v detailu, razeni podle chyceni i skenu, slucovani a export.
   console.log("\n253) Datum chyceni a skenu");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const chyceni = await page.evaluate(async (csv) => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -16368,7 +16395,7 @@ try {
   // na sirokem monitoru vsech devet v jednom radku, na telefonu po dvou.
   console.log("\n254) Vyhledavani: rozlozeni poli");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const radkyProh = async () => page.evaluate(async () => {
     const zal = document.querySelector('.zal-btn[data-klic="prohlidkaCard"]');
     if (zal) zal.click();
@@ -16419,7 +16446,7 @@ try {
   // samotné typy (dvojtypy z nich plynou) + „Výhoda se vyruší".
   console.log("\n255) Poradi stitku, bubliny, herni vyuziti, typove pokryti");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const poradi255 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -16548,7 +16575,7 @@ try {
   // řádek, evoluční řada i u druhu bez evoluce, značky jako typové štítky.
   console.log("\n256) Dynamax stitek, pod carou, karty roli, evolucni rada, znacky");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   await page.setViewportSize({ width: 1600, height: 1000 });
   const s256 = await page.evaluate(async () => {
     const P = window.__pgo;
@@ -16686,7 +16713,7 @@ try {
   // třetí Mewtwo ukazoval „Psychic 3/3", zatímco třetí místo držela Lunala.
   console.log("\n257) Pod carou: cislo kusu vyrazeneho stropem kopii");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s257 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -16733,7 +16760,7 @@ try {
   // pod čarou stojí u procenta, že platí až po evoluci.
   console.log("\n258) Jedno tlacitko evoluce s vyberem, po-evoluci u procent");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s258 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -16820,7 +16847,7 @@ try {
   // i ikonu rozbalení v čištění boxu.
   console.log("\n259) Purifikovat, ctvrta akce a klavesa F");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s259 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -16874,7 +16901,7 @@ try {
   // na jeden řádek i po evoluci.
   console.log("\n260) Neprůhledné štítky, evoluce až na finální stupeň");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s260 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -16953,7 +16980,7 @@ try {
   // nesmí nabídnout na jedno volné místo.
   console.log("\n261) Import: vylepseni jen pri zmene, vraceni jako celek");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s261 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -17034,7 +17061,7 @@ try {
   // čarou. U Dynamaxu ho má i druhá kopie druhu, která se z výběru vyřadila.
   console.log("\n262) Poradi mezi vsemi v bublinach roli");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s262 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -17105,7 +17132,7 @@ try {
   // ukazovala starý verdikt.
   console.log("\n263) Pamet prepoctu se zahazuje pri kazde zmene");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s263 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -17157,7 +17184,7 @@ try {
   // nikdo mazat nechtěl.
   console.log("\n264) Prazdny roster neprepise ulozena data");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s264 = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -17203,7 +17230,7 @@ try {
   // a první uložení přepsalo roster prázdnem.
   console.log("\n265) Zruseny prepinac v ulozenem profilu nesmi sebrat roster");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   // Roster se nejdřív vyprázdní, jinak by ho appka při odchodu ze stránky
   // uložila zpátky přes náš připravený obsah.
   await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
@@ -17257,7 +17284,7 @@ try {
   // přestože v úložišti data ležela.
   console.log("\n266) Vadny radek nesmi sebrat cely roster");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   // Roster se nejdřív vyprázdní, jinak by ho appka při odchodu ze stránky
   // (beforeunload) uložila zpátky přes náš připravený obsah.
   await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
@@ -17300,7 +17327,7 @@ try {
   // v prohlížeči: roster zmizel po každém F5 a appka mlčela.
   console.log("\n267) Plne uloziste nesmi vypadat jako ztraceny roster");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
   await page.waitForTimeout(500);
   const klicAppky = await page.evaluate(() => {
@@ -17369,7 +17396,7 @@ try {
   // se totiž ptala na `store.active`, ne na profil, do kterého se zapisuje.
   console.log("\n268) Prazdny profil nesmi prepsat roster ve vedlejsim");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   await page.evaluate(() => { window.__pgo.setRows([]); window.__pgo.persistNow(); });
   await page.waitForTimeout(500);
   await page.evaluate((klic) => {
@@ -17462,7 +17489,7 @@ try {
   // když dojde místo, musí jít stranou ona, ne data.
   console.log("\n270) Pamet ikon nesmi ukradnout misto rosteru");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s270 = await page.evaluate(async (klic) => {
     const out = {};
     const velky = {};
@@ -17510,7 +17537,7 @@ try {
   // uvízl napořád. Vlastní vyrovnávací paměť musí jít stranou hned při startu.
   console.log("\n271) Docela plne uloziste appka uklidi sama pri startu");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   await page.evaluate((klic) => {
     const rows = [];
     for (let i = 0; i < 40; i++) {
@@ -17581,7 +17608,7 @@ try {
   // novější; prázdná localStorage nesmí znamenat prázdnou appku.
   console.log("\n272) Roster se uklada i do velkeho uloziste");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   await page.evaluate(() => {
     const rows = [];
     for (let i = 0; i < 45; i++) {
@@ -17640,7 +17667,7 @@ try {
   // „zahodit". Nabídnout ho zpátky je pak nesmysl ze zastaralého verdiktu.
   console.log("\n273) Prave puszeny kus se nenabidne hned zpatky");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s273 = await page.evaluate(async () => {
     const P = window.__pgo;
     const druhy = ["Snorlax", "Machamp", "Gardevoir", "Swampert", "Registeel",
@@ -17689,7 +17716,7 @@ try {
   // ty se nepouští. V nastavení jde sekce spojit zpátky.
   console.log("\n274) Shadow kusy maji v cisteni boxu vlastni sekci");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s274 = await page.evaluate(async () => {
     const P = window.__pgo;
     const rows = [];
@@ -18271,7 +18298,13 @@ try {
     try { localStorage.removeItem("pgo_videl_novinky"); } catch (e) { /* nevadi */ }
   });
   await page.goto(URL);
-  await page.waitForTimeout(1400);
+  await nacteno(page);
+  /* Okno novinek se otevira samo az ~900 ms po startu. Ceka se proto na nej,
+     ne na stopky — a u verze bez novinek se ceka jen do chvile, nez je jasne,
+     ze nemaji co ukazat. */
+  await page.waitForFunction(
+    () => !!document.getElementById("novinkyOkno") || !window.__pgo.novinkyVerze(),
+    null, { timeout: 5000 }).catch(() => {});
   const s275 = await page.evaluate(async () => {
     const P = window.__pgo;
     const out = {
@@ -18329,7 +18362,7 @@ try {
 
   console.log("\n283) Simulace vylepseni, elitni utok a formy druhu");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s283 = await page.evaluate(() => {
     const P = window.__pgo;
     const v = P.atlasVylepseni("Omanyte", "", 20, 40, 14, 13, 12);
@@ -18381,7 +18414,7 @@ try {
 
   console.log("\n284) Rozdelane cisteni boxu prezije zavreni prohlizece");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   await page.evaluate(async () => {
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
     const rows = [];
@@ -18434,7 +18467,7 @@ try {
 
   console.log("\n285) Strop ligy a prepinaci stitek Duplikat");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s285 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -18496,7 +18529,7 @@ try {
 
   console.log("\n286) Pole vymen pred cistenim naseptava jen moje druhy");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s286 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -18583,7 +18616,7 @@ try {
 
   console.log("\n292) Dmax zebricek z Pokemon GO Hubu");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s292 = await page.evaluate(() => {
     const P = window.__pgo;
     return {
@@ -18609,7 +18642,7 @@ try {
 
   console.log("\n291) Shadow varianta ve vyhledavani");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s291 = await page.evaluate(() => {
     const P = window.__pgo;
     const out = {};
@@ -18642,7 +18675,7 @@ try {
 
   console.log("\n290) Novinky se ctou po sekcich");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s290 = await page.evaluate(async () => {
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
     document.getElementById("novinkyOkno")?.remove();
@@ -18667,7 +18700,7 @@ try {
 
   console.log("\n289) Rucni pridani: forma je znacka jako ostatni");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s289 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -18723,7 +18756,7 @@ try {
 
   console.log("\n288) Vymena pred cistenim prebije verdikt v celem rozboru");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s288 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -18798,7 +18831,7 @@ try {
 
   console.log("\n287) Cisteni jde schovat a kopie druhu jsou videt");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s287 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -18858,7 +18891,7 @@ try {
 
   console.log("\n282) Evolucni strom a cena JEDNE cesty");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s282 = await page.evaluate(() => {
     const P = window.__pgo;
     const ee = P.atlasEvoStrom("Eevee");
@@ -18927,7 +18960,7 @@ try {
 
   console.log("\n281) Typova stranka druhu: obrana z kombinace, utok ze sestavy");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s281 = await page.evaluate(() => {
     const P = window.__pgo;
     const ch = P.atlasTypovka("Charizard");
@@ -18964,7 +18997,7 @@ try {
 
   console.log("\n280) IV rank je vzdycky o jedne lize");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s280 = await page.evaluate(() => {
     const P = window.__pgo;
     return {
@@ -19000,7 +19033,7 @@ try {
   console.log("\n279) Naseptavac druhu se zavre a sam se neotevira");
   await page.setViewportSize({ width: 1400, height: 950 });
   await page.goto(URL);
-  await page.waitForTimeout(800);
+  await nacteno(page);
   const s279 = await page.evaluate(async () => {
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
     window.__pgoZalozka("prohlidkaCard");
@@ -19041,7 +19074,7 @@ try {
 
   console.log("\n278) Vysledek hledani jako data, ne jako hotova tabulka");
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
   const s278 = await page.evaluate(() => {
     const P = window.__pgo;
     const m = P.prohlidkaModel("Eevee");
@@ -19086,7 +19119,7 @@ try {
   console.log("\n277) Hledani: rezim druh nepocita s udaji kusu, ale nechá si je");
   await page.setViewportSize({ width: 1400, height: 950 });
   await page.goto(URL);
-  await page.waitForTimeout(900);
+  await nacteno(page);
   const s277 = await page.evaluate(async () => {
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
     window.__pgoZalozka("prohlidkaCard");
@@ -19126,7 +19159,7 @@ try {
   // Předchozí test nechává okno úzké a v úzkém okně lišta políčka schovává.
   await page.setViewportSize({ width: 1400, height: 950 });
   await page.goto(URL);
-  await page.waitForTimeout(900);
+  await nacteno(page);
   const s276 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -19208,7 +19241,7 @@ try {
     s276.text);
 
   await page.goto(URL);
-  await page.waitForTimeout(700);
+  await nacteno(page);
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
