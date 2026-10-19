@@ -25,18 +25,28 @@ try{
  // akci se ale meni kazdym stazenim dat, takze test padal na necem, co
  // s kalendarem nesouvisi. Overuje se tedy vztah, ktery platit MA: kolik
  // druhu appka u udalosti vypise, tolik ilustraci nakresli.
- {const druhy=(await page.locator('.ac-detail .ac-detail-species').count())
-   ? (await page.locator('.ac-detail .ac-detail-species').textContent()) : '';
-  const ocekavano=druhy.split('·').map(s=>s.trim()).filter(Boolean).length;
+ // `art()` kresli nejvys TRI obrazky (stejny kus kodu pouziva i dlazdice —
+ // u Max soubojů bývá trojice), takze se neporovnava pocet, ale ze to jsou
+ // prvni tri z vypsanych druhu ve stejnem poradi.
+ const ilustrace=async()=>{
+  const sp=page.locator('.ac-detail .ac-detail-species');
+  const druhy=(await sp.count())?(await sp.textContent()):'';
+  const seznam=druhy.split('·').map(s=>s.trim()).filter(Boolean);
+  const alt=await page.locator('.ac-detail .ac-art img').evaluateAll(
+    els=>els.map(e=>e.getAttribute('alt')||''));
+  return {seznam,alt};
+ };
+ {const {seznam,alt}=await ilustrace();
   check('illustrations match the species the app lists',
-    await page.locator('.ac-detail .ac-art img').count()===ocekavano);}
+    alt.length===Math.min(seznam.length,3)
+      && alt.every((a,i)=>a===seznam[i]));}
  // A jeste konkretne u Raid Hour, kde se druhy poznavaji z nazvu akce.
  {const rh=page.locator('.ac-event').filter({hasText:'Raid Hour'}).first();
   if(await rh.count()){await rh.click();await page.waitForTimeout(300);
-   const druhy=await page.locator('.ac-detail .ac-detail-species').textContent();
-   const ocekavano=druhy.split('·').map(s=>s.trim()).filter(Boolean).length;
+   const {seznam,alt}=await ilustrace();
    check('raid hour illustrations recognized from explicit name',
-     ocekavano>0 && await page.locator('.ac-detail .ac-art img').count()===ocekavano);}
+     seznam.length>0 && alt.length===Math.min(seznam.length,3)
+       && alt.every((a,i)=>a===seznam[i]));}
   else check('raid hour illustrations recognized from explicit name',true);}
  // Vicedenni akce se uz nesbaluji: schovana cast tydne je horsi nez delsi
  // seznam, protoze o ni clovek nevi.

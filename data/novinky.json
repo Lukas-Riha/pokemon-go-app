@@ -170,5 +170,67 @@
         "obrazek": "nova-verze"
       }
     ]
+  },
+  "2.10": {
+    "nadpis": "Co je nového",
+    "body": [
+      {
+        "sekce": "Kalendář a detail akce"
+      },
+      {
+        "text": "**Detail akce je přestavěný.** Nahoře je shrnutí, co ti akce přinese — premiéra druhu, shiny premiéra, co padne za dokončení výzkumu, největší bonus, kdo je v raidech — a klepnutí na kartu odroluje na tu část. Každá sekce je jen jednou a v pevném pořadí, u časovaných sekcí se přepíná **Právě teď / Předchozí / Celá akce**. Obrázky mají jednotný rámeček a žádný se neořízne."
+      },
+      {
+        "text": "**Co kde opravdu potkáš.** Kadidlo má vlastní sekci — dřív se slévalo s volnou přírodou, i když zdroj píše, že na denní dobrodružné kadidlo to neplatí. Podmínky u spawnů zůstávají u své skupiny. GO Pass se už nezahazuje jako nákup: bezplatná dráha, milníky i termín vyzvednutí odměn jsou vidět. U výzkumu je vidět, za co ta odměna je — a u časovaného výzkumu i celý rozpis po krocích (u Fall Marathonu je za 42 km Marathon Visor Pikachu)."
+      },
+      {
+        "text": "**Texty jsou česky.** Bonusy, mezinadpisy i popisy ze zdroje appka překládá — „2× Candy for catching Pokémon“ je „2× bonbónů za chycení“, „Five-Star Raids“ jsou „5hvězdičkové raidy“. Překládají se celé věty, které appka zná přesně; jména pokémonů a herních předmětů zůstávají tak, jak je ukazuje hra, a po najetí myší je vidět původní znění."
+      },
+      {
+        "text": "**Appka přizná, co ze zdroje nepřečetla.** Když stránka akce nějakou část má, ale seznam v ní chybí, stojí v detailu čárkovaná karta s tím, co o ní zdroj říká („úkoly zatím nebyly oznámeny“). Dřív taková sekce prostě nebyla vidět a vypadalo to, že akce nic takového nemá. Pod obsahem je navíc datum, kdy se stránka akce naposledy stahovala."
+      },
+      {
+        "text": "**Akce se dotahují samy.** Každé ráno se stáhne rozpis z LeekDucku, zkontroluje se a doručí do appky; rozpis běžících akcí se obnovuje, takže doplněný výzkum nebo bonusy appka uvidí. Z kalendáře zmizely akce bez termínu, měsíční přehled ukáže program vybraného dne a jeden druh je v akci jen jednou."
+      },
+      {
+        "sekce": "Rozhodování o kusech"
+      },
+      {
+        "text": "**Appka umí CMP.** Když oba hráči zmáčknou nabitý útok ve stejném tahu, vystřelí dřív ten s vyšším **útočným statem**. Pod stropem CP se přitom vyplácí nízký útok, takže nejodolnější kus v zrcadle střílí vždycky druhý — bublina ligy to teď říká. Nové nastavení **Přednost útoku při shodě (CMP)** říká, o kolik procent kvality smí být kus horší, aby ho appka přesto postavila do ligy před lepší kus s nižším útokem (výchozí 2 %, na 0 % se chová jako dřív)."
+      },
+      {
+        "text": "**Formy, které se mění v boji, se počítají správně.** Aegislash se bere jako Shield, Zacian a Zamazenta jako Hero of Many Battles. Do gymu nejde druh, který se v souboji mění (Aegislash, Morpeko, Eiscue, Palafin, Wishiwashi, Mimikyu), a mega forma, kterou hra nevydala, už nepřerovnává pořadí ostatních."
+      },
+      {
+        "text": "**Rady o útocích nevedou dokola.** U Tinkatona se dvěma ocelovými útoky appka radila tam a zpátky; nově se nabízí jen útok, který je v té sestavě opravdu lepší. Útok Future Sight se jmenuje dvěma slovy a Gigantamax i Dynamax jména appka pozná jako druh."
+      },
+      {
+        "sekce": "Roster a práce s kusy"
+      },
+      {
+        "text": "**Tabulka rosteru je pryč.** Appka ukazuje jen dlaždice; upravit kus jde v jeho detailu a smazané kusy jsou karty, ne tabulka. Roster po smazání ani úpravě neskáče na začátek, po přidání kusu se posune k němu a na chvíli ho obtáhne."
+      },
+      {
+        "text": "**Nová značka MEGA — „tenhle kus mám vymegovaný“.** Dřív si appka vybírala sama, které kopii druhu megu přiřadí. Přibyly i drobnosti okolo kusů: level všude s jedním desetinným místem, shiny obrázky stejně velké jako ostatní, Frustration a Return v nabídce útoků u shadow a purified kusů, a úpravu útoků otevře tlačítko i dvojklik."
+      },
+      {
+        "sekce": "Tahák a vyhledávání"
+      },
+      {
+        "text": "**Tahák má záložky Raidy / Rocket / Typy / Gym / Ligy a pod nimi hledání.** Bossové jsou ti dnešní, u raketáckých sestav je napsané, z kdy jsou, a Gym i Ligy ukazují ty kusy, které tu roli drží v rosteru, ve stejném pořadí. Nad výběrem z rosteru stojí „Kandidáti z tvého rosteru“ — appka neověřuje celou sestavu, jen nabízí kusy."
+      },
+      {
+        "sekce": "Na telefonu"
+      },
+      {
+        "text": "**Jen spodní lišta, žádné druhé menu.** Dole jsou čtyři nejčastější místa a „Více“ se zbytkem sekcí a příkazy. **Kalendář umí na telefonu všechny tři pohledy** — Týden, Měsíc i Seznam; měsíc je mřížka čísel s barevnými body a pod ní program vybraného dne. Přepnutí pohledu nechá vybraný den i kategorii, jak byly."
+      },
+      {
+        "sekce": "Appka sama"
+      },
+      {
+        "text": "**Appka má vlastní značku** — v postranním pruhu stojí logo GO Atlas místo psaného názvu, ve světlé i tmavé podobě. Data se zapisují bezpečně: když se denní obnova přeruší v půlce, zůstane platný starý soubor místo prázdného."
+      }
+    ]
   }
 }

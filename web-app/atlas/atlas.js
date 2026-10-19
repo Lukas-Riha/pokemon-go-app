@@ -66,7 +66,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const P=window.__pgo,$=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   if(!P)return;
   const fmt=n=>new Intl.NumberFormat('cs-CZ').format(Number(n)||0);
-  const paths={home:'M3 10 12 3l9 7v10h-6v-7H9v7H3Z',box:'M3 7h18v14H3ZM3 7l3-4h12l3 4M9 12h6',team:'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6ZM9 12l2 2 4-4',invest:'M4 20h16M7 16v-5m5 5V7m5 9V3',calendar:'M4 5h16v16H4ZM8 3v4m8-4v4M4 10h16',arrow:'M4 12h16m-6-6 6 6-6 6',next:'m9 5 7 7-7 7',lock:'M5 10h14v11H5Zm3 0V6a4 4 0 0 1 8 0v4',settings:'M4 7h16M4 17h16M8 4v6m8 4v6',moon:'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z',spark:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z',upload:'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',close:'m6 6 12 12M6 18 18 6',check:'m5 12 4 4L19 6'};
+  const paths={home:'M3 10 12 3l9 7v10h-6v-7H9v7H3Z',box:'M3 7h18v14H3ZM3 7l3-4h12l3 4M9 12h6',team:'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6ZM9 12l2 2 4-4',invest:'M4 20h16M7 16v-5m5 5V7m5 9V3',calendar:'M4 5h16v16H4ZM8 3v4m8-4v4M4 10h16',arrow:'M4 12h16m-6-6 6 6-6 6',next:'m9 5 7 7-7 7',lock:'M5 10h14v11H5Zm3 0V6a4 4 0 0 1 8 0v4',settings:'M4 7h16M4 17h16M8 4v6m8 4v6',moon:'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z',spark:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z',upload:'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',edit:'M4 20h4L19 9l-4-4L4 16Zm11-15 4 4',close:'m6 6 12 12M6 18 18 6',check:'m5 12 4 4L19 6'};
   const icon=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[k]||paths.spark}"/></svg>`;
   const fallback='data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="43" fill="#eaf0fa" stroke="#9bb2d4" stroke-width="3"/><path d="M17 60h86" stroke="#9bb2d4" stroke-width="3"/><circle cx="60" cy="60" r="12" fill="white" stroke="#9bb2d4" stroke-width="3"/></svg>');
   const art=r=>{const key=P.dexKeyOf(r.pokemon);if(/^(shellos|gastrodon)/i.test(key)){const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')||fallback}return window.ATLAS_ART[key]||(/^pumpkaboo/i.test(r.pokemon)?window.ATLAS_ART['pumpkaboo-average']:null)||(/^shellos east sea/i.test(r.pokemon)?window.ATLAS_ART['shellos-eastsea']:null)||(()=>{const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')})()||fallback;};
@@ -90,7 +90,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
     return `<img src="${adresa}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy"${styl} ${extra}>`;
   };
   window.AtlasMonImage=monImage;
-  const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Týmy a souboje'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
+  const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Tahák'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
   const nav=[['home','home','Přehled'],['roster','box','Pokémoni'],['events','calendar','Kalendář'],['teams','team','Týmy'],['invest','invest','Investice']];
   const headings={home:['Tvůj box. Jasný plán.','Co ponechat, připravit a použít při příštím hraní.'],roster:['Moji Pokémoni','Co si necháváš a co pustit. Podrobnosti otevřeš u konkrétního kusu.'],teams:['Připraveni do boje','Týmy, role a pokrytí z tvého současného rosteru.'],invest:['Každý prach má svůj cíl','Naplánuj vylepšení podle svého rozpočtu.'],events:['Kalendář akcí','Co zrovna běží, co začíná a kdy je spotlight nebo raid hodina.'],settings:['Data a pravidla','Profily, prahy a vysvětlení výpočtů.']};
   let view='home',route='roster',page=0,dialogId=null,previousFocus=null,refreshTimer=null,missingOnly=false,cache={rows:[],computed:{}};
@@ -111,7 +111,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const subnav=document.createElement('nav');subnav.id='atlasSubnav';subnav.className='atlas-subnav';subnav.setAttribute('aria-label','Nástroje sekce');
   const home=document.createElement('section');home.id='atlasHome';
   const app=$('.app');app.prepend(heading,subnav,home);
-  const rosterCard=$('.card.roster'),mode=document.createElement('div');mode.className='atlas-mode';mode.innerHTML='<div class="atlas-mode-controls"><label for="atlasSort">Řazení</label><select id="atlasSort" aria-label="Řazení stručného seznamu"><option value="">Původní řazení</option><optgroup label="Základní"><option value="pokemon:1">Jméno A–Z</option><option value="pokemon:-1">Jméno Z–A</option><option value="cp:-1">CP od nejvyššího</option><option value="cp:1">CP od nejnižšího</option><option value="ivPct:-1">IV od nejvyššího</option><option value="ivPct:1">IV od nejnižšího</option><option value="level:-1">Level od nejvyššího</option><option value="level:1">Level od nejnižšího</option></optgroup><optgroup label="Čas"><option value="scanDate:-1">Naposledy naskenované</option><option value="scanDate:1">Nejdéle nenaskenované</option><option value="catchDate:-1">Nejnověji chycené</option><option value="catchDate:1">Nejdéle chycené</option></optgroup><optgroup label="PvP ligy"><option value="pvpRec:1">Všechny ligy po pořadí</option><option value="liga:LC:1">Little Cup: nejlepší první</option><option value="liga:LC:-1">Little Cup: nejhorší první</option><option value="liga:GL:1">Great League: nejlepší první</option><option value="liga:GL:-1">Great League: nejhorší první</option><option value="liga:UL:1">Ultra League: nejlepší první</option><option value="liga:UL:-1">Ultra League: nejhorší první</option><option value="liga:ML:1">Master League: nejlepší první</option><option value="liga:ML:-1">Master League: nejhorší první</option></optgroup></select><button data-atlas-action="mode"></button></div>';
+  const rosterCard=$('.card.roster'),mode=document.createElement('div');mode.className='atlas-mode';mode.innerHTML='<div class="atlas-mode-controls"><label for="atlasSort">Řazení</label><select id="atlasSort" aria-label="Řazení stručného seznamu"><option value="">Původní řazení</option><optgroup label="Základní"><option value="pokemon:1">Jméno A–Z</option><option value="pokemon:-1">Jméno Z–A</option><option value="cp:-1">CP od nejvyššího</option><option value="cp:1">CP od nejnižšího</option><option value="ivPct:-1">IV od nejvyššího</option><option value="ivPct:1">IV od nejnižšího</option><option value="level:-1">Level od nejvyššího</option><option value="level:1">Level od nejnižšího</option></optgroup><optgroup label="Čas"><option value="scanDate:-1">Naposledy naskenované</option><option value="scanDate:1">Nejdéle nenaskenované</option><option value="catchDate:-1">Nejnověji chycené</option><option value="catchDate:1">Nejdéle chycené</option></optgroup><optgroup label="PvP ligy"><option value="pvpRec:1">Všechny ligy po pořadí</option><option value="liga:LC:1">Little Cup: nejlepší první</option><option value="liga:LC:-1">Little Cup: nejhorší první</option><option value="liga:GL:1">Great League: nejlepší první</option><option value="liga:GL:-1">Great League: nejhorší první</option><option value="liga:UL:1">Ultra League: nejlepší první</option><option value="liga:UL:-1">Ultra League: nejhorší první</option><option value="liga:ML:1">Master League: nejlepší první</option><option value="liga:ML:-1">Master League: nejhorší první</option></optgroup></select></div>';
   const list=document.createElement('div');list.id='atlasRoster';list.className='atlas-roster';const table=$('#rosterTable').closest('.table-wrap');table.before(mode,list);
   function sync(g,r){view=g;route=r||route;document.body.dataset.atlasView=g;const [title,subtitle]=headings[g];heading.innerHTML=`<div><h1>${title}</h1></div>${g==='home'?`<button class="atlas-cta" data-click="boxModeBtn">${icon('spark')} Projít pokémony</button>`:''}`;subnav.innerHTML=groups[g].length>1?groups[g].map(([id,t])=>`<button data-atlas-route="${id}" class="${id===r?'active':''}" ${id===r?'aria-current="page"':''}>${t}</button>`).join(''):'';document.querySelectorAll('[data-atlas-nav]').forEach(b=>{b.classList.toggle('active',b.dataset.atlasNav===g);if(b.dataset.atlasNav===g)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});$('#atlasCrumb').textContent='/ '+(nav.find(n=>n[0]===g)?.[2]||'Data a pravidla');/* Ukladat jen skupinu nestacilo: po obnoveni stranky se otevrela prvni
      polozka skupiny, takze z Vyhledavani se clovek probudil v Tahaku. */
@@ -122,7 +122,10 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   function role(c){return window.AtlasRole(c)}
   function decision(c){return window.AtlasVerdict(c).label;}
   function next(c,r){if(c.validationIssues?.length)return 'Ověřit CP, level a IV';if(c.cuteOnly)return 'Ponechat pro radost';if(!r.fastMove||!r.charged1)return 'Doplnit útoky';if(c.powerup&&c.powerup.startsWith('Ano'))return 'Otevřít plán vylepšení';if(c.evolve&&c.evolve.startsWith('Ano'))return 'Ověřit cestu evoluce';return 'Prohlédnout doporučení';}
-  function rowHTML(r){const c=cache.computed[r.id]||{},iv=c.ivPct;return `<button class="atlas-row atlas-roster-tile"${c.posledniSken?' data-sken="1"':''} data-atlas-detail="${esc(r.id)}" aria-label="Detail ${esc(r.pokemon)}"><span class="atlas-tile-heading"><b>${esc(P.atlasJmeno?P.atlasJmeno(r):r.pokemon)}${window.AtlasPohlavi(r)}</b><span class="atlas-num"><small>CP</small>${fmt(r.cp)}</span></span><span class="atlas-poke">${monImage(r)}<span class="atlas-tile-info"><span class="atlas-tile-stats"><b>${iv==null?'IV neznámé':Math.round(iv*100)+' % IV'}</b><span>L${esc(r.level||'?')}</span></span><span class="atlas-tile-tags">${c.counter&&c.counter.pct!=null?'<span class="rarity-chip atlas-proti-skore" title="Jak dobre se tenhle kus hodi proti vybranemu druhu. 100 % = nejlepsi, co mas.">'+Math.round(c.counter.pct*100)+' %</span>':''}${window.AtlasTags(c,r)}</span></span></span><span class="atlas-decision"><span class="atlas-pill" data-verdict="${window.AtlasVerdict(c).tone}">${decision(c)}</span>${(P.atlasDuvody&&P.atlasDuvody(c))||'<small>'+esc(role(c))+'</small>'}</span><span class="atlas-arrow" aria-hidden="true">${icon('next')}</span></button>`;}
+  /* Druhy argument je rozbor kusu, ktery v rosteru NENI (pamet smazanych).
+     Bere se jen kdyz je to objekt: `rows.map(rowHTML)` sem posila index
+     a dlazdice pak misto rozboru dostala cislo. */
+  function rowHTML(r,vlastni){const c=(vlastni&&typeof vlastni==="object"?vlastni:cache.computed[r.id])||{},iv=c.ivPct;return `<button class="atlas-row atlas-roster-tile"${c.posledniSken?' data-sken="1"':''} data-atlas-detail="${esc(r.id)}" aria-label="Detail ${esc(r.pokemon)}"><span class="atlas-tile-heading"><b>${esc(P.atlasJmeno?P.atlasJmeno(r):r.pokemon)}${window.AtlasPohlavi(r)}</b><span class="atlas-num"><small>CP</small>${fmt(r.cp)}</span></span><span class="atlas-poke">${monImage(r)}<span class="atlas-tile-info"><span class="atlas-tile-stats"><b>${iv==null?'IV neznámé':Math.round(iv*100)+' % IV'}</b><span>L${esc(urovenKusu(r.level))}</span></span><span class="atlas-tile-tags">${c.counter&&c.counter.pct!=null?'<span class="rarity-chip atlas-proti-skore" title="Jak dobre se tenhle kus hodi proti vybranemu druhu. 100 % = nejlepsi, co mas.">'+Math.round(c.counter.pct*100)+' %</span>':''}${window.AtlasTags(c,r)}</span></span></span><span class="atlas-decision"><span class="atlas-pill" data-verdict="${window.AtlasVerdict(c).tone}">${decision(c)}</span>${(P.atlasDuvody&&P.atlasDuvody(c))||'<small>'+esc(role(c))+'</small>'}</span><span class="atlas-arrow" aria-hidden="true">${icon('next')}</span></button>`;}
 
   // Poradi bere appka primo z motoru (`atlasPoradi`). Radky tabulky jsou
   // jen zaloha pro pripad, ze by motor tu funkci jeste nemel.
@@ -132,6 +135,103 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   // kusy se pak „sekalo". Když se pořadí ani počet nezmění, vymění se jen ty
   // dlaždice, jejichž HTML je jiné — obvykle jedna nebo dvě.
   let posledniHtml = [], posledniPoradi = '';
+  /* Kam se roster po prekresleni podiva.
+
+     Driv skocil na zacatek pokazde, kdyz se zmenil seznam id — tedy po
+     kazdem smazani kusu. Clovek u dvousteho kusu tak po jednom smazani
+     zacinal znovu shora. Ted se pozice drzi a nahoru se jde jen tehdy,
+     kdyz si clovek SAM zmenil pohled (hledani, filtr, razeni, stranka).
+     `zamerKusu` je vyjimka opacnym smerem: po pridani kusu a po uprave,
+     ktera zmenila CP (a tim poradi), se roster posune PRAVE k nemu. */
+  let naVrchol = false, zamerKusu = null;
+  const vrchol = () => { naVrchol = true; };
+  window.AtlasZamerKus = (id) => { zamerKusu = id; };
+
+  /* Smazane kusy jako dlazdice, ne jako tabulka.
+
+     Tabulka tu zustala jako jedina v cele appce: tentyz kus vypadal
+     v rosteru jinak nez v pameti smazanych a nedal se porovnat. Model
+     (kopie radku i verdikty) pocita engine v `renderDiscardList`, tady
+     se jen kresli — proto stejna dlazdice jako v rosteru.
+
+     Verdikt se strha: "Ponechat" u kusu, ktery uz v rosteru neni, nic
+     neznamena. Misto nej je videt, kdy se smazal. */
+  window.AtlasSmazane = (box, polozky, info) => {
+    if (!box || !Array.isArray(polozky)) return false;
+    box.innerHTML = '';
+    const obal = document.createElement('div');
+    obal.className = 'atlas-smazane';
+    polozky.forEach(p => {
+      const zdroj = document.createElement('div');
+      zdroj.innerHTML = rowHTML(p.radek, p.vypocet);
+      const puvodni = zdroj.querySelector('.atlas-roster-tile');
+      /* Tlacitko v tlacitku neexistuje, a Vratit patri DOVNITR karty —
+         pod ni to byly dva ramecky nad sebou. Dlazdice se proto prevede
+         na div, ktery se chova jako tlacitko. */
+      const kus = document.createElement('div');
+      kus.className = puvodni.className + ' atlas-smazany';
+      kus.innerHTML = puvodni.innerHTML;
+      /* Dlazdice odkazuje na kus v rosteru — tenhle tam neni, takze
+         odkaz tu byt nesmi, jinak by ho obsluha hledala a nenasla. */
+      const pilulka = kus.querySelector('.atlas-pill');
+      if (pilulka) {
+        pilulka.setAttribute('data-verdict', 'smazano');
+        pilulka.textContent = p.kdy ? 'Smazáno ' + p.kdy : 'Smazáno';
+      }
+      if (p.rozbor) {
+        kus.setAttribute('role', 'button');
+        kus.setAttribute('tabindex', '0');
+        kus.setAttribute('aria-label', 'Rozbor ' + (p.radek.pokemon || 'kusu'));
+        kus.title = 'Klikni pro rozbor';
+        const otevri = (e) => { if (e.target.closest('button')) return; p.rozbor(); };
+        kus.addEventListener('click', otevri);
+        kus.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.rozbor(); }
+        });
+      } else {
+        kus.classList.add('atlas-smazany-bez-dat');
+        kus.title = 'Starší zápis bez uložených dat — rozbor není z čeho udělat';
+      }
+      const noha = document.createElement('div');
+      noha.className = 'atlas-smazany-noha';
+      const vrat = document.createElement('button');
+      vrat.type = 'button';
+      vrat.className = 'atlas-mini-btn';
+      vrat.textContent = p.maData ? 'Vrátit' : 'Odblokovat';
+      vrat.title = p.popis || '';
+      vrat.addEventListener('click', () => p.vratit());
+      noha.append(vrat);
+      kus.append(noha);
+      obal.append(kus);
+    });
+    box.append(obal);
+    if (info && info.skryto) {
+      const vic = document.createElement('p');
+      vic.className = 'discard-empty';
+      vic.textContent = '…a dalších ' + info.skryto + '. Zúži to hledáním.';
+      box.append(vic);
+    }
+    if (window.__pgo && window.__pgo.vystreditSprity) window.__pgo.vystreditSprity(box);
+    return true;
+  };
+  function usadScroll(scroll){
+    const cil = zamerKusu
+      ? list.querySelector('.atlas-roster-tile[data-atlas-detail="' + CSS.escape(zamerKusu) + '"]')
+      : null;
+    zamerKusu = null;
+    if (cil) {
+      naVrchol = false;
+      // Vlastni vypocet misto scrollIntoView: ten roluje i strankou pod
+      // seznamem a shell by uhnul celym rozhranim.
+      const dlazdice = cil.getBoundingClientRect(), okno = list.getBoundingClientRect();
+      list.scrollTop += dlazdice.top - okno.top - (okno.height - dlazdice.height) / 2;
+      cil.classList.add('atlas-tile-novy');
+      setTimeout(() => cil.classList.remove('atlas-tile-novy'), 2600);
+      return;
+    }
+    list.scrollTop = naVrchol ? 0 : scroll;
+    naVrchol = false;
+  }
   /* Rezim "protihraci": roster se seradi podle toho, jak se kusy hodi
      proti vybranemu druhu. Dokud o tom nic nestalo na obrazovce, vypadalo
      to, ze se jen necekane prehazelo poradi. */
@@ -167,15 +267,15 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
         const nova=sablona.firstElementChild;
         if(nova)dlazdice[i].replaceWith(nova);
       }
-      posledniHtml=noveHtml;list.scrollTop=scroll;
+      posledniHtml=noveHtml;usadScroll(scroll);vystredit();
       if(P.srovnejDuvody)P.srovnejDuvody(list);
       return;
     }
   }
   posledniHtml=noveHtml;posledniPoradi=nextIds;
-  list.innerHTML=`${missingOnly?'<div class="atlas-small-note">Pouze kusy bez úplných útoků · <button class="atlas-mini-btn" data-atlas-action="reset-list">Zrušit filtr útoků</button></div>':''}${noveHtml.join('')||'<div class="atlas-empty">Filtrům neodpovídá žádný Pokémon. Zkus zrušit hledání nebo změnit filtr.</div>'}`;list.scrollTop=previousIds===nextIds?scroll:0;
+  list.innerHTML=`${missingOnly?'<div class="atlas-small-note">Pouze kusy bez úplných útoků · <button class="atlas-mini-btn" data-atlas-action="reset-list">Zrušit filtr útoků</button></div>':''}${noveHtml.join('')||'<div class="atlas-empty">Filtrům neodpovídá žádný Pokémon. Zkus zrušit hledání nebo změnit filtr.</div>'}`;usadScroll(scroll);
  if(previousIds!==nextIds&&first.size&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const viewport=list.getBoundingClientRect();list.querySelectorAll('.atlas-roster-tile').forEach(el=>{const before=first.get(el.dataset.atlasDetail),after=el.getBoundingClientRect();if(after.bottom<viewport.top||after.top>viewport.bottom)return;if(before&&before.bottom>=viewport.top&&before.top<=viewport.bottom){const x=before.left-after.left,y=before.top-after.top;if(x||y)el.animate([{transform:`translate(${x}px,${y}px)`},{transform:'translate(0,0)'}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'})}else el.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:200,easing:'ease-out'})})}
- if(P.srovnejDuvody)P.srovnejDuvody(list);const sortState=P.snapshot(),sortValue=sortState.sortKey+':'+sortState.sortDir;$('#atlasSort').value=[...$('#atlasSort').options].some(o=>o.value===sortValue)?sortValue:'';}
+ vystredit();if(P.srovnejDuvody)P.srovnejDuvody(list);const sortState=P.snapshot(),sortValue=sortState.sortKey+':'+sortState.sortDir;$('#atlasSort').value=[...$('#atlasSort').options].some(o=>o.value===sortValue)?sortValue:'';}
   function renderHome(){if(window.AtlasRenderHome)window.AtlasRenderHome(home);posledniSkenKarta();}
   /* Poslední naskenovaný kus na Přehledu: štítek v rosteru se mezi stovkami
      dlaždic hledá dlouho, tohle je odpověď na „odkud mám dál skenovat". */
@@ -200,12 +300,23 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   // desetiny vteriny pri kazdem kliknuti — dozene se to pri zavreni panelu.
   let rosterDluh=false;
   const cisteniBezi=()=>{const b=document.getElementById('boxMode');return !!b&&!b.hidden};
+  /* Sprity maji kazdy jinak velkou kresbu v prazdnem ctverci; engine je
+     meri a posouva na stred. V rosteru to ale nikdo nezavolal, takze
+     dlazdice ukazovaly jen to, co uz engine zmeril jinde (v detailu nebo
+     v cisteni). Shiny obrazek je vlastni adresa, kterou clovek v detailu
+     obvykle neotevre — a tak byl v rosteru o tretinu mensi a nakrivo. */
+  function vystredit(){ if(P.vystreditSprity) P.vystreditSprity(list); }
   function refresh(){cache={rows:P.getRows(),computed:P.getComputed()};$('#atlasProfile').textContent=P.getProfile();$('#atlasCount').textContent=cache.rows.length+' Pokémonů · lokální profil';
     if(cisteniBezi()){rosterDluh=true;return}
     rosterDluh=false;renderRoster();if(view==='home')renderHome();}
   window.AtlasDoplnitRoster=()=>{if(rosterDluh)refresh()};
   // „48.0“ a „14.0“ ze skenu jako 48 a 14; IV procento (nebo rozsah ze skenu) za hodnotami IV.
   const cisloKusu=v=>v===''||v==null?'?':(isNaN(Number(v))?String(v):String(Number(v)));
+  /* Level v dlazdici vzdy s jednim desetinnym mistem. Skenovane kusy maji
+     z Calcy "20.0", rucne pridane dopocitane cele cislo — v jednom seznamu
+     pak stalo "L20.0" vedle "L15" a vypadalo to jako dva ruzne udaje.
+     Pulene levely (L14.5) jsou pritom bezne, takze se desetina nemaze. */
+  const urovenKusu=v=>{const n=Number(v);return v===''||v==null||isNaN(n)?String(v||'?'):n.toFixed(1)};
   const ivKusu=id=>{const c=(P.getComputed()||{})[id]||{};const t=c.ivUncertain&&c.ivRange?c.ivRange:(c.ivPct==null?'':Math.round(c.ivPct*100)+' %');return t?' · '+esc(t):''};
   // Hlavička kusu (obrázek, jméno, CP, IV) — stejná v detailu i v čištění boxu.
   window.AtlasIdentitaHTML=(r,sNadpisem=true)=>`<div class="atlas-detail-identity"><span class="atlas-ident-obr">${monImage(r)}</span><div class="atlas-ident-text"><div class="atlas-eyebrow">${esc(r.forma||'Běžná forma')}</div><h2${sNadpisem?' id="atlasDetailTitle"':''}${(j=>j.length>16?' class="atlas-jmeno-dlouhe atlas-jmeno-velmi-dlouhe"'
@@ -229,11 +340,11 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   function closeDetail(){if(!dialogId)return;dialogId=null;$('#atlasModal').hidden=true;$('#atlasDetailContent').innerHTML='';document.body.style.overflow='';previousFocus?.focus({preventScroll:true});}
   window.addEventListener('atlas:refresh-detail',()=>{refresh();if(dialogId)openDetail(dialogId,true)});
   function setCompact(value){compact=value;document.body.classList.toggle('atlas-compact',value);try{localStorage.setItem('pgo_atlas_compact',value?'1':'0')}catch{}renderRoster();}
-  document.addEventListener('click',e=>{const el=e.target.closest('[data-atlas-nav],[data-atlas-route],[data-atlas-detail],[data-atlas-action],[data-atlas-page],[data-atlas-filter],[data-click]');if(!el)return;if(el.dataset.atlasNav){go(el.dataset.atlasNav);return}if(el.dataset.atlasRoute){go(view,el.dataset.atlasRoute);return}if(el.dataset.atlasDetail){openDetail(el.dataset.atlasDetail);return}if(el.dataset.atlasPage){page+=Number(el.dataset.atlasPage);renderRoster();list.scrollIntoView({block:'start'});return}if(el.dataset.atlasFilter){const f=el.dataset.atlasFilter;go('roster');$('#searchInput').value='';$('#searchInput').dispatchEvent(new Event('input',{bubbles:true}));$('#filterSelect').value=f==='missing'?'all':f;$('#filterSelect').dispatchEvent(new Event('change',{bubbles:true}));missingOnly=f==='missing';refresh();return}if(el.dataset.click){if(el.dataset.click==='toggleImportBtn')go('roster');$('#'+el.dataset.click)?.click();return}switch(el.dataset.atlasAction){case 'close':closeDetail();break;case 'mode':setCompact(!compact);break;case 'reset-list':missingOnly=false;renderRoster();break;case 'theme':{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('pgo_atlas_theme',t)}catch{}break}case 'edit':{const id=dialogId;go('roster');missingOnly=false;$('#zrusitFiltry').click();setCompact(false);$('#viewSelect').value='all';$('#viewSelect').dispatchEvent(new Event('change',{bubbles:true}));const tr=$('#tbody').querySelector(`tr[data-row-id="${CSS.escape(id)}"]`);tr?.scrollIntoView({block:'center'});break}}});
+  document.addEventListener('click',e=>{const el=e.target.closest('[data-atlas-nav],[data-atlas-route],[data-atlas-detail],[data-atlas-action],[data-atlas-page],[data-atlas-filter],[data-click]');if(!el)return;if(el.dataset.atlasNav){go(el.dataset.atlasNav);return}if(el.dataset.atlasRoute){go(view,el.dataset.atlasRoute);return}if(el.dataset.atlasDetail){openDetail(el.dataset.atlasDetail);return}if(el.dataset.atlasPage){page+=Number(el.dataset.atlasPage);vrchol();renderRoster();list.scrollIntoView({block:'start'});return}if(el.dataset.atlasFilter){const f=el.dataset.atlasFilter;vrchol();go('roster');$('#searchInput').value='';$('#searchInput').dispatchEvent(new Event('input',{bubbles:true}));$('#filterSelect').value=f==='missing'?'all':f;$('#filterSelect').dispatchEvent(new Event('change',{bubbles:true}));missingOnly=f==='missing';refresh();return}if(el.dataset.click){if(el.dataset.click==='toggleImportBtn')go('roster');$('#'+el.dataset.click)?.click();return}switch(el.dataset.atlasAction){case 'close':closeDetail();break;case 'reset-list':missingOnly=false;vrchol();renderRoster();break;case 'theme':{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.setItem('pgo_atlas_theme',t)}catch{}break}case 'edit':{const id=dialogId;go('roster');missingOnly=false;$('#zrusitFiltry').click();setCompact(false);$('#viewSelect').value='all';$('#viewSelect').dispatchEvent(new Event('change',{bubbles:true}));const tr=$('#tbody').querySelector(`tr[data-row-id="${CSS.escape(id)}"]`);tr?.scrollIntoView({block:'center'});break}}});
   document.addEventListener('keydown',e=>{if(document.querySelector('.rucni-box:not([hidden])'))return;if(!dialogId)return;if(e.key==='Escape'){e.preventDefault();closeDetail()}if(e.key==='Tab'){const els=[...$('#atlasModal').querySelectorAll('button:not(:disabled),a,input:not(:disabled),select:not(:disabled),summary,[tabindex="0"]')].filter(el=>el.getClientRects().length),first=els[0],last=els.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}});
   new MutationObserver(()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(refresh,50)}).observe($('#tbody'),{childList:true});
-  $('#searchInput').addEventListener('input',()=>{page=0});$('#filterSelect').addEventListener('change',()=>{page=0;missingOnly=false});
-  $('#atlasSort').addEventListener('change',e=>{const hodnota=e.target.value;if(!hodnota){page=0;P.atlasSort('',1);refresh();return}const dvojtecka=hodnota.lastIndexOf(':'),key=hodnota.slice(0,dvojtecka),dir=hodnota.slice(dvojtecka+1);page=0;P.atlasSort(key,Number(dir));refresh()});
+  $('#searchInput').addEventListener('input',()=>{page=0;vrchol()});$('#filterSelect').addEventListener('change',()=>{page=0;missingOnly=false;vrchol()});
+  $('#atlasSort').addEventListener('change',e=>{const hodnota=e.target.value;vrchol();if(!hodnota){page=0;P.atlasSort('',1);refresh();return}const dvojtecka=hodnota.lastIndexOf(':'),key=hodnota.slice(0,dvojtecka),dir=hodnota.slice(dvojtecka+1);page=0;P.atlasSort(key,Number(dir));refresh()});
   // Cislo verze v pate: test ma vzdycky vyssi nez produkce, takze je hned
   // videt, ktera sestava je otevrena.
   // Cislo verze nahore v zahlavi i dole v pate. Nahore proto, ze pri
@@ -323,7 +434,9 @@ globalThis.AtlasBudget = (() => {
 (() => {
   const $=s=>document.querySelector(s);
   const copy={
-    cheatCard:['Sestavit tým','Konkrétní soupeři a útoky tvých Pokémonů.','Porovnání je modelový odhad. Chybějící útoky a podmínky boje mohou změnit výsledek.'],
+    /* Ne „Sestavit tým": appka plnohodnotnou sestavu ani podmínky boje
+       neověřuje, vybírá z rosteru kandidáty. Viz A-017. */
+    cheatCard:['Vybrat soupeře','Vyber soupeře a najdi kandidáty ze svého rosteru.','Výběr kandidátů není simulace souboje. Chybějící útoky a podmínky boje mohou výsledek změnit.'],
     rozpocetCard:['Najít slabé místo','Které role tvůj box pokrývá a kde hledat posilu.','Potenciální role může vyžadovat evoluci nebo změnu útoků. Není automaticky hotovým týmem.'],
     typesCard:['Vybrat správný typ','Účinnost útoků, odolnosti a vliv počasí.','V souboji rozhoduje typ konkrétního útoku, ne jen typ útočícího Pokémona.'],
     refCard:['Porovnat druhy','Referenční pořadí pro orientaci v možnostech.','Pořadí druhu není pravděpodobnost výhry. Pro investici otevři konkrétní kus a jeho plán.'],
@@ -471,6 +584,9 @@ globalThis.AtlasBudget = (() => {
       // zpatky, dostal "ulozeno" a nezmenilo se nic. Vychozi stav se proto
       // posune na to, co se prave zapsalo — pole, ktera clovek nesahnul,
       // dal nic neprepisuji.
+      /* Zmena CP prehodi kus v razeni — roster by ho jinak nechal nekde,
+         kde uz nestoji, a clovek by ho hledal. */
+      if(String(current.cp)!==String(baseline.get('cp')))window.AtlasZamerKus&&window.AtlasZamerKus(id);
       P.prekreslit();P.persistNow();
       zavrit();
       window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));
@@ -728,9 +844,13 @@ globalThis.AtlasBudget = (() => {
     const box=document.getElementById('rucniBox');
     if(!box||!window.__pgoUtoky)return;
     const pole={fastMove:'rbFast',charged1:'rbCh1',charged2:'rbCh2'};
-    const docasny={pokemon:'',fastMove:'',charged1:'',charged2:'',__docasny:true};
+    /* `forma` tu musi byt: Frustration a Return nedava druh, ale stav kusu
+       — engine je do nabidky pridava podle ni. Bez toho si shadow kus
+       pridany rucne nesel zapsat utok, ktery ve hre doopravdy ma. */
+    const docasny={pokemon:'',forma:'',fastMove:'',charged1:'',charged2:'',__docasny:true};
     const postav=()=>{
       docasny.pokemon=(document.getElementById('rbName')||{}).value||'';
+      docasny.forma=(document.getElementById('rbForma')||{}).value||'';
       Object.keys(pole).forEach(k=>{
         const input=document.getElementById(pole[k]);
         if(!input)return;
@@ -743,6 +863,9 @@ globalThis.AtlasBudget = (() => {
     };
     const jmeno=document.getElementById('rbName');
     if(jmeno){jmeno.addEventListener('change',postav);jmeno.addEventListener('input',()=>{clearTimeout(postav.t);postav.t=setTimeout(postav,300)})}
+    // Prepnuti znacky Shadow/Purified meni nabidku nabitych utoku. Posluchac
+    // sedi na okne, takze bezi az po enginu, ktery hodnotu `rbForma` nastavuje.
+    box.addEventListener('click',e=>{if(e.target.closest('.rb-forma'))setTimeout(postav,0)});
     // „V gymu (h)" je pro kus, který si člověk opisuje z gymu — v běžném
     // přidávání jen mate. Zůstává v DOM (engine ho čte), jen se neukazuje.
     const hod=document.getElementById('rbHod');
@@ -778,8 +901,58 @@ globalThis.AtlasBudget = (() => {
   trigger.addEventListener('click',()=>{const open=document.body.classList.toggle('atlas-menu-open');trigger.setAttribute('aria-expanded',String(open));if(open)nav.querySelector('button').focus()});backdrop.addEventListener('click',close);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('atlas-menu-open')){close();trigger.focus()}});
   nav.addEventListener('click',e=>{const target=e.target.closest('[data-menu-group]');if(!target)return;api.go(target.dataset.menuGroup,target.dataset.menuRoute);close();sync()});
-  function sync(){const state=api.getState();nav.querySelectorAll('[data-menu-group]').forEach(b=>{const active=b.dataset.menuRoute?b.dataset.menuRoute===state.route&&state.view!=='home':state.view===b.dataset.menuGroup;b.classList.toggle('active',active);if(active){b.setAttribute('aria-current','page');const group=b.closest('details');if(group)group.open=true}else b.removeAttribute('aria-current')});if(state.route==='prohlidkaCard'&&state.view==='teams'){$('#atlasHeading h1').textContent='Vyhledávání Pokémonů';$('#atlasCrumb').textContent='/ Vyhledávání'}if(state.route==='cheatCard'&&state.view==='teams'){$('#atlasHeading h1').textContent='Tahák do soubojů';$('#atlasCrumb').textContent='/ Tahák'}}
+  function sync(){const state=api.getState();document.querySelectorAll('[data-menu-group]').forEach(b=>{const active=b.dataset.menuRoute?b.dataset.menuRoute===state.route&&state.view!=='home':state.view===b.dataset.menuGroup;b.classList.toggle('active',active);if(active){b.setAttribute('aria-current','page');const group=b.closest('details');if(group)group.open=true}else b.removeAttribute('aria-current')});if(state.route==='prohlidkaCard'&&state.view==='teams'){$('#atlasHeading h1').textContent='Vyhledávání Pokémonů';$('#atlasCrumb').textContent='/ Vyhledávání'}if(state.route==='cheatCard'&&state.view==='teams'){$('#atlasHeading h1').textContent='Tahák do soubojů';$('#atlasCrumb').textContent='/ Tahák'}}
   window.addEventListener('atlas:route',sync);document.addEventListener('click',e=>{if(e.target.closest('[data-atlas-nav]'))sync()});sync();
+  /* ---------- telefon: jedna navigace, ne dvě ----------
+     Dole byla lišta s pěti skupinami, vlevo se přes ☰ otvíralo celé menu —
+     dvě navigace vedle sebe, navíc s jinými názvy („Týmy" vs „Tahák").
+     Zůstává jen lišta: čtyři nejčastější místa a „Více“, pod kterým je
+     zbytek sekcí a příkazy, na které v horní liště není místo. */
+  const DOLE=[['home',null,'Přehled','home'],['roster','roster','Pokémoni','roster'],
+    ['teams','prohlidkaCard','Hledání','prohlidkaCard'],['events','eventsCard','Kalendář','events']];
+  const VICE=[['teams','cheatCard','Tahák'],['invest','dustCard','Rozpočet'],
+    ['teams','rozpocetCard','Pokrytí rolí'],['teams','typesCard','Typy a počasí'],
+    ['teams','refCard','Žebříčky'],['teams','friendCard','Výměna'],
+    ['settings','settings-card','Nastavení'],['settings','docsCard','Metodika a zdroje']];
+  const PRIKAZY=[['novinkyBtn','Novinky ve verzi'],['toggleImportBtn','Import CSV'],
+    ['exportBtn','Export CSV']];
+  const lista=document.querySelector('.atlas-bottom');
+  if(lista){
+    lista.innerHTML=DOLE.map(([g,r,t,ik])=>`<button data-menu-group="${g}"`
+      +(r?` data-menu-route="${r}"`:'')+` aria-label="${t}">${glyph(ik)}<span>${t}</span></button>`).join('')
+      +`<button data-atlas-vice aria-expanded="false" aria-controls="atlasVice" aria-label="Další části appky">`
+      +`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg>`
+      +`<span>Více</span></button>`;
+    lista.addEventListener('click',e=>{
+      const b=e.target.closest('[data-menu-group]');if(!b)return;
+      api.go(b.dataset.menuGroup,b.dataset.menuRoute);sync();
+    });
+    const panel=document.createElement('div');panel.id='atlasVice';panel.className='atlas-vice';panel.hidden=true;
+    panel.innerHTML='<button class="atlas-vice-plachta" data-vice-zavri aria-label="Zavřít"></button>'
+      +'<div class="atlas-vice-panel" role="dialog" aria-modal="true" aria-label="Další části appky">'
+      +'<div class="atlas-vice-drzadlo" aria-hidden="true"></div>'
+      +'<div class="atlas-vice-nadpis">Další části</div><div class="atlas-vice-seznam">'
+      +VICE.map(([g,r,t])=>`<button data-menu-group="${g}" data-menu-route="${r}">${t}</button>`).join('')
+      +'</div><div class="atlas-vice-nadpis">Příkazy</div><div class="atlas-vice-seznam">'
+      +PRIKAZY.map(([id,t])=>`<button data-click="${id}">${t}</button>`).join('')
+      +'</div></div>';
+    document.body.append(panel);
+    const viceBtn=lista.querySelector('[data-atlas-vice]');
+    const zavri=()=>{panel.hidden=true;viceBtn.setAttribute('aria-expanded','false')};
+    viceBtn.addEventListener('click',()=>{
+      const bylo=!panel.hidden;panel.hidden=bylo;
+      viceBtn.setAttribute('aria-expanded',String(!bylo));
+      if(!bylo)panel.querySelector('.atlas-vice-seznam button')?.focus();
+    });
+    panel.addEventListener('click',e=>{
+      if(e.target.closest('[data-vice-zavri]')){zavri();return}
+      const b=e.target.closest('button');if(!b)return;
+      /* Příkazy (`data-click`) obsluhuje vrstva výš — tady se jen zavře. */
+      if(b.dataset.menuGroup){api.go(b.dataset.menuGroup,b.dataset.menuRoute);sync()}
+      zavri();
+    });
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){zavri();viceBtn.focus()}});
+  }
   // Keep original button handlers and confirmations, only move the controls.
   const toolbar=$('#addRowBtn')?.parentElement;if(toolbar){const menu=document.createElement('details');menu.className='atlas-roster-commands';menu.innerHTML='<summary>Správa rosteru ▾</summary><div></div>';toolbar.append(menu);for(const id of ['toggleImportBtn','exportBtn','backupBtn','backupNowBtn','starKeepersBtn','clearUnstarredBtn','clearBtn','forgetDiscardedBtn']){const el=$('#'+id);if(el){menu.lastChild.append(el);
     // Import a export mají vlastní tlačítka nahoře v liště. Tady zůstávají
@@ -842,9 +1015,12 @@ globalThis.AtlasBudget = (() => {
  const fileCancel=$('#mapCancelBtn');fileCancel.textContent='Zrušit';fileCancel.addEventListener('click',()=>{$('#fileInput').value=''});
  // Souhrnný box Využití/Krok/Cena/Chybí v detailu už není — opakoval verdikt a doporučený krok.
  const warning=$('#zalWarn'),rosterBar=$('#addRowBtn')?.parentElement;if(warning&&rosterBar){rosterBar.after(warning)}
- let editing=false;const edit=document.createElement('button');edit.id='atlasTableEdit';edit.className='atlas-mini-btn';edit.textContent='Zapnout editaci tabulky';$('.atlas-mode-controls').append(edit);
+ /* Tabulka je skryte leseni, ne pohled pro uzivatele — tlacitko
+    „Zapnout editaci tabulky" proto zmizelo. Zamek zustava: kdyby se
+    tabulka nekdy ukazala, nesmi se do ni dat psat omylem. */
+ const editing=false;
  function readonly(){document.body.classList.toggle('atlas-table-readonly',!editing);$('#tbody').querySelectorAll('input,select,textarea').forEach(input=>{let text=input.nextElementSibling;if(!text?.classList.contains('atlas-read-value')){text=document.createElement('span');text.className='atlas-read-value';input.after(text)}text.textContent=input.type==='checkbox'?(input.checked?'Ano':'Ne'):input.tagName==='SELECT'?(input.selectedOptions[0]?.textContent||'—'):(input.value||'—')})}
- edit.addEventListener('click',()=>{editing=!editing;edit.textContent=editing?'Dokončit editaci':'Zapnout editaci tabulky';edit.setAttribute('aria-pressed',String(editing));readonly()});new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
+new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
 })();
 (() => {
  const name=document.querySelector('#prohName');
@@ -1009,6 +1185,19 @@ globalThis.AtlasBudget = (() => {
     identita.querySelector('.atlas-ident-utoky')?.remove();
     const box=document.createElement('section');box.className='atlas-ident-utoky';
     const nadpis=document.createElement('div');nadpis.className='d-box-h';nadpis.textContent='Útoky';
+    /* Editace útoků se otevírá dvojklikem kamkoli do sekce. Na telefonu
+       ani klávesnicí to nejde, takže vedle nadpisu stojí tlačítko, které
+       dělá totéž — dvojklik zůstává jako zkratka pro myš. */
+    {const upravit=document.createElement('button');
+     upravit.type='button';upravit.className='atlas-utoky-upravit';
+     upravit.setAttribute('aria-label','Upravit útoky');
+     upravit.dataset.tip='Upravit útoky tohohle kusu';
+     upravit.innerHTML='<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true">'
+      +'<path d="M4 20h4L19 9l-4-4L4 16Zm11-15 4 4"/></svg>';
+     upravit.addEventListener('click',()=>{
+      if(window.AtlasUpravitUtoky)window.AtlasUpravitUtoky(row.id);
+     });
+     nadpis.append(upravit);}
     // Kus bez vyplněných útoků: u nadpisu se rozsvítí vykřičník. Bez něj se
     // dalo snadno přehlédnout, že appka u toho kusu nic nezná — a rady se
     // pak počítaly z nejlepší možné sestavy, ne z jeho skutečné.
@@ -1221,7 +1410,21 @@ globalThis.AtlasBudget = (() => {
   const nacoSekce=container.querySelector('[data-detail-section=naco]');
   if(nacoSekce){const role=nacoSekce.querySelector('.d-roles');if(role){role.classList.add('atlas-vyuziti');nacoSekce.before(role)}nacoSekce.remove()}
   // Statistiky, IV a strop CP do hlavičky vedle jména a obrázku; sekce dole odpadá.
-  const statsSekce=container.querySelector('[data-detail-section=stats]');if(statsSekce&&identita){identita.querySelector('.atlas-ident-stats')?.remove();const mrizka=statsSekce.querySelector('.d-grid');if(mrizka){mrizka.classList.add('atlas-ident-stats');mrizka.querySelectorAll('.d-box-h').forEach(h=>{if(/^IV/.test(h.textContent))h.textContent='IV';else{const m=/^Staty na levelu\s+([\d.]+)/i.exec(h.textContent);if(m)h.textContent='Staty L'+m[1]}});identita.append(mrizka)}statsSekce.remove()}
+  const statsSekce=container.querySelector('[data-detail-section=stats]');if(statsSekce&&identita){identita.querySelector('.atlas-ident-stats')?.remove();const mrizka=statsSekce.querySelector('.d-grid');if(mrizka){mrizka.classList.add('atlas-ident-stats');mrizka.querySelectorAll('.d-box-h').forEach(h=>{if(/^IV/.test(h.textContent))h.textContent='IV';else{const m=/^Staty na levelu\s+([\d.]+)/i.exec(h.textContent);if(m)h.textContent='Staty L'+m[1]}});
+   /* V hlavicce je misto vzacne: cela veta "Shadow: +20 % utok, -20 % obrana"
+      roztahla sloupec statu a odsunula IV i jmeno. Ze je kus shadow, stoji
+      nad jmenem — v poznamce proto zustanou jen ta cisla.
+
+      Saha se JEN na text a jen v boxu se staty: `textContent` by zahodil
+      vnorene prvky a v boxu Strop je uvnitr poznamky bublina "#N z M". */
+   {const statyBox=[...mrizka.querySelectorAll('.d-box')].find(
+     b=>/^Staty/.test((b.querySelector('.d-box-h')||{}).textContent||''));
+    statyBox&&statyBox.querySelectorAll('.d-note').forEach(n=>{
+     [...n.childNodes].forEach(uzel=>{
+      if(uzel.nodeType===3)uzel.nodeValue=uzel.nodeValue.replace(/^\s*Shadow:\s*/,'');
+     });
+    });}
+   identita.append(mrizka)}statsSekce.remove()}
   if(utokyBox&&identita)identita.append(utokyBox);
   if(vPlachte)document.querySelectorAll('.atlas-detail-paging [data-detail-step]').forEach(b=>{b.title=b.dataset.detailStep==='1'?'Další kus (→ nebo D)':'Předchozí kus (← nebo A)'});
   // Doporučený krok vedle verdiktu místo vlastní sekce dole.
@@ -1338,7 +1541,10 @@ globalThis.AtlasBudget = (() => {
    new MutationObserver(zamek).observe(boxPrepinac,{attributes:true,attributeFilter:['hidden']});
    zamek();
  }
- window.AtlasFocusRow=id=>{if(!P.getRows().some(r=>r.id===id))return false;__atlasTest.go('roster');__atlasTest.refresh();__atlasTest.openDetail(id);return true};
+ window.AtlasFocusRow=id=>{if(!P.getRows().some(r=>r.id===id))return false;
+  // Nove pridany kus ma byt v seznamu videt i po zavreni detailu.
+  window.AtlasZamerKus&&window.AtlasZamerKus(id);
+  __atlasTest.go('roster');__atlasTest.refresh();__atlasTest.openDetail(id);return true};
  const bulk=$('#doplnitBtn');if(bulk)$('.atlas-roster-commandbar').insertBefore(bulk,$('.atlas-roster-commands'));
  for(const id of ['hraBox','rucniBox','doplnitBox']){
   const box=$('#'+id);if(!box)continue;document.body.append(box);box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label',({hraBox:'Zapsat změnu ve hře',rucniBox:'Přidat Pokémona',doplnitBox:'Doplnit útoky'})[id]);let previous=null;
@@ -1358,7 +1564,7 @@ globalThis.AtlasBudget = (() => {
  const format=s=>{const d=date(s);return d?d.toLocaleString('cs-CZ',{day:'numeric',month:'numeric',...(/T/.test(s)?{hour:'2-digit',minute:'2-digit'}:{})}):'Termín nepotvrzen'};
  const safeUrl=s=>{try{const u=new URL(s);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}};
  const image=name=>{const key=P.dexKeyOf(name),src=window.ATLAS_ART?.[key];if(src)return `<img src="${esc(src)}" alt="${esc(name)}" loading="lazy">`;const fallback=P.atlasImage(name)||'',id=fallback.match(/pm(\d+)\.icon\.png/);if(!id)return fallback;const original=fallback.match(/src="([^"]+)"/)?.[1]||'';return fallback.replace('<img ','<img data-overview-art="true" ').replace(/alt="[^"]*"/,`alt="${esc(name)}"`).replace(/src="[^"]*"/,`src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${Number(id[1])}.png"`).replace(/data-zaloha="([^"]*)"/,`data-zaloha="${original}|$1"`)};
- const sections={spawn:'Ve volné přírodě',raid:'Souboje',vejce:'Z vajec',vyzkum:'Výzkumy a odměny',bonus:'Bonusy',utoky:'Speciální útoky',shiny:'Shiny',novinky:'Další obsah akce'};
+ const sections={spawn:'Ve volné přírodě',kadidlo:'Jen na kadidlo',raid:'Souboje',vejce:'Z vajec',vyzkum:'Výzkumy a odměny',bonus:'Bonusy',utoky:'Speciální útoky',shiny:'Shiny',novinky:'Další obsah akce',gopass:'GO Pass'};
  let selected=day(new Date()),lastToday=selected,offset=0,events=[],root;
  const modal=document.createElement('dialog');modal.id='atlasEventDialog';modal.className='atlas-event-dialog';modal.setAttribute('aria-labelledby','atlasEventTitle');document.body.append(modal);
  function overlap(e,start,finish){const a=date(e[3]),b=end(e[4]);return !!(a&&b&&a<finish&&b>start)}
@@ -1389,7 +1595,396 @@ globalThis.AtlasBudget = (() => {
   }
   return ven;
  }
+ /* Sekce, ze kterých se dá vzít druh, když akce nemá spawny ani raidy.
+    Max Battle Day nese druhy pod „Dynamax Debuts" v novinkách a v shiny;
+    bez tohohle vyšla karta bez obrázku, i když je v ní druh vypsaný. */
+/* Česky to, co jde přeložit PŘESNĚ. Věty na stránce akce jsou anglicky
+   a většina z nich je formulková („2× Candy for catching Pokémon",
+   „Five-Star Raids"). Pravidlo sedí vždy na CELOU větu — co se netrefí,
+   zůstane anglicky, protože půl česká věta je horší než anglická.
+   Jména pokémonů se nepřekládají nikde v appce, tady taky ne.
+   Původní znění drží `title`, ať je co ověřit proti zdroji. */
+ /* Celé věty ze zdroje, přeložené ručně. Klíč je přesné znění z LeekDucku,
+    hodnota česky. Nic se nehádá: co ve slovníku není a nesedí na pravidlo,
+    zůstane tak, jak to zdroj napsal. */
+ const PREKLAD_VETY={
+  // --- popisy spawnů a setkání
+  'You may encounter Minior in its Meteor Form in the wild during the event. You’ll receive 1,000 Stardust for catching Minior.':
+   'Minior se během akce objevuje ve volné přírodě v Meteor formě. Za jeho chycení dostaneš 1 000 prachu.',
+  'Pokémon Spotlight Hour will feature a different Pokémon and special bonus for one hour at 6:00 p.m. local time.':
+   'Spotlight Hour má pokaždé jiný druh a jiný bonus; běží hodinu od 18:00 místního času.',
+  'As the Seasons change, you may find different Pokémon appearing in your area. Explore during Twilight Trails to see what discoveries await!':
+   'Jak se mění sezóna, objevují se v okolí jiní pokémoni. Vyraz ven během Twilight Trails a uvidíš, co se ukáže.',
+  'These event-themed Pokémon may appear in the wild, along with others.':
+   'Ve volné přírodě se můžou objevit tihle pokémoni k akci a kromě nich i další.',
+  'You might also encounter Skarmory!':'Můžeš potkat i Skarmoryho!',
+  'The originally announced wild Pokémon will appear globally during event hours.':
+   'Původně oznámení pokémoni z volné přírody se během hodin akce objeví po celém světě.',
+  'Event-themed Pokémon appearing in the wild include the following, with more encounters to discover.':
+   'Ve volné přírodě se objevují mimo jiné tihle pokémoni k akci; další se dají objevit.',
+  'The announced wild encounters include the following Pokémon, with more event-themed encounters to discover. All Pokémon listed here can be Shiny!':
+   'Z oznámených setkání ve volné přírodě jsou to tihle pokémoni; další se dají objevit. Všichni vypsaní můžou být shiny.',
+  'The following Pokémon will appear more frequently in the wild, along with other event-themed Pokémon.':
+   'Tihle se budou ve volné přírodě objevovat častěji, spolu s dalšími pokémony k akci.',
+  'If you’re lucky, you might also encounter Drifblim wearing a Halloween Mischief costume! All Pokémon listed above can be Shiny.':
+   'Když budeš mít štěstí, potkáš i Drifblima v kostýmu Halloween Mischief. Všichni vypsaní pokémoni můžou být shiny.',
+  'If you’re lucky, you might also encounter Gengar wearing a Spooky Festival costume!':
+   'Když budeš mít štěstí, potkáš i Gengara v kostýmu Spooky Festival.',
+  'The November Community Day event will take place on November 21, 2026 from 2 pm to 5 pm. Stay tuned for more details.':
+   'Listopadový Community Day bude 21. listopadu 2026 od 14:00 do 17:00. Podrobnosti zdroj zatím neuvádí.',
+  // --- mocní pokémoni a Wild Area
+  'Mighty Pokémon are more likely to have high Attack, Defense, and HP ratings and be XL or XXL. They are harder to catch, and some may be Shiny. GO Safari Balls improve your chances of catching them.':
+   'Mocní pokémoni mívají vyšší útok, obranu i HP a bývají XL nebo XXL. Hůř se chytají a někteří můžou být shiny. GO Safari Bally zvyšují šanci, že je chytíš.',
+  'The wild mighty Pokémon lineup changes each day.':
+   'Sestava mocných pokémonů ve volné přírodě se každý den mění.',
+  'Mighty Pokémon can appear during either habitat hour. The in-person lineup includes mighty Machamp wearing a modern jacket, Bastiodon, and Kommo-o, plus mighty Lapras in Sendai.':
+   'Mocní pokémoni se můžou objevit v kterékoli hodině prostředí. Na místě je v sestavě mocný Machamp v moderní bundě, Bastiodon a Kommo-o, v Sendai navíc mocný Lapras.',
+  'Mighty Pokémon can appear during either habitat hour. The in-person lineup includes mighty Machamp wearing a modern jacket, Bastiodon, and Kommo-o, plus mighty Hawlucha in Mexico City.':
+   'Mocní pokémoni se můžou objevit v kterékoli hodině prostředí. Na místě je v sestavě mocný Machamp v moderní bundě, Bastiodon a Kommo-o, v Mexico City navíc mocná Hawlucha.',
+  'Steel- and Dragon-themed encounters rotate hourly from 10:00 a.m. to 6:00 p.m. throughout the event area on your ticketed day.':
+   'Ocelová a dračí setkání se střídají po hodinách od 10:00 do 18:00 po celé ploše akce v den tvé vstupenky.',
+  'Steel- and Dragon-themed encounters rotate hourly from 10:00 a.m. to 6:00 p.m. on both event days.':
+   'Ocelová a dračí setkání se střídají po hodinách od 10:00 do 18:00 oba dny akce.',
+  '10:00 a.m. to 11:00 a.m.12:00 p.m. to 1:00 p.m.2:00 p.m. to 3:00 p.m.4:00 p.m. to 5:00 p.m.':
+   '10:00–11:00, 12:00–13:00, 14:00–15:00, 16:00–17:00',
+  '11:00 a.m. to 12:00 p.m.1:00 p.m. to 2:00 p.m.3:00 p.m. to 4:00 p.m.5:00 p.m. to 6:00 p.m.':
+   '11:00–12:00, 13:00–14:00, 15:00–16:00, 17:00–18:00',
+  // --- kadidlo
+  'Lucky ticket holders may also encounter these mighty Legendary Pokémon from Incense:':
+   'Držitelé vstupenky můžou mít štěstí a potkat z kadidla i tyhle mocné legendární pokémony:',
+  'Ticket holders can attract the following mighty Pokémon during the event. These encounters exclude Daily Adventure Incense.':
+   'Držitelé vstupenky můžou během akce přilákat tyhle mocné pokémony. Na denní dobrodružné kadidlo to neplatí.',
+  'All Trainers can attract these mighty Pokémon on both event days. These encounters exclude Daily Adventure Incense.':
+   'Tyhle mocné pokémony můžou oba dny akce přilákat všichni. Na denní dobrodružné kadidlo to neplatí.',
+  'The following Unown are attracted to Incense on your ticketed day.':
+   'V den tvé vstupenky láká kadidlo tyhle Unown.',
+  'Ticket holders can also attract the following Unown on both days.':
+   'Držitelé vstupenky můžou oba dny přilákat i tyhle Unown.',
+  'Incense will attract the following Pokémon during each period. Daily Adventure Incense is excluded.':
+   'Kadidlo láká v každém období tyhle pokémony. Na denní dobrodružné kadidlo to neplatí.',
+  // --- věty o výzkumu, které zdroj dává místo seznamu
+  'Complete event-themed Field Research tasks to encounter event-themed Pokémon. Specific tasks and encounters have not yet been announced.':
+   'Plň úkoly terénního výzkumu k akci a potkáš pokémony k akci. Konkrétní úkoly ani setkání zdroj zatím neuvádí.',
+  'Complete event-themed Field Research tasks for encounters with event-themed Pokémon, including Greavard . Specific tasks and the full encounter list have not yet been announced.':
+   'Plň úkoly terénního výzkumu k akci a potkáš pokémony k akci včetně Greavarda. Konkrétní úkoly ani celý seznam setkání zdroj zatím neuvádí.',
+  'Pokémon GO Wild Area–themed Field Research tasks will be available throughout the event! Complete the research tasks to earn encounters with event-themed Pokémon and other rewards.':
+   'Po celou akci budou k dispozici úkoly terénního výzkumu k Wild Area. Za jejich splnění jsou setkání s pokémony k akci a další odměny.',
+  'Ticket-holding Trainers can learn more about Gigantamax Duraludon in the event-exclusive Special Research story. Complete it for an encounter with Gigantamax Duraludon with a Location Background !':
+   'Držitelé vstupenky se o Gigantamax Duraludonovi dozvědí víc ve speciálním výzkumu k akci. Za jeho dokončení je setkání s Gigantamax Duraludonem s pozadím místa.',
+  'Ticket-holding Trainers can learn more about Gigantamax Duraludon in the event-exclusive Special Research story. Complete it for an encounter with Gigantamax Duraludon with a Special Background !':
+   'Držitelé vstupenky se o Gigantamax Duraludonovi dozvědí víc ve speciálním výzkumu k akci. Za jeho dokončení je setkání s Gigantamax Duraludonem s výjimečným pozadím.',
+  'Visit a participating location and open Pokémon GO to receive the research.':
+   'Přijď na zapojené místo a otevři Pokémon GO; výzkum dostaneš tam.',
+  'Watch the broadcast for 30 minutes to unlock exclusive Timed Research. Completing it awards a Pokémon Night Out baseball jersey avatar item.':
+   'Sleduj přenos 30 minut a odemkneš exkluzivní časovaný výzkum. Za jeho dokončení je baseballový dres Pokémon Night Out pro avatara.',
+  // --- mezinadpisy
+  'Field Research Task Rewards':'Odměny za terénní výzkum',
+  'Field Research Task Encounters':'Setkání z terénního výzkumu',
+  'Rotating Habitat Hours':'Střídavé hodiny prostředí',
+  'Solid as Steel Hour':'Hodina oceli',
+  'Daring as Dragons Hour':'Hodina draků',
+  'Taken Over Spawns':'Spawny po obsazení',
+  'Harvest Festival Spawns':'Spawny Harvest Festivalu',
+  'Appearing in Mega Raids':'V mega raidech',
+  'Shiny Shroodle Debut':'Premiéra shiny Shroodle',
+  'Bonuses for All Trainers':'Bonusy pro všechny',
+  'Additional Ticket Holder Bonuses':'Další bonusy pro držitele vstupenky',
+  'Ticketed Bonus':'Bonus za vstupenku',
+  'Apples':'Jablka',
+  'Photobomb':'Fotobomba',
+  'Save Shadow Zekrom!':'Zachraň Shadow Zekroma!',
+  'In 5 km Eggs from Adventure Sync Rewards':'Z 5km vajec za Adventure Sync',
+  'In 7 km Eggs From Route Rewards':'Ze 7km vajec za routy',
+  'In 10 km Eggs from Adventure Sync Rewards':'Z 10km vajec za Adventure Sync',
+  'Five-Star Max Battles: Wednesday, November 11':'5hvězdičkové Max souboje: středa 11. listopadu',
+  'Five-Star Max Battles: Thursday, November 12':'5hvězdičkové Max souboje: čtvrtek 12. listopadu',
+  'Five-Star Max Battles: Friday, November 13':'5hvězdičkové Max souboje: pátek 13. listopadu',
+  'Tier 1 – Rank 10':'Stupeň 1 – rank 10',
+  'Tier 2 – Rank 20':'Stupeň 2 – rank 20',
+  'Tier 1 Bonus – Starting at Rank 1':'Bonus 1. stupně – od ranku 1',
+  'Tier 2 Bonus – Starting at Rank 10':'Bonus 2. stupně – od ranku 10',
+  'Tier 3 Bonus – Starting at Rank 20':'Bonus 3. stupně – od ranku 20',
+  'adidas Timed Research':'Časovaný výzkum adidas',
+  'Pokémon TCG 30th Celebration Event Bonus Timed Research':
+   'Časovaný výzkum k akci Pokémon TCG: 30 let',
+  // --- bonusy
+  'Increased Spawns':'Víc spawnů',
+  '3x Catch XP':'3× XP za chycení',
+  '2x Catch Candy':'2× bonbónů za chycení',
+  '3-hour Incense':'Tříhodinové kadidlo',
+  '1-hour Lures':'Hodinová lákadla',
+  '2× Incense duration':'2× delší kadidlo',
+  'Four-hour Lure Modules (excluding Golden Lure Modules)':
+   'Čtyřhodinová lákadla (kromě zlatých)',
+  'Eight-hour Party Play':'Osmihodinová hra ve skupině',
+  'Up to five Special Trades':'Až pět speciálních výměn',
+  'Half Stardust cost for trades':'Poloviční cena výměn v prachu',
+  'Tiny Compass buddy souvenir':'Suvenýr od parťáka: malý kompas',
+  '2x Chance for Trainers level 31 and up to receive Candy XL from catching Pokémon':
+   'Dvojnásobná šance na XL bonbón za chycení (od levelu 31)',
+  'One additional Special Trade can be made for a maximum of two for the day':
+   'Jedna speciální výměna navíc, celkem dvě za den',
+  'Trades made will require 50% less Stardust':'Výměny stojí o 50 % méně prachu',
+  '2× Candy from hatching Eggs':'2× bonbónů za vylíhnutí vajec',
+  '1/2 Egg Hatch Distance':'Poloviční vzdálenost líhnutí',
+  '1/4 Egg Hatch Distance':'Čtvrtinová vzdálenost líhnutí',
+  'Increased chance of hatching Shiny Sandile':'Vyšší šance vylíhnout shiny Sandile',
+  'Increased chance of receiving 2 km Eggs from spinning PokéStops':
+   'Vyšší šance na 2km vejce z otáčení PokéStopů',
+  '1,000 Stardust for catching Minior':'1 000 prachu za chycení Minioru',
+  'All Power Spots will host Dynamax Battles':'Na všech Power Spotech budou Dynamax souboje',
+  'Wider Attack, Defense, and HP variance for Pokémon caught in one-star and three-star Shadow Raids during the event':
+   'Širší rozsah útoku, obrany i HP u kusů chycených během akce v jedno- a tříhvězdičkových shadow raidech',
+  'Receive up to six free Raid Passes from spinning Gym Photo Discs':
+   'Až šest raid passů zdarma z otáčení gymů',
+  'Receive up to 14 Raid Passes from spinning Gym Photo Discs':
+   'Až 14 raid passů z otáčení gymů',
+  'Increased chance to get Rare Candy XL from Raid Battles':
+   'Vyšší šance na XL vzácný bonbón z raidů',
+  'Increased chance of encountering Shiny Chandelure from Super Mega Raids':
+   'Vyšší šance na shiny Chandelure ze super mega raidů',
+  'An additional 5,000 XP from Super Mega Raid Battles':'5 000 XP navíc ze super mega raidů',
+  'An additional 5,000 Stardust from Super Mega Raid Battles':
+   '5 000 prachu navíc ze super mega raidů',
+  'Chance to encounter Shiny Gimmighoul when using a Coin Bag':
+   'Šance na shiny Gimmighoula při použití Coin Bagu',
+  'Chance to encounter Shiny Meltan when opening the Mystery Box':
+   'Šance na shiny Meltana při otevření Mystery Boxu',
+  'Reduced wait time before you can open the Mystery Box again':
+   'Kratší čekání na další otevření Mystery Boxu',
+  'Trainers can receive special event stickers from PokéStops and Gifts':
+   'Z PokéStopů a dárků chodí speciální samolepky k akci',
+  'From October 2 at 5:00 p.m. to October 3 at 8:00 p.m. PDT (GMT −7), the daily Remote Raid limit will increase from 10 to 20':
+   'Od 2. října 17:00 do 3. října 20:00 PDT (GMT −7) se denní limit vzdálených raidů zvedá z 10 na 20',
+  'From October 23 at 5:00 p.m. to October 24 at 8:00 p.m. PDT (GMT −7), the daily Remote Raid limit will increase from 10 to 20':
+   'Od 23. října 17:00 do 24. října 20:00 PDT (GMT −7) se denní limit vzdálených raidů zvedá z 10 na 20',
+  'Remote Raid limit increased to 20 from Friday, October 30, at 5:00 p.m. to Saturday, October 31, 2026, at 8:00 p.m. PDT':
+   'Limit vzdálených raidů zvednutý na 20 od pátku 30. října 17:00 do soboty 31. října 2026 20:00 PDT',
+  'Remote Raid limit increased to 30 from Monday, November 9, to Friday, November 13, 2026':
+   'Limit vzdálených raidů zvednutý na 30 od pondělí 9. do pátku 13. listopadu 2026',
+  'No Remote Raid limit from Saturday, November 14, to Sunday, November 15, 2026':
+   'Bez limitu vzdálených raidů od soboty 14. do neděle 15. listopadu 2026',
+  // --- GO Pass
+  'Encounters with event-themed Pokémon':'Setkání s pokémony k akci',
+  'Candy for event-themed Pokémon':'Bonbóny pro pokémony k akci',
+  'Rare Candy':'Vzácné bonbóny',
+  'Ultra Balls':'Ultra Bally',
+  'Additional rewards':'Další odměny',
+  'Incense (excluding Daily Adventure Incense) activated during the event lasts for two hours':
+   'Kadidlo (kromě denního dobrodružného) zapnuté během akce vydrží dvě hodiny',
+  // --- úkoly výzkumu
+  'Use a Star Piece':'Použij Star Piece',
+  'Spin 10 PokéStops or Gyms':'Otoč 10 PokéStopů nebo gymů',
+  'Spin 100 PokéStops or Gyms':'Otoč 100 PokéStopů nebo gymů',
+  'Hatch an Egg':'Vylíhni vejce',
+  'Earn 3 candies while exploring with your buddy':'Získej 3 bonbóny chozením s parťákem',
+  'Use 30 Berries to help catch Pokémon':'Použij 30 bobulí při chytání',
+  'Use 3 Razz Berries to help catch Pokémon':'Použij 3 Razz Berry při chytání',
+  'Use 3 Nanab Berries while catching Pokémon':'Použij 3 Nanab Berry při chytání',
+  'Use 3 Pinap Berries while catching Pokémon':'Použij 3 Pinap Berry při chytání',
+  'Make 3 Nice Curveball Throws':'Trefa „Nice“ s faldou 3×',
+  'Use 3 Charged Attacks':'Použij 3 nabité útoky',
+  'Win a raid':'Vyhraj raid',
+  'Defeat a Ghost-type or Fire-type Raid Boss':'Poraž raid bosse typu Ghost nebo Fire',
+  'Claim Reward!':'Vyzvedni odměnu!',
+  // --- odměny, které appka jmenuje česky i jinde
+  'Stardust':'prach',
+  'Max Particle':'Max částice',
+  'Incense':'kadidlo',
+  'Incubator':'inkubátor',
+  'Super Incubator':'super inkubátor',
+  'Charged TM':'nabitý TM',
+  // --- spotlight hour: den, druh a bonus
+  'October 15: The featured Pokémon is Stufful and the special bonus is 2× Transfer Candy.':
+   '15. října: hlavní druh je Stufful, bonus 2× bonbón za poslání profesorovi.',
+  'October 22: The featured Pokémon is Morelull and the special bonus is 2× Catch Stardust.':
+   '22. října: hlavní druh je Morelull, bonus 2× prach za chycení.',
+  'October 29: The featured Pokémon is Gastly and the special bonus is 2× Evolution XP.':
+   '29. října: hlavní druh je Gastly, bonus 2× XP za evoluci.',
+  // --- oblečení pro avatara
+  'adidas Pokémon Cap':'Kšiltovka adidas Pokémon',
+  'adidas Pokémon Jacket':'Bunda adidas Pokémon'
+ };
+ const HVEZDY=/^(.*?)(\*+)$/;
+ const CISLOVKA={one:1,two:2,three:3,four:4,five:5,six:6,seven:7};
+ const PREKLAD=[
+  // --- mezinadpisy seznamů
+  [/^Wild Encounters$/i,()=>'Ve volné přírodě'],
+  [/^Incense Encounters$/i,()=>'Na kadidlo'],
+  [/^Ticket Holder Incense Encounters$/i,()=>'Na kadidlo pro držitele vstupenky'],
+  [/^Ticket Holder Bonuses$/i,()=>'Bonusy pro držitele vstupenky'],
+  [/^Event Ticket$/i,()=>'Vstupenka na akci'],
+  [/^Field Research(?: Tasks?)?$/i,()=>'Terénní výzkum'],
+  [/^Timed Research$/i,()=>'Časovaný výzkum'],
+  [/^Featured Pokémon$/i,()=>'Hlavní pokémoni'],
+  [/^Pokémon Debuts?$/i,()=>'Premiéry druhů'],
+  [/^Max Pokémon Debuts$/i,()=>'Premiéry Max druhů'],
+  [/^Wild Pokémon Encounters$/i,()=>'Ve volné přírodě'],
+  [/^Mighty Pokémon$/i,()=>'Mocní pokémoni'],
+  [/^The following Pokémon will appear more frequently in the wild\.$/i,
+   ()=>'Tihle se budou ve volné přírodě objevovat častěji.'],
+  [/^(.+) Debuts$/i,(m)=>'Premiéra: '+m[1]],
+  [/^Shiny Debut$/i,()=>'Premiéra shiny'],
+  [/^Increased Shiny Chance$/i,()=>'Vyšší šance na shiny'],
+  [/^Trading Bonuses$/i,()=>'Bonusy k výměnám'],
+  [/^Mega Raids$/i,()=>'Mega raidy'],
+  [/^Shadow Raids$/i,()=>'Shadow raidy'],
+  [/^Max Battles$/i,()=>'Max souboje'],
+  [/^(one|two|three|four|five|six)-star raids$/i,(m)=>CISLOVKA[m[1].toLowerCase()]+'hvězdičkové raidy'],
+  [/^(one|two|three|four|five|six)-star max battles$/i,(m)=>CISLOVKA[m[1].toLowerCase()]+'hvězdičkové Max souboje'],
+  [/^(one|two|three|four|five|six)-star shadow raids$/i,(m)=>CISLOVKA[m[1].toLowerCase()]+'hvězdičkové shadow raidy'],
+  [/^Appearing in (\d+)-Star Shadow Raids$/i,(m)=>'V '+m[1]+'hvězdičkových shadow raidech'],
+  [/^(?:In )?(\d+) km Eggs$/i,(m)=>'Z '+m[1]+'km vajec'],
+  // --- bonusy
+  [/^GO Pass Deluxe: (.+)$/,(m,cz)=>'GO Pass Deluxe: '+cz(m[1])],
+  [/^(\d+(?:[.,]\d+)?)× Candy for catching Pokémon$/i,(m)=>m[1]+'× bonbónů za chycení'],
+  [/^(\d+(?:[.,]\d+)?)× Candy XL for catching Pokémon$/i,(m)=>m[1]+'× XL bonbónů za chycení'],
+  [/^(\d+(?:[.,]\d+)?)× Stardust for catching Pokémon$/i,(m)=>m[1]+'× prachu za chycení'],
+  [/^(\d+(?:[.,]\d+)?)× XP for catching Pokémon$/i,(m)=>m[1]+'× XP za chycení'],
+  [/^(\d+(?:[.,]\d+)?)× Daily Adventure Incense duration$/i,(m)=>m[1]+'× delší denní dobrodružné kadidlo'],
+  [/^(\d+(?:[.,]\d+)?)× Max Particles from Power Spots$/i,(m)=>m[1]+'× Max částic z Power Spotů'],
+  [/^(\d+(?:[.,]\d+)?)× Max Particles from exploring$/i,(m)=>m[1]+'× Max částic za chození'],
+  [/^(\d+(?:[.,]\d+)?)× XP from Max Battles$/i,(m)=>m[1]+'× XP z Max soubojů'],
+  [/^(\d+(?:[.,]\d+)?)× Mega Energy from exploring with (.+)$/i,(m)=>m[1]+'× Mega energie za chození s '+m[2]],
+  [/^Increased Stardust for catching (.+)$/i,(m)=>'Víc prachu za chycení: '+m[1]],
+  [/^Increased chance to encounter Shiny Pokémon$/i,()=>'Vyšší šance na shiny'],
+  [/^Increased chance to encounter Shiny (.+)$/i,(m)=>'Vyšší šance na shiny '+m[1]],
+  [/^Increased chance to encounter (.+) from (.+) to (.+) local time each day$/i,
+   (m)=>'Vyšší šance potkat '+m[1]+', denně '+m[2]+'–'+m[3]+' místního času'],
+  [/^Increased Max Particles from Power Spots and exploration$/i,()=>'Víc Max částic z Power Spotů i z chození'],
+  [/^Increased chance of (\d+) km Eggs from PokéStops and Gyms$/i,
+   (m)=>'Vyšší šance na '+m[1]+'km vejce z PokéStopů a gymů'],
+  [/^Increased XP and Stardust from hatching Eggs$/i,()=>'Víc XP a prachu za vylíhnutí vajec'],
+  [/^Increased limits on opening Gifts, receiving Gifts from PokéStop and Gym Photo Discs, and storing Gifts$/i,
+   ()=>'Vyšší limity na otevírání, získávání i skladování dárků'],
+  [/^Lure Modules last for (\d+) hours?$/i,(m)=>'Lákadla vydrží '+m[1]+' h'],
+  [/^Mossy Lure Modules activated during the event will last for one hour$/i,
+   ()=>'Mechová lákadla zapnutá během akce vydrží hodinu'],
+  [/^Incense, excluding Daily Adventure Incense, lasts for (\d+) hours?$/i,
+   (m)=>'Kadidlo (kromě denního dobrodružného) vydrží '+m[1]+' h'],
+  [/^Incense \(excluding Daily Adventure Incense\) activated during the event will last for (\d+) hours?$/i,
+   (m)=>'Kadidlo (kromě denního dobrodružného) zapnuté během akce vydrží '+m[1]+' h'],
+  [/^Party Play lasts for (\d+) hours?$/i,(m)=>'Hra ve skupině vydrží '+m[1]+' h'],
+  [/^Up to (\d+) Special Trades per day$/i,(m)=>'Až '+m[1]+' speciálních výměn denně'],
+  [/^Up to (one|two|three|four|five) Special Trades for the day$/i,
+   (m)=>'Až '+CISLOVKA[m[1].toLowerCase()]+' speciální výměny za den'],
+  [/^Up to (\d+) free Raid Passes per day from Gyms$/i,(m)=>'Až '+m[1]+' raid passů denně zdarma z gymů'],
+  [/^1\/2 Stardust cost for trades$/i,()=>'Poloviční cena výměn v prachu'],
+  [/^1\/2 Hatch Distance for Eggs placed in Incubators during the event$/i,
+   ()=>'Poloviční vzdálenost líhnutí u vajec vložených do inkubátoru během akce'],
+  [/^1\/4 Adventuring distance to receive Max Particles$/i,()=>'Čtvrtinová vzdálenost pro Max částice'],
+  [/^3\/4 Max Particle cost for unlocking and powering up Max Moves$/i,
+   ()=>'Odemknutí a vylepšení Max útoků stojí 3/4 Max částic'],
+  [/^One additional Candy for trading Pokémon$/i,()=>'Jeden bonbón navíc za výměnu'],
+  [/^One guaranteed Candy XL when trading Pokémon for Trainers level 31 and above$/i,
+   ()=>'Jeden jistý XL bonbón za výměnu (od levelu 31)'],
+  [/^Daily Max Particle collection limit increased to ([\d,\.]+)$/i,
+   (m)=>'Denní limit sběru Max částic zvýšen na '+m[1]],
+  [/^Max Particle collection limit increased to ([\d,\.]+)$/i,
+   (m)=>'Limit sběru Max částic zvýšen na '+m[1]],
+  [/^Power Spots will refresh more frequently$/i,()=>'Power Spoty se obnovují častěji'],
+  [/^Additional Power Spots will be active$/i,()=>'Aktivních bude víc Power Spotů'],
+  [/^All Power Spots will host Gigantamax Battles$/i,()=>'Na všech Power Spotech budou Gigantamax souboje'],
+  [/^More Stardust from defeating Team GO Rocket Grunts and Leaders$/i,
+   ()=>'Víc prachu za poražení Team GO Rocket'],
+  [/^More Team GO Rocket appearances at PokéStops and balloons appearing every (\d+) hours$/i,
+   (m)=>'Víc Team GO Rocket na PokéStopech, balony každé '+m[1]+' h'],
+  [/^Chance to encounter mighty Pokémon on Routes$/i,()=>'Šance potkat mocné pokémony na routách'],
+  [/^Chance to get GO Safari Balls from PokéStops and Gyms$/i,()=>'Šance na GO Safari Bally z PokéStopů a gymů'],
+  [/^(\d+) GO Snapshot surprise encounters per day$/i,(m)=>m[1]+' překvapení z GO Snapshotu denně'],
+  [/^Use a Charged TM to remove Frustration from Shadow Pokémon$/i,
+   ()=>'Nabitým TM jde ze shadow kusů sundat Frustration'],
+  /* „Stardust ×500" — jméno odměny a počet. Překládá se jméno, počet
+     se vrátí za ně. */
+  [/^(.+?)\s*[x×]\s*([\d,\.]+|\?)$/i,(m,cz)=>cz(m[1])+' ×'+m[2]],
+  // --- úkoly, kde se mění jen číslo
+  [/^Win (\d+|a) Max Battles?$/i,(m)=>m[1].toLowerCase()==='a'?'Vyhraj Max souboj':'Vyhraj '+m[1]+' Max soubojů'],
+  [/^Win (\d+|a) Raids?$/i,(m)=>m[1].toLowerCase()==='a'?'Vyhraj raid':'Vyhraj '+m[1]+' raidů'],
+  [/^Catch (\d+|a|an) ([A-Za-z]+)-type Pokémon$/i,(m)=>/^(a|an)$/i.test(m[1])
+   ?'Chyť pokémona typu '+m[2]:'Chyť '+m[1]+' pokémonů typu '+m[2]],
+  [/^Hatch (\d+|an?) Eggs?$/i,(m)=>/^an?$/i.test(m[1])?'Vylíhni vejce':'Vylíhni '+m[1]+' vajec'],
+  [/^Earn ([\d,\.]+) Stardust$/i,(m)=>'Získej '+m[1].replace(/,/g,' ')+' prachu'],
+  [/^Spin ([\d,\.]+) PokéStops or Gyms$/i,(m)=>'Otoč '+m[1]+' PokéStopů nebo gymů'],
+  [/^Make (\d+) (Nice|Great|Excellent) Throws?$/i,
+   (m)=>'Trefa „'+m[2]+'“ '+m[1]+'×'],
+  [/^Power up Pokémon (\d+) times$/i,(m)=>'Vylepši pokémona '+m[1]+'×'],
+  [/^Use (\d+) ([A-Za-z]+) Berries (?:to help catch|while catching) Pokémon$/i,
+   (m)=>'Použij '+m[1]+' '+m[2]+' Berry při chytání'],
+  [/^Rank (\d+)$/i,(m)=>'Rank '+m[1]],
+  // --- úkoly výzkumu
+  [/^Explore (\d+(?:[.,]\d+)?) km$/i,(m)=>'Ujdi '+m[1]+' km'],
+  [/^Earn a Candy exploring with your buddy$/i,()=>'Získej bonbón chozením s parťákem'],
+  [/^Catch (\d+) Pokémon$/i,(m)=>'Chyť '+m[1]+' pokémonů'],
+  [/^Make (\d+) Great Throws$/i,(m)=>'Trefa „Great" '+m[1]+'×'],
+  [/^Power up Pokémon (\d+) times$/i,(m)=>'Vylepši pokémona '+m[1]+'×']
+ ];
+ /* Hvězdičky na konci věty NESE význam (podmínka, delší čas), takže se
+    před překladem odloží a pak vrátí — jinak by pravidlo nesedlo a věta
+    by zbytečně zůstala anglicky. */
+ function cz(text){
+  const cely=String(text==null?'':text).trim();
+  if(!cely)return cely;
+  const m=cely.match(HVEZDY),jadro=m?m[1].trim():cely,hvezdy=m?m[2]:'';
+  if(Object.prototype.hasOwnProperty.call(PREKLAD_VETY,jadro))
+   return PREKLAD_VETY[jadro]+hvezdy;
+  for(const [re,fn] of PREKLAD){
+   const shoda=jadro.match(re);
+   if(shoda)return fn(shoda,cz)+hvezdy;
+  }
+  return cely;
+ }
+ const NAHRADNI_SEKCE=['novinky','shiny','vyzkum','vejce','kadidlo'];
+ /* Ikona k bonusu. Vybira se podle slova, ktere ve zdroji stoji — zadne
+    hadani, co tim Niantic myslel. Co se nepozna, dostane tecku. */
+ const IKONY_BONUSU=[
+  [/\bxp\b/i,'M12 3l2.6 5.6 6.4.9-4.6 4.4 1.1 6.1L12 17l-5.5 3 1.1-6.1L3 9.5l6.4-.9z'],
+  [/candy/i,'M8 12a4 4 0 1 1 8 0 4 4 0 0 1-8 0M4 8l3 2-3 2zM20 8l-3 2 3 2z'],
+  [/stardust|star piece/i,'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18'],
+  [/incense/i,'M9 21h6M10 21V9a2 2 0 0 1 4 0v12M12 3c1.5 1.5 1.5 3 0 4'],
+  [/lure/i,'M12 21s6-6.5 6-11a6 6 0 1 0-12 0c0 4.5 6 11 6 11M12 8v4'],
+  [/trade/i,'M4 8h12l-3-3M20 16H8l3 3'],
+  [/spawn|wild|encounter/i,'M5 18c6 0 12-4 14-14C13 5 7 9 5 18M5 18l4-4'],
+  [/egg/i,'M12 3c3.5 4 5 7 5 10a5 5 0 0 1-10 0c0-3 1.5-6 5-10'],
+  [/photobomb|snapshot|photo/i,'M4 8h4l1.5-2h5L16 8h4v11H4zM12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7'],
+  [/raid/i,'M12 3l8 4v5c0 5-4 8-8 9-4-1-8-4-8-9V7z'],
+  [/friend|gift/i,'M4 10h16v10H4zM4 10l2-4h12l2 4M12 6v14'],
+ ];
+ const ikonaBonusu=t=>{
+  for(const [re2,d] of IKONY_BONUSU)if(re2.test(t))return d;
+  return 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8';
+ };
+ /* Bonus rozebrany na cislo a na to, ceho se tyka. Zdroj pise ustalene
+    fraze: "3x Catch XP", "3-hour Incense", "1-hour Lures*". Cokoli jineho
+    je veta s podminkou — ta zustava textem, protoze z ni dlazdice nejde
+    udelat bez hadani. */
+ function rozborBonusu(text){
+  /* Dlazdice unese jmenovku o par slovech. "2x Chance for Trainers level 31
+     and up to receive Candy XL from catching Pokemon" je veta s podminkou —
+     ta patri do textu, jinak by z dlazdice byl odstavec. */
+  const kratke=(x)=>String(x).trim().split(/\s+/).length<=3?String(x).trim():null;
+  const t=String(text||'').trim().replace(/\*+$/,'');
+  let m=t.match(/^(\d+(?:[.,]\d+)?)\s*[x\u00d7]\s+(.+)$/i);
+  if(m&&kratke(m[2]))return {cislo:m[1]+'\u00d7',popis:kratke(m[2])};
+  m=t.match(/^(\d+)\s*-\s*hour\s+(.+)$/i);
+  if(m&&kratke(m[2]))return {cislo:m[1]+' h',popis:kratke(m[2])};
+  m=t.match(/^(\d+)\s*-\s*km\s+(.+)$/i);
+  if(m&&kratke(m[2]))return {cislo:m[1]+' km',popis:kratke(m[2])};
+  return null;
+ }
  function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))];
+  if(!names.length){
+   for(const klic of NAHRADNI_SEKCE){
+    for(const w of (e[7]||[])){
+     for(const polozka of ((w[2]||{})[klic]||[])){
+      // -1 je mezinadpis; a jen to, co je doopravdy druh (ne věta z bonusu).
+      if(polozka[1]===-1)continue;
+      const jm=polozka[0];
+      if(jm&&druhZTextu(jm)&&!names.includes(jm))names.push(jm);
+     }
+    }
+    if(names.length)break;
+   }
+  }
   // Nejdriv hlavni druh z dat, az potom spawny. Poradi rozhoduje o tom,
   // ktery obrazek akci reprezentuje.
   featuredDruhy(e).reverse().forEach(name=>{
@@ -1401,7 +1996,12 @@ globalThis.AtlasBudget = (() => {
   // typem: "Phantump Catch Mastery" ma typ "event", takze podle typu
   // se nepoznala. Jmeno se vzdycky overi proti dexu.
   if(/(Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i.test(String(e[0]))
-    ||/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).reverse().forEach(name=>{if(!names.includes(name)&&(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name)))names.unshift(name)})}return names.slice(0,3)}
+    ||/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).reverse().forEach(name=>{if(!names.includes(name)&&(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name)))names.unshift(name)})}
+  /* Tentyz druh pod dvema jmeny je jedna polozka: "Dynamax Sableye"
+     a "Sableye" davaly dva stejne obrazky i dve stejna tlacitka. */
+  const videno=new Set();
+  return names.filter(n=>{const k=P.dexKeyOf(n)||String(n).toLowerCase();
+   if(videno.has(k))return false;videno.add(k);return true}).slice(0,3)}
  function bossCards(es){return es.flatMap(e=>{const names=eventNames(e);return (names.length?names:[null]).map(name=>`<button class="atlas-boss" data-event-index="${events.indexOf(e)}"><span class="atlas-boss-art">${name?image(name):'<span aria-hidden="true">◇</span>'}</span><b>${esc(name&&/^Shadow /.test(e[0])&&!/^Shadow /.test(name)?'Shadow '+name:name||e[0])}</b><small>${/^max-/.test(e[1])?'Max souboj':'Raid'} · ${format(e[4])}</small></button>`)}).join('')}
  /* Okno akce, ktere pro dany den plati. Akce mivaji vic casti a kazda
     svuj obsah — bonus z jineho okna by o tom dni lhal. Sdili to karta
@@ -1429,21 +2029,400 @@ globalThis.AtlasBudget = (() => {
  const title=String(e[0]).replace(/ during Max Monday$/i,'').replace(/ in (?:5-star Raid Battles|Mega Raids|Shadow Raids)$/i,'').replace(/: The Series Celebration Event 2026$/i,'').replace(/Pokémon Horizons Bonus Timed Research/i,'Pokémon Horizons: bonusový výzkum');
  return `<button class="atlas-event-card" data-event-kind="${kind}" data-event-state="${b&&b<=tomorrow?'ending':a&&a>now?'upcoming':'live'}" data-event-index="${events.indexOf(e)}" title="${esc(e[0])}"><span class="atlas-event-visual"><span class="atlas-event-status">${label}</span><span class="atlas-event-art">${names.map(image).join('')||'<span class="atlas-event-bez-obrazku" aria-hidden="true">◇</span>'}</span></span><span class="atlas-event-copy"><span class="atlas-event-category">${{max:'Max souboje',raid:'Raidy',research:'Výzkum',event:'Událost'}[kind]}</span><h3>${esc(title)}</h3><span class="atlas-event-prinos">${esc(prinos(e))}</span><span class="atlas-event-date">${format(e[3])} → ${format(e[4])}</span><span class="atlas-event-link">Prohlédnout akci <span aria-hidden="true">→</span></span></span></button>`;
  }
- function list(items,kind){return `<div class="atlas-event-species">${items.map(([name,shiny])=>shiny===-1?`<h4>${esc(name)}</h4>`:`<div class="atlas-event-specimen">${['spawn','raid','vejce','shiny'].includes(kind)?image(name):''}<span>${esc(name)}${shiny===1?' <small>✦ shiny dostupné</small>':''}</span></div>`).join('')}</div>`}
+ /* Mezinadpis ze zdroje, ktery rika totez co nadpis sekce — jen anglicky.
+    Zahazuje se jen presna shoda; „In 2 km Eggs" nebo „Pokemon Debut" nesou
+    informaci a zustavaji. */
+ const NADBYTECNY={spawn:/^wild\s+encounters?$/i,kadidlo:/^incense\s+encounters?$/i,vyzkum:/^field\s+research(\s+task)?(\s+rewards?)?$/i,
+  shiny:/^shiny$/i,bonus:/^bonus(es)?$/i,raid:/^raids?$/i};
+ /* Je to druh, nebo věta ze zdroje? `dexEntry` chytne i začátek věty
+    („Applin will have an increased chance…" vrátí Applina), takže
+    rozhoduje, kolik z textu po jméně druhu zbyde: jméno nese nanejvýš
+    předponu formy a závorku, věta desítky znaků. */
+ function druhZTextu(txt){
+  const d=P.dexEntry&&P.dexEntry(txt);
+  if(!d||!d.name)return null;
+  if(String(txt).trim().split(/\s+/).length>6)return null;
+  const cisty=x=>String(x).toLowerCase().replace(/[^a-z0-9]+/g,'');
+  const t=cisty(txt),n=cisty(d.name);
+  if(!n||t.indexOf(n)<0)return null;
+  return (t.length-n.length)<=20?d:null;
+ }
+ /* Bublina druhu: obrázek, jméno a případné shiny. Používá ji rozpis
+    sekcí i výzkum, ať vypadá druh všude stejně. */
+ function bublinaDruhu(name,shiny,navic){
+  return `<span class="atlas-event-specimen"><span class="atlas-event-obr">${image(name)}</span>`
+   +`<span class="atlas-event-jmeno">${esc(name)}`
+   +(shiny===1?'<small>✦ shiny dostupné</small>':'')
+   +(navic?`<small>${esc(navic)}</small>`:'')+`</span></span>`;
+ }
+
+ /* Výzkum: úkol a k němu MOŽNÉ odměny. Plochý seznam jmen neříkal, za co
+    se odměna dává, ani to, že se z nich losuje jedna. */
+ /* Jedna odměna. Pokémon dostane bublinu se spritem, předmět (inkubátor,
+    prach, XP) je štítek s počtem — sprite pro něj neexistuje a prázdný
+    rámeček vypadá jako chybějící obrázek. */
+ function odmenaVyzkumu(o){
+  const cp=o.cp&&o.cp.length===2?`CP ${o.cp[0]}–${o.cp[1]}`:'';
+  if(druhZTextu(o.jmeno))return bublinaDruhu(o.jmeno,o.shiny,cp);
+  return `<span class="atlas-vyzkum-predmet">${esc(cz(o.jmeno))}`
+   +(o.pocet?` <b>×${esc(String(o.pocet))}</b>`:'')+`</span>`;
+ }
+ function vyzkumAkce(e){
+  const skupiny=(e&&e[8]||{}).vyzkum;
+  if(!skupiny||!skupiny.length)return '';
+  return skupiny.map(sk=>{
+   let krok=0;
+   const ukoly=(sk.ukoly||[]).map(u=>{
+    const odmeny=(u.odmeny||[]).map(odmenaVyzkumu).join('');
+    /* Kroky se vypisují jen tam, kde jich je víc — u jednokrokového
+       výzkumu by „Krok 1" nic neříkal. */
+    const hlavicka=(u.krok&&u.krok!==krok&&(sk.ukoly||[]).some(x=>x.krok>1))
+     ? `<li class="atlas-vyzkum-krok">Krok ${esc(String(u.krok))}</li>`:'';
+    if(u.krok)krok=u.krok;
+    return hlavicka+`<li><b class="atlas-vyzkum-ukol"`
+     +(cz(u.ukol)!==String(u.ukol).trim()?` title="${esc(u.ukol)}"`:'')
+     +`>${esc(cz(u.ukol))}</b>`
+     +`<span class="atlas-event-species atlas-vyzkum-odmeny">${odmeny}</span></li>`;
+   }).join('');
+   const zaKrok=(sk.odmeny_kroku||[]).map(odmenaVyzkumu).join('');
+   if(!ukoly&&!zaKrok)return '';
+   /* „Možné, ne jisté" platí o terénním výzkumu: tam si ze seznamu
+      vybere hra jednu odměnu. U časovaného výzkumu jsou předměty
+      vypsané jako to, co dostaneš — slíbit u nich výběr by lhalo. */
+   const vyber=(sk.typ||'field')==='field';
+   return `<details open class="atlas-event-sekce atlas-event-vyzkum">`
+    +`<summary>${esc(sk.nadpis||'Výzkum')}`
+    +(sk.placene?' <span class="atlas-event-placene">placené</span>':'')
+    +`</summary>`
+    +(vyber?`<p class="atlas-event-text">Odměny jsou možné, ne jisté — zdroj je u každého`
+     +` úkolu uvádí jako výběr.</p>`:'')
+    +(ukoly?`<ul class="atlas-vyzkum-ukoly">${ukoly}</ul>`:'')
+    +(zaKrok?`<p class="atlas-event-okno">Za dokončení</p>`
+     +`<span class="atlas-event-species atlas-vyzkum-odmeny">${zaKrok}</span>`:'')
+    +`</details>`;
+  }).join('');
+ }
+
+ function list(items,kind){
+  const re=NADBYTECNY[kind];
+  const vyber=re?items.filter(x=>!(x[1]===-1&&re.test(String(x[0]||'').trim()))):items;
+  /* Druh dostane bublinu s obrázkem, všechno ostatní (bonusy, předměty,
+     věty ze zdroje) je řádek textu. Bublina kolem věty vypadá jako
+     štítek, který něco dělá — a nedělá nic. */
+  let html='',bubliny='';
+  const zavrit=()=>{if(bubliny){html+='<div class="atlas-event-species">'+bubliny+'</div>';bubliny=''}};
+  // Dlaždice bonusů stojí v jedné řadě vedle sebe, ne každá na svém řádku.
+  const obal=(h)=>h.replace(/(<span class="atlas-event-bonus">[\s\S]*?<\/span><\/span>)(?=(?:<span class="atlas-event-bonus">|$))/g,'$1');
+  vyber.forEach(([name,shiny])=>{
+   /* Cesky se ukazuje to, co appka umi prelozit PRESNE; zbytek zustava
+      ze zdroje. Puvodni zneni drzi `title`, at je co overit — a ikona
+      bonusu se hleda porad podle anglickeho originalu. */
+   const cesky=cz(name),jiny=cesky!==String(name).trim();
+   const puv=jiny?` title="${esc(name)}"`:'';
+   if(shiny===-1){zavrit();html+=`<h4${puv}>${esc(cesky)}</h4>`;return}
+   const jeDruh=!!druhZTextu(name);
+   if(!jeDruh){
+    const b=kind==='bonus'?rozborBonusu(cesky):null;
+    if(b){
+     zavrit();
+     html+=`<span class="atlas-event-bonus"${puv}><svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true">`
+      +`<path d="${esc(ikonaBonusu(name))}"/></svg>`
+      +`<span><b>${esc(b.cislo)}</b><small>${esc(b.popis)}</small></span></span>`;
+     return;
+    }
+    zavrit();html+=`<p class="atlas-event-text"${puv}>${esc(cesky)}</p>`;return}
+   bubliny+=bublinaDruhu(name,shiny);
+  });
+  zavrit();
+  return html;
+ }
  /* Stitky akce (Akce, Raidy, Jen v nekterych zemich) a veta o omezeni.
-    Oboji je ze stranky zdroje; veta se neprekláda — co tam stoji, stoji tam
-    anglicky, a prepsat ji za zdroj by znamenalo tvrdit neco jineho. */
+    Oboji je ze stranky zdroje. Veta o omezeni jde pres `cz()` jako vsechno
+    ostatni: prelozi se, kdyz ji appka zna PRESNE, jinak zustane tak, jak ji
+    zdroj napsal — prepsat ji po svem by znamenalo tvrdit neco jineho. */
  function stitkyAkce(e){
   const d=e&&e[8]||{};
   const stitky=(d.stitky||[]).map(([klic,popis])=>
    `<span class="atlas-event-stitek" data-stitek="${esc(klic)}">${esc(popis)}</span>`).join('');
   const omezeni=d.omezeni
-   ?`<p class="atlas-event-omezeni">Omezení podle zdroje: ${esc(d.omezeni)}</p>`:'';
+   ?`<p class="atlas-event-omezeni"`
+    +(cz(d.omezeni)!==String(d.omezeni).trim()?` title="${esc(d.omezeni)}"`:'')
+    +`>Omezení podle zdroje: ${esc(cz(d.omezeni))}</p>`:'';
   return (stitky?`<div class="atlas-event-stitky">${stitky}</div>`:'')+omezeni;
  }
 
- function openEvent(i){const e=events[i];if(!e)return;const url=safeUrl(e[5]);modal.innerHTML=`<header><div><span class="atlas-eyebrow">TAHÁK AKCE</span><h2 id="atlasEventTitle">${esc(e[0])}</h2><p>${format(e[3])} — ${format(e[4])}</p>${stitkyAkce(e)}</div><button class="atlas-mini-btn" data-event-close aria-label="Zavřít detail akce">✕</button></header><div class="atlas-event-body">${(e[7]||[]).map(w=>`<section class="atlas-event-window"><p class="atlas-small-note">Platnost této části: ${format(w[0])} — ${format(w[1])}</p>${Object.entries(w[2]||{}).filter(([k,v])=>Array.isArray(v)&&v.length).map(([k,v])=>`<details open><summary>${esc(sections[k]||k)}</summary>${list(v,k)}</details>`).join('')}</section>`).join('')||'<p>Podrobný obsah není ve zdroji k dispozici.</p>'}<p class="atlas-small-note">Seznam popisuje obsah akce, nikoli živé spawny v okolí. Dostupné shiny neznamená zvýšenou šanci. Podmínky a zvláštní časová okna ověř ve zdroji.</p><div class="atlas-event-actions"><button class="atlas-mini-btn" data-event-teams>Otevřít Tahák soubojů</button>${url?`<a class="atlas-mini-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Zdroj akce ↗</a>`:''}</div></div>`;modal.showModal();}
- modal.addEventListener('click',e=>{if(e.target.closest('[data-event-close]'))modal.close();if(e.target.closest('[data-event-teams]')){modal.close();__atlasTest.go('teams','cheatCard')}});
+ /* Poradi sekci je pevne: nejdriv co se da chytit, pak souboje, pak
+    odmeny a bonusy, az nakonec doplnky. Driv zalezelo na tom, jak to
+    zrovna lezelo ve zdroji, takze kazda akce vypadala jinak. */
+ const PORADI_SEKCI=['spawn','kadidlo','raid','vejce','vyzkum','bonus','utoky','shiny','novinky'];
+ /* Exkluzivní útok akce. Je to jediná věc, kvůli které se v ten den
+    evolvuje, takže stojí nahoře. Jméno, typ i podmínka jsou doslova ze
+    zdroje — appka k nim nic nepřidává. */
+ function utokAkce(e){
+  const u=(e&&e[8]||{}).utok;
+  if(!u||!u.jmeno)return '';
+  const barva=u.typ&&P.typeColors?(P.typeColors()||{})[u.typ]:null;
+  return `<section class="atlas-event-utok">`
+   +`<div class="atlas-eyebrow">Exkluzivní útok akce</div>`
+   +`<div class="atlas-event-utok-jm">`
+   +(u.typ?`<span class="d-type"${barva?` style="background:${esc(barva)}"`:''}>`
+     +(P.typIkona?P.typIkona(u.typ):'')+esc(u.typ)+`</span>`:'')
+   +`<b>${esc(u.jmeno)}</b></div>`
+   +(u.podminka?`<p>${esc(u.podminka)}</p>`:'')
+   +`</section>`;
+ }
+ /* Sekce, kterou stranka akce MA, ale appka z ni nic nevytahla. Driv
+    vypadala uplne stejne jako akce, ktera nic takoveho nema — appka tim
+    mlcky tvrdila, ze je videt vsechno. Veta pod nadpisem je ze zdroje,
+    ne od appky: u Halloweenu je to rovnou odpoved („tasks have not yet
+    been announced"), ne hlaseni o chybe. */
+ function nedostupneSekce(e,hotove){
+  const m=e&&e[8]||{};
+  const z=(m.zdroj||{}).sekce||{};
+  const hotovo=new Set(hotove||[]);
+  if((m.vyzkum||[]).length)hotovo.add('vyzkum');
+  if(m.gopass)hotovo.add('gopass');
+  if(m.utok)hotovo.add('utoky');
+  const chybi=Object.keys(z)
+   .filter(k=>z[k]&&(z[k].stav==='neumime'||z[k].stav==='chyba'))
+   .filter(k=>!hotovo.has(k));
+  chybi.sort((a,b)=>{const ia=PORADI_SEKCI.indexOf(a),ib=PORADI_SEKCI.indexOf(b);
+   return (ia<0?99:ia)-(ib<0?99:ib)});
+  return chybi.map(k=>`<details class="atlas-event-sekce atlas-event-neuplna">`
+   +`<summary>${esc(sections[k]||z[k].nadpis||k)}</summary>`
+   +(z[k].veta?`<p class="atlas-event-text">${esc(z[k].veta)}</p>`:'')
+   +`<p class="atlas-small-note">Podrobnosti k téhle části appka ze zdroje`
+   +` nepřečetla. Co v ní je, ukáže stránka akce.</p></details>`).join('');
+ }
+ /* Odkud rozpis je a jak je stary. Bez data vypada tri tydny stary otisk
+    stejne jako dnesni — a podle toho se planuje vecer ven. */
+ function zdrojVeta(e){
+  const z=(e&&e[8]||{}).zdroj||{};
+  if(!z.ziskano)return '';
+  const d=date(z.ziskano);
+  if(!d)return '';
+  return ' Rozpis je ze stránky akce, stažený '
+   +d.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric'})+'.';
+ }
+ function teloAkce(e){
+  const okna=(e[7]||[]).filter(w=>w&&w[2]);
+  if(!okna.length)return nedostupneSekce(e,[])
+   ||'<p class="atlas-small-note">Podrobný obsah není ve zdroji k dispozici.</p>';
+  /* Když je k dispozici výzkum s vazbou úkol → odměna, plochý seznam
+     jmen se vynechá: říkal by totéž hůř a dvakrát. */
+  const maVyzkum=!!((e&&e[8]||{}).vyzkum||[]).length;
+  const klice=[...new Set(okna.flatMap(w=>Object.keys(w[2]||{})))]
+   .filter(k=>okna.some(w=>Array.isArray((w[2]||{})[k])&&(w[2][k].length)))
+   .filter(k=>!(maVyzkum&&k==='vyzkum'));
+  klice.sort((a,b)=>{const ia=PORADI_SEKCI.indexOf(a),ib=PORADI_SEKCI.indexOf(b);
+   return (ia<0?99:ia)-(ib<0?99:ib)});
+  const html=klice.map(k=>{
+   const skupiny=okna.map(w=>({od:w[0],do:w[1],items:((w[2]||{})[k]||[])}))
+    .filter(g=>g.items.length);
+   const casovana=skupiny.some(g=>String(g.od)!==String(e[3])||String(g.do)!==String(e[4]));
+   const ted=Date.now();
+   const platna=g=>{const a=+new Date(g.od),b=+new Date(g.do);return Number.isFinite(a)&&Number.isFinite(b)};
+   const vse=skupiny.every(platna);
+   const aktivni=g=>+new Date(g.od)<=ted&&ted<+new Date(g.do);
+   const vychozi=casovana&&vse&&skupiny.some(aktivni)?'now':'all';
+   return `<details open class="atlas-event-sekce atlas-event-sekce-${esc(k)}"><summary>${esc(sections[k]||k)}</summary>`
+    +(casovana&&vse?`<div class="atlas-event-periods" role="group" aria-label="Období sekce">${[['now','Právě teď'],['past','Předchozí'],['all','Celá akce']].map(([v,t])=>`<button type="button" data-event-period="${v}" aria-pressed="${v===vychozi}">${t}</button>`).join('')}</div><p class="atlas-period-empty" hidden>Pro toto období nejsou uvedené položky.</p>`:'')
+    +skupiny.map(g=>{
+      /* Datum se pise jen tam, kde neco rika: u jedine skupiny pres celou
+         akci je to sum. Jakmile jsou skupiny dve a vic, musi mit popisek
+         KAZDA — jinak ta bez nej vypada jako pokracovani te predchozi. */
+      const cela=String(g.od)===String(e[3])&&String(g.do)===String(e[4]);
+      const popis=skupiny.length>1
+       ? (cela?'Po celou akci':format(g.od)+' — '+format(g.do))
+       : (cela?'':format(g.od)+' — '+format(g.do));
+      const celaAkce=String(g.od)===String(e[3])&&String(g.do)===String(e[4]);
+      const stav=aktivni(g)?'now':(+new Date(g.do)<=ted?'past':'future');
+      return `<div class="atlas-event-period-content" data-period-state="${stav}" data-period-common="${celaAkce}"${casovana&&vse&&vychozi==='now'&&!aktivni(g)?' hidden':''}>`
+       +(popis?`<p class="atlas-event-okno">${esc(popis)}</p>`:'')+list(g.items,k)+'</div>';
+     }).join('')
+    +`</details>`;
+  }).join('');
+  return (html+nedostupneSekce(e,klice))
+   ||'<p class="atlas-small-note">Podrobný obsah není ve zdroji k dispozici.</p>';
+ }
+ /* Jeden kontextovy CTA, ne stejne tlacitko u kazde akce. U raidu a Max
+    soubojů vede do Taháku (sestava na bosse), u akce, ktera je o jednom
+    druhu, do Vyhledávání (co umí a jestli ho mám). Kdyz nevyjde ani jedno,
+    zustane jen odkaz na zdroj — vymyslet si akci je horsi nez zadna. */
+ function prvniDruhAkce(e){
+  const okna=e[7]||[];
+  for(const kde of ['spawn','novinky','vejce','vyzkum','raid']){
+   for(const w of okna){
+    for(const [jm,priznak] of ((w[2]||{})[kde]||[])){
+     if(priznak===-1)continue;
+     // `druhZTextu` vraci zaznam z pokedexu, do tlacitka patri jmeno.
+     const d=druhZTextu(jm);
+     if(d)return d.name||String(jm).trim();
+    }
+   }
+  }
+  return '';
+ }
+ function ctaAkce(e){
+  const okna=e[7]||[];
+  const bojova=/^(raid|max-)/.test(e[1]||'')
+   ||okna.some(w=>(((w[2]||{}).raid)||[]).length);
+  if(bojova)return '<button class="atlas-mini-btn" data-event-teams>'
+   +'Otevřít Tahák soubojů</button>';
+  const druh=prvniDruhAkce(e);
+  if(druh)return `<button class="atlas-mini-btn" data-event-druh="${esc(druh)}">`
+   +`Prohlédnout ${esc(druh)} →</button>`;
+  return '';
+ }
+
+ /* GO Pass. Ze zdroje se bere jen to, co se netýká nákupu: že je dráha
+    bezplatná, milníkové bonusy a dva termíny. Deluxe ani ceny v datech
+    nejsou. */
+ function gopassAkce(e){
+  const g=(e&&e[8]||{}).gopass;
+  if(!g)return '';
+  const radky=[];
+  if(g.zdarma)radky.push('<p class="atlas-event-text">Bezplatná dráha — pass'
+   +' dostaneš automaticky a odměny si vysloužíš hraním.</p>');
+  if(g.sbirat_do)radky.push('<p class="atlas-event-okno">Body se sbírají do '
+   +esc(format(g.sbirat_do))+'</p>');
+  /* Rank u bonusu nemusi byt: druha sablona zdroje vypisuje, co
+     bezplatna draha obsahuje, bez cisla ranku. Vymyslet si ho nejde. */
+  const bonusy=(g.bonusy||[]).map(b=>
+   '<li>'+(b.rank?'<span class="atlas-gopass-rank">rank '+esc(String(b.rank))+'</span>':'')
+   +'<span'+(cz(b.text)!==String(b.text).trim()?' title="'+esc(b.text)+'"':'')
+   +'>'+esc(cz(b.text))+'</span></li>').join('');
+  const maRanky=(g.bonusy||[]).some(b=>b.rank);
+  if(bonusy)radky.push('<p class="atlas-event-okno">'
+   +(maRanky?'Co odemknou ranky':'Co bezplatná dráha obsahuje')+'</p>'
+   +'<ul class="atlas-gopass-bonusy">'+bonusy+'</ul>');
+  if(!radky.length)return '';
+  return '<details open class="atlas-event-sekce atlas-event-gopass">'
+   +'<summary>'+esc(g.nazev||'GO Pass')+'</summary>'+radky.join('')+'</details>';
+ }
+
+ /* Termín vyzvednutí patří nahoru k datu akce: je jiný než konec akce
+    a propásnout ho znamená přijít o odměny, které už máš vysloužené. */
+ function gopassTermin(e){
+  const g=(e&&e[8]||{}).gopass;
+  if(!g||!g.vyzvednout_do)return '';
+  const pozdeji=String(g.vyzvednout_do)>String(e[4]||'');
+  return '<p class="atlas-event-deadline"'+(pozdeji?' data-pozor="1"':'')+'>'
+   +'Odměny z GO Passu vyzvedni do '+esc(format(g.vyzvednout_do))+'</p>';
+ }
+
+ // A-028: přehled pouze doložených údajů, nikoli nové skóre či doporučení.
+ /* Položky jedné sekce napříč všemi okny akce. Okna se liší časem, ale
+    „co v té akci je" je otázka na celou akci. */
+ function polozkySekce(e,klic){
+  const out=[];
+  (e[7]||[]).forEach(w=>((w[2]||{})[klic]||[]).forEach(x=>out.push(x)));
+  return out;
+ }
+ /* Druhy pod mezinadpisem, který sedí na `re`. Mezinadpis je položka
+    s příznakem -1 a platí až do dalšího mezinadpisu. */
+ function druhyPodNadpisem(polozky,re){
+  const out=[];let beru=false;
+  polozky.forEach(([jm,priznak])=>{
+   if(priznak===-1){beru=re.test(String(jm));return}
+   if(beru&&druhZTextu(jm))out.push(jm);
+  });
+  return out;
+ }
+ /* Kolikrát je bonus silnější: „2×" = 2, „1/2 vzdálenost" taky 2
+    (poloviční cena je dvojnásobek za totéž), „3/4" = 1,33. */
+ function silaBonusu(text){
+  const t=String(text||'').trim();
+  let m=t.match(/^(\d+(?:[.,]\d+)?)\s*[x\u00d7]/i);
+  if(m)return parseFloat(m[1].replace(',','.'));
+  m=t.match(/^(\d+)\/(\d+)\b/);
+  if(m&&+m[2])return +m[2]/+m[1];
+  return 0;
+ }
+ /* Doložené přínosy akce: každý je odpověď na „co mi to přinese",
+    a každý stojí na datech ze zdroje. Bez podkladu karta nevznikne. */
+ function prinosyAkce(e){
+  const m=e[8]||{},out=[];
+  const spoj=(jmena)=>jmena.slice(0,2).join(', ')+(jmena.length>2?` a další (${jmena.length})`:'');
+  // Premiéra druhu — to je ta nejvzácnější věc, která se v akci dá chytit.
+  const novinky=polozkySekce(e,'novinky');
+  const debut=druhyPodNadpisem(novinky,/debut|premi/i);
+  if(debut.length)out.push(['Premiéra druhu',spoj(debut),'.atlas-event-sekce-novinky']);
+  // Shiny premiéra. „Shiny dostupné" není totéž — tohle je poprvé.
+  const shinyDebut=druhyPodNadpisem(polozkySekce(e,'shiny'),/debut|premi/i);
+  if(shinyDebut.length)out.push(['Shiny premiéra',spoj(shinyDebut),'.atlas-event-sekce-shiny']);
+  // Hlavní odměna výzkumu: co padne za dokončení. U maratonu je to
+  // Marathon Visor Pikachu — a to je důvod, proč do něj jít.
+  const zaDokonceni=[];
+  (m.vyzkum||[]).forEach(sk=>(sk.odmeny_kroku||[]).forEach(o=>{
+   if(druhZTextu(o.jmeno))zaDokonceni.push(o.jmeno);
+  }));
+  if(zaDokonceni.length)out.push(['Za dokončení výzkumu',spoj(zaDokonceni),'.atlas-event-vyzkum']);
+  // Nejsilnější bonus. Dvojnásobek bonbónů je důvod chytat právě teď.
+  let nej=null;
+  polozkySekce(e,'bonus').forEach(([jm,priznak])=>{
+   if(priznak===-1)return;
+   const sila=silaBonusu(jm);
+   if(sila>=2&&(!nej||sila>nej.sila))nej={sila:sila,text:jm};
+  });
+  if(nej)out.push(['Největší bonus',cz(nej.text),'.atlas-event-sekce-bonus']);
+  // Raidový boss: u raidové akce je to celá odpověď na „co se děje".
+  const raid=polozkySekce(e,'raid').filter(x=>x[1]!==-1&&druhZTextu(x[0])).map(x=>x[0]);
+  if(raid.length)out.push(['V raidech',spoj([...new Set(raid)]),'.atlas-event-sekce-raid']);
+  return out;
+ }
+ function shrnutiAkce(e){
+  const m=e[8]||{},cards=[];
+  /* Termín vyzvednutí jde první i mezi přínosy: propásnout ho znamená
+     přijít o odměny, které už máš vysloužené. */
+  if(m.gopass?.vyzvednout_do)cards.push(['Vyzvednutí odměn',format(m.gopass.vyzvednout_do),'.atlas-event-gopass']);
+  /* Pak to, co akce opravdu přinese. Nejvýš čtyři karty — pátá už se
+     nečte, jen roztahuje hlavičku. */
+  prinosyAkce(e).forEach(k=>{if(cards.length<4)cards.push(k)});
+  /* Navigační údaje až nakonec a jen když zbylo místo: samy o sobě
+     neříkají, co z akce mám. */
+  const ukoly=(m.vyzkum||[]).reduce((n,g)=>n+(g.ukoly||[]).length,0);
+  if(ukoly&&cards.length<3)cards.push(['Výzkumy',`Počet uvedených úkolů: ${ukoly}`,'.atlas-event-vyzkum']);
+  const ranky=(m.gopass?.bonusy||[]).filter(b=>b.rank);
+  if(ranky.length&&cards.length<3)cards.push(['Bonusy GO Passu',`Milníky: ${ranky.map(b=>'rank '+b.rank).join(', ')}`,'.atlas-event-gopass']);
+  if(!cards.length)return '';
+  return '<nav class="atlas-event-highlights" aria-label="Důležité informace">'+cards.map(([t,v,target])=>`<button type="button" data-event-jump="${target}"><small>${esc(t)}</small><strong>${esc(v)}</strong><span aria-hidden="true">↓</span></button>`).join('')+'</nav>';
+ }
+ function openEvent(i){const e=events[i];if(!e)return;const url=safeUrl(e[5]);modal.innerHTML=`<header><div><span class="atlas-eyebrow">TAHÁK AKCE</span><h2 id="atlasEventTitle">${esc(e[0])}</h2><p>${format(e[3])} — ${format(e[4])}</p>${gopassTermin(e)}${stitkyAkce(e)}</div><button class="atlas-mini-btn" data-event-close aria-label="Zavřít detail akce">✕</button></header><div class="atlas-event-body">${shrnutiAkce(e)}${utokAkce(e)}${teloAkce(e)}${vyzkumAkce(e)}${gopassAkce(e)}<p class="atlas-small-note">Seznam popisuje obsah akce, nikoli živé spawny v okolí. Dostupné shiny neznamená zvýšenou šanci. Podmínky a zvláštní časová okna ověř ve zdroji.${zdrojVeta(e)}</p><div class="atlas-event-actions">${ctaAkce(e)}${url?`<a class="atlas-mini-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Zdroj akce ↗</a>`:''}</div></div>`;modal.showModal();
+  /* Herní ikona má kresbu jinde v každém souboru; engine si to měří a
+     posouvá na střed. Bez tohohle sedí v rámečku nakřivo — stejná chyba
+     jako kdysi v rosteru. */
+  if(P.vystreditSprity)P.vystreditSprity(modal);
+ }
+ modal.addEventListener('click',e=>{
+  const period=e.target.closest('[data-event-period]');
+  if(period){
+   const section=period.closest('details'),v=period.dataset.eventPeriod;
+   section.querySelectorAll('[data-event-period]').forEach(b=>b.setAttribute('aria-pressed',String(b===period)));
+   const groups=[...section.querySelectorAll('.atlas-event-period-content')];
+   groups.forEach(g=>{g.hidden=v!=='all'&&g.dataset.periodState!==v&&!(v==='past'&&g.dataset.periodCommon==='true'&&groups.some(x=>x.dataset.periodState==='past'))});
+   section.querySelector('.atlas-period-empty').hidden=groups.some(g=>!g.hidden);
+  }
+  const jump=e.target.closest('[data-event-jump]');
+  if(jump){const target=modal.querySelector(jump.dataset.eventJump);if(target){target.open=true;target.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});target.querySelector('summary')?.focus({preventScroll:true})}}
+  if(e.target.closest('[data-event-close]'))modal.close();
+  if(e.target.closest('[data-event-teams]')){modal.close();__atlasTest.go('teams','cheatCard');return}
+  const druh=e.target.closest('[data-event-druh]');
+  if(druh){
+   modal.close();
+   __atlasTest.go('teams','prohlidkaCard');
+   /* Pole se kresli az po prepnuti zalozky, takze se vyplnuje v dalsim
+      snimku — a stejnou cestou jako pri psani, aby si vrstva nic
+      nepocitala sama. */
+   requestAnimationFrame(()=>{
+    const pole=document.getElementById('prohName');
+    if(!pole)return;
+    pole.value=druh.dataset.eventDruh;
+    pole.dataset.tiseVybrano='1';
+    pole.dispatchEvent(new Event('input',{bubbles:true}));
+   });
+  }
+ });
  // Keep Escape in the native modal; it must not reach the underlying Pokémon drawer.
  modal.addEventListener('keydown',e=>e.stopPropagation());
  function render(target){const today=day(new Date());if(lastToday!==today&&offset===0&&selected===lastToday)selected=today;lastToday=today;root=target;const data=P.eventsData()||{};events=data.events||[];const now=new Date(),start=date(selected),finish=new Date(start);finish.setDate(finish.getDate()+1);
@@ -1463,7 +2442,15 @@ globalThis.AtlasBudget = (() => {
  window.AtlasDecorateHome?.();
  }
  window.AtlasRenderHome=render;
- window.AtlasEventUI={card:e=>card(e),image,format,open:i=>openEvent(i),names:eventNames,oknoDne,prinos};
+ window.AtlasEventUI={card:e=>card(e),image,format,open:i=>openEvent(i),names:eventNames,oknoDne,prinos,cz};
+ /* Engine dotáhl čerstvý rozpis akcí — překreslit, co z něj žije.
+    Vlastní kalendář i karty na Přehledu si data berou znovu samy. */
+ window.addEventListener('atlas:udalosti',()=>{
+  try{if(window.AtlasCalendar&&window.AtlasCalendar.render)window.AtlasCalendar.render()}catch(e){}
+  try{const stav=window.__atlasTest&&window.__atlasTest.getState();
+   if(stav&&stav.view==='home'&&window.AtlasRenderHome)
+    window.AtlasRenderHome(document.getElementById('atlasHome'))}catch(e){}
+ });
  document.querySelector('#atlasHome').addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(el.hasAttribute('data-event-index'))openEvent(Number(el.dataset.eventIndex));if(el.dataset.overviewDay){selected=el.dataset.overviewDay;render(root);root.querySelector(`[data-overview-day="${selected}"]`)?.focus({preventScroll:true})}if(el.dataset.overviewWeek){offset+=Number(el.dataset.overviewWeek);const d=new Date();d.setDate(d.getDate()+offset);selected=day(d);render(root)}if(el.hasAttribute('data-overview-today')){offset=0;selected=day(new Date());render(root)}if(el.hasAttribute('data-overview-teams'))__atlasTest.go('teams','cheatCard')});
  render(document.querySelector('#atlasHome'));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!modal.open&&__atlasTest.getState().view==='home')render(root)});
@@ -2592,10 +3579,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  };
 
  // „Zrušit filtry" má vyhodit i kostičky, jinak by zůstaly viset nad
- // rosterem, který už podle nich nefiltruje.
+ // rosterem, který už podle nich nefiltruje. Projde to přes `pouzij()`,
+ // ne jen přes překreslení: o zmizení štítků musí vědět i řazení, jinak
+ // zůstanou kostičky zašedlé, i když už podle štítku nic neřadí.
  $('#zrusitFiltry')?.addEventListener('click',()=>{
   if(!vybrane.length)return;
-  vybrane.length=0;vykresliKostky();
+  vybrane.length=0;vykresliKostky();pouzij();
  });
 })();
 
@@ -2747,5 +3736,303 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   if(document.querySelector('#atlasModal:not([hidden])'))return 'dokud máš otevřený detail kusu';
   if(document.getElementById('novinkyOkno'))return 'dokud čteš novinky';
   return '';
+ });
+})();
+
+/* ---------- Tahák: jedna kategorie na obrazovce ----------
+   Engine vykresluje pět sekcí pod sebou (`details.cs-sekce` a dvě, které
+   z nadpisů skládá vrstva výš). Tady se z jejich nadpisů udělají záložky
+   a samotné sekce se přesunou do panelů — obsah, pořadí i texty zůstávají
+   enginu, vrstva jen mění, kolik toho je na obrazovce naráz.
+
+   Co se vědomě NEDĚLÁ: nic se nepředbíhá za engine. Kandidáti jsou pořád
+   ti jeho, prázdný stav taky jeho, a nikde nestojí, že je to simulace
+   souboje — vrstva na to jen dává jméno „Kandidáti z tvého rosteru". */
+(() => {
+ const root=document.getElementById('cheatBody');if(!root)return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ /* Nadpis sekce je věta („Raid bossové právě teď (14)"); na záložku patří
+    jedno slovo. Když se nadpis změní a nesedne na nic, vezme se jeho první
+    slovo — záložka se tím nerozbije. */
+ const NAZVY=[[/raid/i,'Raidy'],[/rocket/i,'Rocket'],[/typ/i,'Typy'],[/gym/i,'Gym'],[/lig/i,'Ligy']];
+ const nazev=t=>{for(const [re,jm] of NAZVY)if(re.test(t))return jm;return (String(t).split(/[\s(]/)[0]||'Sekce')};
+ let aktivni=0,hledane='';
+ try{aktivni=Math.max(0,Number(localStorage.getItem('pgo_tahak_zalozka'))||0)}catch{}
+ /* Co je v kategorii „jeden soupeř" — podle toho se počítá i hledá.
+    Raidy a Typy maji `.cs-type`, Rocket `.cs-raketa`, gym položky seznamu
+    a Ligy celé bloky lig. */
+ const polozky=panel=>[...panel.querySelectorAll('.cs-grid>*, ul.cs-flat>li, .cs-liga')];
+
+ function postavit(){
+  const wrap=root.querySelector('.cs-wrap');if(!wrap)return;
+  const sekce=[...wrap.children].filter(el=>el.matches('details.cs-sekce,details.atlas-team-group'));
+  if(sekce.length<2)return;
+  let shell=wrap.querySelector(':scope>.atlas-tahak');
+  if(!shell){
+   shell=document.createElement('div');shell.className='atlas-tahak';
+   shell.innerHTML='<div class="atlas-tahak-zalozky" role="tablist" aria-label="Kategorie soupeřů"></div>'
+    +'<label class="atlas-tahak-hledani"><svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true">'
+    +'<path d="M15 15l6 6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0"/></svg>'
+    +'<input type="search" placeholder="Hledat soupeře…" aria-label="Hledat soupeře v téhle kategorii"></label>'
+    +'<p class="atlas-tahak-pozn" hidden></p>'
+    +'<div class="atlas-tahak-panely"></div>'
+    +'<p class="atlas-tahak-prazdno" hidden>Tomuhle hledání v téhle kategorii nic neodpovídá.</p>';
+   sekce[0].before(shell);
+   shell.querySelector('input').addEventListener('input',e=>{
+    const pz=shell.querySelector('.atlas-tahak-pozn');if(pz)pz.hidden=true;
+    hledane=e.target.value.trim().toLowerCase();filtrovat()});
+   shell.querySelector('.atlas-tahak-zalozky').addEventListener('click',e=>{
+    const b=e.target.closest('[data-tahak]');if(!b)return;vybrat(Number(b.dataset.tahak))});
+   // Šipky mezi záložkami — jsou to role="tab", takže se to od nich čeká.
+   shell.querySelector('.atlas-tahak-zalozky').addEventListener('keydown',e=>{
+    if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+    const btns=[...shell.querySelectorAll('[data-tahak]')];if(!btns.length)return;
+    e.preventDefault();
+    const krok=e.key==='ArrowRight'?1:-1;
+    vybrat((aktivni+krok+btns.length)%btns.length);
+    btns[aktivni].focus();
+   });
+  }
+  const panely=shell.querySelector('.atlas-tahak-panely');
+  const lista=shell.querySelector('.atlas-tahak-zalozky');
+  lista.innerHTML='';
+  sekce.forEach((el,i)=>{
+   const sum=el.querySelector(':scope>summary');
+   const titulek=sum?sum.textContent.replace(/\s+/g,' ').trim():'';
+   /* Uvnitř záložky se už nesbaluje: kategorie je právě jedna a sbalit ji
+      by znamenalo prázdnou obrazovku. */
+   el.open=true;el.dataset.tahakPanel=String(i);
+   if(sum)sum.hidden=true;
+   /* Záložka nese jedno slovo, celý nadpis z enginu zůstává nad seznamem:
+      „Typy" samo o sobě neřekne, že jde o bosse podle typu, a „Gym" neřekne,
+      že jsou to kusy na nechání v gymu. Počet je na záložce, takže se ze
+      jmenovky uřízne. */
+   if(!el.querySelector(':scope>.atlas-tahak-nadpis')){
+    const nad=document.createElement('p');nad.className='atlas-tahak-nadpis';
+    nad.textContent=titulek.replace(/\s*\([^)]*\)\s*$/,'');
+    el.prepend(nad);
+   }
+   panely.append(el);
+   const b=document.createElement('button');
+   b.type='button';b.dataset.tahak=String(i);b.setAttribute('role','tab');
+   b.innerHTML='<span>'+esc(nazev(titulek))+'</span><small>'+polozky(el).length+'</small>';
+   lista.append(b);
+  });
+  if(aktivni>=sekce.length)aktivni=0;
+  /* Seznam pod soupeřem je výběr z rosteru, ne ověřená sestava — ať to
+     nad ním stojí napsané. */
+  root.querySelectorAll('ol.cs-picks').forEach(ol=>{
+   const pred=ol.previousElementSibling;
+   if(pred&&pred.classList.contains('atlas-tahak-popis'))return;
+   const p=document.createElement('div');p.className='atlas-tahak-popis';
+   p.textContent='Kandidáti z tvého rosteru';
+   ol.before(p);
+  });
+  prepnout();
+ }
+
+ function vybrat(i){
+  // Poznamka patri k te jedne ceste z kalendare; pri prepnuti uz nelze.
+  const shell0=root.querySelector('.atlas-tahak');
+  const pozn0=shell0&&shell0.querySelector('.atlas-tahak-pozn');if(pozn0)pozn0.hidden=true;
+  aktivni=i;
+  try{localStorage.setItem('pgo_tahak_zalozka',String(i))}catch{}
+  prepnout();
+ }
+
+ function prepnout(){
+  const shell=root.querySelector('.atlas-tahak');if(!shell)return;
+  shell.querySelectorAll('[data-tahak]').forEach(b=>{
+   const je=Number(b.dataset.tahak)===aktivni;
+   b.classList.toggle('je',je);b.setAttribute('aria-selected',String(je));
+   b.tabIndex=je?0:-1;
+  });
+  shell.querySelectorAll('[data-tahak-panel]').forEach(p=>{
+   p.hidden=Number(p.dataset.tahakPanel)!==aktivni});
+  filtrovat();
+ }
+
+ function filtrovat(){
+  const shell=root.querySelector('.atlas-tahak');if(!shell)return;
+  const panel=shell.querySelector('[data-tahak-panel="'+aktivni+'"]');if(!panel)return;
+  let videt=0;
+  polozky(panel).forEach(el=>{
+   const sedi=!hledane||el.textContent.toLowerCase().includes(hledane);
+   el.hidden=!sedi;if(sedi)videt++;
+  });
+  shell.querySelector('.atlas-tahak-prazdno').hidden=!(hledane&&!videt);
+ }
+
+ /* Otevřít Tahák rovnou na jednom soupeři. Volá to kalendář: z akce
+    se jde na bosse, kterého přinesla, ne na začátek seznamu. Čeká se,
+    až se Tahák vykreslí — po přepnutí sekce to chvíli trvá. */
+ window.AtlasTahakHledat=(jmeno)=>{
+  const spust=(pokus)=>{
+   const shell=root.querySelector('.atlas-tahak');
+   if(!shell){if(pokus<25)setTimeout(()=>spust(pokus+1),120);return}
+   aktivni=0;                       // Raidy jsou první záložka
+   try{localStorage.setItem('pgo_tahak_zalozka','0')}catch{}
+   hledane=String(jmeno||'').trim().toLowerCase();
+   const pole=shell.querySelector('input');if(pole)pole.value=jmeno||'';
+   prepnout();
+   const panel=shell.querySelector('[data-tahak-panel="0"]');
+   if(!panel)return;
+   const videt=polozky(panel).filter(x=>!x.hidden);
+   const pozn=shell.querySelector('.atlas-tahak-pozn');
+   if(!videt.length){
+    /* Max Battle ani rocket akce nejsou raid, takže soupeř z kalendáře
+       v dnešních raidech být nemusí. Filtr na jeho jméno by nechal
+       prázdnou obrazovku — radši se zruší a řekne se proč. */
+    hledane='';if(pole)pole.value='';prepnout();
+    if(pozn){pozn.textContent='V dnešních raidech '+jmeno+' není — tohle je celý seznam.';
+     pozn.hidden=false}
+    return;
+   }
+   if(pozn)pozn.hidden=true;
+   // Když zbyde jediný soupeř, rovnou se rozbalí — kvůli němu se sem šlo.
+   if(videt.length===1){const d=videt[0].querySelector('details');if(d)d.open=true}
+  };
+  spust(0);
+ };
+
+ new MutationObserver(()=>postavit()).observe(root,{childList:true});
+ window.addEventListener('atlas:route',postavit);
+ postavit();
+})();
+
+/* ---------- dvojklik do útoků = úprava útoků ----------
+   Útoky jsou to, co se u kusu dovyplňuje nejčastěji, a dosud k nim vedla
+   jen cesta přes „Upravit", kde je formulář na celý kus. Dvojklik kamkoli
+   do sekce s útoky (v detailu i v čištění) otevře okno jen s nimi.
+
+   Výběr je tentýž, jaký má úprava kusu i okno „Přidat pokémona" — engine
+   ho dodává jako `__pgoUtoky.vyber`, takže se nikde neučí nic nového. */
+(() => {
+ const P=window.__pgo;if(!P)return;
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const POLE=[['fastMove','Rychlý útok'],['charged1','Nabitý útok 1'],['charged2','Druhý nabitý']];
+ let okno=null;
+
+ /* Čí útoky to jsou. V čištění je to právě procházený kus (detail tam
+    patří jemu), v plachtě ten otevřený. */
+ function kusId(el){
+  if(el.closest('#boxMode')){
+   const st=P.boxStav&&P.boxStav(),sez=P.bmSeznam&&P.bmSeznam();
+   const x=st&&sez&&sez[st.index];
+   return x&&x.row?x.row.id:null;
+  }
+  const stav=window.__atlasTest&&window.__atlasTest.getState();
+  return (stav&&stav.dialogId)||null;
+ }
+
+ function zavrit(){
+  if(window.AtlasZavritNabidkuUtoku)window.AtlasZavritNabidkuUtoku();
+  if(okno){okno.remove();okno=null}
+  document.body.classList.remove('atlas-edituje');
+ }
+
+ /* Otevreni editace utoku zvenku (tlacitko v hlavicce bloku). Dvojklik
+    uz neni jedina cesta — na telefonu se neda provest vubec. */
+ window.AtlasUpravitUtoky=id=>{
+  if(document.getElementById('atlasRowEditor'))return false;
+  otevrit(id);
+  return !!document.getElementById('atlasUtokyEditor');
+ };
+
+ function otevrit(id){
+  const row=P.getRows().find(r=>r.id===id);
+  if(!row||!window.__pgoUtoky)return;
+  zavrit();
+  const form=document.createElement('form');
+  form.id='atlasUtokyEditor';form.className='atlas-row-editor';
+  form.innerHTML='<div class="atlas-eyebrow">UPRAVUJEŠ ÚTOKY</div><h3>'+esc(row.pokemon)+'</h3>'
+   +'<div class="atlas-editor-grid atlas-editor-utoky">'
+   +POLE.map(([k,l])=>`<label>${esc(l)}<input name="${k}" type="hidden" value="${esc(row[k]||'')}"></label>`).join('')
+   +'</div><div class="atlas-editor-actions">'
+   +'<button type="submit" class="atlas-cta">Uložit</button>'
+   +'<button type="button" class="atlas-mini-btn" data-editor-cancel>Zrušit</button>'
+   +'<p role="status" id="atlasUtokyStatus"></p></div>';
+  /* `forma` tu musí být: Frustration a Return nedává druh, ale stav kusu. */
+  const docasny={pokemon:row.pokemon,forma:row.forma||'',fastMove:row.fastMove||'',
+   charged1:row.charged1||'',charged2:row.charged2||'',__docasny:true};
+  POLE.forEach(([k])=>{
+   const input=form.elements[k];
+   const obal=document.createElement('div');obal.className='atlas-utok-vyber';
+   input.after(obal);
+   window.__pgoUtoky.vyber(obal,docasny,k,()=>{input.value=docasny[k]||''});
+  });
+  form.querySelector('[data-editor-cancel]').addEventListener('click',zavrit);
+  form.addEventListener('submit',e=>{
+   e.preventDefault();
+   const kus=P.getRows().find(r=>r.id===id);
+   if(!kus){const st=form.querySelector('[role=status]');if(st)st.textContent='Kus už v rosteru není.';return}
+   POLE.forEach(([k])=>{kus[k]=form.elements[k].value||''});
+   P.prekreslit();P.persistNow();
+   zavrit();
+   window.dispatchEvent(new CustomEvent('atlas:refresh-detail'));
+   /* V čištění se útoky promítnou do verdiktu (sestava je jeho součást),
+      takže se panel musí přepočítat — stejně jako po přepnutí značky. */
+   const box=document.getElementById('boxMode');
+   if(box&&!box.hidden&&P.boxPrepocitat)P.boxPrepocitat();
+  });
+  /* Vlastní vrstva, ne nativní dialog: nabídka útoků žije mimo formulář
+     a nad nativním modalem by se schovala za ztmavení. */
+  okno=document.createElement('div');
+  okno.id='atlasUtokyOkno';okno.className='atlas-edit-okno';
+  okno.setAttribute('role','dialog');okno.setAttribute('aria-modal','true');
+  okno.setAttribute('aria-label','Úprava útoků');
+  okno.append(form);document.body.append(okno);
+  document.body.classList.add('atlas-edituje');
+  /* Zkratky čištění (D, P, šipky) chytají klávesy na dokumentu. Co se píše
+     sem, se k nim dostat nesmí. */
+  okno.addEventListener('keydown',e=>{
+   e.stopPropagation();
+   if(e.key==='Escape'&&!document.querySelector('.uv-seznam:not([hidden])')){
+    e.preventDefault();zavrit();
+   }
+  });
+  okno.addEventListener('mousedown',e=>{if(e.target===okno)zavrit()});
+  requestAnimationFrame(()=>form.querySelector('.uv-pole,button')?.focus({preventScroll:true}));
+ }
+
+ document.addEventListener('dblclick',e=>{
+  const sekce=e.target.closest('.atlas-ident-utoky,[data-detail-section=utoky],.d-moves');
+  if(!sekce)return;
+  // Když je otevřená úprava celého kusu, nelez jí do cesty.
+  if(document.getElementById('atlasRowEditor'))return;
+  const id=kusId(sekce);
+  if(!id)return;
+  e.preventDefault();
+  otevrit(id);
+ });
+})();
+
+/* ---------- vlastní logo v postranním pruhu ----------
+   `.atlas-brand` se skládá na dvou místech, takže se obrázek vkládá až
+   nakonec — jinak ho druhé skládání smaže dřív, než se načte.
+
+   Podoby jsou dvě, protože nápis v logu je světle modrý: na tmavém pruhu
+   svítí, na bílém by zmizel. `logo-svetle.png` má proto nápis tmavý.
+   Obrázek se vkládá, až když se opravdu načte — soubory nejsou povinné
+   a bez nich zůstane psaný název, ne prázdné místo. Když je jen jeden,
+   používá se v obou vzhledech. */
+(() => {
+ const znacka=document.querySelector('.atlas-brand');
+ if(!znacka||znacka.querySelector('.atlas-brand-logo'))return;
+ const zdroje=[['tma','atlas/assets/logo.png'],['svetlo','atlas/assets/logo-svetle.png']];
+ let nactenych=0;
+ zdroje.forEach(([kam,cesta])=>{
+  const zkouska=new Image();
+  zkouska.addEventListener('load',()=>{
+   const el=document.createElement('img');
+   el.className='atlas-brand-logo atlas-brand-logo-'+kam;
+   el.alt='GO Atlas';el.src=cesta;
+   znacka.prepend(el);
+   znacka.classList.add('atlas-brand-obrazek');
+   // Prepinat mezi podobami jde, az kdyz jsou obe — jinak by se ta
+   // chybejici schovala a v jednom vzhledu by nezbylo nic.
+   if(++nactenych===2)znacka.classList.add('atlas-brand-obe');
+  });
+  zkouska.src=cesta;
  });
 })();

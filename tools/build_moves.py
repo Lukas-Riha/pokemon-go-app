@@ -38,6 +38,27 @@ BATTLE_FORMS = {
 }
 FORM_SUFFIX = {**REGIONAL, **BATTLE_FORMS}
 
+# pogoapi občas slepí jméno útoku do jednoho slova ("Futuresight"), ve hře
+# ale stojí dvě ("Future Sight"). Opravuje se to hned po stažení, aby se
+# správné jméno propsalo všude — do seznamů, PvP tabulek i learnsetů.
+JMENO_OPRAVY = {"Futuresight": "Future Sight"}
+
+
+def oprav_jmena(data):
+    """Projde stažená data a přepíše jména útoků z JMENO_OPRAVY.
+
+    Jmenné seznamy u pokémonů jsou prosté řetězce, takže se porovnává celá
+    hodnota — žádný druh se takhle nejmenuje, nehrozí, že se přepíše něco
+    jiného.
+    """
+    if isinstance(data, dict):
+        return {k: oprav_jmena(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [oprav_jmena(v) for v in data]
+    if isinstance(data, str):
+        return JMENO_OPRAVY.get(data, data)
+    return data
+
 
 def fetch(refresh=False):
     RAW.mkdir(parents=True, exist_ok=True)
@@ -280,6 +301,7 @@ def dorovnat_learnsety(current, learn, fast_names, ch_names):
 
 def main():
     raw = fetch("--refresh" in sys.argv)
+    raw = oprav_jmena(raw)
 
     fast_names, fast_stats, fast_idx = [], [], {}
     for m in raw["fast_moves"]:

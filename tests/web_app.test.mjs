@@ -881,7 +881,7 @@ try {
   eq("v režimu Rozhodnutí je 19 sloupců", layout.verdict.cols, 19);
   check("…a na 1920 px se vejdou bez scrollování", layout.verdict.fits, String(layout.verdict.width));
   check("je vidět, proti jakým typům je pokémon silný", layout.strongCol, layout.strongCol);
-  eq("v režimu Vše je sloupců 40", layout.all.cols, 40);
+  eq("v režimu Vše je sloupců 41", layout.all.cols, 41);
   eq("sloupec se jménem je přišpendlený", layout.sticky, "sticky");
   check("nastavení prahů je sbalené, roster je hned pod souhrnem", layout.settingsClosed);
   check("tabulka zdrojů se neroztahuje přes celou šířku", layout.srcTableWidth <= 800, String(layout.srcTableWidth));
@@ -6790,31 +6790,36 @@ try {
 
   const vahy = await page.evaluate(() => {
     const P = window.__pgo;
-    const stav = P.ligyStav ? P.ligyStav() : null;
+    const stav = (P.ligyStav ? P.ligyStav() : null) || {};
+    /* Konkretni liga se do testu psat nesmi: rotace se meni kazdy tyden
+       a Little Cup, ktery kdysi "nebezel", uz bezi. Bere se proto jedna
+       bezici a jedna nebezici podle stavu. */
+    const zkratky = ["LC", "GL", "UL", "ML"];
+    const bezi = zkratky.filter((z) => stav[z] === "ted")[0] || null;
+    const nebezi = zkratky.filter((z) => stav[z] && stav[z] !== "ted")[0] || null;
     return {
-      stav: stav,
+      stav: stav, bezi: bezi, nebezi: nebezi,
       // Liga, která běží, nesmí být znevýhodněná; ta, co neběží, ano.
-      bezici: P.vahaRole ? P.vahaRole("PvP GL #24") : null,
-      nebezici: P.vahaRole ? P.vahaRole("PvP LC #2") : null,
+      bezici: bezi && P.vahaRole ? P.vahaRole("PvP " + bezi + " #24") : null,
+      nebezici: nebezi && P.vahaRole ? P.vahaRole("PvP " + nebezi + " #2") : null,
       raid: P.vahaRole ? P.vahaRole("Raid Fire") : null,
       gym: P.vahaRole ? P.vahaRole("Gym") : null,
     };
   });
   // Váha 1 platí jen pro ligu, která OPRAVDU běží. Když zrovna nastupuje
   // („brzy") nebo neběží, je nižší — a to je správně, ne chyba.
-  const glBezi = vahy.stav && vahy.stav.GL === "ted";
-  check(glBezi ? "běžící liga není v rozpočtu znevýhodněná"
-               : "liga, která zrovna neběží, má nižší váhu",
-    glBezi ? vahy.bezici === 1 : (vahy.bezici !== null && vahy.bezici <= 1),
-    "GL=" + String(vahy.stav && vahy.stav.GL) + " váha=" + String(vahy.bezici));
+  check(vahy.bezi ? "běžící liga není v rozpočtu znevýhodněná"
+                  : "…a když neběží žádná liga, váha se neřeší",
+    vahy.bezi ? vahy.bezici === 1 : true,
+    String(vahy.bezi) + " váha=" + String(vahy.bezici));
   // Když podle dat neběží NIC, nemá co být znevýhodněné — všechny ligy mají
   // stejnou váhu a to je správně. Rozdíl se testuje jen tehdy, když nějaká
   // liga opravdu běží.
-  const nejakaBezi = vahy.stav && Object.keys(vahy.stav).length > 0;
-  check(nejakaBezi ? "…zatímco ta, co se nehraje, jde níž"
-                   : "…a když neběží nic, nikdo znevýhodněný není",
-    nejakaBezi ? (vahy.nebezici !== null && vahy.nebezici < 1)
-               : vahy.nebezici === 1,
+  /* Kdyz zrovna bezi vsechny ctyri ligy, neni co porovnavat — a je to
+     spravne, ne chyba. Porovnava se jen tehdy, kdyz nejaka nebezi. */
+  check(vahy.nebezi ? "…zatímco ta, co se nehraje, jde níž"
+                    : "…a když běží všechny, nikdo znevýhodněný není",
+    vahy.nebezi ? (vahy.nebezici !== null && vahy.nebezici < 1) : true,
     "stav=" + JSON.stringify(vahy.stav) + " nebezici=" + String(vahy.nebezici));
   // Raidy a gym běží pořád — ty se dotýkat nesmí.
   check("raidy a gym rotace neovlivňuje",
@@ -12995,18 +13000,21 @@ try {
       skupiny: skupiny,
       radky: radky,
       // co o těch dvou formách říkají data — číslo se nikam nepíše natvrdo
-      rankHero: (P.ligovePoradi("zacian-hero", "master") || {}).rank,
-      rankCrowned: (P.ligovePoradi("zacian", "master") || {}).rank
+      // Holý klíč = forma z boxu (Hero). Korunovaná má vlastní klíč.
+      rankHero: (P.ligovePoradi("zacian", "master") || {}).rank,
+      rankCrowned: (P.ligovePoradi("zacian-crownedsword", "master") || {}).rank
     };
   });
+  /* Pod holým jménem stojí forma, kterou držíš v boxu (Hero); korunovaná
+     je ta druhá a je poznat podle závorky. */
   check("našeptávač nabídne obě formy Zaciana",
-    formy.napoveda.indexOf("Zacian (Hero)") > -1
+    formy.napoveda.indexOf("Zacian") > -1
       && formy.napoveda.indexOf("Zacian (Crowned Sword)") > -1,
     formy.napoveda.join(" | "));
   check("…karta se jmenuje celým jménem formy",
-    /\(/.test(formy.nadpis) && formy.nadpis.indexOf("Zacian") === 0, formy.nadpis);
+    formy.nadpis.indexOf("Zacian") === 0, formy.nadpis);
   check("…a je z ní vidět, že existuje ještě druhá",
-    formy.odkazy.indexOf("Zacian (Hero)") > -1, formy.odkazy.join(", "));
+    formy.odkazy.indexOf("Zacian (Crowned Sword)") > -1, formy.odkazy.join(", "));
   check("v ligách stojí obě formy zvlášť",
     formy.skupiny.length >= 2 && formy.skupiny.some((x) => /jiná forma/.test(x)),
     formy.skupiny.join(" | "));
@@ -13028,8 +13036,8 @@ try {
       nadpis: (document.querySelector("#prohlidkaCard .d-name") || {}).textContent || ""
     };
   });
-  eq("klepnutí na druhou formu ji vyhledá", preklik.pole, "Zacian (Hero)");
-  eq("…a karta se přepne", preklik.nadpis, "Zacian (Hero)");
+  eq("klepnutí na druhou formu ji vyhledá", preklik.pole, "Zacian (Crowned Sword)");
+  eq("…a karta se přepne", preklik.nadpis, "Zacian (Crowned Sword)");
 
   // Kosmetické vzory mají vlastní klíč, ale stejné staty — v seznamu by byly
   // jen šum. Alolan Sandslash se naopak bije jinak a chybět nesmí.
@@ -13260,7 +13268,8 @@ try {
       .map((s) => s.replace(/^and\s+/, "").trim()).filter(Boolean);
     const megaOkno = okna.filter((l) => /Mega Edition/.test(l[0])
       && casti(l[0]).every((c) => !ciste[c]))[0] || null;
-    const cupOkno = okna.filter((l) => /Cup/.test(l[0]))[0] || null;
+    const cupOkno = okna.filter((l) => (l[5] || [])
+      .some((f) => /Cup/.test(f[0])))[0] || null;
     return {
       megaOtevrene: megaOkno ? megaOkno[3] : null,
       megaOmezene: megaOkno ? (megaOkno[5] || []).map((f) => f[0]) : null,
@@ -14505,8 +14514,10 @@ try {
   check("kus drzi vic roli najednou", odznakRoli.slotu > 1, String(odznakRoli.slotu));
   check("odznacek rekne, kolik roli je jeste vedle",
     /\+\d/.test(odznakRoli.sub), odznakRoli.sub);
+  /* Mega role se ve vete pozna podle jmena formy ("Mega Garchomp") —
+     slovo "mega" uz pred nim nestoji, jmeno ho obsahuje samo. */
   check("plny vycet roli zustava ve vete",
-    odznakRoli.titulek.indexOf("mega") > -1 && odznakRoli.titulek.indexOf("raidu") > -1,
+    /[Mm]ega/.test(odznakRoli.titulek) && odznakRoli.titulek.indexOf("raidu") > -1,
     odznakRoli.titulek.slice(0, 160));
   // Mega nic neprebiji: raidova role se hlasi dal.
   check("mega neprebije raidove doporuceni", odznakRoli.raid !== "Ne", odznakRoli.raid);
@@ -14809,10 +14820,11 @@ try {
   check("slaba mega ma nizkou prioritu", megaTab.prioAudino === "Nízká",
     megaTab.prioAudino);
 
-  // Mega Mewtwo X a Y existuji v hlavni serii, v Pokemon GO vydane nejsou.
-  // Rucni seznam raidovych utocniku pritom tvrdil, ze nejlepsi Psychic
-  // utocnik je "Mewtwo (Mega Y)" — a detail u tehoz kusu psal, ze ten druh
-  // megu nema. Herni data maji 47 mega druhu a Mewtwo mezi nimi neni.
+  /* Mega Mewtwo X a Y jsou v hernim souboru, ale ve hre vydane nejsou.
+     Appka je proto zna (znacka MEGA u kusu funguje), ale do porovnavani
+     mega forem je nepousti: kdyz se pocitaly, srazily Mega Alakazama
+     z prvniho mista v Psychicu a Mega Charizard Y z vysoke priority na
+     strední — kvuli forme, kterou si nikdo zapnout nemuze. */
   const mewtwo = await page.evaluate(async () => {
     const P = window.__pgo;
     P.setRows([{ pokemon: "Mewtwo", cp: 2367, level: 20, ivAtk: 13, ivDef: 15, ivSta: 14,
@@ -14828,11 +14840,13 @@ try {
       psychic1: (zeb.Psychic && zeb.Psychic[0] || {}).jmeno
     };
   });
-  check("Mewtwo nema mega formu", mewtwo.mega === "Ne" && !mewtwo.drzi,
-    JSON.stringify(mewtwo));
-  check("…a detail to rika primo", /mega evoluci nemá/.test(mewtwo.megaTitle),
+  check("mega forma jen z herniho souboru nema prioritu",
+    mewtwo.mega === "Neznámá" && !mewtwo.drzi, JSON.stringify(mewtwo));
+  check("…a detail nerika, ze by megu nemel",
+    /Mega Mewtwo/.test(mewtwo.megaTitle) && !/mega evoluci nemá/.test(mewtwo.megaTitle),
     mewtwo.megaTitle);
-  check("…a v zebricku mega forem neni", mewtwo.vZebricku === 0, String(mewtwo.vZebricku));
+  check("…a v zebricku mega forem nestoji", mewtwo.vZebricku === 0,
+    String(mewtwo.vZebricku));
   check("Psychic megam vede Mega Alakazam", mewtwo.psychic1 === "Mega Alakazam",
     String(mewtwo.psychic1));
 
@@ -18578,7 +18592,14 @@ try {
     vstup.value = "rat";
     vstup.dispatchEvent(new Event("input", { bubbles: true }));
     await cekej(250);
-    out.filtr = [...napoveda.querySelectorAll("button")].map((x) => x.textContent.trim());
+    /* Nabidka ma tvar naseptavace od "Pridat pokemona" — obrazek, jmeno,
+       typy a pocet, kazde ve svem prvku. Ctou se zvlast, aby test mluvil
+       o obsahu, ne o tom, jak se texty slepi za sebou. */
+    out.filtr = [...napoveda.querySelectorAll(".druh-polozka")].map((x) => ({
+      jm: ((x.querySelector(".dn-jmeno") || {}).textContent || "").trim(),
+      typy: ((x.querySelector(".dn-typy") || {}).textContent || "").trim(),
+      pocet: ((x.querySelector(".pocet") || {}).textContent || "").trim(),
+      obrazek: !!x.querySelector("img") }));
     const prvni = napoveda.querySelector("button");
     if (prvni) prvni.click();
     await cekej(200);
@@ -18605,14 +18626,734 @@ try {
     s286.prazdne === true && s286.maVstup === true,
     JSON.stringify([s286.prazdne, s286.maVstup, (s286.dialog || "").slice(0, 60)]));
   check("psani nabidne jen druhy, ktere clovek ma, s poctem kusu",
-    s286.filtr.length === 1 && /Rattata 2 kusy/.test(s286.filtr[0])
-      && !/Bulbasaur|Pikachu/.test(s286.filtr.join("|")), JSON.stringify(s286.filtr));
+    s286.filtr.length === 1 && s286.filtr[0].jm === "Rattata"
+      && /2 kusy/.test(s286.filtr[0].pocet)
+      && !s286.filtr.some((x) => /Bulbasaur|Pikachu/.test(x.jm)),
+    JSON.stringify(s286.filtr));
+  check("...a vedle jmena stoji obrazek a typy druhu",
+    s286.filtr.length === 1 && s286.filtr[0].obrazek === true
+      && /Normal/.test(s286.filtr[0].typy), JSON.stringify(s286.filtr));
   check("vyber prida stitek, Enter dalsi a dialog nezavre",
     s286.cipy.join(",") === "Rattata" && s286.cipy2.join(",") === "Rattata,Pidgey"
       && s286.oknoOtevrene === true, JSON.stringify([s286.cipy, s286.cipy2]));
   check("chranene kusy nespadnou do hromadneho pusteni",
     s286.sekce.filter((x) => /Rattata|Pidgey/.test(x.jm)).every((x) => x.sekce !== 2),
     JSON.stringify(s286.sekce));
+
+  console.log("\n308) Pri skoro stejne kvalite rozhodne o lize utok (CMP)");
+  /* Kdyz oba hraci zmacknou nabity utok ve stejnem tahu, vystreli driv ten
+     s vyssim utocnym statem. Appka to dlouho nevedela a do ligy stavela
+     vzdycky nejlepsi stat product — Cramorant 0/14/11 tak v zrcadle strili
+     vzdycky druhy, zatimco 0/7/5 je o dve procenta min odolny, ale
+     vystreli prvni. V pasmu, kde je kvalita prakticky stejna, proto
+     rozhoduje utok; sirku pasma si uzivatel nastavi (0 % = jako driv). */
+  await page.goto(URL);
+  await nacteno(page);
+  const s308 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const kus = (a, d, st) => ({ pokemon: "Cramorant", ivAtk: a, ivDef: d, ivSta: st,
+      level: 15, cp: 900, fastMove: "Wing Attack", charged1: "Surf" });
+    P.setRows([kus(0, 14, 11), kus(0, 7, 5)]);
+    await cekej(1500);
+    const nastav = (v) => {
+      const el = document.getElementById("cmpPasmo");
+      el.value = v;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const zmer = () => {
+      const rows = P.getRows(), c = P.getComputed();
+      return rows.map((r) => {
+        const v = c[r.id] || {};
+        const gl = (v.pvpLigy || []).filter((l) => l.liga === "GL")[0] || {};
+        return { iv: r.ivAtk + "/" + r.ivDef + "/" + r.ivSta,
+          pct: gl.pct || null, atk: gl.atk || null, cmp: gl.cmp || null,
+          duvody: (v.duvody || []).map((d) => d.stitek) };
+      });
+    };
+    nastav(0);
+    await cekej(1200);
+    const bez = zmer();
+    nastav(2);
+    await cekej(1200);
+    const s2 = zmer();
+    return { bez, s2 };
+  });
+  const glDrzi = (sada) => (sada.filter((x) => x.duvody.some((d) => /^GL /.test(d)))[0] || {}).iv;
+  check("utocny stat i pomer k nejlepsimu kusu druhu jsou u ligy k dispozici",
+    s308.bez.every((x) => typeof x.atk === "number" && typeof x.cmp === "number")
+      && s308.bez[1].atk > s308.bez[0].atk && s308.bez[1].cmp > 1,
+    JSON.stringify(s308.bez.map((x) => [x.iv, x.atk, x.cmp])));
+  check("s pasmem 0 % rozhoduje o lize jen stat product",
+    glDrzi(s308.bez) === "0/14/11",
+    JSON.stringify(s308.bez.map((x) => [x.iv, x.duvody])));
+  check("...a s pasmem 2 % vezme ligu kus, ktery v zrcadle strili prvni",
+    glDrzi(s308.s2) === "0/7/5",
+    JSON.stringify(s308.s2.map((x) => [x.iv, x.duvody])));
+  check("...pricemz ten druhy kus z rosteru nevypadne, jen hraje jinou ligu",
+    s308.s2.every((x) => x.duvody.length > 0),
+    JSON.stringify(s308.s2.map((x) => [x.iv, x.duvody])));
+
+  console.log("\n307) Dynamax a Gigantamax jsou porad tentyz druh");
+  /* Jmeno se v `dexKey` zkracuje ZPRAVA, takze z "Gigantamax Cinderace"
+     nikdy nevznikl druh: zkusilo se "gigantamaxcinderace", pak "gigantamax"
+     a konec. Akce Max Battle Day proto zustala v kalendari bez obrazku
+     i bez seznamu druhu. Mega se takhle odstranovalo uz driv. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s307 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const zkouska = ["Gigantamax Cinderace", "Dynamax Uxie", "G-Max Lapras",
+      "Mega Charizard Y", "Shadow Snorlax"];
+    const out = {};
+    zkouska.forEach((jm) => {
+      const d = P.dexEntry(jm);
+      out[jm] = d ? d.name : null;
+    });
+    return { jmena: out, obrazek: /<img|background/.test(P.atlasImage("Gigantamax Cinderace") || "") };
+  });
+  check("z Gigantamax a Dynamax jmen se pozna zakladni druh",
+    s307.jmena["Gigantamax Cinderace"] === "Cinderace"
+      && s307.jmena["Dynamax Uxie"] === "Uxie"
+      && s307.jmena["G-Max Lapras"] === "Lapras",
+    JSON.stringify(s307.jmena));
+  check("...a nepokazilo to mega ani shadow",
+    s307.jmena["Mega Charizard Y"] === "Charizard"
+      && s307.jmena["Shadow Snorlax"] === "Snorlax",
+    JSON.stringify(s307.jmena));
+  check("...takze takovy druh ma i obrazek", s307.obrazek === true, "");
+
+  console.log("\n306) Rada o utocich nevede do kruhu");
+  /* Tinkaton ma dva ocelove nabite utoky. U Flash Cannonu appka radila
+     prehodit na Heavy Slam, a po prehozeni radila u Heavy Slamu zpatky na
+     Flash Cannon — z te rady se nedalo dostat ven. Nabizel se nejlepsi
+     utok, ktery kus NEMA, aniz by se porovnal s tim, ktery tam je. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s306 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const varianta = async (c2) => {
+      P.setRows([{ pokemon: "Tinkaton", cp: 1495, level: 25.5, ivAtk: 5, ivDef: 3,
+        ivSta: 14, fastMove: "Fairy Wind", charged1: "Play Rough", charged2: c2 }]);
+      await cekej(900);
+      const r = P.getRows()[0], c = P.getComputed()[r.id];
+      const u = {};
+      (c.utoky || []).forEach((x) => { u[x.jm] = { stav: x.stav, nahrada: x.nahrada || "" }; });
+      return u;
+    };
+    const sFlash = await varianta("Flash Cannon");
+    const sHeavy = await varianta("Heavy Slam");
+
+    /* A totez pres vzorek druhu: kazda nabidnuta nahrada musi dat v TEHLE
+       sestave vic nez utok, ktery tam je. Jinak je to rada tam a zpatky. */
+    const mv = P.movesData(), fn = mv.fastNames, cn = mv.chargedNames;
+    const sp = P.pokedex().species;
+    const kusy = [];
+    Object.keys(mv.learn || {}).forEach((k) => {
+      if (k.indexOf("-") > -1 || kusy.length >= 120) return;
+      const e = sp[k], l = mv.learn[k];
+      if (!e || !l || !(l[0] || []).length || (l[1] || []).length < 2) return;
+      const fast = fn[l[0][0]];
+      const hod = (l[1] || []).map((i) => ({ jm: cn[i], d: P.dpsSestavy(e[1], fast, cn[i]) }))
+        .filter((x) => typeof x.d === "number");
+      if (hod.length < 2) return;
+      hod.sort((a, b) => a.d - b.d);
+      kusy.push({ pokemon: e[1], cp: 1200, level: 25, ivAtk: 10, ivDef: 10, ivSta: 10,
+        fastMove: fast, charged1: hod[0].jm, charged2: hod[1].jm });
+    });
+    P.setRows(kusy);
+    await cekej(3500);
+    const rows = P.getRows(), comp = P.getComputed();
+    let nabidek = 0;
+    const horsi = [];
+    rows.forEach((r) => {
+      ((comp[r.id] || {}).utoky || []).forEach((u) => {
+        if (!u || !u.jm || !u.nahrada) return;
+        nabidek++;
+        const rychly = String(u.jm) === String(r.fastMove);
+        const protejsek = rychly ? r.charged1 : r.fastMove;
+        const ted = rychly ? P.dpsSestavy(r.pokemon, u.jm, protejsek)
+          : P.dpsSestavy(r.pokemon, protejsek, u.jm);
+        const po = rychly ? P.dpsSestavy(r.pokemon, u.nahrada, protejsek)
+          : P.dpsSestavy(r.pokemon, protejsek, u.nahrada);
+        if (typeof ted !== "number" || typeof po !== "number") return;
+        if (po <= ted) horsi.push(r.pokemon + ": " + u.jm + " -> " + u.nahrada);
+      });
+    });
+    return { sFlash, sHeavy, kusu: rows.length, nabidek, horsi };
+  });
+  check("slabsi z dvojice ocelovych utoku ma nahradu za ten lepsi",
+    s306.sFlash["Flash Cannon"] && s306.sFlash["Flash Cannon"].nahrada === "Heavy Slam",
+    JSON.stringify(s306.sFlash));
+  check("...ale ten lepsi uz zpatky neposila",
+    s306.sHeavy["Heavy Slam"] && s306.sHeavy["Heavy Slam"].nahrada === "",
+    JSON.stringify(s306.sHeavy));
+  check("u nejlepsiho utoku druhu se nenabizi nic",
+    s306.sFlash["Fairy Wind"] && s306.sFlash["Fairy Wind"].nahrada === ""
+      && s306.sFlash["Play Rough"] && s306.sFlash["Play Rough"].nahrada === "",
+    JSON.stringify(s306.sFlash));
+  check("napric druhy neni ani jedna nahrada horsi nez utok, ktery kus ma",
+    s306.horsi.length === 0 && s306.nabidek > 30 && s306.kusu > 50,
+    JSON.stringify([s306.kusu, s306.nabidek, s306.horsi.slice(0, 5)]));
+
+  console.log("\n305) Do gymu nejde druh, ktery se meni v souboji");
+  /* Zebricek obrancu se pocita pres vsechny druhy v pokedexu, takze v nem
+     sedmy stal "Darmanitan (Zen)" — forma, ktera vznika az v boji a v boxu
+     ji nikdy nemas. Hra navic cele takove druhy (Aegislash, Morpeko…)
+     z gymu i raidu vyradila. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s305 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const idx = P.gymRankIndex();
+    const klice = Object.keys(idx);
+    const zakazane = ["darmanitan-zen", "darmanitan-galarianzen", "aegislash-blade",
+      "eiscue-noice", "morpeko-hangry", "mimikyu-busted", "palafin-hero",
+      "wishiwashi-school", "aegislash", "morpeko", "eiscue", "palafin",
+      "wishiwashi", "mimikyu"];
+    P.setRows([
+      { pokemon: "Aegislash", cp: 2100, level: 33, ivAtk: 15, ivDef: 14, ivSta: 15,
+        fastMove: "Psycho Cut", charged1: "Shadow Ball" },
+      { pokemon: "Blissey", cp: 2700, level: 40, ivAtk: 10, ivDef: 15, ivSta: 15,
+        fastMove: "Pound", charged1: "Dazzling Gleam" },
+    ]);
+    await cekej(1000);
+    const rows = P.getRows(), c = P.getComputed();
+    const aegi = c[rows.filter((r) => r.pokemon === "Aegislash")[0].id];
+    const blissey = c[rows.filter((r) => r.pokemon === "Blissey")[0].id];
+    const box = document.createElement("div");
+    document.body.appendChild(box);
+    P.atlasDetail(rows.filter((r) => r.pokemon === "Aegislash")[0].id, box, () => {});
+    const tip = [...box.querySelectorAll("[data-tip]")]
+      .map((e) => e.getAttribute("data-tip"))
+      .filter((x) => /souboji/.test(x || ""))[0] || "";
+    box.remove();
+    return { vZebricku: zakazane.filter((k) => idx[k]),
+      obrancu: klice.length,
+      // Druh, ktery brani normalne, musi v zebricku zustat.
+      blissey: !!idx.blissey,
+      /* A kus z rosteru: Aegislash nedrzi gymovy slot a v detailu se dozvis
+         proc. Blissey naopak slot drzi — kontrola, ze se nevyradilo vic,
+         nez se melo. */
+      aegiGym: aegi.gym,
+      aegiStitky: (aegi.duvody || []).map((x) => x.filtr),
+      blisseyGym: blissey.gym,
+      blisseyGymSlot: (blissey.duvody || []).some((x) => x.filtr === "Gym"),
+      duvod: tip.slice(0, 80) };
+  });
+  check("v zebricku obrancu nestoji nic, co se meni v souboji",
+    s305.vZebricku.length === 0 && s305.obrancu > 50,
+    JSON.stringify([s305.vZebricku, s305.obrancu]));
+  check("...a bezny obrance tam zustal",
+    s305.blissey === true && s305.blisseyGym === "Ano" && s305.blisseyGymSlot === true,
+    JSON.stringify([s305.blissey, s305.blisseyGym, s305.blisseyGymSlot]));
+  check("kus takoveho druhu gymovy slot nedrzi a v detailu je napsane proc",
+    s305.aegiGym === "Ne" && s305.aegiStitky.indexOf("Gym") === -1
+      && /Mění formu v souboji/.test(s305.duvod),
+    JSON.stringify([s305.aegiGym, s305.aegiStitky, s305.duvod]));
+
+  console.log("\n304) Formy, ktere se meni v boji, bere appka tak, jak je drzis");
+  /* Aegislash je v datech dvakrat (Blade 272/97, Shield 97/272) a holy klic
+     bral abecedne prvni, tedy Blade — z utocne formy se pak pocitalo CP
+     i obrana kusu, ktery v boxu stoji jako Shield. Zacian a Zamazenta mely
+     tyz problem vcetne typu (Fairy/Steel misto Fairy).
+
+     Druha pulka: holy klic musel byt i CILEM evoluce. "aegislash" v grafu
+     nebyl (byl tam "aegislash-shield"), takze kus z rosteru svou vlastni
+     radu nenasel a nebylo na co kliknout. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s304 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const dex = (P.pokedex() || {});
+    const sp = dex.species || {}, ev = dex.evoluce || {};
+    const cile = new Set();
+    Object.keys(ev).forEach((k) => (ev[k] || []).forEach((c) => cile.add(c)));
+    // Kazdy holy klic, jehoz forma v grafu je, musi byt v grafu taky.
+    const diry = Object.keys(sp).filter((k) => {
+      if (k.indexOf("-") > -1) return false;
+      if (cile.has(k) || ev[k]) return false;
+      return Object.keys(sp).some((f) => f.indexOf(k + "-") === 0
+        && (cile.has(f) || ev[f]));
+    });
+    const strom = P.atlasEvoStrom("Aegislash");
+    return {
+      aegi: P.dexEntry("Aegislash"),
+      zacian: P.dexEntry("Zacian"),
+      zamazenta: P.dexEntry("Zamazenta"),
+      diry: diry,
+      rada: strom ? strom.stupne.flat().map((u) => u.klic) : [],
+      vstup: strom ? strom.stupne.flat().filter((u) => u.vstup).map((u) => u.popis) : [],
+      cesta: !!P.atlasEvoCena("doublade", "aegislash"),
+      // Jmeno formy se nesmi brat z PvP zebricku: ten popisuje svuj zaznam
+      // ("Aegislash (Blade)", "Mewtwo (Armored)"), ne kus v boxu.
+      jmena: ["Aegislash", "Mewtwo", "Mimikyu", "Zacian"].map((x) => {
+        const st = P.atlasEvoStrom(x);
+        return st ? st.stupne.flat().filter((u) => u.vstup).map((u) => u.popis)[0] : "";
+      })
+    };
+  });
+  check("Aegislash se pocita jako Shield, ne jako Blade",
+    s304.aegi.a === 97 && s304.aegi.d === 272, JSON.stringify(s304.aegi));
+  check("Zacian a Zamazenta jsou Hero, vcetne typu",
+    s304.zacian.a === 254 && s304.zacian.types.join("/") === "Fairy"
+      && s304.zamazenta.a === 254 && s304.zamazenta.types.join("/") === "Fighting",
+    JSON.stringify([s304.zacian, s304.zamazenta]));
+  check("zadny druh nema evolucni radu jen pod jmenem formy",
+    s304.diry.length === 0, s304.diry.slice(0, 8).join(", "));
+  check("Aegislash v rosteru najde svou radu a stoji v ni",
+    s304.rada.join(">") === "honedge>doublade>aegislash"
+      && s304.vstup.join("") === "Aegislash" && s304.cesta === true,
+    JSON.stringify([s304.rada, s304.vstup, s304.cesta]));
+  check("jmeno formy nebere popisek z PvP zebricku",
+    s304.jmena.join(" | ") === "Aegislash | Mewtwo | Mimikyu | Zacian",
+    s304.jmena.join(" | "));
+
+  console.log("\n303) Utok Future Sight jsou dve slova");
+  /* Zdroj dat ho vede slepeny ("Futuresight"). Ze hry i ze skenu chodi
+     "Future Sight", takze se stejne psany utok nemusel poznat. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s303 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([{ pokemon: "Espeon", cp: 2400, level: 30, ivAtk: 14, ivDef: 15, ivSta: 14,
+      fastMove: "Confusion", charged1: "Future Sight" }]);
+    await cekej(900);
+    const r = P.getRows()[0];
+    const mv = P.movesData ? P.movesData() : null;
+    const jmena = mv ? (mv.chargedNames || []) : [];
+    return { utok: r.charged1, slepene: jmena.indexOf("Futuresight") > -1,
+      spravne: jmena.indexOf("Future Sight") > -1, pocet: jmena.length };
+  });
+  check("naskenovany „Future Sight“ zustane, jak ho hra pise",
+    s303.utok === "Future Sight", String(s303.utok));
+  check("...a v seznamu utoku uz slepene jmeno neni",
+    s303.pocet === 0 || (s303.spravne === true && s303.slepene === false),
+    JSON.stringify(s303));
+
+  console.log("\n302) Stitek mega nerika „Mega“ dvakrat");
+  /* V bubline stalo "Mega Mega Charizard X" — jmeno formy to slovo
+     obsahuje samo, predpona k nemu byla navic. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s302 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([{ pokemon: "Charizard", cp: 2900, level: 33, ivAtk: 15, ivDef: 15, ivSta: 14,
+      fastMove: "Fire Spin", charged1: "Blast Burn" }]);
+    await cekej(900);
+    const r = P.getRows()[0], c = P.getComputed()[r.id];
+    const mega = (c.duvody || []).filter((d) => d.filtr === "Mega");
+    return { stitek: mega.map((d) => d.stitek).join(","),
+      proc: mega.map((d) => d.proc).join(" ") };
+  });
+  check("mega stitek je v rosteru jednou",
+    s302.stitek === "Mega", s302.stitek);
+  check("...a v jeho bubline slovo Mega nestoji dvakrat za sebou",
+    /Mega Charizard/.test(s302.proc) && !/Mega Mega/.test(s302.proc), s302.proc);
+
+  console.log("\n301) Akce se dotahuji samy, ale jen kdyz jsou novejsi");
+  /* Rozpis akci se meni kazdy tyden, ale data jsou zapecena v sestaveni.
+     Vedle appky proto lezi `events.json`. Nikdy to ale kalendar nesmi
+     vyprazdnit: starsi nebo rozbity soubor se ignoruje. */
+  {
+    const zapecene = await page.evaluate(() => {
+      const d = window.__pgo.eventsData() || {};
+      return { stazeno: (d._meta || {}).stazeno || "", pocet: (d.events || []).length };
+    });
+    const podvrh = (stazeno, jmeno) => async (route) => {
+      const d = JSON.parse(JSON.stringify(zapeceneData));
+      d._meta = Object.assign({}, d._meta, { stazeno });
+      const prvni = JSON.parse(JSON.stringify(d.events[0]));
+      prvni[0] = jmeno;
+      d.events = [prvni].concat(d.events);
+      await route.fulfill({ status: 200, contentType: "application/json",
+        body: JSON.stringify(d) });
+    };
+    const zapeceneData = await page.evaluate(() => window.__pgo.eventsData());
+
+    // 1) novejsi soubor se prevezme
+    await page.route("**/events.json", podvrh("2099-01-01", "ZKOUSKA NOVA"));
+    await page.goto(URL);
+    await nacteno(page);
+    const nova = await page.evaluate(async () => {
+      const P = window.__pgo;
+      for (let i = 0; i < 40; i++) {
+        if ((P.eventsData().events || []).some((e) => e[0] === "ZKOUSKA NOVA")) break;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      const d = P.eventsData();
+      return { ma: (d.events || []).some((e) => e[0] === "ZKOUSKA NOVA"),
+        stazeno: (d._meta || {}).stazeno };
+    });
+    await page.unroute("**/events.json");
+
+    // 2) starsi soubor se ignoruje, i kdyz prijde
+    await page.route("**/events.json", podvrh("2000-01-01", "ZKOUSKA STARA"));
+    await page.goto(URL);
+    await nacteno(page);
+    const stara = await page.evaluate(async () => {
+      const P = window.__pgo;
+      await new Promise((r) => setTimeout(r, 1500));
+      const d = P.eventsData();
+      return { ma: (d.events || []).some((e) => e[0] === "ZKOUSKA STARA"),
+        pocet: (d.events || []).length };
+    });
+    await page.unroute("**/events.json");
+    await page.goto(URL);
+    await nacteno(page);
+
+    check("novejsi rozpis akci se prevezme bez nove verze appky",
+      nova.ma === true && nova.stazeno === "2099-01-01", JSON.stringify(nova));
+    check("...a starsi se ignoruje, kalendar zustane jak byl",
+      stara.ma === false && stara.pocet === zapecene.pocet,
+      JSON.stringify([stara, zapecene.pocet]));
+  }
+
+  console.log("\n300) Mega formy se berou i z herniho GAME_MASTERu");
+  /* pogoapi za hrou zaostava: Mega Victreebel byl ve hre (raid i chyceny
+     kus) a appka u nej psala "Mega: Ne" — v jejich datech ta forma nebyla.
+     Mirror ma 48 druhu, GAME_MASTER 58. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s300 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([{ pokemon: "Victreebel", cp: 1708, level: 25, ivAtk: 13, ivDef: 15, ivSta: 12 }]);
+    await cekej(900);
+    const r = P.getRows()[0], c = P.getComputed()[r.id];
+    const box = document.createElement("div");
+    document.body.appendChild(box);
+    P.atlasDetail(r.id, box, () => {});
+    const m = (P.pokedex() || {}).mega || {};
+    const out = {
+      isMega: !!c.isMega, jmeno: c.megaNames || "",
+      maPrepinac: !!box.querySelector(".mega-prepinac"),
+      /* Cena promeny lezi ve vetvi evoluce u sveho tempEvoId. Kdyz se
+         cetla jinde, vysla u vsech novych forem prazdna. */
+      bezCeny: Object.keys(m).filter((k) => (m[k] || [])
+        .some((f) => f[5] == null || f[7] == null)),
+      druhu: Object.keys(m).length
+    };
+    box.remove();
+    return out;
+  });
+  check("druh, ktery pogoapi nema a hra ano, mega formu zna",
+    s300.isMega === true && /Victreebel/.test(s300.jmeno),
+    JSON.stringify([s300.isMega, s300.jmeno]));
+  check("...a da se u nej zapnout znacka MEGA", s300.maPrepinac === true, "");
+  check("u kazde mega formy je cena promeny, i ta prvni",
+    s300.bezCeny.length === 0, JSON.stringify(s300.bezCeny.slice(0, 5)));
+  check("mega forem je aspon tolik, kolik jich zna hra",
+    s300.druhu >= 55, String(s300.druhu));
+
+  console.log("\n299) Tahak ukazuje tytez kusy, jake drzi role v rosteru");
+  /* Gym a ligy si tahak driv vybiral vlastnim pravidlem (gym podle Def+HP,
+     ligy podle stat productu). Roster pritom ty role rozdeluje sam a v karte
+     kusu je napsane "LC #2, 1. z 12" — tahak tak na tutez otazku odpovidal
+     jinymi kusy v jinem poradi. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s299 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const druhy = ["Ducklett", "Fomantis", "Pumpkaboo", "Foongus", "Dewpider", "Litwick",
+      "Carvanha", "Tentacool", "Shellos", "Wooper", "Ferroseed", "Grookey", "Budew",
+      "Fennekin", "Vulpix", "Snorlax", "Blissey", "Metagross", "Gyarados", "Azumarill",
+      "Registeel", "Swampert", "Skarmory", "Umbreon", "Bastiodon", "Medicham"];
+    P.setRows(druhy.map((jm, i) => ({ pokemon: jm, cp: 1500 - i * 11,
+      level: 20 + (i % 10), ivAtk: (i * 3) % 16, ivDef: 15 - (i % 5), ivSta: 12 + (i % 4) })));
+    await cekej(1600);
+    const c = P.getComputed();
+    /* Co drzi roster: stitky verdiktu nesou slot i jeho poradi
+       ("Little Cup #2, 1. z 12."). */
+    const zRosteru = (klic) => {
+      const out = [];
+      P.getRows().forEach((r) => {
+        ((c[r.id] || {}).duvody || []).forEach((d) => {
+          if (d.klic !== klic) return;
+          const m = String(d.proc || "").match(/(\d+)\.\s*z\s*\d+/);
+          out.push({ jm: r.pokemon, poradi: m ? Number(m[1]) : 999 });
+        });
+      });
+      return out.sort((a, z) => a.poradi - z.poradi).map((x) => x.jm);
+    };
+    const sheet = P.cheatSheetData();
+    return {
+      gymRoster: zRosteru("gym"),
+      gymTahak: sheet.gym.map((x) => x.name),
+      lcRoster: zRosteru("pvp:LC"),
+      lcTahak: sheet.pvp.LC.map((x) => x.name),
+      glRoster: zRosteru("pvp:GL"),
+      glTahak: sheet.pvp.GL.map((x) => x.name)
+    };
+  });
+  check("gym v tahaku = obranci, kteri v rosteru drzi slot, ve stejnem poradi",
+    s299.gymTahak.length > 0 && s299.gymTahak.join("|") === s299.gymRoster.join("|"),
+    JSON.stringify([s299.gymTahak, s299.gymRoster]));
+  check("Little Cup v tahaku = kusy, ktere tu ligu v rosteru hraji",
+    s299.lcTahak.length > 0 && s299.lcTahak.join("|") === s299.lcRoster.join("|"),
+    JSON.stringify([s299.lcTahak, s299.lcRoster]));
+  check("...a stejne tak Great League",
+    s299.glTahak.join("|") === s299.glRoster.join("|"),
+    JSON.stringify([s299.glTahak, s299.glRoster]));
+
+  console.log("\n298) Raidovi bossove v tahaku jsou ti dnesni");
+  /* `EVENTS.raids` je snimek rotace: stoji v nem i bossove, kterym akce
+     skoncila, a chybi ti, ktere prave pridalo bezici okno. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s298 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const jm = (x) => String(x[0]);
+    return { tahak: P.cheatSheetData().bossove.map((b) => b.name).sort(),
+      dnes: P.bossoveDnes().map(jm).sort() };
+  });
+  check("tahak bere bosse ze stejneho seznamu jako Udalosti",
+    s298.tahak.length > 0 && s298.tahak.join("|") === s298.dnes.join("|"),
+    JSON.stringify([s298.tahak.length, s298.dnes.length]));
+
+  console.log("\n296) Znacka MEGA rika, ktera kopie megu drzi");
+  /* Mega se ve hre dela na konkretnim kuse a mega energie se nevraci.
+     Appka si dosud vybirala sama, takze u vymegovaneho kusu mohlo stat
+     "Lepsi kopie". Rucni znacka ma prebit vypocet. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s296 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Charizard", cp: 2800, level: 30, ivAtk: 15, ivDef: 15, ivSta: 15 },
+      { pokemon: "Charizard", cp: 1900, level: 22, ivAtk: 6, ivDef: 7, ivSta: 8 },
+      { pokemon: "Snorlax", cp: 2000, level: 25, ivAtk: 10, ivDef: 10, ivSta: 10 }
+    ]);
+    await cekej(900);
+    const rr = P.getRows();
+    const stav = () => {
+      const c = P.getComputed();
+      return rr.filter((r) => r.pokemon === "Charizard")
+        .map((r) => ({ cp: r.cp, drzi: !!c[r.id].megaDrzi, mega: c[r.id].mega }));
+    };
+    const out = { pred: stav() };
+    // Oznacim ten SLABSI — appka by si sama vybrala ten silnejsi.
+    rr[1].megaKus = "Ano";
+    P.prekreslit();
+    await cekej(600);
+    out.po = stav();
+    // Stitek: jen u druhu, ktery megu ma; prepinac ho zapina a vypina.
+    const stitky = (id) => {
+      const box = document.createElement("div");
+      document.body.appendChild(box);
+      P.atlasDetail(id, box, () => {});
+      const t = [...box.querySelectorAll(".rarity-chip")].map((x) => x.textContent.trim());
+      const prep = box.querySelector(".mega-prepinac");
+      const zapnuty = prep ? !prep.classList.contains("vypnuto") : null;
+      box.remove();
+      return { maMega: t.indexOf("MEGA") > -1, zapnuty: zapnuty };
+    };
+    out.charizard = stitky(rr[1].id);
+    out.snorlax = stitky(rr[2].id);
+    // Prepnuti v detailu zapise znacku na radek.
+    const box = document.createElement("div");
+    document.body.appendChild(box);
+    P.atlasDetail(rr[0].id, box, () => {});
+    box.querySelector(".mega-prepinac").click();
+    await cekej(500);
+    out.poKliku = rr[0].megaKus;
+    box.remove();
+    return out;
+  });
+  check("bez znacky drzi megu nejlepsi kopie",
+    s296.pred[0].drzi === true && s296.pred[1].drzi === false,
+    JSON.stringify(s296.pred));
+  check("oznaceny kus megu prebere, i kdyz je slabsi",
+    s296.po[1].drzi === true && s296.po[0].drzi === false
+      && s296.po[0].mega === "Lepší kopie", JSON.stringify(s296.po));
+  check("stitek je u druhu s megou, jinde ne",
+    s296.charizard.maMega === true && s296.charizard.zapnuty === true
+      && s296.snorlax.maMega === false, JSON.stringify([s296.charizard, s296.snorlax]));
+  check("prepinac znacku zapise na kus",
+    s296.poKliku === "Ano", String(s296.poKliku));
+
+  console.log("\n297) MEGA jde zaskrtnout uz pri rucnim pridani");
+  await page.goto(URL);
+  await nacteno(page);
+  const s297 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([]);
+    await cekej(800);
+    document.getElementById("addRowBtn").click();
+    await cekej(600);
+    const vypln = (id, v) => { const el = document.getElementById(id);
+      el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); };
+    vypln("rbName", "Charizard");
+    vypln("rbCp", String(P.atlasCP("Charizard", 20, 14, 13, 12)));
+    vypln("rbA", "14"); vypln("rbD", "13"); vypln("rbS", "12");
+    const chk = document.getElementById("rbMega");
+    const out = { pole: !!chk, stitek: !!document.querySelector(".rb-znacky .r-MG") };
+    if (chk) chk.checked = true;
+    await cekej(400);
+    document.getElementById("rbAdd").click();
+    await cekej(900);
+    const r = P.getRows()[0];
+    out.ulozeno = r ? r.megaKus : null;
+    out.vycisteno = chk ? chk.checked : null;
+    /* Znacka musi prezit zalohu: export ji pise jako "M" a import ji
+       zpatky precte. Bez toho by po obnove rosteru zmizela a appka by
+       si zase vybrala megu sama. */
+    const csv = P.csvText();
+    out.vCsv = /,MEGA,/.test(csv.split("\n")[0]) && /,M,/.test(csv.split("\n")[1]);
+    P.setRows([]);
+    await cekej(600);
+    P.importText(csv);
+    P.finishImport(true);
+    await cekej(1200);
+    const zpet = P.getRows()[0];
+    out.poImportu = zpet ? zpet.megaKus : null;
+    return out;
+  });
+  check("v okne „Pridat pokemona\" je zaskrtavatko MEGA",
+    s297.pole === true && s297.stitek === true, JSON.stringify(s297));
+  check("...a znacka se ulozi na novy kus", s297.ulozeno === "Ano", String(s297.ulozeno));
+  check("...a po pridani se zaskrtavatko vycisti pro dalsi kus",
+    s297.vycisteno === false, String(s297.vycisteno));
+  check("znacka MEGA prezije export i zpetny import",
+    s297.vCsv === true && s297.poImportu === "Ano",
+    JSON.stringify([s297.vCsv, s297.poImportu]));
+
+  console.log("\n295) Pruh „uz se nevejdou“ mluvi jen o rozdelane sekci");
+  /* Sekce se ve hre uzavira: co se v ni rozhodlo, je po jejim konci
+     odeslane pryc. Rada "pust jeste tohohle z prvni sekce", kdyz uz clovek
+     stoji u shadow kusu, se tedy neda provest — a appka ji nema davat. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s295 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rows = [];
+    [[5, 5, 5], [8, 8, 8], [10, 10, 10], [12, 12, 12], [14, 14, 14], [15, 15, 15]]
+      .forEach((iv, i) => rows.push({ pokemon: "Rhyhorn", cp: 800 + i * 40,
+        level: 18 + i, ivAtk: iv[0], ivDef: iv[1], ivSta: iv[2] }));
+    rows.push({ pokemon: "Machop", cp: 700, level: 20, ivAtk: 10, ivDef: 10,
+      ivSta: 10, forma: "Shadow" });
+    rows.push({ pokemon: "Machop", cp: 650, level: 19, ivAtk: 9, ivDef: 9,
+      ivSta: 9, forma: "Shadow" });
+    P.setRows(rows);
+    await cekej(900);
+    P.boxOtevrit();
+    { const o = document.getElementById("appOknoOk");
+      if (o && !document.getElementById("appOkno").hidden) o.click(); }
+    await cekej(400);
+    const out = { videtVSekci1: false, ikony: [] };
+    const pruh = document.getElementById("bmVypadli");
+    let pojistka = 0;
+    while (P.boxStav().index < P.boxStav().delka
+           && P.boxStav().sekceTed === 1 && pojistka++ < 12) {
+      const kus = P.bmSeznam()[P.boxStav().index];
+      if (kus) kus.row.dynamax = "Ano";
+      P.boxPrepocitat();
+      await cekej(250);
+      if (P.boxVypadli().length) {
+        out.videtVSekci1 = true;
+        out.ikony = [...pruh.querySelectorAll("img")]
+          .map((im) => im.dataset.vystredeno || "");
+      }
+      document.getElementById("bmKeep").click();
+      await cekej(200);
+    }
+    out.sekceTed = P.boxStav().sekceTed;
+    out.poPrechodu = P.boxVypadli().length;
+    out.pruhSkryty = pruh.hidden;
+    return out;
+  });
+  check("dokud se sekce prochazi, pruh o vypadlych kusech je",
+    s295.videtVSekci1 === true, JSON.stringify(s295));
+  check("po prechodu do dalsi sekce uz pruh nic nehlasi",
+    s295.sekceTed === 2 && s295.poPrechodu === 0 && s295.pruhSkryty === true,
+    JSON.stringify([s295.sekceTed, s295.poPrechodu, s295.pruhSkryty]));
+  check("ikony v pruhu si appka vystredi",
+    s295.ikony.length > 0 && s295.ikony.every((x) => x === "1"),
+    JSON.stringify(s295.ikony));
+
+  console.log("\n294) Okno novinek se otevira na zacatku");
+  /* Fokus na tlacitku „Rozumim" dole prohlizec doprovodil odrolovanim —
+     okno se otevrelo az u paty, pod celym obsahem. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s294 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.getElementById("novinkyOkno")?.remove();
+    window.__pgo.ukazNovinky(true);
+    await cekej(400);
+    const okno = document.querySelector("#novinkyOkno .novinky-okno");
+    if (!okno) return null;
+    const out = { scrollTop: Math.round(okno.scrollTop),
+      // Jen kdyz je okno delsi nez jeho ramecek, ma vubec kam odrolovat —
+      // jinak by test prochazel i rozbity.
+      roluje: okno.scrollHeight > okno.clientHeight + 4,
+      fokusOk: !!(document.activeElement
+        && document.activeElement.hasAttribute("data-novinky-ok")) };
+    document.getElementById("novinkyOkno").remove();
+    return out;
+  });
+  check("okno novinek zacina nahore", !!s294 && s294.scrollTop === 0, JSON.stringify(s294));
+  check("…i kdyz je obsah delsi nez okno", !!s294 && s294.roluje === true,
+    JSON.stringify(s294));
+  check("Enter porad zavira — fokus zustal na „Rozumim\"",
+    !!s294 && s294.fokusOk === true, JSON.stringify(s294));
+
+  console.log("\n293) Naseptavac kusu na vymenu: obrazek, typy a pocet");
+  await page.goto(URL);
+  await nacteno(page);
+  const s293 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Pidgey", cp: 400, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 },
+      { pokemon: "Pidgey", cp: 390, level: 19, ivAtk: 9, ivDef: 9, ivSta: 9 },
+      { pokemon: "Snorlax", cp: 1800, level: 25, ivAtk: 14, ivDef: 14, ivSta: 14 }
+    ]);
+    await cekej(900);
+    P.boxOtevrit();
+    await cekej(400);
+    const vstup = document.getElementById("appOknoVstup");
+    vstup.value = "pid";
+    vstup.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(300);
+    const nab = document.getElementById("appOknoNapoveda");
+    const polozka = nab.querySelector(".druh-polozka");
+    const out = {
+      polozek: nab.querySelectorAll(".druh-polozka").length,
+      obrazek: !!(polozka && polozka.querySelector("img")),
+      jmeno: polozka ? (polozka.querySelector(".dn-jmeno") || {}).textContent : "",
+      typy: polozka ? (polozka.querySelector(".dn-typy") || {}).textContent : "",
+      pocet: polozka ? (polozka.querySelector(".pocet") || {}).textContent : "",
+      zmerene: [...nab.querySelectorAll("img")].map((im) => im.dataset.vystredeno || "")
+    };
+    if (polozka) polozka.click();
+    await cekej(250);
+    const cipy = document.getElementById("appOknoCipy");
+    out.cip = { text: cipy.textContent.replace(/\s+/g, " ").trim(),
+      obrazek: !!cipy.querySelector("img") };
+    document.getElementById("appOknoZrusit").click();
+    await cekej(200);
+    return out;
+  });
+  check("nabidka ma obrazek, jmeno a typy jako u pridani kusu",
+    s293.polozek === 1 && s293.obrazek === true && s293.jmeno === "Pidgey"
+      && /Normal/.test(s293.typy), JSON.stringify(s293));
+  check("…a porad rika, kolik kusu toho druhu clovek ma",
+    /2 kusy/.test(s293.pocet), JSON.stringify(s293.pocet));
+  check("obrazky v nabidce si appka vystredi",
+    s293.zmerene.length > 0 && s293.zmerene.every((x) => x === "1"),
+    JSON.stringify(s293.zmerene));
+  check("vybrany stitek nese obrazek druhu",
+    /Pidgey/.test(s293.cip.text) && s293.cip.obrazek === true,
+    JSON.stringify(s293.cip));
 
   console.log("\n292) Dmax zebricek z Pokemon GO Hubu");
   await page.goto(URL);

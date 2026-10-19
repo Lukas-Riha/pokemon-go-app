@@ -213,8 +213,10 @@ for k, formy in mega.items():
         # mega_energie, Mega|Primal, mega_energie_poprvé. Osmé pole přibylo
         # s cenou prvního přeměnění — audit do teď čekal sedm a hlásil
         # chybu u všech 48 záznamů.
-        if len(m) != 8:
-            chyba("mega", "%s: záznam má %d polí, čekáno 8" % (k, len(m)))
+        # Devátá položka (0/1) říká, jestli formu veze jen herní soubor.
+        # Starší záznamy ji nemají, proto 8 i 9.
+        if len(m) not in (8, 9):
+            chyba("mega", "%s: záznam má %d polí, čekáno 8 nebo 9" % (k, len(m)))
             continue
         for t in m[4]:
             if t not in typy:
@@ -284,6 +286,16 @@ if jen_pvp_f or jen_pvp_c:
 RAW = ROOT / "data" / "raw"
 syrove = RAW / "current_pokemon_moves.json"
 if syrove.exists():
+    # Některá jména zdroj slepil do jednoho slova ("Futuresight") a sestavení
+    # je opravuje. Audit musí porovnávat totéž, jinak hlásí ztrátu útoku,
+    # který se jen správně přejmenoval. Mapa se bere ze sestavení, aby
+    # existovala jen jednou.
+    import importlib.util
+    _spec = importlib.util.spec_from_file_location("bm", ROOT / "tools" / "build_moves.py")
+    _bm = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_bm)
+    OPRAVY = {k.strip().lower(): v for k, v in getattr(_bm, "JMENO_OPRAVY", {}).items()}
+
     fastSet = {n.strip().lower() for n in fastN}
     chSet = {n.strip().lower() for n in chN}
     ztracene = {}
@@ -291,6 +303,7 @@ if syrove.exists():
         for pole, kde in (("fast_moves", fastSet), ("elite_fast_moves", fastSet),
                           ("charged_moves", chSet), ("elite_charged_moves", chSet)):
             for jm in zaznam.get(pole) or []:
+                jm = OPRAVY.get(str(jm).strip().lower(), jm)
                 if str(jm).strip().lower() not in kde:
                     ztracene.setdefault(str(jm), set()).add(zaznam.get("pokemon_name", "?"))
     for jm in sorted(ztracene):
@@ -303,6 +316,28 @@ if syrove.exists():
             "%s zná %d druhů (%s), ale v appce %s"
             % (jm, len(druhu), ", ".join(sorted(druhu)[:3]),
                "je ve špatném seznamu" if opacny else "chybí"))
+
+# Tataz akce pod obecnym i konkretnim nazvem. Zdroj akci nejdriv ohlasi
+# bez druhu ("Super Mega Raid Day") a pozdeji ji prejmenuje ("Chandelure
+# Super Mega Raid Day"); archiv si tu starou podobu pamatuje, takze
+# v kalendari stala dvakrat pod sebou. Sestaveni to cisti — tohle hlida,
+# ze se na to nezapomnelo.
+try:
+    _ev = json.loads((ROOT / "data" / "events.json").read_text(encoding="utf-8"))
+except Exception:
+    _ev = {}
+_akce = _ev.get("events") or []
+_podle = {}
+for _e in _akce:
+    _podle.setdefault((_e[1], _e[3], _e[4]), []).append((_e[0] or "").strip())
+for _klic, _jmena in _podle.items():
+    for _a in _jmena:
+        for _b in _jmena:
+            if _a == _b or not _a or not _b:
+                continue
+            if _a.endswith(_b) or _a.startswith(_b):
+                varuj("akce", "%s a %s maji tyz termin i typ — vypada to na"
+                      " jednu akci pod dvema nazvy" % (_a, _b))
 
 bez_learnsetu = []
 for k in species:

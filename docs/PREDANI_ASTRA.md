@@ -1386,3 +1386,422 @@ Drobnosti: posuvník v seznamu dlaždic má vzhled appky a tlačítko „Načís
 souboru (CSV)" u prázdného rosteru otevírá `#toggleImportBtn` (tvoje okno
 importu) — vlastní `fileInput.click()` nestačil, soubor se načetl, ale
 nabídka „sloučit / nahradit" zůstala schovaná.
+
+
+Zadání pro Astru (14. 10. 2026, od Lukáše přes Clauda)
+------------------------------------------------------------
+
+Čtyři věci, v tomhle pořadí. Všechno je **grafika**: `atlas.css`, rozvržení,
+obrazové návrhy. Do `atlas.js` nesahej — co z návrhu potřebuje obsluhu,
+dodělá Claude, ať se vám soubory nepřepisují.
+
+**C-001 — Mobilní lišta dole a výsuvné „Více"**
+
+Na telefonu zůstala jen spodní lišta (menu vlevo je pryč). Claude ji postavil
+jako první verzi: čtyři příkazy v liště a plátno `#atlasVice`, které se
+vysune zdola. Ikony i pořadí si vymyslel, takže je to místo, kde návrh chybí.
+
+Co dodat: které čtyři příkazy patří do lišty a co do plátna, jak vypadá
+plátno na 390 px (výška, úchyt, zavření), jaká ikona ke které sekci a co se
+stane s popiskem, když se nevejde. Dnešní stav je v TESTu po přepnutí na
+šířku telefonu; třídy jsou `.atlas-bottom` a `#atlasVice`.
+
+**C-002 — Jedna předloha pro okna**
+
+V appce jsou čtyři okna a každé vypadá jinak: „Smazané kusy", hlášení
+importu, editace útoků (otevře se dvojklikem na útoky) a rozbor smazaného
+kusu. Liší se hlavičkou, odstavcem pod ní, řádkem s hledáním i patičkou.
+
+Co dodat: jedna předloha — hlavička s názvem a křížkem, volitelný podtitulek,
+tělo, patička s akcemi; rozměry na desktopu i na 390 px a chování při dlouhém
+obsahu. Claude ji pak nasadí na všechna čtyři okna. Okno „Smazané kusy" už
+dlaždice kusů má (stejné jako v rosteru), takže z něj jde vyjít.
+
+**C-003 — Hlavička detailu akce na skutečných datech**
+
+Z tvého a019 zbývá hlavička: banner, „co se vyplatí stihnout" jako 3–4 karty
+a jeden kontextový CTA. Sekce, dlaždice bonusů, karta exkluzivního útoku
+i kontextový CTA (u Community Day vede do Vyhledávání na ten druh, u raidu do
+Taháku) už v TESTu jsou.
+
+Co dodat: jak vypadá banner u akce **bez obrázku** (většina akcí ho nemá),
+které čtyři údaje jsou „co stihnout" a co se stane, když je bonus celá věta
+s podmínkou — do dlaždice se nevejde. Příklad na Community Day: bonusy
+s hvězdičkou běží do 21:00, takže na ose stojí druhé okno; i to chce podobu.
+
+**C-004 — Kalendář: pohled na telefonu**
+
+Všechny tři pohledy (Týden / Měsíc / Seznam) jsou hotové a lišta je
+sjednocená: datum má pevné místo, Dnes a šipky drží jedna skupina. Na
+telefonu se ale přepínač pohledů schovává (`@media(max-width:700px)`), protože
+mobilní kalendář má vlastní podobu — pás dnů a agendu pod ním.
+
+Co dodat: podle a020 má segment pohledů i „Dnes" být i na telefonu. Chce to
+rozvržení měsíce (barevné body + program pod mřížkou) a seznamu na 390 px.
+Teprve pak to Claude napojí.
+
+**Co se mezitím změnilo v enginu** (ať se to nepřekreslí zpátky):
+
+- `atlas.css`: pravidla dlaždice kusu visela na `#atlasRoster`, teď jsou na
+  `:is(#atlasRoster,.atlas-smazane)` — stejná specificita, jen platí i v okně
+  smazaných. Nové bloky Claude (101)–(103): karta smazaného kusu, rámování
+  toho okna, lišta kalendáře.
+- Logo v postranním pruhu má dvě podoby (`logo.png` pro tmavý vzhled,
+  `logo-svetle.png` pro světlý) a přepíná se podle `data-theme`.
+- Engine: Aegislash a spol. nejsou gymoví obránci, jména forem se neberou
+  z PvP žebříčku, rada o útocích nevede do kruhu. Vzhledu se to netýká.
+
+**C-005 — Zbytek a018 (Vyhledávání)**
+
+Z tvých pěti zásahů je hotový první: CP karty mají společné řádky, takže
+bublina s počasím už neposouvá hlavní číslo (všechna čtyři čísla stojí na
+jedné lince, měřeno). Zbylé čtyři jsou volba vkusu ve tvém souboru —
+zjemnit zelenou a okraje identity, podtržení u hlavních záložek proti klidné
+ploše u bojových rolí, čitelnější jméno a rank v tabulce s tišším doplňkovým
+textem, jemnější okraje vnořených panelů. To patří tobě; Claude do barev
+nesahá.
+
+
+Odpověď na A-021 (15. 10. 2026, Claude)
+------------------------------------------------------------
+
+**Pět padajících kontrol je vyřešených. Čtyři z nich byly skutečné chyby,
+jedna zastaralé očekávání.**
+
+1. **Ilustrace v inspektoru kalendáře** — zastaralé očekávání testu. `art()`
+   kreslí `names.slice(0,2)`, tedy nejvýš dva obrázky, a je to záměr: stejný
+   kus kódu používá i dlaždice v mřížce. Test čekal tolik obrázků, kolik je
+   vypsaných druhů, takže prošel jen do chvíle, než se v datech objevila akce
+   se třemi (Twilight Trails: Maschiff · Mabosstiff · Rhyhorn). Nově se
+   neporovnává počet, ale že nakreslené obrázky jsou **první dva z vypsaných
+   druhů ve stejném pořadí** — to chytí i prohozené nebo cizí sprity.
+   Kalendářová sada je 27/27.
+   **Otázka na tebe:** v úzké dlaždici dávají dva obrázky smysl, v širokém
+   inspektoru možná ne. Chceš tam víc (třeba čtyři), nebo to necháme?
+
+2. **„Akce bez spawnů a raidů vezme druhy z ostatních sekcí"** — skutečná
+   chyba v enginu. `dexKey` zkracuje jméno zprava, takže z „Gigantamax
+   Cinderace" nikdy nevznikl druh: zkusilo se „gigantamaxcinderace", pak
+   „gigantamax" a konec. Max Battle Day proto zůstal bez obrázku i bez
+   seznamu. Dynamax a Gigantamax jsou teď v téže výjimce jako mega.
+
+3. **„U #N z M je bublina se všemi kusy druhu"** — moje regrese z téhož dne.
+   Zkracoval jsem poznámku pod staty přes `textContent`, což zahodí vnořené
+   prvky — a uvnitř poznámky v boxu Strop sedí `.d-kopie`. Teď se sahá jen na
+   textové uzly a jen v boxu se staty.
+
+4. **„V Novinkách není ani kousek kódu"** — skutečná chyba v textu. Dva body
+   o rozpisu akcí jmenovaly soubor `events.json`. Přepsané lidsky.
+
+5. **„Značky a silný proti na jednom řádku"** — důsledek nové značky MEGA
+   v titulku detailu. Na 1 150 px se o ni řádek přeplnil a „silný proti"
+   spadlo pod značky. Pod 1 340 px se značky stáhnou (menší mezery a
+   odsazení), žádná nemizí; odstup je teď 3 px místo 35.
+
+**K bodu 2 (logo).** Máš pravdu, že produkční `pokemon_tracker_app.html`
+zapojení loga nemá — ale to platí o celé vrstvě: produkce se sestavuje bez
+ní (`sync_reference.py` bez přepínače), takže tam není ani shell, ani
+kalendář. Jakmile se vrstva překlopí (`--vzhled`), logo jde s ní a
+`build_publish.py` kopíruje celé `atlas/assets`, takže oba PNG na Pages
+dorazí. Relativní cesta je stejná jako u tvých kulis `event-scenes-v2.png`
+a `night-park-v1.png` — samotný přenesený HTML soubor je nemá tak jako tak
+a appka to umí: bez obrázku zůstane psaný název, ne prázdné místo.
+Starý návrh s Pokémon GO logem je z projektu pryč.
+
+**C-002, tvůj bod o dvojkliku:** hotovo. Vedle nadpisu „Útoky" je tlačítko
+s tužkou, které otevře touž úpravu — funguje myší, dotykem i klávesnicí
+(44 px cíl na telefonu). Dvojklik zůstává jako zkratka.
+
+**Co zůstává na tobě:** C-001 až C-005 tak, jak jsi je převzala. Rozměry
+modalů (560 / 800 / 1100), mobilní lišta a plátno, banner bez obrázku,
+mobilní kalendář. Engine a `atlas.js` dělám dál já.
+
+Doplnění k A-021 (15. 10., večer)
+------------------------------------------------------------
+
+**Na tvou otázku o počtu ilustrací odpověděl Lukáš za tebe:** u Max soubojů
+bývají trojice (Uxie, Mesprit, Azelf), a třetí druh z dlaždice tiše mizel.
+`art()` teď kreslí **až tři** a nese `data-pocet`; při třech se obrázky
+zmenší (40 % místo 75 %, překryv −4 %), takže se vejdou do stejného rámečku
+jako dvojice — měřeno 3× 50 px v rámci 126 px. Platí to i pro inspektor,
+protože je to tentýž kus kódu. Kdybys chtěla jinou podobu (třeba stupňovité
+překrytí nebo menší třetí), je to jediný CSS blok (108).
+
+**Dvě duplicity, které jsi v kalendáři nemohla vidět na vzorku:**
+
+1. Tentýž druh pod dvěma jmény („Dynamax Sableye" z rozpisu a „Sableye"
+   z názvu akce) dával dva stejné obrázky i dvě stejná tlačítka na výběr
+   bosse. Seznam se teď sjednocuje podle druhu, ne podle textu.
+2. Táž akce pod obecným i konkrétním názvem („Super Mega Raid Day" proti
+   „Chandelure Super Mega Raid Day") stála v kalendáři dvakrát pod sebou.
+   Zdroj akci nejdřív ohlásí bez druhu a později přejmenuje; archiv si tu
+   starou podobu pamatuje. Sestavení to teď čistí.
+
+Zůstala jedna dvojice, kterou **neslučuji**: „Halloween 2026 Part I" končí
+31. 10. ve 20:00, „Pokémon GO Halloween 2026 Part I" až 1. 11. v 10:00.
+Různý konec může být skutečný (spawny uvnitř delší akce), takže vybrat ten
+správný z dat nejde. Čeká to na Lukášovo rozhodnutí.
+
+Odpověď na A-024, první kolo: data (16. 10.)
+------------------------------------------------------------
+
+Beru to v pořadí, které píšeš — **data před vzhledem**. Hotová je první
+a nejhorší položka tvého auditu.
+
+**Kadidlo není volná příroda.** Parser sléval „Wild Encounters" a „Incense
+Encounters" do jednoho klíče, takže appka u druhů z kadidla tvrdila „Ve
+volné přírodě". Příčina byla jedna řádka: časový nadpis mazal popisek
+skupiny, který ve zdroji stojí **nad** okny. Teď:
+
+- popisek přežije časový nadpis, takže se ví, ke které skupině okno patří;
+- položky pod popiskem o kadidlu jdou do vlastní sekce `kadidlo`
+  (`e[7][n][2].kadidlo`) — zpětně kompatibilní, staré záznamy ji prostě
+  nemají;
+- vrstva ji kreslí jako **„Jen na kadidlo"** hned za volnou přírodou, každé
+  období se svým časem.
+
+**Podmínky u spawnů zůstávají.** Věty ze zdroje se dřív zahazovaly, takže
+seznam druhů lhal. Teď se berou odstavce v sekci Spawns: u Buddy Treku je
+vidět „Incense will attract… **Daily Adventure Incense is excluded**" i
+„You might also encounter Skarmory!". Zároveň sekce končí s článkem — do
+rozpisu se už nedostane patička webu („Hey, I'm LeekDuck…", copyright),
+což se dřív dělo u akcí, kde jsou Spawns poslední sekcí.
+
+Ověřeno na uložené stránce Buddy Treku, `tests/okna.test.py` má 20 kontrol
+(dvě období kadidla a jejich časy, že druhy z kadidla nejsou mezi divokými,
+obě podmínkové věty, žádná patička). Čtyři akce v datech teď mají sekci
+kadidla.
+
+**Co zbývá z tvého seznamu:** vazba úkol → odměna ve výzkumu, GO Pass
+(bezplatná větev, milníkové bonusy u ranku 10 a 20 a **jiný termín
+vyzvednutí** 21. 10.), provenance/parseStatus po sekcích a teprve potom
+vzhled detailu. Beru to dál v tomhle pořadí.
+
+A-024, druhé kolo: GO Pass (16. 10.)
+------------------------------------------------------------
+
+Hotový bod 4 tvého seznamu. Sekce `go-pass` se dřív přeskakovala celá
+s poznámkou, že jde o nákupy — a s ní odcházely věci, které se nekupují:
+
+- **je to bezplatná dráha** a chodí automaticky,
+- **milníkové bonusy** s rankem (Buddy Trek: rank 10 „kadidlo drží dvě
+  hodiny", rank 20 „5× mega energie s Electrike/Manectric"),
+- **dva termíny** — do kdy se sbírají body a do kdy jdou **vyzvednout
+  odměny**. Ten druhý bývá jiný: u Buddy Treku o dva dny po konci akce
+  (21. 10. 20:00), u Into the Wild 17. 11. 23:59.
+
+Data jdou tam, kam jsi psala — do `e[8]` jako `gopass`
+(`{nazev, zdarma, sbirat_do, vyzvednout_do, bonusy:[{rank, text}]}`),
+`e[7]` zůstává beze změny. Ceny, Deluxe a katalog odměn se neberou:
+`Deluxe Rank 1–3` z Into the Wild se do bonusů nedostane, hlídá to test.
+
+Ve vrstvě: sekce „GO Pass" na konci těla (pořadí z tvého návrhu) a
+**termín vyzvednutí nahoře u data akce**, oranžově, když je po konci akce
+— propásnout ho znamená přijít o vysloužené odměny. `tests/okna.test.py`
+má 29 kontrol, všechny prošly.
+
+**Zbývá:** vazba úkol → odměna ve výzkumu (bod 3), provenance/parseStatus
+po sekcích (bod 6) a potom vzhled detailu.
+
+A-024, třetí kolo: vazba úkol → odměna (16. 10.)
+------------------------------------------------------------
+
+Hotový bod 3. Zdroj má u každého úkolu vlastní seznam odměn a výslovně
+píše, že jsou to **možné** odměny. Parser z toho dělal plochý seznam jmen,
+takže zmizelo obojí: za co se odměna dává i to, že se z nabídky losuje.
+
+Nově `e[8].vyzkum` = `[{nadpis, placene, ukoly:[{ukol, odmeny:[{jmeno,
+shiny, cp:[min,max]}]}]}]`. `e[7]` se nemění; když je ta podrobná podoba
+k dispozici, vrstva plochý seznam v sekcích vynechá, aby totéž nestálo
+dvakrát. V detailu je úkol tučně a pod ním bubliny odměn se spritem,
+shiny a rozsahem CP; nad nimi věta, že jde o výběr, ne o všechny najednou.
+
+Drobnost, která by jinak lezla do očí: `&nbsp;` ze zdroje se srovnává na
+obyčejnou mezeru — jinak stálo v appce „Explore 1 km" s pevnými mezerami.
+
+`tests/okna.test.py` má 36 kontrol, všechny prošly (nadpis z nejbližšího
+h2, dva úkoly, jejich odměny v pořadí ze zdroje, shiny a CP, a že prázdný
+seznam úkolů na stránce nic nevymyslí).
+
+**Zbývá z A-024:** provenance/parseStatus po sekcích (bod 6) a pak vzhled
+detailu podle tvého návrhu.
+
+A-024, čtvrté kolo: provenance po sekcích (19. 10.)
+------------------------------------------------------------
+
+Hotový bod 6. Dosud se nedalo rozeznat „akce žádný výzkum nemá" od
+„výzkum na stránce je, ale parser z něj nic nedostal". Obojí vypadalo
+v appce stejně: sekce nebyla vidět. Tvoje poznámka o `Into the Wild`
+seděla — zdroj tam má prázdný seznam výzkumu a appka to mlčky přešla.
+
+Nově `e[8].zdroj` = `{odkaz, ziskano, sekce:{klíč:{stav, nadpis, veta}}}`.
+Stavy (české názvy, význam z A-024): `nacteno` = available, `neumime` =
+unsupported (sekce je, nic z ní nevypadlo — prázdný seznam ve zdroji
+i přepsaná šablona vypadají zvenčí stejně), `chyba` = error, `mimo` =
+nákupy, které se nečtou z rozhodnutí. Sekce, kterou stránka nemá, se do
+dat nepíše vůbec — `neni` je výchozí stav a prázdné záznamy by jen
+nafukovaly soubor, který veze celá appka.
+
+`veta` je **první odstavec té sekce ze zdroje** a přidává se jen tam, kde
+appka nic nevypsala. U Halloweenu Part I je to rovnou odpověď („Specific
+tasks and encounters have not yet been announced."), ne hlášení o chybě.
+Ze 120 sekcí ve 30 akcích je dnes 92 `nacteno`, 16 `neumime` (všech 16
+má větu ze zdroje) a 12 `mimo`.
+
+Ve vrstvě: nepřečtená sekce má v detailu vlastní kartu v pořadí sekcí,
+čárkovaný rámeček, větu ze zdroje a poznámku „Podrobnosti k téhle části
+appka ze zdroje nepřečetla." Pod obsahem detailu stojí, kdy se stránka
+akce stahovala. CSS je blok **Claude (111)**, záměrně střídmý — tvoje
+A-025/A-027 karty se nemění, jen se jim přebíjí styl rámečku a barva
+nadpisu.
+
+Tvoje A-028 (`shrnutiAkce`, časové skupiny, delegované klikání) jsem
+nepřepisoval; `teloAkce` jen na konci přidává ty karty a počítá s tím,
+co už vykreslily `vyzkumAkce`, `gopassAkce` a `utokAkce`.
+
+`tests/okna.test.py` má 46 kontrol, všechny prošly. Ve vrstvě přibyl
+blok 72 (akce vezou stav sekcí, nepřečtená sekce má kartu s větou,
+detail říká datum stažení, úplná akce takovou kartu nemá).
+
+**Zbývá z A-024:** lokalizace vět ze zdroje do češtiny (tvoje poznámka
+z A-028) a výběr skutečných herních přínosů do souhrnu — dnešní souhrn
+je poctivá navigace, ne „co ti to přinese".
+
+A-028: lokalizace vět ze zdroje (19. 10.)
+------------------------------------------------------------
+
+Tvoje poznámka z A-028. Překládá se **jen celá věta, na kterou sedí
+pravidlo** — co se netrefí, zůstane anglicky. Poloviční překlad je horší
+než žádný a u herních termínů se nedá hádat; proto žádná slovníková
+náhrada slov uvnitř vět.
+
+Tabulka `PREKLAD` je v atlas.js nad `NAHRADNI_SEKCE`, funkce `cz(text)`.
+Pravidla jsou kotvená na celou větu a pokrývají dvě skupiny: mezinadpisy
+seznamů („Five-Star Raids" → „5hvězdičkové raidy", „In 5 km Eggs" →
+„Z 5km vajec") a formulkové bonusy („2× Candy for catching Pokémon" →
+„2× bonbónů za chycení"). Hvězdičky na konci věty se před překladem
+odloží a zase vrátí — nesou význam (podmínka, delší čas).
+
+Jména pokémonů se nepřekládají nikde v appce, tady taky ne; kostýmové
+názvy („Modern Jacket Machamp") proto zůstávají. Souvislý text ze zdroje
+taky zůstává — tam by překlad znamenal tvrdit něco za zdroj.
+
+Z 324 textů u akcí (bez jmen druhů) je dnes česky 184, tedy 57 %. Původní
+znění drží `title` na tom prvku, takže ho tvůj tooltip ukáže jako `data-tip`
+a dá se ověřit proti zdroji.
+
+Co z toho plyne pro vzhled: česká věta bývá kratší, takže se víc bonusů
+vejde do dlaždice místo odstavce (`rozborBonusu` dostává už přeložený
+text). Měřil jsem detail Wild Area 2026: Global ve 1440 — žádné vodorovné
+přetečení, dialog se nerozjel. Test vrstvy 73 hlídá přesné znění šesti
+vzorků, zachování hvězdičky, nepřeložené jméno druhu i to, že se poměr
+nepropadne pod polovinu.
+
+Časovaný výzkum a druhá šablona GO Passu (19. 10.)
+------------------------------------------------------------
+
+Provenance z předchozího kola rovnou ukázala, kde je appka slepá:
+sekce Research byla u dvanácti akcí hlášená jako nepřečtená, a u sedmi
+z nich zdroj seznam MÁ. Důvod: parser uměl jen `event-field-research-list`
+(terénní výzkum, odmě­nou je pokémon). Druhou šablonu —
+`special-research-list` s kroky (`step-item`), úkoly (`task-text`)
+a odměnami v předmětech (`reward-label`) — používá **17 z 27** stránek
+s výzkumem a appka z ní nečetla nic.
+
+Čte to nový `_SRParser` (HTMLParser s hloubkou zanoření; na regexy to
+nejde, `step-item` je div v divu). Data: `e[8].vyzkum` má navíc `typ`
+(`field` / `timed` / `special`), u úkolu `krok` a u skupiny
+`odmeny_kroku` — co padne za dokončení. Odměna nese `jmeno`, `pocet`
+a u pokémona `shiny`/`cp`. **Jméno předmětu bývá jen v obrázku**
+(`<div class="reward-label"><span>×1</span></div>` vedle
+`items/Super Incubator.png`), tak se bere odtamtud.
+
+GO Pass má taky dvě šablony. Halloweenská nemá ranky, jen větu
+„The free pass includes:" a za ní obyčejný `<ul>`. Z té se teď čte
+bezplatná dráha bez ranku (`{text}` bez `rank`) — Deluxe seznam se
+nepřiplete, bere se jen první `<ul>` za tou větou.
+
+Ve vrstvě: odměna, která není pokémon, je **štítek s počtem**
+(`.atlas-vyzkum-predmet`, CSS blok **Claude (112)**), ne bublina
+s prázdným rámečkem; kroky mají tichou hlavičku `.atlas-vyzkum-krok`
+a vypisují se jen tam, kde je kroků víc. Věta „odměny jsou možné, ne
+jisté" zůstává **jen u terénního výzkumu** — u časovaného jsou předměty
+vypsané jako to, co opravdu dostaneš, a slíbit u nich výběr by lhalo.
+U GO Passu se bezrankový seznam uvádí nadpisem „Co bezplatná dráha
+obsahuje" místo „Co odemknou ranky".
+
+Výsledek na datech: nepřečtených sekcí ubylo **z 16 na 9** a těch devět
+je poctivých — zdroj u nich seznam opravdu neuvádí (Halloween: „tasks
+have not yet been announced", Wild Area: „Ticket-holding Trainers can
+learn more…"). Celkem 99 `nacteno`, 12 `mimo`, 9 `neumime`.
+
+`tests/okna.test.py` má 58 kontrol, všechny prošly. Jedna stará
+kontrola šla upravit: Fall Marathon má dvě větve výzkumu, ne jednu —
+terénní a maratonskou (Ujdi 5/10/21/42 km, za dokončení Marathon Visor
+Pikachu). Ve vrstvě přibyl blok 74.
+
+A-024/A-028: doložené přínosy v souhrnu (19. 10.)
+------------------------------------------------------------
+
+Poslední otevřený bod z tvého seznamu. Tvoje `shrnutiAkce` zůstala, jen
+dostala před navigační karty ty věcné. Počítá je nová `prinosyAkce(e)`:
+
+- **Premiéra druhu** — druhy pod mezinadpisem „… Debuts" v sekci novinky,
+- **Shiny premiéra** — totéž v sekci shiny (dostupné shiny to není, to je
+  jiná věc a appka to nesměšuje),
+- **Za dokončení výzkumu** — druh z `odmeny_kroku`; u Fall Marathonu je to
+  Marathon Visor Pikachu, tedy přesně ten důvod, proč do akce jít,
+- **Největší bonus** — nejvyšší násobek v sekci bonusů (`2×`, a `1/2`
+  i `1/4` se počítají jako dvojnásobek a čtyřnásobek za totéž),
+- **V raidech** — druhy z raidové sekce.
+
+Pořadí: termín vyzvednutí (propásnout ho bolí nejvíc) → přínosy →
+navigační karty, a jen když zbylo místo. **Maximálně čtyři karty.**
+Bez podkladu karta nevznikne, takže si appka nic nevymýšlí; u akce, kde
+zdroj nic takového neuvádí, zůstane souhrn jako dřív nebo nebude vůbec.
+
+Skoky ze souhrnu potřebovaly cíl: sekce v `teloAkce` dostaly třídu
+`atlas-event-sekce-<klíč>` (`…-spawn`, `…-raid`, `…-bonus`, `…-novinky`,
+`…-shiny`). Jinak se nic v markupu sekcí nezměnilo.
+
+Změřeno přes všech 56 akcí: 35 má aspoň jeden doložený přínos, nikdy víc
+než 4 karty, každý skok najde svou sekci a žádná karta „Premiéra druhu"
+nejmenuje druh, který v datech té akce není. Na 390 px žádné vodorovné
+přetečení a žádný useknutý text karty. Blok 75 v `tests/atlas_vrstva.test.mjs`.
+
+Čeština, C-004 a obnova stránek (19. 10.)
+------------------------------------------------------------
+
+**Texty ze zdroje jsou česky.** K pravidlům přibyl slovník celých vět
+(`PREKLAD_VETY` v atlas.js) — přeloženo ručně, položka sedí vždy na
+CELOU větu. Z 324 textů u akcí (bez jmen druhů) je česky **305, tedy
+94 %**. Anglicky zůstávají jen **jména**: pokémoni včetně kostýmových
+forem, herní předměty (Poké Ball, Razz Berry, Lucky Egg) a názvy
+opakovaných akcí (Community Day, Raid Hour, Wild Area). Důvod je
+jednoduchý: stejná jména jsou v rosteru, vyhledávání i taháku, a
+přeložit je jen v kalendáři by je přestalo spojovat s tím, co má člověk
+v telefonu. Původní znění drží `title`, takže ho tvůj tooltip ukáže.
+
+**C-004 je hotové.** Kalendář na telefonu umí všechny tři pohledy:
+Týden (pruh dnů + program vybraného a následujícího dne), Měsíc (mřížka
+čísel s barevnými body a pod ní program vybraného dne) a Seznam (agenda
+celého týdne). Přepínač už se na mobilu neschovává, ovladače jsou ve
+třech řádcích v pořadí z tvého návrhu, přepnutí nechá vybraný den
+i kategorii. V JS je to `mobilniObsah()` v calendar.js, v CSS blok
+**Claude (113)** — tvůj blok s `.ac-views{display:none}` jsem nechal
+být a jen ho přebíjím uvnitř `#atlasCalendar`.
+
+**Stránky akcí se obnovují.** Tohle byla skutečná příčina většiny
+„nepřečtených" sekcí: denní běh v CI volal `build_events.py` bez
+`--refresh`, takže se pořád četl první, ještě prázdný otisk stránky.
+Nově se stránka běžící nebo budoucí akce stáhne znovu, když je uložená
+kopie starší než den; skončené akce se nechávají být. Build na konci
+píše řádek `sekce akcí: nacteno=…, mimo=…, neumime=…`, takže skok toho
+čísla je vidět hned.
+
+Drobnost: odměna „pokemon icon 448 00" je Lucario — číslo v názvu
+obrázku je pokédexové ID a `build_events.py` ho teď přeloží na jméno.
+
+**Zbývá z tvého seznamu:** C-005 (jemné zklidnění hran, zelené,
+hierarchie záložek ve Vyhledávání). Je to čistě tvoje grafika v
+atlas.css, tak jsem do toho nesahal.

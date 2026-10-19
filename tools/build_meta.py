@@ -169,6 +169,15 @@ FORM_SUFFIX = {
     "therian": "therian", "incarnate": "incarnate", "origin": "origin", "altered": "altered",
     "attack": "attack", "defense": "defense", "speed": "speed", "black": "black", "white": "white",
     "sky": "sky", "land": "land", "hero": "hero",
+    "crownedsword": "crownedsword", "crownedshield": "crownedshield",
+    "icerider": "icerider", "shadowrider": "shadowrider",
+}
+# Přípony o dvou slovech. Id se dělí na podtržítkách, takže by se každé
+# slovo hledalo zvlášť — a „crowned"+„sword" nezná ani jedno. Slepí se
+# proto dřív, než se id rozpadne.
+SLOZENE_SUFFIX = {
+    "crowned_sword": "crownedsword", "crowned_shield": "crownedshield",
+    "ice_rider": "icerider", "shadow_rider": "shadowrider",
 }
 # přípony, které pro nás nic nemění (shadow řešíme zvlášť, kosmetika nás nezajímá)
 IGNORED_SUFFIX = {"shadow", "purified", "normal", "standard"}
@@ -223,7 +232,10 @@ def dex_key(species_id, znami=None):
     (druh, který neexistuje) a z 'porygon_z' vyšlo 'porygon' — a Porygon tím
     dostal ranky Porygona-Z. Teď se poskládá víc kandidátů a vezme se první,
     který v pokédexu opravdu je. Nová generace se tím vyřeší sama."""
-    parts = [p.lower() for p in str(species_id).split("_") if p]
+    sid = str(species_id).lower()
+    for slozene, jedno in SLOZENE_SUFFIX.items():
+        sid = sid.replace(slozene, jedno)
+    parts = [p for p in sid.split("_") if p]
     if not parts:
         return ""
     suffix = ""
@@ -382,8 +394,14 @@ def main():
                                if k in nove and nove[k] != v}
                     if rozdily:
                         zmenene[liga] = rozdily
-                drive = {"datum": (stary.get("_meta") or {}).get("stazeno") or dnes,
-                         "ligy": zmenene}
+                if zmenene:
+                    drive = {"datum": (stary.get("_meta") or {}).get("stazeno") or dnes,
+                             "ligy": zmenene}
+                else:
+                    # Obsah se liší, ale žádný druh se nepohnul — stalo se to
+                    # při přejmenování klíče (korunované formy). Vyhodit kvůli
+                    # tomu paměť by smazalo šipky u všech druhů.
+                    drive = stary.get("poradiDrive") or drive
             else:
                 drive = stary.get("poradiDrive") or drive
 

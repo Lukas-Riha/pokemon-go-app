@@ -355,3 +355,118 @@ Autoritativní zadání: `docs/navrhy/VYHLEDAVANI_V3_SPEC.md`. Obrazové listy v
 V3 vrací společný pás referenčních CP nad výsledky, protože nové zadání zahrnuje raid, vejce a výzkum. Nezdvojovat ho pod Raidy. Pořadí osmi sekcí a jejich data určuje specifikace. Generované obrázky jsou kompozice, ne zdroj herních údajů ani přesných textů. Žádné celkové „skóre druhu“, žádná šance na shiny, žádní vymyšlení counterové; pouze odkaz na vlastní roster. Cena musí být konkrétní cesta a levely, ne „z 0 na max“.
 
 Kontrolovat 1440×900, 390×844 a mezilehlých 820 px, všech šest stavů, přístupnost a regresi bez zápisu hledaného kusu do rosteru. Předání zpět: snímky + přesný seznam hotových bodů a omezení; ne pouze počet prošlých testů.
+
+## A-017 — UX/UI výzkum pěti sekcí, návrhy k diskusi (7. 10. 2026)
+
+**Přečti pouze tuto sekci a `docs/navrhy/UI_VYZKUM_2026-10-07.md`. Uživatel nyní žádá návrhy, ne další implementaci.** Předchozí drobné úpravy nechává, ale další design se má nejprve ukázat. Tento dokument není oprávnění změny rovnou programovat.
+
+### Výstup
+
+Heuristický rozbor Přehledu, Pokémonů, Kalendáře, Vyhledávání a Taháku. Doporučení: ponechat vizuální základ, odlehčit ovládání a dostat hlavní odpověď dříve na obrazovku. Zachovat engine, verdikty a detail kusu. Mobilní navigace má používat stejné názvy jako desktop.
+
+Obrazové koncepty v `docs/navrhy/a017/`: `vyhledavani-koncept.png` a `tahak-koncept.png`. Jde o kompozice a ilustrační sestavy. Nezkracovat podle obrázku skutečnou evoluční rodinu ani nedosazovat jeho kandidáty do enginu. U Vyhledávání jsou prázdné ranky jen ilustrace; v aplikaci musí být skutečné hodnoty nebo vysvětlení jejich nedostupnosti. Sloupec Útoky má v reálné aplikaci uvádět známé útoky, nikoli je všechny schovat za odkaz jako na konceptu. Little Cup zachovat jako skutečný název, i když generovaný obrázek píše Little League.
+
+### Co odsouhlasit před programováním
+
+1. Vyhledávání A: výsledky před referenčním CP, doplňkové statistiky rozbalitelné. Alternativa B: CP trvale nahoře, ale v nízkém pruhu. Jde o vědomou změnu předchozí V3; vyžaduje výběr uživatele.
+2. Roster: hledání + jedna nabídka řazení + filtry, záloha jako krátký stav; na telefonu jeden hlavní svislý scroll. Karty samotné zachovat.
+3. Tahák: kategorie Raidy/Rocket/Typy/Gym/Ligy, seznam soupeřů, rozbalení kandidátů. Žádný slib simulace nebo vítězství.
+4. Přehled: priority dnešních akcí a doložené české přínosy. Kalendář: krátké časované akce před dlouhými, detail bez duplicit.
+
+### Stav ponechaných úprav z předchozí části práce
+
+Astra doplnila do konce `web-app/atlas/atlas.css` blok „Astra A-017 (6. 10.)“: sjednocení horních sekcí Taháku, mobilní proužek řazení rosteru, úspornější identita hledání, dotykové cíle a focus. V `web-app/atlas/calendar.js` přesunula časované sloupce nad vícedenní pruhy. Sestaveno pouze `sync_reference.py --test`. Žádný commit, push nebo deploy. Do enginu Astra nezapisovala; jeho hash se během práce změnil souběžně, nelze proto tvrdit, že celá sdílená produkční předloha zůstala beze změny.
+
+Ověření sestavy 6. 10.: syntaxe JS prošla; kalendář 27/27. UI sada 363 úspěšných, 1 neúspěšná kontrola: „nahoře stojí dnešní krátká akce, ne dlouhá sezóna“, výsledek `{dnes:true,kratka:false}`. Příčina není tímto rozborem potvrzená. Ověřit, zda fixture skutečně obsahuje dnešní krátkou akci; pak rozlišit chybné pořadí a neplatný předpoklad testu. Test neoslabovat naslepo. Běh následoval po první úpravě; poté byl opraven pouze selektor obalu Taháku a vizuálně ověřen. Celá UI sada po této poslední CSS opravě opakována nebyla.
+
+Kontrola vzhledu zahrnula desktop, mobil 390 px a kalendář na tabletu 820 px. Snímky `tahak-desktop.png` a `kalendar-desktop.png` dokládají skutečnou aplikaci, soubory `*-koncept.png` jsou pouze návrhy. Další změny aplikace už v této fázi neprovádět.
+
+## A-018 — Vyhledávání zachovat, pouze jemný vizuální návrh (7. 10. 2026)
+
+Uživatel nechce přestavbu Vyhledávání z A-017. Současná stránka se mu líbí. **CP, statistiky, záložky a tabulka zůstávají ve stávajícím pořadí.** Tahák řeší s Claudem samostatně.
+
+K přečtení stačí `docs/navrhy/a018/README.md`. Vedle leží skutečný snímek `vyhledavani-skutecny-stav.png` a jeho jemně upravený obrazový návrh `vyhledavani-jemne-doladeni.png`. Cílem jsou zarovnání CP, rytmus výsledků, rozlišení tří úrovní záložek a jemnější okraje. Žádné skrývání CP do panelu, žádná nová evoluční postranní sekce.
+
+Toto je pouze návrh k posouzení; implementaci zatím nespouštět. V tomto kole Astra neupravovala aplikaci a neprováděla build ani nasazení. Generované hodnoty či překlepy nejsou podklad k přepisu skutečných dat.
+
+## A-019 — Detail události: data i moderní podoba (7. 10. 2026)
+
+Přečti pouze `docs/navrhy/a019/DETAIL_UDALOSTI.md` a obrazový návrh `detail-udalosti-navrh.png` ve stejné složce. Uživatel nyní míří na Kalendář → událost → plný detail. Vyhledávání ponechat. Zatím návrh, ne automatická autorizace k implementaci.
+
+Zásadní rozlišení: otevřený TEST má starší renderer a data 5. 10.; zdrojový atlas.js už má `teloAkce` a lepší rozlišení textu/druhu, JSON je z 7. 10. Tyto opravy uznat a ověřit čerstvým buildem. Další mezery jsou už v importu: u Zorua chybí speciální útok, prodloužené okno a vztahy úkolů k odměnám. Starý detail navíc ukazuje shiny u Stardustu. Přesné důkazy, zdroj, pořadí práce a návrh kontraktu jsou v dokumentu. Neřešit jen CSS a neslibovat úplnost dat bez parserových kontrol.
+
+Návrh: banner, 3–4 hlavní přínosy, důležitý termín, Pokémoni podle způsobu získání, časová okna a podrobné sekce; jeden kontextový CTA. Desktop široký modal, mobil celá obrazovka. Technické značky „Doplnit datový import“ v obrázku označují práci potřebnou před realizací, nejsou finální text pro hráče. Žádný zápis do appky, build, commit ani nasazení v tomto kole.
+
+## A-020 — Týden, měsíc, seznam a výběr období (8. 10. 2026)
+
+Pouze návrhy, zatím neimplementovat. Přečti `docs/navrhy/a020/README.md` a tři obrazové listy ve stejné složce: `01-mesic.png`, `02-tyden.png`, `03-seznam.png`.
+
+Týden ponechat výchozí; měsíc stručná mřížka bez obrázků uvnitř buněk; seznam obrázková agenda zvoleného týdne. Společné ovládání Dnes / předchozí / klikací rozsah s výběrem dne / další. Zachovat vybrané datum a kategorii napříč pohledy. Na telefonu měsíc s barevnými body a programem pod mřížkou, týden s pásem dnů, seznam jako plné řádky. Uživatelova volba pohledu má přednost před automatickou volbou podle rozlišení.
+
+Termíny jsou lokální data projektu, ne nové ověření herního rozpisu. Obrázky jsou grafické návrhy: případné odchylky datumů, popisků, barev či počtů neopisovat. U měsíční ilustrace Twilight Trails znamená průnik s měsícem, ne skutečný začátek/konec sezóny; v produktu zobrazit správný termín nebo „Probíhá celý měsíc“. Generátor v mobilním měsíci vynechal segment pohledů a Dnes: při realizaci patří i tam, jak stanoví specifikace. Aktuální aplikace ani build se v tomto kole neměnily.
+
+## A-021 — Revize stavu po předání 14. 10. (15. 10. 2026)
+
+Přečti pouze tuto sekci. Jde o analýzu zdrojů a existující TEST sestavy, nikoli nový vizuální audit všech obrazovek. Aplikace nebyla upravena ani sestavena. C-001 až C-005 v PREDANI_ASTRA.md jsou převzaté; atlas.js zůstává Claudovi.
+
+1. **Nejdřív ověření:** `node tests/atlas_calendar.test.mjs` prošel prvními třemi kontrolami a selhal na `illustrations match the species the app lists` (řádek 31). Test fixuje 23. 9. 2026 proti proměnlivým datům. Před opravou zjistit vybranou událost, seznam names a skutečné obrázky; nerozhodovat bez důkazu, zda jde o renderer, limit ilustrací, nebo zastaralé očekávání. Syntaxe atlas.js a calendar.js prošla.
+2. **Logo:** zdroj i TEST mají obě varianty logo.png/logo-svetle.png a fallback. Místní pokemon_tracker_app.html zapojení `.atlas-brand-logo` neobsahuje. Dřívější požadavek uživatele zahrnoval i produkci, proto to zatím neoznačovat za hotové v obou sestavách. Relativní obrázky také znamenají, že samotný přenesený HTML soubor logo neobsahuje; ověřit distribuční balíček a světlý vzhled. Nové logo nenahradit starým návrhem Pokémon GO.
+3. **C-001:** doporučené pořadí již odpovídá kódu: Přehled / Pokémoni / Hledání / Kalendář / Více. Čtyři přímé cíle plus Více. Ve Více oddělit sekce od příkazů import/export. Na 390 px ponechat jednořádkové krátké názvy, minimálně 44px cíle, safe-area, panel do 85dvh s vlastním scrollem, viditelným Zavřít a návratem focusu. Nepřidávat znovu mobilní levé menu.
+4. **C-002:** společná předloha modalů má sjednotit hlavičku, odsazení, hledání a patičku, nikoli vynutit jednu velikost. Malá editace cca 560 px, import cca 800 px, smazané kusy cca 1100 px; max-width viewport minus 32 px. Mobil 390 px celá šířka, max-height 100dvh, sticky hlavička/patička, posouvá se tělo. Dvojklik útoků doplnit viditelnou akcí dostupnou dotykem a klávesnicí. Ověřit focus trap a vrácení focusu.
+5. **C-003:** datové sekce, časová okna, exkluzivní útok a kontextové CTA uznat jako hotovou práci. Chybí vizuální úvod. Banner bez obrázku: barevná plocha dle kategorie + existující sprite druhu, případně ikona kategorie, nikdy náhodný nesouvisející Pokémon. Pod ním nejvýše 4 doložené priority: hlavní čas, exkluzivní útok a jeho deadline, nejsilnější bonus, hlavní dostupný druh. Neukazovat prázdné karty. Dlouhou podmínku neskrýt: stručný nadpis a plná věta pod ním, pružná výška. Hlavní okno a prodloužené bonusy zobrazit jako dvě výslovně popsané položky, nikoli jednu zavádějící dobu akce.
+6. **C-004:** desktop toolbar už sjednocený; neměnit znovu pořadí. Mobil `.ac-views` stále skrývá. Návrh: řádek datum a Dnes/šipky, další řádek Týden/Měsíc/Seznam, další filtr kategorií. Pořadí ovladačů stejné ve všech režimech; mění se pouze rozsah a vybraná volba. Měsíc: čísla + body a program vybraného dne pod mřížkou. Seznam: agenda zvoleného týdne. Při přepnutí zachovat datum i kategorii. Nestačí odkrýt přepínač CSS, napojit odpovídající mobilní obsah.
+7. **C-005:** Vyhledávání nepřestavovat. CP zarovnání už hotové. Zbývá jen jemné zklidnění hran, zelené, hierarchie záložek a podpůrných textů. Nižší priorita než mobil a modaly.
+
+Další obrazové návrhy mají ukázat skutečné stavy bez dat, dlouhý název/podmínku, desktop a 390px mobil. Použít jednotný toolbar jako jednu opakovanou komponentu, ne tři nezávisle generované varianty. Doporučené pořadí práce: objasnit regresi a distribuci loga → C-001/C-002 → C-003/C-004 → kosmetika C-005. Předání je doporučení, ne pokyn k automatickému nasazení.
+
+### Výsledek ověření v tomto kole
+
+Existující TEST: 410 kontrol vzhledové vrstvy prošlo, 4 selhaly: (1) značky a „silný proti“ v úzkém okně nejsou na jednom řádku; (2) kontrola technického textu v Novinkách; (3) bublina „#N z M“ nevrátila očekávaný seznam kusů; (4) akce bez spawnů/raidů nevrátila druhy z ostatních sekcí. Žádná zachycená chyba JavaScriptu. Samostatný kalendářový test skončil u čtvrté kontroly ilustrací. To jsou nálezy k reprodukci, nikoli automaticky prokázané chyby enginu; nejprve zkontrolovat fixture a očekávání. Ověření správnosti všech herních výpočtů tím pokryté není.
+
+Prošly mj. zarovnání karet Přehledu, priorita krátkých akcí, pevné místo data a ovladačů kalendáře, načtení obou log podle tématu a kontextové CTA do Vyhledávání/Taháku. Během kontroly se na disku změnil čas TEST sestavy z 14. 10. na 15. 10.; Astra build nespouštěla. Výsledek proto není certifikace neměnného release artefaktu. Po dokončení souběžných změn zopakovat dotčené kontroly nad jednou konkrétní sestavou.
+
+## A-022 — Grafika pozadí akcí a karty na desktopu/mobilu (16. 10. 2026)
+
+Přečti pouze `docs/navrhy/a022/README.md` a dva obrázky vedle. Jde o návrh bez nasazení. Čtyři prostředí jsou dekorativní kategorie, skutečné druhy/texty zůstávají samostatně z dat. Zachovat výběr tří akcí enginem, současné logo, barvy filtrů a mobilní spodní navigaci. Hamburger v obrázku nepřebírat. Výzkumný banner je příklad detailu, nikoli čtvrtá homepage karta. List 2×2 není finální asset: po schválení připravit samostatné scény, kompresi, ořez cover a kontroly 390–1920 px. Teď nebyl měněn kód ani sestavení.
+
+## A-023 — Přehled realizovaný v TESTu (16. 10. 2026)
+
+Na přímé přání uživatele Astra aplikovala schválený A-022 do karet Dnes a brzy. Jen append blok Astra A-022 na konci atlas.css, nový asset atlas/assets/event-scenes-a022.png a build sync_reference.py --test. atlas.js a engine beze změn od Astry. Pozadí používá 2×2 atlas z odsouhlaseného návrhu jako CSS výřez s poměrovým cover; není natahované. Samostatné sprity i skutečné termíny zachovány. Desktop tři karty, tablet dvě plus široká třetí, mobil hlavní karta a dva kompaktní řádky. Zrušeno zděděné absolutní umístění CTA, které zakrývalo termín.
+
+Ověření v prohlížeči 1440/820/390 px: bez vodorovného přetečení, termíny se nekryjí s CTA, všech 5 spritů aktuálních tří akcí načteno. Skutečné snímky docs/navrhy/a022/test-1440.png, test-820.png, test-390.png. Produkce ani Git nezměněny tímto krokem. Plná regresní sada neběžela, změny jsou prezentační. Toto nahrazuje požadavek A-022 generovat čtyři samostatné soubory: pro přesnou shodu použit původní obrazový atlas, cca 2.75 MB; případná optimalizace až po odsouhlasení vzhledu.
+
+## A-024 — Detail akce: chybné členění dat + nový vzhled (16. 10. 2026)
+
+Přečti pouze docs/navrhy/a024/README.md a detail-akce-navrh.png vedle. Audit Buddy Trek proti LeekDucku prokázal sloučení Incense do wild, ztrátu úkol→odměna a úplné vynechání GO Pass v parseru včetně bezplatné hratelnosti. Nejde jen o CSS. Dokument obsahuje návrh kompatibilního datového rozšíření, fixture/testy a konkrétní desktop/mobil rozvržení. Zdroj „Niantic“ v generovaném mockupu je chybný, použít LeekDuck. Astra zde aplikaci neměnila; atlas.js a import zůstávají Claudovi. Neoznačovat detail za úplný jen podle počtu vykreslených sekcí.
+
+## A-025 — První vzhledová realizace detailu v TESTu (17. 10.)
+
+Přečti pouze tuto sekci. Astra převzala tři kola opravených dat z A-024 a doplnila na konec atlas.css blok A-025. atlas.js, parser ani engine neupravovala. Build pouze --test. Hero má neutrální night-park pozadí, žádný vymyšlený druh; podmínky a termíny zachovány. Desktop 2 sloupce sekcí, do 1000 px jeden, mobil fullscreen a 3 sloupce dlaždic. Výzkum s úkoly má samostatné karty. Deadline GO Passu zvýrazněn nahoře.
+
+Ověření: 36/36 parserových kontrol; prohlížeč 1440/820/390 px bez vodorovného přetečení při prvním ověření, sekce wild/kadidlo/výzkum/GO Pass přítomné, deadline 21.10.20:00, Escape zavře, žádné pageerror. Poté upraven grid jednotlivého druhu a tablet, znovu vytvořeny snímky. Ilustrace se z externích URL načítají pomaleji; po čekání ověřeny naturalWidth a opacity prvních čtyř obrázků. Snímky docs/navrhy/a025/detail-1440.png, detail-820.png, detail-390.png.
+
+Není to ještě plná realizace A-024: chybí datové priority nahoře, aktivní období před starým a přepínač období, lokalizované texty ze zdroje a provenance/parseStatus. Tyto části potřebují atlas.js, který drží Claude. Nepřesouvat pořadí CSS orderem bez změny přístupného pořadí DOM. Přidat strukturované atributy pro sekce/typ akce, pak půjde zvolit odpovídající pozadí a hero sprite. Podmínky odměn nezkracovat. Sticky tlačítko zavření je nyní omezené rodičovskou hlavičkou; pro trvalé zavření při dlouhém scrollu připravit samostatnou kompaktní sticky lištu. Plná UI sada v tomto kole neběžela. Produkce, commit a push beze změny od Astry.
+
+## A-026 — Oprava ořezaných ikon v detailu (17. 10.)
+
+Přečti tuto sekci. Příčinou byl A-025: obrázek zvětšený na velikost obalu, ale zachovaná inline transformace centrování/zvětšení a overflow:hidden z původní malé bubliny. Detail nyní používá object-fit:contain, transform:none!important pouze uvnitř #atlasEventDialog, rezervu 6 px a neclippující obal. Jinde optimalizaci spritů neměnit. Karty 84 px desktop/72 px mobil včetně rezervy; text se zalamuje.
+
+Přidána krajinná hlavička dle návrhu, výřez levé dolní scény atlasu se samostatným poměrovým pseudo-elementem (mobil nesmí odkrýt horní raidové pole). Jen atlas.css a --test build; atlas.js ani data neměněny. Před poslední opravou výřezu měřeno všech 27 img detailu Buddy Trek ve 1440/820/390: žádná transformace ani přesah obrázku z obalu, žádné vodorovné přetečení. Snímky docs/navrhy/a026. Na plnou shodu s A-024 stále potřebujeme strukturální změny od Clauda z A-025: prioritní shrnutí, přepínač aktuálního období, správné nadpisy a lokalizace. CSS nemá tyto významové části nahrazovat vymyšleným obsahem.
+
+## A-027 — Dlouhý detail: zavírání a světlé téma (19. 10.)
+
+Astra změnila pouze atlas.css (blok A-027) a sestavila TEST. Dialog nyní má pevnou hlavičku a scrolluje jeho tělo; X tedy nezmizí při čtení dlouhé akce. Na mobilu hlavička menší, tělu při 390×844 zbývá 597 px. Sekce mají jednotné rozbalovací šipky, hlavní kontextové tlačítko zvýraznění, světlé dlaždice vlastní čitelné barvy. Nepřidány falešné priority ani nefunkční segmenty. Data a atlas.js beze změny od Astry.
+
+Ověření 1440/820/390 × 844 v dark/light: bez vodorovného přetečení těla, po scrollu na konec X stále ve viewportu, Escape zavře, žádná pageerror. Snímky docs/navrhy/a027/detail-*-*.png a bottom-*-*.png. Plná regresní sada neběžela.
+
+Další postup vyžaduje Claudovo zapojení A-024–A-026 (souhrn doložených přínosů, aktuální/předchozí/celá období, provenance). Beze změny struktury nelze tvrdit plnou shodu s návrhem. Na mobilu pro extrémně dlouhý název má hlavička vlastní max-height 45dvh a scroll; ověřit případný návrh samostatného pevného X při budoucí přestavbě hlavičky.
+
+## A-028 — Souhrn a přepínání období detailu (19. 10.)
+
+Na pokračující požadavek uživatele Astra tentokrát upravila i úzce vymezený renderer v atlas.js: shrnutiAkce, časové skupiny v teloAkce a delegované klikání modalu. Parser, herní engine ani data nezměněny. Claude: před další editací načti tyto funkce, nepřepisuj je starší verzí. CSS A-028 a build pouze --test.
+
+Souhrn čerpá výhradně z e[8]: termín vyzvednutí, počet uvedených úkolů (ne tvrzení o všech úkolech), ranky bonusů. Klik rozbalí a zaměří příslušnou sekci. Chybějící podklad = žádná karta. Časované sekce mají Právě teď/Předchozí/Celá akce; porovnání start<=now<end, neznámé datum nepřidává přepínač. Po skončení nebo před začátkem výchozí Celá akce. Společné podmínky zůstávají i u předchozího období. Skupiny zůstávají v DOM s hidden, zdrojová data se nemění.
+
+Ověřeno pro Buddy Trek 16.10.09:59 a přesně 10:00: správné druhy po přepnutí okna, Celá akce vrátí oba seznamy. 19.10.20:01: výchozí Celá akce, Právě teď prázdné s vysvětlením. Na mobilu bez horizontálního přetečení, souhrn otevře výzkum a předá focus. Syntaxe JS prošla. První test ukončené akce selhal, protože karta správně zmizela z homepage; ověřeno následně přes existující AtlasEventUI.open. Snímky docs/navrhy/a028/detail-1440.png a detail-390.png jsou řízený čas 16.10.10:00, ne aktuální program.
+
+Ještě zbývá lokalizace zdrojových vět, provenance/parseStatus a případný skutečný výběr hlavních herních přínosů (současné souhrny jsou poctivé navigační údaje). Otevřený dialog časové skupiny nepřepočítává automaticky během překročení hranice; při znovuotevření ano. Pro živou aktualizaci použít společný timer aplikace, nikoli další neuklízený interval. Celá regresní sada v tomto kole neběžela.

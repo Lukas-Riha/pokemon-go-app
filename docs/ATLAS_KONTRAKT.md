@@ -153,6 +153,57 @@ i chování jsou tytéž jako v detailu pod řádkem, včetně přepínačů Luc
 Dynamax, CUTE a skládání dlouhých textů. Vrstva dodá jen místo a funkci,
 kterou se detail zavírá.
 
+### Sprity si engine měří — vrstva mu musí říct kde
+
+Obrázky ze hry mají každý jinak velkou kresbu v jinak posazeném průhledném
+čtverci. Engine si u každé adresy jednou změří, kde kresba leží, a posune
+ji na střed rámečku; naměřené si pamatuje mezi spuštěními.
+
+**Kdekoli vrstva vykreslí sprite sama, musí po sobě zavolat
+`vystreditSprity(kontejner)`.** Bez toho se ukáže jen to, co engine
+náhodou změřil jinde: v rosteru tak byly shiny obrázky (vlastní adresa,
+kterou člověk v detailu obvykle neotevře) o třetinu menší a nakřivo
+vedle stejného druhu bez shiny. Měří se líně, až když se obrázek dostane
+do zorného pole, takže zavolat to nad seznamem o čtyřech stech dlaždicích
+nic nestojí.
+
+### Předání kusu do seznamu vrstvy
+
+`zamerKus(id)` v enginu znamená „ukaž ten kus a označ ho". V tabulce
+doroluje na řádek, ve vrstvě tabulka není — proto si ho vrstva přebírá
+funkcí `window.AtlasFocusRow(id)`, kterou do enginu doplňuje
+`tools/atlas_ui_hooks.py` a jen do TEST sestavení.
+
+Předání sedí **až za** přepočtem pořadí a zrušením filtrů (značka
+`ATLAS-ZAMER` ve zdroji). Když se předávalo hned na začátku funkce,
+`renderBody()` vůbec neproběhl, `lastVisibleIds` zůstaly staré — a ručně
+přidaný kus se v seznamu vrstvy neobjevil, dokud se stránka neobnovila.
+
+Vrstva si uvnitř drží `window.AtlasZamerKus(id)`: po nejbližším překreslení
+roster doroluje k tomu kusu a na chvíli ho obtáhne. Jinak si seznam pozici
+drží a nahoru jde jen při změně pohledu (hledání, filtr, řazení, stránka).
+
+### Co engine volá ve vrstvě
+
+Engine si vrstvu nikdy nevynucuje — každý z těchhle háčků se použije jen
+tehdy, když existuje. Bez vrstvy appka funguje dál tak, jak fungovala.
+
+| Háček | Kdy ho engine volá | Co má vrstva udělat |
+| --- | --- | --- |
+| `window.AtlasFocusRow(id)` | `zamerKus(id)` v TEST sestavení | ukázat ten kus v seznamu a označit ho |
+| `window.AtlasEnhanceDetail(box, radek, rozbor)` | po vykreslení detailu kusu | přeskládat detail do podoby vrstvy |
+| `window.AtlasDoplnitRoster()` | po přidání kusu do rosteru | překreslit seznam |
+| `window.AtlasSmazane(box, položky, info)` | místo tabulky smazaných kusů | nakreslit je jako dlaždice; `false` = nech tabulku |
+
+Model smazaných kusů staví engine: ke každé položce patří kopie řádku,
+hotový rozbor, datum smazání a dvě funkce (`vratit`, `rozbor`). Vrstva
+nepočítá nic, jen kreslí — a když kreslení odmítne, engine nakreslí
+původní tabulku.
+
+Opačným směrem vede `window.AtlasUpravitUtoky(id)`: otevře úpravu útoků
+toho kusu. Drží ji vrstva, protože tam ta úprava bydlí; engine ji volá
+tlačítkem u nadpisu „Útoky".
+
 ### Události
 
 | Událost na `window` | Kdy přijde | `detail` |

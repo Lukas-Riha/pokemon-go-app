@@ -29,7 +29,9 @@ Je to scraping cizí stránky, takže je to křehké — když si LeekDuck před
 ukáže akci bez rozpisu jako dřív, nikdy si nic nevymyslí.
 """
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
+from html import unescape
+from urllib.parse import unquote
 from html.parser import HTMLParser
 
 # Sekce, které o pokémonech něco říkají. Klíč = třída v `event-section-header`,
@@ -48,9 +50,115 @@ SEKCE = {
     "moves": "utoky",
 }
 
-# Sekce, které se schválně nečtou: `go-pass` a `sales` jsou nákupy, ne
-# rozhodnutí o pokémonech. Kdo je chce, má v rozpisu odkaz na stránku akce.
+# Sekce, které se schválně nečtou: `sales` jsou nákupy, ne rozhodnutí
+# o pokémonech. Kdo je chce, má v rozpisu odkaz na stránku akce.
+# (`go-pass` se do oken nečte taky, ale bezplatnou větev z něj bere
+# `go_pass()` — proto už mezi nečtenými není.)
 NECTENE = ("go-pass", "sales")
+
+# Jak se sekce stránky jmenují v datech appky — i ty, které se do oken
+# nečtou. Slouží provenance: bez téhle mapy nejde poznat, že stránka sekci
+# MÁ a jen z ní nic nevypadlo.
+SEKCE_VSE = dict(SEKCE, **{"go-pass": "gopass", "sales": "sales"})
+
+# Stavy sekce. Jména jsou česká, význam je z A-024:
+#   nacteno     = available   — sekce je a něco z ní vypadlo
+#   neni        = absent      — stránka takovou sekci vůbec nemá
+#   neumime     = unsupported — sekce je, ale parser z ní nic nedostal
+#                               (prázdný seznam ve zdroji, nebo přepsaná
+#                               šablona — zvenčí se to nerozezná)
+#   chyba       = error       — rozbor stránky spadl
+#   mimo        =             — sekci schválně nečteme (nákupy). Není to
+#                               výpadek, takže se o ní v appce mlčí.
+STAVY = ("nacteno", "neni", "neumime", "chyba", "mimo")
+
+# Sekce, které se nečtou z rozhodnutí, ne z neschopnosti.
+MIMO_ZAJEM = ("sales",)
+
+# Nadpis sekce: `<h2 id="spawns" class="event-section-header spawns">Spawns</h2>`
+_HLAVICKA = re.compile(
+    r"<h([1-6])[^>]*class=\"([^\"]*event-section-header[^\"]*)\"[^>]*>(.*?)</h\1>",
+    re.I | re.S,
+)
+
+# Poslední rozbor spadl? `okna()` výjimku polyká, aby nespadl celý build —
+# provenance to ale musí umět říct nahlas.
+POSLEDNI_CHYBA = ""
+
+
+# První odstavec sekce. U sekce, ze které nic nevypadlo, to bývá rovnou
+# odpověď („Specific tasks and encounters have not yet been announced.").
+_ODSTAVEC = re.compile(r"<p[^>]*>(.*?)</p>", re.I | re.S)
+
+
+def nalezene_sekce(html):
+    """Které sekce stránka má → ``{klíč v datech: (nadpis, věta ze zdroje)}``.
+
+    Věta je první odstavec té sekce. U sekce, která nic nevypsala, to je
+    jediné, co o ní zdroj říká — a je to víc než mlčení.
+    """
+    html = html or ""
+    nalezy = list(_HLAVICKA.finditer(html))
+    out = {}
+    for i, m in enumerate(nalezy):
+        klic = None
+        for t in m.group(2).split():
+            if t in SEKCE_VSE:
+                klic = SEKCE_VSE[t]
+                break
+        if not klic or klic in out:
+            continue
+        konec = nalezy[i + 1].start() if i + 1 < len(nalezy) else len(html)
+        telo = html[m.end():konec]
+        veta = ""
+        for kus in _ODSTAVEC.findall(telo):
+            kus = _cisty_text(kus)
+            # Krátké útržky („Rank 1") nejsou vysvětlení, jen popisek.
+            if len(kus) >= 40:
+                veta = kus[:260]
+                break
+        out[klic] = (_cisty_text(m.group(3)), veta)
+    return out
+
+
+def provenance(html, odkaz="", ziskano="", data=None):
+    """Stav každé sekce stránky — co se povedlo přečíst a co ne.
+
+    ``data`` je mapa ``{klíč sekce: počet položek}`` nebo rovnou to, co
+    z té sekce vypadlo; počítá se jen pravdivost. Sekce, kterou stránka
+    nemá, dostane ``neni`` a v appce se o ní mlčí. Sekce, která na stránce
+    JE a nic z ní nevypadlo, dostane ``neumime`` — tam appka musí říct
+    „Podrobnosti nejsou dostupné" a ukázat zdroj, ne předstírat, že akce
+    nic takového nemá.
+    """
+    data = data or {}
+    sekce = {}
+    nalezene = nalezene_sekce(html)
+    for klic, (nadpis, veta) in nalezene.items():
+        if klic in MIMO_ZAJEM:
+            stav = "mimo"
+        elif data.get(klic):
+            stav = "nacteno"
+        elif POSLEDNI_CHYBA:
+            stav = "chyba"
+        else:
+            stav = "neumime"
+        zaznam = {"stav": stav, "nadpis": nadpis}
+        # Věta ze zdroje jen tam, kde appka nic nevypsala — u načtené
+        # sekce by jen opakovala, co už je vidět v seznamu.
+        if veta and stav in ("neumime", "chyba"):
+            zaznam["veta"] = veta
+        sekce[klic] = zaznam
+    # Sekce, kterou stránka nemá, se nevypisuje vůbec — „neni" je výchozí
+    # stav a prázdný záznam by jen nafukoval data, která veze celá appka.
+    out = {"sekce": sekce}
+    if odkaz:
+        out["odkaz"] = odkaz
+    if ziskano:
+        out["ziskano"] = ziskano
+    if POSLEDNI_CHYBA:
+        out["chyba"] = POSLEDNI_CHYBA
+    return out
 
 MESICE = {
     "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
@@ -169,6 +277,7 @@ class _Parser(HTMLParser):
         self._h = None             # sbírám text nadpisu
         self._h_sekce = None       # třída sekce z právě otevřeného <h2>
         self._jmeno = None         # sbírám .pkmn-name
+        self._odstavec = None
         self._bonus = None         # sbírám .bonus-text
         self._kus = None           # rozpracovaná položka
         self._hloubka_kus = 0
@@ -182,11 +291,22 @@ class _Parser(HTMLParser):
         self.sekce_se_seznamem = set()
 
     # --- pomocné ---------------------------------------------------------
+    # Popisek skupiny, po kterém se spawny rozdeluji. Kadidlo neni volna
+    # priroda: ty druhy bez nej nepotkas.
+    _KADIDLO = re.compile(r"incense", re.I)
+
+    def _sekce_bloku(self):
+        """Sekce, do ktere polozka patri — s ohledem na popisek skupiny."""
+        if self.sekce == "spawn" and self._KADIDLO.search(self.label or ""):
+            return "kadidlo"
+        return self.sekce
+
     def _blok(self):
+        sekce = self._sekce_bloku()
         p = self.bloky[-1] if self.bloky else None
-        if not p or p["sekce"] != self.sekce or p["cas"] != self.cas \
+        if not p or p["sekce"] != sekce or p["cas"] != self.cas \
                 or p["label"] != self.label:
-            self.bloky.append({"sekce": self.sekce, "cas": self.cas,
+            self.bloky.append({"sekce": sekce, "cas": self.cas,
                                "label": self.label, "polozky": []})
         return self.bloky[-1]
 
@@ -194,6 +314,13 @@ class _Parser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         tridy = (a.get("class") or "").split()
+
+        # Konec článku: dál už je autor a patička webu, ne obsah akce.
+        if tag == "footer" or "author-box" in tridy or "site-footer" in tridy:
+            self.sekce = None
+            self.cas = ""
+            self.label = ""
+            return
 
         if tag in ("h1", "h2", "h3", "h4"):
             self._h = []
@@ -252,6 +379,11 @@ class _Parser(HTMLParser):
             self._kus["shiny"] = 1
         if "bonus-text" in tridy:
             self._bonus = []
+        # Věty ve Spawns nesou podmínku („Daily Adventure Incense is
+        # excluded"), bez které seznam druhů lže. Jinde se odstavce neberou:
+        # u bonusů a výzkumu je text už v položkách.
+        if tag == "p" and self.sekce == "spawn":
+            self._odstavec = []
 
     def handle_endtag(self, tag):
         if tag in ("h1", "h2", "h3", "h4") and self._h is not None:
@@ -262,9 +394,11 @@ class _Parser(HTMLParser):
                 self.label = ""
             elif self.sekce is not None:
                 if rozsah(text, self.zacatek, self.konec) is not None:
-                    # Nové časové okno — popisek k němu teprve přijde.
+                    # Nové časové okno. Popisek skupiny ("Incense Encounters")
+                    # se NEMAŽE: ve zdroji stojí NAD okny a platí pro ně pro
+                    # všechna. Když se mazal, přišla appka o to, že ty druhy
+                    # chodí jen na kadidlo.
                     self.cas = text
-                    self.label = ""
                 else:
                     self.label = text
             self._h = None
@@ -279,6 +413,13 @@ class _Parser(HTMLParser):
         if self._jmeno is not None and tag == (getattr(self, "_jmeno_tag", "div")):
             self._kus["jmeno"] = re.sub(r"\s+", " ", "".join(self._jmeno)).strip()
             self._jmeno = None
+            return
+        if self._odstavec is not None and tag == "p":
+            text = re.sub(r"\s+", " ", "".join(self._odstavec)).strip()
+            self._odstavec = None
+            # Krátké zbytky („a", „:") nejsou věta a do rozpisu nepatří.
+            if len(text) > 12 and self.sekce:
+                self._blok()["polozky"].append({"jmeno": text, "shiny": 0, "text": 1})
             return
         if self._bonus is not None and tag == "div":
             text = re.sub(r"\s+", " ", "".join(self._bonus)).strip()
@@ -296,10 +437,469 @@ class _Parser(HTMLParser):
     def handle_data(self, data):
         if self._h is not None:
             self._h.append(data)
+        if self._odstavec is not None:
+            self._odstavec.append(data)
         if self._jmeno is not None:
             self._jmeno.append(data)
         if self._bonus is not None:
             self._bonus.append(data)
+
+
+# Bonus s hvězdičkou běží jinak dlouho než samotná akce. Vysvětlivka stojí
+# pod seznamem bonusů: „* While most bonuses are only active during the three
+# hours of the event (2:00 p.m. to 5:00 p.m. local time), these bonuses will be
+# active from 2:00 p.m. to 9:00 p.m. local time."
+_VYSVETLIVKA = re.compile(
+    r"bonuses\s+will\s+be\s+active\s+from\s+(.{1,30}?)\s+to\s+(.{1,30}?)"
+    r"\s*(?:local\s+time|\.|$)", re.I | re.S)
+_HODINA = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m?\.?", re.I)
+
+
+def _denni_cas(text):
+    """„9:00 p.m." → (21, 0). Vrací None, když to čas není."""
+    m = _HODINA.search(text or "")
+    if not m:
+        return None
+    hod = int(m.group(1))
+    minuta = int(m.group(2) or 0)
+    if hod > 23 or minuta > 59:
+        return None
+    ampm = m.group(3).lower()
+    if ampm == "p" and hod < 12:
+        hod += 12
+    if ampm == "a" and hod == 12:
+        hod = 0
+    return hod, minuta
+
+
+def prodlouzene_bonusy(html):
+    """Do kdy platí bonusy s hvězdičkou: „HH:MM", nebo None.
+
+    Čte se jen vysvětlivka pod seznamem — žádné domýšlení. Když ji stránka
+    nemá nebo se z ní čas nepodaří přečíst, vrátí se None a okno se nepřidá.
+    """
+    text = unescape(re.sub(r"<[^>]+>", " ", html or ""))
+    m = _VYSVETLIVKA.search(text)
+    if not m:
+        return None
+    konec = _denni_cas(m.group(2))
+    return "%02d:%02d" % konec if konec else None
+
+
+def _doplnit_prodlouzeni(out, html, zacatek):
+    """Přidá okno pro bonusy, které běží i po konci akce.
+
+    Hvězdička se z textu bonusu umaže — bez vysvětlivky nic neznamená a
+    v appce by vypadala jako překlep. Informaci nese to druhé okno.
+    """
+    # Nejdřív vysvětlivka: bez ní hvězdička znamená podmínku, ne jiný čas
+    # („*For these bonuses to apply…“), a sahat se na ni nesmí.
+    do_kdy = prodlouzene_bonusy(html)
+    if not do_kdy or not out:
+        return
+    oznacene = []
+    for _od, _do, sekce in out:
+        for polozka in sekce.get("bonus") or []:
+            if polozka[1] != -1 and polozka[0].endswith("*"):
+                oznacene.append(polozka)
+    if not oznacene:
+        return
+    hvezdicka = []
+    for polozka in oznacene:
+        polozka[0] = polozka[0].rstrip("*").rstrip()
+        hvezdicka.append(list(polozka))
+    # Hlavní okno je to, ve kterém bonusy stojí; prodloužení začíná tam,
+    # kde končí ono, a končí časem z vysvětlivky.
+    hlavni = [o for o in out if (o[2].get("bonus"))]
+    od = max(o[1] for o in hlavni) if hlavni else out[0][1]
+    den = (od or zacatek or "")[:10]
+    if not den:
+        return
+    konec = den + "T" + do_kdy
+    # Vysvětlivka může mluvit o čase PŘED koncem akce (jiná akce, jiné
+    # pravidlo) — pak se nepřidává nic, dvě okna přes sebe by jen mátla.
+    if konec <= od:
+        return
+    out.append([od, konec, {"bonus": hvezdicka}])
+
+
+# ---------------------------------------------------------------- GO Pass
+# Sekce `go-pass` je z větší části obchod (Deluxe za 4,99 USD), ale veze
+# i bezplatnou větev, milníkové bonusy a termín vyzvednutí odměn, který je
+# jiný než konec akce. Bere se jen tohle — katalog ne.
+_GP_SEKCE = re.compile(r'id="go-pass"(.*?)(?:<h2[^>]*class="[^"]*event-section-header'
+                       r'|<section class="author-box"|<footer)', re.I | re.S)
+_GP_ZDARMA = re.compile(r"is a free progression track"
+                        r"|(?:receive|get) the free pass"
+                        r"|the free pass includes", re.I)
+_GP_NAZEV = re.compile(r"<h2[^>]*>\s*(GO Pass[^<]{0,60}?)\s*</h2>", re.I)
+# Věta končí tečkou uvnitř „p.m.", takže se nečte „až k tečce", ale pevné
+# okno za spouštěcím slovem — datum si v něm najde `_cas` sám.
+_GP_VYZVEDNOUT = re.compile(r"Claim all unlocked[^.]{0,120}?expire on\s+(.{5,60})"
+                            r"|Claim all unlocked rewards by\s+(.{5,60})",
+                            re.I | re.S)
+_GP_DO_KDY = re.compile(r"rank up until\s+(.{5,60})", re.I | re.S)
+# Druhá šablona: bezplatná dráha je věta a za ní obyčejný seznam.
+# Deluxe seznam se nesmí chytit — proto se bere jen `<ul>` hned za tou
+# větou a jen do nejbližšího `</ul>`.
+_GP_ZDARMA_SEZNAM = re.compile(
+    r"free pass includes[^<]{0,40}</p>\s*<ul[^>]*>(.*?)</ul>", re.I | re.S)
+_GP_POLOZKA = re.compile(r"<li[^>]*>(.*?)</li>", re.I | re.S)
+_GP_TIER = re.compile(r"<h3[^>]*>(.*?)</h3>(.*?)(?=<h3|<h2|$)", re.I | re.S)
+_GP_RANK = re.compile(r"Rank\s+(\d+)", re.I)
+_GP_TEXT = re.compile(r'class="bonus-text"[^>]*>(.*?)</div>', re.I | re.S)
+
+
+def _cisty_text(html):
+    """Text bez značek, s normálními mezerami.
+
+    Entity se rozbalují DŘÍV než se srovnávají mezery — jinak projde
+    `&nbsp;` jako pevná mezera a zůstane v textu („Explore 1 km").
+    """
+    text = unescape(re.sub(r"<[^>]+>", " ", html or ""))
+    return re.sub(r"\s+", " ", text.replace(" ", " ")).strip()
+
+
+def _gp_termin(text, rok):
+    """„Wednesday, October 21, 2026, at 8:00 p.m." → ISO. None, když to datum není.
+
+    Rok uprostřed věty rozbíjel čtení času (`_cas` čeká hodinu hned za dnem),
+    takže se nejdřív vystřihne.
+    """
+    if not text:
+        return None
+    bez_roku = re.sub(r",\s*(20\d\d)\s*,", ",", text)
+    bez_roku = re.sub(r",\s*at\s+", " at ", bez_roku, flags=re.I)
+    m = re.search(r"(20\d\d)", text)
+    vysledek = _cas(bez_roku, int(m.group(1)) if m else rok, 1)
+    if not vysledek:
+        return None
+    return vysledek[0].strftime("%Y-%m-%dT%H:%M")
+
+
+def go_pass(html, rok=None):
+    """Bezplatná část GO Passu, nebo None, když ji stránka nemá.
+
+    Vrací ``{"nazev", "zdarma", "sbirat_do", "vyzvednout_do", "bonusy"}``;
+    ``bonusy`` je ``[{"rank": 10, "text": "…"}, …]``. Co se nepodaří přečíst,
+    chybí — nic se nedomýšlí.
+    """
+    m = _GP_SEKCE.search(html or "")
+    if not m:
+        return None
+    blok = m.group(1)
+    text = _cisty_text(blok)
+    rok = rok or 0
+    out = {}
+    nazev = _GP_NAZEV.search(blok)
+    if nazev:
+        out["nazev"] = _cisty_text(nazev.group(1))
+    out["zdarma"] = bool(_GP_ZDARMA.search(text))
+    do_kdy = _GP_DO_KDY.search(text)
+    if do_kdy:
+        t = _gp_termin(do_kdy.group(1), rok)
+        if t:
+            out["sbirat_do"] = t
+    vyzvednout = _GP_VYZVEDNOUT.search(text)
+    if vyzvednout:
+        # Dvě znění téže věty, každé ve své skupině.
+        t = _gp_termin(vyzvednout.group(1) or vyzvednout.group(2), rok)
+        if t:
+            out["vyzvednout_do"] = t
+    bonusy = []
+    for nadpis, telo in _GP_TIER.findall(blok):
+        jm = _cisty_text(nadpis)
+        # Deluxe je placená větev — ta do rozpisu nepatří. Bezplatné
+        # milníky se poznají podle toho, že o Deluxe nemluví.
+        if re.search(r"deluxe", jm, re.I):
+            continue
+        rank = _GP_RANK.search(jm)
+        if not rank:
+            continue
+        for b in _GP_TEXT.findall(telo):
+            popis = _cisty_text(b)
+            if popis:
+                bonusy.append({"rank": int(rank.group(1)), "text": popis})
+    if not bonusy:
+        # Druhá šablona: co bezplatná dráha obsahuje, stojí v seznamu
+        # za větou. Rank u toho není — hra ho rozdává postupně a zdroj
+        # ho tady neuvádí, takže si ho appka nevymýšlí.
+        seznam = _GP_ZDARMA_SEZNAM.search(blok)
+        if seznam:
+            for kus in _GP_POLOZKA.findall(seznam.group(1)):
+                popis = _cisty_text(kus)
+                if popis:
+                    bonusy.append({"text": popis})
+    if bonusy:
+        out["bonusy"] = bonusy
+    # Prázdná skořápka nikomu nepomůže: buď se něco přečetlo, nebo nic.
+    if not (out.get("bonusy") or out.get("vyzvednout_do") or out.get("zdarma")):
+        return None
+    return out
+
+
+# --------------------------------------------------------------- výzkum
+# Vazba úkol → možné odměny. Seznam `event-field-research-list` má u každé
+# položky úkol a vedle něj odměny; nadpis nad seznamem říká, o jaký výzkum
+# jde (a jestli je placený).
+# Nadpis musí být ten NEJBLIŽŠÍ nad seznamem — bez téhle podmínky se
+# lepil první nadpis stránky („Features").
+_VYZ_SEZNAM = re.compile(
+    r'<h2[^>]*>(?P<nadpis>(?:(?!</h2>).)*?)</h2>(?P<mezi>(?:(?!<h2).)*?)'
+    r'<ul class="event-field-research-list">(?P<telo>.*?)</ul>', re.I | re.S)
+_VYZ_POLOZKA = re.compile(r"<li>(.*?)</li>", re.I | re.S)
+_VYZ_UKOL = re.compile(r'class="task"[^>]*>(.*?)</span>', re.I | re.S)
+_VYZ_ODMENA = re.compile(r'<div class="reward\s*"[^>]*>(.*?)(?=<div class="reward\s*"|$)',
+                         re.I | re.S)
+_VYZ_JMENO = re.compile(r'class="reward-label"[^>]*>\s*<span>(.*?)</span>', re.I | re.S)
+_VYZ_CP = re.compile(r'class="(max|min)-cp"[^>]*>.*?</div>\s*([\d\s,]+)', re.I | re.S)
+
+
+class _SRParser(HTMLParser):
+    """Časovaný / speciální výzkum: kroky, úkoly a odměny v předmětech.
+
+    Drží si hloubku zanoření u každého bloku, který sbírá — `step-item`
+    i `task-reward` jsou divy s dalšími divy uvnitř a podle značek by se
+    jejich konec jinak neuhlídal.
+    """
+
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.skupiny = []
+        self.skupina = None
+        self.hloubka = 0
+        self.sber = None          # co se zrovna sbírá do textu
+        self.text = []
+        self.krok = 0
+        self.ukol = None
+        self.odmeny_kroku = []
+        self.konec = False        # narazili jsme na další sekci stránky
+        self._obrazek = ""
+        self._bloky = []          # [(hloubka, co), …] – step-item, task-reward…
+        self._shiny = False
+
+    # --- pomocné -------------------------------------------------------
+    def _zavri_ukol(self):
+        if self.ukol and self.ukol.get("odmeny"):
+            self.skupina["ukoly"].append(self.ukol)
+        self.ukol = None
+
+    def _nova_skupina(self, nadpis):
+        self._zavri_ukol()
+        self.skupina = {"nadpis": nadpis, "podnadpis": "", "ukoly": [],
+                        "odmeny_kroku": [], "placene": False}
+        self.skupiny.append(self.skupina)
+        self.krok = 0
+
+    # --- HTMLParser ----------------------------------------------------
+    def handle_starttag(self, tag, attrs):
+        if self.konec:
+            return
+        a = dict(attrs)
+        tridy = (a.get("class") or "").split()
+        if tag in ("h1", "h2", "h3") and "event-section-header" in tridy:
+            # Research skončil, dál je jiná sekce stránky.
+            self._zavri_ukol()
+            self.konec = "research" not in tridy and bool(self.skupiny)
+            return
+        if tag in ("h1", "h2", "h3") and "special-research-header" in tridy:
+            self.sber = "nadpis"
+            self.text = []
+            return
+        if tag == "p" and "special-research-subtitle" in tridy:
+            self.sber = "podnadpis"
+            self.text = []
+            return
+        if tag == "img":
+            if "shiny-icon" in (a.get("class") or ""):
+                self._shiny = True
+            if "reward-image" in (a.get("class") or ""):
+                # Jméno předmětu bývá JEN tady: u odměny za krok stojí
+                # v popisku pouhé „×1" a co to je, řekne soubor obrázku.
+                self._obrazek = _jmeno_z_obrazku(a.get("src") or "")
+        if tag == "div":
+            self.hloubka += 1
+            if "step-item" in tridy:
+                self._zavri_ukol()
+                self.krok += 1
+                self._bloky.append((self.hloubka, "krok"))
+            elif "task-reward" in tridy:
+                self._zavri_ukol()
+                self.ukol = {"ukol": "", "krok": self.krok, "odmeny": []}
+                self._bloky.append((self.hloubka, "ukol"))
+            elif "page-reward-wrapper" in tridy:
+                self._zavri_ukol()
+                self._bloky.append((self.hloubka, "krokodmena"))
+            elif "reward-label" in tridy:
+                self.sber = "odmena"
+                self.text = []
+                self._shiny = False
+            return
+        if tag == "span":
+            if "task-text" in tridy:
+                self.sber = "ukol"
+                self.text = []
+            elif "reward-label" in tridy:
+                self.sber = "odmena"
+                self.text = []
+                self._shiny = False
+
+    def handle_endtag(self, tag):
+        if self.konec:
+            return
+        if tag in ("h1", "h2", "h3") and self.sber == "nadpis":
+            self._nova_skupina(_cisty_text("".join(self.text)))
+            self.sber = None
+            return
+        if tag == "p" and self.sber == "podnadpis":
+            if self.skupina is not None:
+                self.skupina["podnadpis"] = _cisty_text("".join(self.text))
+            self.sber = None
+            return
+        if tag == "span" and self.sber in ("ukol", "odmena"):
+            hodnota = _cisty_text("".join(self.text))
+            if self.sber == "ukol" and self.ukol is not None:
+                self.ukol["ukol"] = hodnota
+            elif self.sber == "odmena" and hodnota:
+                kam = self.ukol["odmeny"] if self.ukol is not None else (
+                    self.skupina["odmeny_kroku"] if self.skupina else None)
+                if kam is not None:
+                    kam.append(_odmena(hodnota, self._shiny, self.krok, self._obrazek))
+            self.sber = None
+            return
+        if tag == "div":
+            if self.sber == "odmena":
+                hodnota = _cisty_text("".join(self.text))
+                if hodnota:
+                    kam = self.ukol["odmeny"] if self.ukol is not None else (
+                        self.skupina["odmeny_kroku"] if self.skupina else None)
+                    if kam is not None:
+                        kam.append(_odmena(hodnota, self._shiny, self.krok, self._obrazek))
+                self.sber = None
+            while self._bloky and self._bloky[-1][0] >= self.hloubka:
+                _, co = self._bloky.pop()
+                if co == "ukol":
+                    self._zavri_ukol()
+            self.hloubka -= 1
+
+    def handle_data(self, data):
+        if self.sber:
+            self.text.append(data)
+
+
+# „Incubator ×1", „2026 XP", „1,000 Stardust" → jméno a počet zvlášť.
+_POCET_ZA = re.compile(r"^(?P<jmeno>.+?)\s*[x\u00d7]\s*(?P<pocet>[\d,\.]+)$", re.I)
+_POCET_PRED = re.compile(r"^(?P<pocet>[\d,\.]+)\s+(?P<jmeno>.+)$")
+
+
+# Jen počet, bez jména: „×1", „x 5 000".
+_JEN_POCET = re.compile(r"^[x\u00d7]\s*[\d,\.]+$", re.I)
+
+
+def _jmeno_z_obrazku(src):
+    """`.../items/Super Incubator.png` → `Super Incubator`."""
+    jmeno = unquote(str(src or "").rstrip("/").rsplit("/", 1)[-1])
+    jmeno = re.sub(r"\.(png|jpg|jpeg|webp|svg)$", "", jmeno, flags=re.I)
+    jmeno = jmeno.replace("_", " ").strip()
+    return "XP" if jmeno.lower() == "xp" else jmeno
+
+
+def _odmena(text, shiny, krok, obrazek=""):
+    """Jedna odměna. Počet se odděluje od jména, ať jde sečíst i vypsat."""
+    if obrazek and _JEN_POCET.match(text):
+        text = obrazek + " " + text
+    jmeno, pocet = text, None
+    m = _POCET_ZA.match(text) or _POCET_PRED.match(text)
+    if m:
+        cislo = re.sub(r"[^\d]", "", m.group("pocet"))
+        if cislo:
+            jmeno, pocet = m.group("jmeno").strip(), int(cislo)
+    z = {"jmeno": jmeno, "shiny": 1 if shiny else 0}
+    if pocet:
+        z["pocet"] = pocet
+    if krok:
+        z["krok"] = krok
+    return z
+
+
+# Placené větve se poznají podle nadpisu i podtitulku: „Premium Timed
+# Research", „Paid Timed Research". Cenu ani katalog appka nebere.
+_PLACENE = re.compile(r"\b(paid|premium|ticket(ed)?)\b", re.I)
+
+
+def vyzkum_kroky(html):
+    """Časovaný a speciální výzkum ze šablony `special-research-list`.
+
+    Vrací stejný tvar jako `vyzkum()` a navíc `typ`, `krok` u úkolu
+    a `odmeny_kroku` (co padne za dokončení kroku).
+    """
+    p = _SRParser()
+    try:
+        p.feed(html or "")
+    except Exception:          # rozbitá stránka nesmí shodit build
+        return []
+    p._zavri_ukol()
+    out = []
+    for sk in p.skupiny:
+        if not sk["ukoly"] and not sk["odmeny_kroku"]:
+            continue
+        cely = sk["nadpis"] + " " + sk["podnadpis"]
+        sk["placene"] = bool(_PLACENE.search(cely))
+        sk["typ"] = "special" if re.search(r"special research", cely, re.I) else "timed"
+        if not sk["podnadpis"]:
+            sk.pop("podnadpis")
+        if not sk["odmeny_kroku"]:
+            sk.pop("odmeny_kroku")
+        out.append(sk)
+    return out
+
+
+def vyzkum(html):
+    """Úkoly a jejich možné odměny. Prázdný seznam, když je stránka nemá.
+
+    Vrací ``[{"nadpis", "placene", "ukoly": [{"ukol", "odmeny": [{"jmeno",
+    "shiny", "cp"}]}]}]``. Odměny jsou MOŽNÉ, ne garantované — tak je
+    zdroj označuje a appka to nesmí slíbit jinak.
+    """
+    out = []
+    for m in _VYZ_SEZNAM.finditer(html or ""):
+        # Mezi nadpisem a seznamem nesmí být jiný seznam ani jiná sekce,
+        # jinak by se nadpis přilepil k cizímu výzkumu.
+        if "event-field-research-list" in m.group("mezi"):
+            continue
+        nadpis = _cisty_text(m.group("nadpis"))
+        ukoly = []
+        for kus in _VYZ_POLOZKA.findall(m.group("telo")):
+            u = _VYZ_UKOL.search(kus)
+            if not u:
+                continue
+            ukol = _cisty_text(u.group(1))
+            odmeny = []
+            for blok in _VYZ_ODMENA.findall(kus):
+                jm = _VYZ_JMENO.search(blok)
+                if not jm:
+                    continue
+                jmeno = _cisty_text(jm.group(1))
+                if not jmeno:
+                    continue
+                cp = {}
+                for kam, hodnota in _VYZ_CP.findall(blok):
+                    cislo = re.sub(r"[^\d]", "", hodnota)
+                    if cislo:
+                        cp[kam] = int(cislo)
+                z = {"jmeno": jmeno, "shiny": 1 if "shiny-icon" in blok else 0}
+                if cp.get("min") and cp.get("max"):
+                    z["cp"] = [cp["min"], cp["max"]]
+                odmeny.append(z)
+            if ukol and odmeny:
+                ukoly.append({"ukol": ukol, "odmeny": odmeny})
+        if ukoly:
+            out.append({"nadpis": nadpis, "typ": "field",
+                        "placene": bool(_PLACENE.search(nadpis)),
+                        "ukoly": ukoly})
+    # Druhá šablona (časovaný a speciální výzkum) je na stránkách častější
+    # než ta první — bez ní appka u většiny akcí tvrdila, že výzkum nemá.
+    return out + vyzkum_kroky(html)
 
 
 def okna(html, zacatek, konec, vychozi_sekce=None, prazdne=None):
@@ -318,10 +918,15 @@ def okna(html, zacatek, konec, vychozi_sekce=None, prazdne=None):
     Okna jsou seřazená podle začátku; okno bez vlastního času dostane rozsah
     celé akce.
     """
+    global POSLEDNI_CHYBA
+    POSLEDNI_CHYBA = ""
     p = _Parser(zacatek, konec, vychozi_sekce)
     try:
         p.feed(html or "")
-    except Exception:          # rozbitá stránka nesmí shodit celý build
+    except Exception as chyba:   # rozbitá stránka nesmí shodit celý build
+        # Spolknutá výjimka je v pořádku (akce zůstane bez rozpisu), ale
+        # nesmí se ztratit: provenance z ní udělá stav „chyba".
+        POSLEDNI_CHYBA = type(chyba).__name__
         return []
     # Sekce, kterou stránka má, ale nic z ní nevypadlo. Znamená to, že
     # LeekDuck změnil strukturu — a bez tohohle by to nikdo nepoznal, jen
@@ -366,5 +971,7 @@ def okna(html, zacatek, konec, vychozi_sekce=None, prazdne=None):
         if not o["sekce"]:
             continue
         out.append([o["od"], o["do"], o["sekce"]])
+    # Bonusy s hvězdičkou běží dýl než akce — dostanou vlastní okno.
+    _doplnit_prodlouzeni(out, html, zacatek)
     out.sort(key=lambda x: (x[0], x[1]))
     return out

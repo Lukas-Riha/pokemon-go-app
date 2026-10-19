@@ -2744,7 +2744,16 @@ const dKar = await pKar.evaluate(async () => {
   const dnes = new Date();
   const dnesek = new Date(dnes.getFullYear(), dnes.getMonth(), dnes.getDate());
   const vybrane = C.featured();
-  const kratka = (e) => Math.round((new Date(e[4]) - new Date(e[3])) / 86400000) + 1 <= 7;
+  /* Delka akce ve dnech. Pocita se z casu, ne z holych datumu: akce
+     00:00 -> 23:59 za sedm dni trva sedm dni, ne osm. Prazdne datum
+     (zdroj ho obcas neuvede) znamena "nevime" — takova akce neni ani
+     kratka, ani sezona. */
+  const dnu = (e) => {
+    const d = (new Date(e[4]) - new Date(e[3])) / 86400000;
+    return isFinite(d) ? Math.max(1, Math.ceil(d)) : null;
+  };
+  const kratka = (e) => { const d = dnu(e); return d != null && d <= 7; };
+  const dlouha = (e) => { const d = dnu(e); return d != null && d > 7; };
   return {
     karet: karty.length,
     nazvy: karty.map((k) => (k.querySelector("h3") || {}).textContent),
@@ -2764,10 +2773,15 @@ const dKar = await pKar.evaluate(async () => {
       ? C.overlap(vybrane[0], dnesek, new Date(dnesek.getFullYear(), dnesek.getMonth(), dnesek.getDate() + 1))
       : null,
     prvniKratka: vybrane[0] ? kratka(vybrane[0]) : null,
+    // Je dneska vubec neco kratkeho? Kdyz ne, patri nahoru sezona.
+    jeKratka: vybrane.some(kratka),
     dlouheAzZaKratkymi: (() => {
-      const delky = vybrane.map(kratka);
-      return delky.indexOf(false) === -1 || delky.indexOf(false) > delky.lastIndexOf(true);
+      const prvniDlouha = vybrane.findIndex(dlouha);
+      const posledniKratka = vybrane.map(kratka).lastIndexOf(true);
+      return prvniDlouha === -1 || posledniKratka === -1
+        || prvniDlouha > posledniKratka;
     })(),
+    delky: vybrane.map(dnu),
     // Prinos se nevymysli: bud bonus z platneho okna, nebo potvrzeny druh,
     // nebo se rekne, ze to v datech neni.
     prinosZDat: vybrane.every((e) => {
@@ -2793,9 +2807,11 @@ check("…každá karta říká, co akce přináší",
   dKar.prinosy.length === 3 && dKar.prinosy.every((x) => x.length > 0),
   JSON.stringify(dKar.prinosy));
 check("…a ten přínos je z dat, ne vymyšlený", dKar.prinosZDat === true, JSON.stringify(dKar.prinosy));
-check("nahoře stojí dnešní krátká akce, ne dlouhá sezóna",
-  dKar.prvniKratka === true && dKar.dlouheAzZaKratkymi === true,
-  JSON.stringify({ dnes: dKar.prvniBeziDnes, kratka: dKar.prvniKratka }));
+check("krátké akce stojí nad dlouhými sezónami",
+  dKar.dlouheAzZaKratkymi === true
+    && (dKar.jeKratka === false || dKar.prvniKratka === true),
+  JSON.stringify({ dnes: dKar.prvniBeziDnes, kratka: dKar.prvniKratka,
+    jeKratka: dKar.jeKratka, poradi: dKar.dlouheAzZaKratkymi, delky: dKar.delky }));
 
 console.log("\n29) Vyhledávání: raidová fakta pod Raidy, kus zvlášť, evoluce vedle");
 const pVysl29 = await otevri(1600, [
@@ -4157,6 +4173,1368 @@ check("na telefonu je pás CP 2×2 a tabulka se neláme po slovech",
   dMob49.cpRadky === 2 && dMob49.cpSloupce === 2 && dMob49.vyskaRadku < 280
     && dMob49.prepad === false && dMob49.akceVidet === true,
   JSON.stringify([dMob49.cpRadky, dMob49.cpSloupce, dMob49.vyskaRadku, dMob49.prepad]));
+
+console.log("\n50) Roster drží pozici a skáče jen ke kusu, který přibyl");
+/* Driv se seznam po KAZDE zmene id vratil na zacatek — tedy po kazdem
+   smazani kusu. Clovek u dvousteho kusu zacinal po jednom smazani znovu
+   shora. Nahoru se ma jit jen tehdy, kdyz si clovek sam zmeni pohled. */
+const KUSY50 = [];
+for (let i = 0; i < 40; i++) {
+  KUSY50.push({ pokemon: ["Axew", "Gible", "Magnemite", "Eevee", "Snorlax"][i % 5],
+    cp: 900 - i * 7, level: 15, ivAtk: 10, ivDef: 10, ivSta: 10 });
+}
+const p50 = await otevri(1500, KUSY50);
+const d50 = await p50.evaluate(async (azSrc) => {
+  const P = window.__pgo, A = window.__atlasTest, az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const list = document.querySelector(".atlas-roster");
+  const out = { dlazdic: document.querySelectorAll(".atlas-roster-tile").length };
+
+  // 1) smazani kusu nesmi posunout seznam
+  list.scrollTop = 400;
+  P.smazatKus(P.getRows()[20].id);
+  await az(() => document.querySelectorAll(".atlas-roster-tile").length === 39, 2000);
+  out.poSmazani = Math.round(list.scrollTop);
+
+  // 2) hledani je zmena pohledu — tam se nahoru jit MA
+  list.scrollTop = 400;
+  const hledani = document.getElementById("searchInput");
+  hledani.value = "Eevee";
+  hledani.dispatchEvent(new Event("input", { bubbles: true }));
+  await az(() => Math.round(list.scrollTop) === 0, 2000);
+  out.poHledani = Math.round(list.scrollTop);
+  hledani.value = "";
+  hledani.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(500);
+
+  // 3) rucne pridany kus je v seznamu hned a seznam se posune k nemu
+  list.scrollTop = 0;
+  document.getElementById("addRowBtn").click();
+  await az(() => !document.getElementById("rucniBox").hidden, 1500);
+  const vypln = (id, v) => { const el = document.getElementById(id);
+    el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); };
+  vypln("rbName", "Machop");
+  vypln("rbCp", String(P.atlasCP("Machop", 20, 14, 13, 12)));
+  vypln("rbA", "14"); vypln("rbD", "13"); vypln("rbS", "12");
+  await az(() => !document.getElementById("rbAdd").disabled, 2000);
+  document.getElementById("rbAdd").click();
+  await az(() => [...document.querySelectorAll(".atlas-roster-tile")]
+    .some((el) => /Machop/.test(el.textContent)), 3000);
+  out.machopVSeznamu = [...document.querySelectorAll(".atlas-roster-tile")]
+    .some((el) => /Machop/.test(el.textContent));
+  out.poPridani = Math.round(list.scrollTop);
+  const dlazdice = [...document.querySelectorAll(".atlas-roster-tile")]
+    .filter((el) => /Machop/.test(el.textContent))[0];
+  const r = dlazdice ? dlazdice.getBoundingClientRect() : null;
+  const okno = list.getBoundingClientRect();
+  out.machopVidet = !!r && r.top >= okno.top - 2 && r.bottom <= okno.bottom + 2;
+  return out;
+}, AZ);
+await p50.close();
+check("smazání kusu nevrátí roster na začátek",
+  d50.dlazdic === 40 && d50.poSmazani === 400, JSON.stringify(d50));
+check("…ale hledání ano, to je změna pohledu", d50.poHledani === 0, String(d50.poHledani));
+check("ručně přidaný kus je v rosteru hned, bez obnovení stránky",
+  d50.machopVSeznamu === true, String(d50.machopVSeznamu));
+check("…a roster se posune k němu", d50.poPridani > 0 && d50.machopVidet === true,
+  JSON.stringify([d50.poPridani, d50.machopVidet]));
+
+console.log("\n51) Level s desetinou a vystředěné sprity v rosteru");
+const p51 = await otevri(1500, [
+  { pokemon: "Pidgey", cp: 400, level: "20.0", ivAtk: 10, ivDef: 10, ivSta: 10 },
+  { pokemon: "Pidgey", cp: 390, level: 14.5, ivAtk: 10, ivDef: 10, ivSta: 10 },
+  { pokemon: "Snorlax", cp: 380, level: 15, ivAtk: 10, ivDef: 10, ivSta: 10, shiny: "Ano" }
+]);
+const d51 = await p51.evaluate(() => ({
+  levely: [...document.querySelectorAll(".atlas-roster-tile .atlas-tile-stats")]
+    .map((el) => (el.textContent.match(/L[\d.]+/) || [""])[0]),
+  /* Engine si u kazdeho spritu meri, kde v ramecku kresba lezi. V rosteru
+     to nikdo nezavolal, takze dlazdice ukazovaly jen to, co uz bylo
+     zmerene jinde — a shiny adresa (vlastni soubor) zustavala mensi. */
+  zmerene: [...document.querySelectorAll(".atlas-roster-tile img")]
+    .map((im) => im.dataset.vystredeno || "")
+}));
+await p51.close();
+check("level stojí všude s jedním desetinným místem",
+  d51.levely.join(",") === "L20.0,L14.5,L15.0", JSON.stringify(d51.levely));
+check("sprity v rosteru si engine změří, shiny nevyjímaje",
+  d51.zmerene.length === 3 && d51.zmerene.every((x) => x === "1"),
+  JSON.stringify(d51.zmerene));
+
+console.log("\n52) Ruční přidání: Frustration až se značkou SHADOW");
+const p52 = await otevri(1500, []);
+const d52 = await p52.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  document.getElementById("addRowBtn").click();
+  await az(() => !document.getElementById("rucniBox").hidden, 1500);
+  const pole = () => document.querySelector('[data-utok-obal="charged1"] .uv-pole');
+  await az(() => !!pole(), 2500);
+  const nabitych = () => {
+    pole().click();
+    const t = [...document.querySelectorAll(".uv-seznam button, .uv-seznam .uv-polozka")]
+      .map((b) => b.textContent.replace(/\s+/g, " ").trim());
+    document.body.click();
+    return t;
+  };
+  /* Vyber se stavi znovu, kdyz se zmeni jmeno nebo znacka — pozna se to
+     podle toho, ze obal dostane NOVY prvek. Bez tohohle cekani se meri
+     jeste nabidka k prazdnemu jmenu, a ta ukazuje vsechny utoky ve hre
+     (Frustration v ni je, i kdyz ho ten druh nema). */
+  const prestavene = async (udelej) => {
+    const stare = pole();
+    udelej();
+    await az(() => pole() && pole() !== stare, 3000);
+    await cekej(120);
+  };
+  const out = {};
+  const jmeno = document.getElementById("rbName");
+  await prestavene(() => {
+    jmeno.value = "Snorlax";
+    jmeno.dispatchEvent(new Event("input", { bubbles: true }));
+    jmeno.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const pred = nabitych();
+  out.predZnackou = pred.some((t) => /Frustration/.test(t));
+  out.utokuPred = pred.length;
+  out.jenDruh = pred.some((t) => /Hyper Beam/.test(t));
+  await cekej(200);
+  await prestavene(() => document.querySelector('[data-rb-forma="Shadow"]').click());
+  const po = nabitych();
+  out.poZnacce = po.some((t) => /Frustration/.test(t));
+  out.utoku = po.length;
+  return out;
+}, AZ);
+await p52.close();
+/* Frustration a Return nedava DRUH, ale stav kusu — nabidka je proto
+   zna az podle znacky formy. Rucni pridani ji enginu neposilalo, takze
+   si shadow kus nesel zapsat utok, ktery ve hre doopravdy ma. */
+check("bez značky se Frustration nenabízí",
+  d52.predZnackou === false && d52.jenDruh === true && d52.utokuPred < 40,
+  JSON.stringify([d52.predZnackou, d52.jenDruh, d52.utokuPred]));
+check("…se značkou SHADOW ano",
+  d52.poZnacce === true && d52.utoku === d52.utokuPred + 1,
+  JSON.stringify([d52.poZnacce, d52.utokuPred, d52.utoku]));
+
+console.log("\n53) Kalendář bez popisků sekcí, nepotvrzených a patičky");
+const p53 = await otevri(1600, []);
+const d53 = await p53.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("eventsCard");
+  await az(() => !!document.querySelector("#atlasCalendar .ac-week"), 3000);
+  return {
+    popisky: document.querySelectorAll("#atlasCalendar .ac-section-label").length,
+    nepotvrzene: document.querySelectorAll("#atlasCalendar .ac-unconfirmed").length,
+    paticka: document.querySelectorAll("#atlasCalendar .ac-source").length,
+    // Co zustat MA: dny, dlazdice akci a pruhy vicedennich akci.
+    dnu: document.querySelectorAll("#atlasCalendar .ac-day").length,
+    sloupcu: document.querySelectorAll("#atlasCalendar .ac-column").length,
+    pruhu: document.querySelectorAll("#atlasCalendar .ac-spans").length,
+    dlazdic: document.querySelectorAll("#atlasCalendar .ac-event").length,
+    /* Linky nesly ty popisky (mely border-top). Bez nich splynul pruh dni
+       s obrazky akci a obrazky s vicedennimi pruhy. */
+    linky: ["#atlasCalendar .ac-week .ac-columns", "#atlasCalendar .ac-week .ac-spans"]
+      .map((sel) => { const el = document.querySelector(sel);
+        return el ? getComputedStyle(el).borderTopWidth : null; })
+  };
+}, AZ);
+await p53.close();
+check("v kalendáři nejsou popisky sekcí ani patička s datem",
+  d53.popisky === 0 && d53.nepotvrzene === 0 && d53.paticka === 0,
+  JSON.stringify(d53));
+/* Dny se pocitaji dvakrat: tyden pro siroke okno a agenda pro telefon
+   stoji v DOM oba, zobrazeny je vzdy jen jeden. */
+check("…ale týden samotný zůstal celý",
+  d53.dnu >= 7 && d53.sloupcu === 7 && d53.pruhu === 1
+    && d53.dlazdic > 0, JSON.stringify(d53));
+check("…a dělicí linky mezi dny, akcemi a vícedenními pruhy zůstaly",
+  d53.linky.length === 2 && d53.linky.every((x) => x && parseFloat(x) >= 1),
+  JSON.stringify(d53.linky));
+
+console.log("\n54) Obrázek v evoluční řadě sedí v rámečku na střed");
+/* Ramecek a obrazek berou velikost z ruznych pravidel (v sirokem cisteni
+   112 px ramecek, 70 px obrazek), takze se nepotkaly: ikona zustavala
+   u leveho okraje, zatimco jmeno pod ni stalo na stred. */
+const p54 = await otevri(1600, [
+  { pokemon: "Zapdos", cp: 2000, level: 20, ivAtk: 12, ivDef: 12, ivSta: 12 }
+]);
+const d54 = await p54.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo;
+  document.getElementById("novinkyOkno")?.remove();
+  P.boxOtevrit();
+  const ok = document.getElementById("appOknoOk");
+  if (ok && !document.getElementById("appOkno").hidden) ok.click();
+  await az(() => document.querySelectorAll("#boxMode .d-evo-kus img").length > 1, 4000);
+  await new Promise((r) => setTimeout(r, 400));
+  return [...document.querySelectorAll("#boxMode .d-evo-kus")].map((kus) => {
+    const im = kus.querySelector("img"), b = kus.querySelector("b");
+    if (!im || !b) return null;
+    const stred = (el) => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+    return { jm: b.textContent.trim(), odchylka: Math.round(stred(im) - stred(b)),
+      ram: im.parentElement.className };
+  }).filter(Boolean);
+}, AZ);
+await p54.close();
+check("každý obrázek v řadě stojí nad svým jménem",
+  d54.length >= 2 && d54.every((x) => Math.abs(x.odchylka) <= 6),
+  JSON.stringify(d54));
+
+console.log("\n55) Tahák: jedna kategorie na obrazovce, hledání a kandidáti");
+/* Pet rozbalovacich pruhu pod sebou znamenalo rolovat ke kategorii, kterou
+   clovek zrovna chce (navrh A-017). Zalozky to meni na jednu kategorii
+   naraz; obsah zustava ten, co spocital engine. */
+const p55 = await otevri(1500, [
+  { pokemon: "Metagross", cp: 3400, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13,
+    fastMove: "Bullet Punch", charged1: "Meteor Mash" },
+  { pokemon: "Excadrill", cp: 2600, level: 30, ivAtk: 14, ivDef: 13, ivSta: 12 },
+  { pokemon: "Gyarados", cp: 2066, level: 25, ivAtk: 12, ivDef: 12, ivSta: 12 },
+  { pokemon: "Snorlax", cp: 2050, level: 25, ivAtk: 11, ivDef: 14, ivSta: 15 }
+]);
+const d55 = await p55.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("cheatCard");
+  await az(() => !!document.querySelector("#cheatBody .atlas-tahak [data-tahak]"), 6000);
+  const shell = document.querySelector("#cheatBody .atlas-tahak");
+  const btns = () => [...shell.querySelectorAll("[data-tahak]")];
+  const videt = () => [...shell.querySelectorAll("[data-tahak-panel]")].filter((p) => !p.hidden);
+  const out = {};
+  out.zalozky = btns().map((b) => b.querySelector("span").textContent.trim());
+  out.pocty = btns().map((b) => Number(b.querySelector("small").textContent));
+  out.panelu = shell.querySelectorAll("[data-tahak-panel]").length;
+  out.videtNaStart = videt().length;
+  // Prepnuti na Gym ukaze jinou kategorii, porad jen jednu.
+  const gym = btns().findIndex((b) => /Gym/.test(b.textContent));
+  btns()[gym].click();
+  await cekej(250);
+  out.poPrepnuti = { videt: videt().length,
+    aktivnich: btns().filter((b) => b.classList.contains("je")).length,
+    jeGym: btns()[gym].classList.contains("je"),
+    nadpis: (videt()[0].querySelector(".atlas-tahak-nadpis") || {}).textContent || "" };
+  // Hledani zuzi seznam v otevrene kategorii.
+  const pole = shell.querySelector("input");
+  const polozky = () => [...videt()[0].querySelectorAll(".cs-grid>*, ul.cs-flat>li, .cs-liga")];
+  out.predHledanim = polozky().length;
+  pole.value = "snorlax";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(250);
+  out.poHledani = polozky().filter((x) => !x.hidden).length;
+  pole.value = "tohletamurcitenení";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(250);
+  out.prazdnyStav = !shell.querySelector(".atlas-tahak-prazdno").hidden;
+  pole.value = "";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(250);
+  out.popisek = (shell.querySelector(".atlas-tahak-popis") || {}).textContent || "";
+  return out;
+}, AZ);
+await p55.close();
+check("Tahák má pět kategorií v záložkách",
+  d55.zalozky.join(",") === "Raidy,Rocket,Typy,Gym,Ligy" && d55.panelu === 5,
+  JSON.stringify(d55.zalozky));
+check("…a u každé stojí, kolik je v ní soupeřů",
+  d55.pocty.length === 5 && d55.pocty.every((x) => x > 0), JSON.stringify(d55.pocty));
+check("na obrazovce je vždycky právě jedna kategorie",
+  d55.videtNaStart === 1 && d55.poPrepnuti.videt === 1
+    && d55.poPrepnuti.aktivnich === 1 && d55.poPrepnuti.jeGym === true,
+  JSON.stringify(d55.poPrepnuti));
+check("…a nese i celý název sekce z enginu, ne jen slovo ze záložky",
+  /gym/i.test(d55.poPrepnuti.nadpis), d55.poPrepnuti.nadpis);
+check("hledání zúží seznam v otevřené kategorii",
+  d55.predHledanim > 1 && d55.poHledani === 1 && d55.prazdnyStav === true,
+  JSON.stringify([d55.predHledanim, d55.poHledani, d55.prazdnyStav]));
+/* Appka neoveruje plnohodnotnou sestavu ani podminky boje — nad seznamem
+   proto stoji "kandidati", ne "tym". */
+check("nad výběrem z rosteru stojí „Kandidáti z tvého rosteru“",
+  /Kandid/.test(d55.popisek), d55.popisek);
+
+console.log("\n56) Telefon: jedna navigace a „Více“");
+/* Menu bylo dvakrat: dole lista s peti skupinami a vlevo pres ☰ cele menu,
+   navic s jinymi nazvy. Zustava jen lista; zbytek je pod „Vice". */
+const p56 = await otevri(390, ROSTER);
+const d56 = await p56.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const videt = (el) => !!el && el.offsetParent !== null;
+  const lista = document.querySelector(".atlas-bottom");
+  const out = {
+    lista: [...lista.querySelectorAll("button")].map((b) => b.textContent.trim()),
+    hamburger: videt(document.querySelector(".atlas-menu-trigger")),
+    bocni: videt(document.querySelector(".atlas-side")),
+    maleCile: [...lista.querySelectorAll("button")]
+      .filter((b) => b.getBoundingClientRect().height < 44).length
+  };
+  lista.querySelector("[data-atlas-vice]").click();
+  await az(() => !document.getElementById("atlasVice").hidden, 1500);
+  const panel = document.getElementById("atlasVice");
+  out.vice = [...panel.querySelectorAll(".atlas-vice-seznam button")].map((b) => b.textContent.trim());
+  const tahak = [...panel.querySelectorAll("button")].find((b) => /^Tahák$/.test(b.textContent));
+  tahak.click();
+  await az(() => window.__atlasTest.getState().route === "cheatCard", 3000);
+  out.poVolbe = { zavreno: panel.hidden, route: window.__atlasTest.getState().route };
+  const hled = [...lista.querySelectorAll("button")].find((b) => /Hledání/.test(b.textContent));
+  hled.click();
+  await az(() => window.__atlasTest.getState().route === "prohlidkaCard", 3000);
+  await cekej(200);
+  out.poHledani = { route: window.__atlasTest.getState().route,
+    aktivni: [...lista.querySelectorAll("button.active")].map((b) => b.textContent.trim()) };
+  return out;
+}, AZ);
+await p56.close();
+check("na telefonu je jen spodní lišta, postranní menu ani ☰ ne",
+  d56.hamburger === false && d56.bocni === false
+    && d56.lista.join(",") === "Přehled,Pokémoni,Hledání,Kalendář,Více",
+  JSON.stringify(d56.lista) + " ham=" + d56.hamburger + " side=" + d56.bocni);
+check("…a cíle pro prst mají aspoň 44 px", d56.maleCile === 0, String(d56.maleCile));
+check("pod „Více“ je zbytek sekcí i příkazy, které se nahoru nevejdou",
+  d56.vice.includes("Tahák") && d56.vice.includes("Rozpočet")
+    && d56.vice.includes("Export CSV"), JSON.stringify(d56.vice));
+check("volba z „Více“ přepne sekci a panel zavře",
+  d56.poVolbe.route === "cheatCard" && d56.poVolbe.zavreno === true,
+  JSON.stringify(d56.poVolbe));
+check("…a lišta označí, kde člověk je",
+  d56.poHledani.route === "prohlidkaCard"
+    && d56.poHledani.aktivni.join(",") === "Hledání", JSON.stringify(d56.poHledani));
+
+console.log("\n57) Z kalendáře rovnou na soupeře v Taháku");
+const p57 = await otevri(1500, [
+  { pokemon: "Metagross", cp: 3400, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13 },
+  { pokemon: "Excadrill", cp: 2600, level: 30, ivAtk: 14, ivDef: 13, ivSta: 12 }
+]);
+const d57 = await p57.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("eventsCard");
+  await az(() => !!document.querySelector("#atlasCalendar [data-ac-event]"), 4000);
+  const out = {};
+  for (const d of [...document.querySelectorAll("#atlasCalendar [data-ac-event]")]) {
+    d.click();
+    await cekej(400);
+    if (document.querySelector("#atlasCalendar [data-ac-tahak]")) break;
+  }
+  const odkaz = document.querySelector("#atlasCalendar [data-ac-tahak]");
+  out.maOdkaz = !!odkaz;
+  out.primarni = (document.querySelector("#atlasCalendar .ac-primary") || {}).textContent || "";
+  if (!odkaz) return out;
+  out.boss = odkaz.dataset.acTahak;
+  odkaz.click();
+  await az(() => !!document.querySelector("#cheatBody .atlas-tahak input"), 6000);
+  await cekej(600);
+  const shell = document.querySelector("#cheatBody .atlas-tahak");
+  const panel = shell.querySelector('[data-tahak-panel="0"]');
+  const polozky = [...panel.querySelectorAll(".cs-grid>*")];
+  const videt = polozky.filter((x) => !x.hidden);
+  const pozn = shell.querySelector(".atlas-tahak-pozn");
+  out.route = window.__atlasTest.getState().route;
+  out.hledane = shell.querySelector("input").value;
+  out.videt = videt.length;
+  out.vsech = polozky.length;
+  out.pozn = pozn && !pozn.hidden ? pozn.textContent : "";
+  return out;
+}, AZ);
+await p57.close();
+/* Tlacitko driv rikalo "Pripravit tym" — nic nesestavuje, seradi roster. */
+check("primární tlačítko říká, co dělá (řadí roster)",
+  /Seřadit roster/.test(d57.primarni), d57.primarni);
+check("z akce vede odkaz na toho soupeře v Taháku",
+  d57.maOdkaz === true && d57.route === "cheatCard", JSON.stringify([d57.maOdkaz, d57.route]));
+/* Max Battle ani rocket akce nejsou raid — soupeř v dnešních raidech být
+   nemusí. Pak se filtr zruší a řekne se proč, místo prázdné obrazovky. */
+check("…a když ho dnešní raidy nemají, ukáže celý seznam a vysvětlí to",
+  d57.videt > 0 && (d57.videt < d57.vsech
+    ? d57.hledane.length > 0
+    : (d57.hledane === "" && /nen[ií]/.test(d57.pozn))),
+  JSON.stringify([d57.videt, d57.vsech, d57.hledane, d57.pozn]));
+
+console.log("\n58) Detail akce: každá sekce jednou a v pevném pořadí");
+/* Driv se detail skladal po casovych oknech, takze akce se tremi okny
+   mela trikrat "Ve volne prirode" a mezi tim vetu "Platnost teto casti". */
+const p58 = await otevri(1200, []);
+const d58 = await p58.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo;
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("eventsCard");
+  await az(() => !!window.AtlasEventUI, 4000);
+  // Akce s nejvic casovymi okny — na ni je rozdil videt nejlip.
+  const ev = P.eventsData().events || [];
+  let nej = -1, kolik = 0;
+  ev.forEach((e, i) => { const n = (e[7] || []).length; if (n > kolik) { kolik = n; nej = i; } });
+  if (nej < 0) return { chyba: "zadna akce" };
+  window.AtlasEventUI.open(nej);
+  await az(() => !!document.querySelector("#atlasEventDialog .atlas-event-sekce"), 3000);
+  const dlg = document.getElementById("atlasEventDialog");
+  const sekce = [...dlg.querySelectorAll(".atlas-event-sekce>summary")].map((x) => x.textContent.trim());
+  /* Ramecek obrazku ma pevnou velikost; obrazky maji dva zdroje (vlastni
+     art a herni ikona) s jinym pomerem stran, takze o velikosti rozhoduje
+     ramecek, ne obrazek. */
+  const ramecky = [...dlg.querySelectorAll(".atlas-event-obr")].map((el) => {
+    const r = el.getBoundingClientRect();
+    return Math.round(r.width) + "x" + Math.round(r.height);
+  });
+  /* Engine kresbu stredi, ale posun si oreze na tretinu ramecku — u spritu
+     s kresbou dole (Ekans, Slugma) zbyde kus mimo stred a ramecek ho
+     urizl. Ramecek je proto vetsi nez obrazek; tohle hlida, ze z nej
+     obrazek nevyleze ani po zvetseni a posunu. */
+  const orez = [...dlg.querySelectorAll(".atlas-event-obr")].map((ram) => {
+    const im = ram.querySelector("img"); if (!im) return 0;
+    const a2 = ram.getBoundingClientRect(), b2 = im.getBoundingClientRect();
+    return Math.max(0, Math.round(a2.left - b2.left), Math.round(b2.right - a2.right),
+      Math.round(a2.top - b2.top), Math.round(b2.bottom - a2.bottom));
+  });
+  /* Veta ze zdroje neni druh — bublina kolem ni vypadala jako stitek. */
+  const vety = [...dlg.querySelectorAll(".atlas-event-specimen")]
+    .map((x) => x.textContent.replace(/\s+/g, " ").trim())
+    .filter((t) => t.split(" ").length > 6);
+  return { oken: kolik, sekce, unikatnich: new Set(sekce).size,
+    okna: [...dlg.querySelectorAll(".atlas-event-okno")].map((x) => x.textContent.trim()),
+    mezinadpisy: [...dlg.querySelectorAll(".atlas-event-sekce h4")].map((x) => x.textContent.trim()),
+    druhu: dlg.querySelectorAll(".atlas-event-specimen").length,
+    ramecku: new Set(ramecky).size, ramecek: ramecky[0] || "",
+    mimoRamecek: orez.filter((x) => x > 0).length, nejvicMimo: Math.max(0, ...orez),
+    bublinyVet: vety.length,
+    /* Zdroj u skoncene akce prestane uvadet termin, ale archiv ho ma —
+       a v souboru pak lezela tataz akce dvakrat, jednou bez datumu. */
+    bezDatumu: (P.eventsData().events || []).filter((e) => !(e[3] || e[4])).length };
+}, AZ);
+await p58.close();
+check("akce s víc časovými okny má každou sekci jen jednou",
+  d58.oken > 1 && d58.sekce.length > 0 && d58.sekce.length === d58.unikatnich,
+  JSON.stringify([d58.oken, d58.sekce]));
+check("…a pořadí sekcí je pevné, ne jak to leželo ve zdroji",
+  (() => { const P = ["Ve volné přírodě", "Souboje", "Z vajec", "Výzkumy a odměny",
+    "Bonusy", "Speciální útoky", "Shiny", "Další obsah akce"];
+    const idx = d58.sekce.map((x) => P.indexOf(x));
+    return idx.every((x, i) => i === 0 || x > idx[i - 1]); })(),
+  JSON.stringify(d58.sekce));
+/* Mezinadpis ze zdroje, ktery rika totez co nadpis sekce, jen anglicky
+   ("Wild Encounters" uvnitr "Ve volne prirode"), se zahazuje. */
+check("cizí mezinadpisy, které jen opakují sekci, zmizely",
+  !d58.mezinadpisy.some((x) => /^(wild encounters?|field research|shiny)$/i.test(x)),
+  JSON.stringify(d58.mezinadpisy));
+check("…a druhy z akce v detailu zůstaly", d58.druhu > 0, String(d58.druhu));
+check("žádná ikona z rámečku nevyleze, takže se neořízne",
+  d58.mimoRamecek === 0, JSON.stringify([d58.mimoRamecek, d58.nejvicMimo]));
+check("ikony mají všechny stejný rámeček",
+  d58.ramecku === 1 && /^\d+x\d+$/.test(d58.ramecek),
+  JSON.stringify([d58.ramecku, d58.ramecek]));
+check("věty ze zdroje nejsou bubliny s obrázkem",
+  d58.bublinyVet === 0, String(d58.bublinyVet));
+check("v datech akcí nezůstala nedatovaná kopie téže akce",
+  d58.bezDatumu === 0, String(d58.bezDatumu));
+
+console.log("\n59) Dvojklik do útoků otevře okno jen s útoky");
+/* Utoky se u kusu dovyplnuji nejcasteji a dosud k nim vedla jen cesta pres
+   "Upravit", kde je formular na cely kus. */
+const p59 = await otevri(1500, [
+  { pokemon: "Snorlax", cp: 2000, level: 25, ivAtk: 12, ivDef: 12, ivSta: 12 }
+]);
+const d59 = await p59.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const dvojklik = (el) => el.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  document.getElementById("novinkyOkno")?.remove();
+  const out = {};
+  const id = P.getRows()[0].id;
+  A.openDetail(id);
+  await az(() => !!document.querySelector("#atlasModal .atlas-ident-utoky"), 3000);
+  dvojklik(document.querySelector("#atlasModal .atlas-ident-utoky"));
+  await az(() => !!document.getElementById("atlasUtokyOkno"), 2000);
+  const okno = document.getElementById("atlasUtokyOkno");
+  out.oci = (okno.querySelector(".atlas-eyebrow") || {}).textContent || "";
+  out.nadpis = (okno.querySelector("h3") || {}).textContent || "";
+  out.vyberu = okno.querySelectorAll(".atlas-utok-vyber").length;
+  out.popisky = [...okno.querySelectorAll("label")].map((l) => l.childNodes[0].textContent.trim());
+  /* "Pouze s editaci utoku": zadne CP, IV ani znacky. */
+  out.jinaPole = okno.querySelectorAll("input:not([type=hidden]),select,textarea").length;
+  // Vyber z nabidky a ulozeni zapise na kus.
+  okno.querySelectorAll(".uv-pole")[0].click();
+  await az(() => !!document.querySelector(".uv-seznam"), 1500);
+  const volba = [...document.querySelectorAll(".uv-seznam button, .uv-seznam .uv-polozka")]
+    .filter((b) => !/nevypln/i.test(b.textContent))[0];
+  out.maNabidku = !!volba;
+  if (volba) { volba.click(); await cekej(250); }
+  okno.querySelector("[type=submit]").click();
+  await az(() => !document.getElementById("atlasUtokyOkno"), 2500);
+  out.ulozeno = P.getRows()[0].fastMove || "";
+  // V cisteni totez; Zrusit okno zavre a nic nezmeni.
+  A.closeDetail && A.closeDetail();
+  P.boxOtevrit();
+  { const o = document.getElementById("appOknoOk");
+    if (o && !document.getElementById("appOkno").hidden) o.click(); }
+  await az(() => !!document.querySelector("#boxMode .atlas-ident-utoky"), 5000);
+  dvojklik(document.querySelector("#boxMode .atlas-ident-utoky"));
+  await az(() => !!document.getElementById("atlasUtokyOkno"), 2000);
+  out.vCisteni = !!document.getElementById("atlasUtokyOkno");
+  document.getElementById("atlasUtokyOkno").querySelector("[data-editor-cancel]").click();
+  await az(() => !document.getElementById("atlasUtokyOkno"), 1500);
+  out.zrusenoZavre = !document.getElementById("atlasUtokyOkno");
+  out.poZruseni = P.getRows()[0].fastMove || "";
+  return out;
+}, AZ);
+await p59.close();
+check("dvojklik v detailu otevře úpravu útoků",
+  /ÚTOKY/i.test(d59.oci) && /Snorlax/.test(d59.nadpis) && d59.vyberu === 3,
+  JSON.stringify([d59.oci, d59.nadpis, d59.vyberu]));
+check("…jen s útoky, žádné CP, IV ani značky",
+  d59.jinaPole === 0 && d59.popisky.length === 3, JSON.stringify(d59.popisky));
+check("výběr z nabídky se uloží na kus",
+  d59.maNabidku === true && d59.ulozeno.length > 0, JSON.stringify([d59.maNabidku, d59.ulozeno]));
+check("totéž funguje v čištění a Zrušit nic nezmění",
+  d59.vCisteni === true && d59.zrusenoZavre === true && d59.poZruseni === d59.ulozeno,
+  JSON.stringify([d59.vCisteni, d59.zrusenoZavre, d59.poZruseni]));
+
+console.log("\n60) Měsíc: co se ten den děje, a rozbalení na místě");
+/* Den ukazoval dve akce a "+N dalsi" prepinalo na Seznam. Navic sezona
+   a dlouhe kampane bezi cely mesic, takze zabraly vsechna viditelna
+   mista a mesic rikal o kazdem dni totez. */
+const p60 = await otevri(1600, []);
+const d60 = await p60.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("eventsCard");
+  await az(() => !!document.querySelector("#atlasCalendar [data-ac-mode]"), 4000);
+  const out = {};
+  /* Akce, ktera spawny ani raidy nema — druhy nese pod "Dynamax Debuts"
+     v novinkach. Karta je driv nenasla a vysla bez obrazku. */
+  const ev = P.eventsData().events || [];
+  const maxDay = ev.find((e) => /Max Battle Day/i.test(e[0]) && (e[7] || [])
+    .some((w) => ((w[2] || {}).novinky || []).length));
+  out.maxDruhy = maxDay ? window.AtlasEventUI.names(maxDay) : [];
+  out.maxObr = out.maxDruhy.length
+    ? /<img/.test(window.AtlasEventUI.image(out.maxDruhy[0])) : false;
+
+  [...document.querySelectorAll("#atlasCalendar [data-ac-mode]")]
+    .find((b) => /Měsíc/.test(b.textContent)).click();
+  await az(() => document.querySelectorAll("#atlasCalendar .ac-month-day").length > 0, 3000);
+  const dny = () => [...document.querySelectorAll("#atlasCalendar .ac-month-day")];
+  out.dnu = dny().length;
+  out.nejvicVDni = Math.max(...dny().map((d) => d.querySelectorAll(".ac-month-event").length));
+  /* Kratsi akce napred: v dni, kde je kratka i dlouha, nesmi dlouha stat
+     nad kratkou. Delka se cte z dat, ne z poradi ve zdroji. */
+  const delka = (jm) => {
+    const e = ev.find((x) => String(x[0]).startsWith(jm.replace(/…$/, "").trim()));
+    if (!e || !e[3] || !e[4]) return Infinity;
+    return Math.max(1, Math.ceil((new Date(e[4]) - new Date(e[3])) / 86400000));
+  };
+  out.poradiOk = dny().every((d) => {
+    const delky = [...d.querySelectorAll(".ac-month-event")]
+      .map((b) => delka(b.textContent.trim()))
+      .filter((x) => isFinite(x));
+    return delky.every((x, i) => i === 0 || x >= delky[i - 1]);
+  });
+  const dalsi = document.querySelector("#atlasCalendar .ac-month-day .ac-more");
+  out.maDalsi = !!dalsi;
+  if (dalsi) {
+    const pred = dalsi.closest(".ac-month-day").querySelectorAll(".ac-month-event").length;
+    dalsi.click();
+    await az(() => !!document.querySelector("#atlasCalendar .ac-month-otevreno"), 2000);
+    const den = document.querySelector("#atlasCalendar .ac-month-otevreno");
+    out.rozbaleni = { pred, po: den.querySelectorAll(".ac-month-event").length,
+      rezim: document.getElementById("atlasCalendar").dataset.mode };
+    [...den.querySelectorAll(".ac-more")].find((b) => /Sbalit/.test(b.textContent)).click();
+    await cekej(500);
+    out.poSbaleni = document.querySelectorAll("#atlasCalendar .ac-month-otevreno").length;
+  }
+  return out;
+}, AZ);
+await p60.close();
+check("akce bez spawnů a raidů vezme druhy z ostatních sekcí",
+  d60.maxDruhy.length > 0 && d60.maxObr === true, JSON.stringify(d60.maxDruhy));
+check("v měsíci je na den víc než dvě akce",
+  d60.dnu === 42 && d60.nejvicVDni >= 4, JSON.stringify([d60.dnu, d60.nejvicVDni]));
+check("…a kratší akce stojí nad dlouhými kampaněmi",
+  d60.poradiOk === true, "");
+check("„další“ rozbalí den na místě, nepřepne na Seznam",
+  !!d60.rozbaleni && d60.rozbaleni.po > d60.rozbaleni.pred
+    && d60.rozbaleni.rezim === "month" && d60.poSbaleni === 0,
+  JSON.stringify(d60.rozbaleni));
+
+/* 61) Smazane kusy jsou dlazdice, ne tabulka.
+
+   Pamet smazanych byla jedina tabulka, ktera v appce zbyla: tentyz kus tam
+   vypadal uplne jinak nez v rosteru. Model (kopie radku i verdikty) pocita
+   engine, vrstva kresli — proto tataz dlazdice. Verdikt se u smazaneho kusu
+   strha: "Ponechat" u kusu, ktery v rosteru neni, nic nerika. */
+const p61 = await otevri(1400);
+const d61 = await p61.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const pred = P.getRows().length;
+  const kus = P.getRows().filter((r) => r.pokemon === "Rattata")[0];
+  P.smazatKus(kus.id);
+  await cekej(300);
+  document.getElementById("forgetDiscardedBtn").click();
+  await az(() => !!document.querySelector("#discardList .atlas-roster-tile"), 2000);
+  const box = document.getElementById("discardList");
+  const dlazdice = box.querySelector(".atlas-roster-tile");
+  const out = {
+    tabulek: box.querySelectorAll("table").length,
+    dlazdic: box.querySelectorAll(".atlas-roster-tile").length,
+    // Dlazdice nesmi odkazovat do rosteru — ten kus tam uz neni.
+    odkazDoRosteru: !!box.querySelector("[data-atlas-detail]"),
+    pilulka: (box.querySelector(".atlas-pill") || {}).textContent || "",
+    naSirku: dlazdice ? Math.round(dlazdice.getBoundingClientRect().width) : 0,
+    // Vzhled dlazdice visel na #atlasRoster; v dialogu by se rozsypala.
+    sloupec: dlazdice ? getComputedStyle(dlazdice).flexDirection : "",
+    vratit: [...box.querySelectorAll("button")].filter((b) => /Vrátit/.test(b.textContent)).length,
+    pocetPred: pred
+  };
+  [...box.querySelectorAll("button")].filter((b) => /Vrátit/.test(b.textContent))[0].click();
+  await az(() => P.getRows().length === pred, 2000);
+  out.poVraceni = P.getRows().length;
+  out.vratilSe = P.getRows().some((r) => r.pokemon === "Rattata");
+  return out;
+}, AZ);
+await p61.close();
+check("smazané kusy jsou dlaždice, žádná tabulka",
+  d61.tabulek === 0 && d61.dlazdic === 1, JSON.stringify([d61.tabulek, d61.dlazdic]));
+check("…dlaždice drží vzhled rosteru i mimo něj",
+  d61.sloupec === "column" && d61.naSirku > 180, JSON.stringify([d61.sloupec, d61.naSirku]));
+check("…místo verdiktu je datum smazání a nikam neodkazuje",
+  /Smazáno/.test(d61.pilulka) && d61.odkazDoRosteru === false, d61.pilulka);
+check("…a „Vrátit“ vrátí kus do rosteru",
+  d61.vratit === 1 && d61.poVraceni === d61.pocetPred && d61.vratilSe === true,
+  JSON.stringify([d61.vratit, d61.poVraceni, d61.pocetPred]));
+
+/* 62) Po "Zrusit filtry" nezustane razeni zasedle.
+
+   "Posledni sken" prida do hledani stitek, podle ktereho se radi, takze
+   kosticky razeni zeslabnou. "Zrusit filtry" ale stitky vyhodilo jen
+   z pole — razeni se o tom nedozvedelo a zustalo vypnute na pohled,
+   prestoze fungovalo. */
+const p62 = await otevri(1400, ROSTER10);
+const d62 = await p62.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const stav = () => ({
+    zeslabene: !!document.querySelector(".podle-stitku"),
+    vybrana: [...document.querySelectorAll("[data-razeni]")]
+      .filter((b) => b.getAttribute("aria-pressed") === "true")
+      .map((b) => b.textContent.trim()).join(","),
+    kosticek: document.querySelectorAll("[data-razeni]").length
+  });
+  const pred = stav();
+  document.querySelector("[data-sken]").click();
+  await az(() => !!document.querySelector(".podle-stitku"), 2000);
+  const poSkenu = stav();
+  document.getElementById("zrusitFiltry").click();
+  await az(() => !document.querySelector(".podle-stitku"), 2000);
+  await cekej(150);
+  return { pred, poSkenu, poZruseni: stav() };
+}, AZ);
+await p62.close();
+check("„Poslední sken“ zeslabí kostičky řazení",
+  d62.pred.zeslabene === false && d62.poSkenu.zeslabene === true
+    && d62.poSkenu.vybrana === "", JSON.stringify(d62.poSkenu));
+check("…a „Zrušit filtry“ je vrátí do normálu",
+  d62.poZruseni.zeslabene === false && d62.poZruseni.vybrana === d62.pred.vybrana
+    && d62.poZruseni.vybrana !== "",
+  JSON.stringify([d62.pred.vybrana, d62.poZruseni.vybrana]));
+
+/* 63) Kazda dlazdice ukazuje rozbor sveho kusu.
+
+   `rows.map(rowHTML)` posila jako druhy argument INDEX. Kdyz ho dlazdice
+   vzala jako rozbor, mely vsechny krom prvni (index 0 je nepravdivy)
+   "IV neznámé" a "K posouzení", prestoze v detailu bylo vse spravne. */
+const p63 = await otevri(1400, ROSTER10);
+const d63 = await p63.evaluate(() => {
+  const P = window.__pgo, c = P.getComputed(), rows = P.getRows();
+  const dl = [...document.querySelectorAll(".atlas-roster-tile")];
+  const podleId = new Map(rows.map((r) => [String(r.id), r]));
+  const spatne = [];
+  dl.forEach((el) => {
+    const r = podleId.get(el.dataset.atlasDetail);
+    if (!r) return;
+    const v = c[r.id] || {};
+    const t = (el.textContent || "").replace(/\s+/g, " ");
+    // Kus se znamym IV nesmi na dlazdici hlasit, ze ho nezna.
+    if (v.ivPct != null && /IV neznámé/.test(t)) spatne.push(r.pokemon + ": IV");
+    // A verdikt na dlazdici musi byt tentyz, jaky z rozboru plyne.
+    const verdikt = (window.AtlasVerdict(v) || {}).label || "";
+    if (verdikt && t.indexOf(verdikt) === -1) spatne.push(r.pokemon + ": " + verdikt);
+  });
+  return { dlazdic: dl.length, kusu: rows.length, spatne,
+    bezIV: dl.filter((e) => /IV neznámé/.test(e.textContent)).length };
+});
+await p63.close();
+check("každá dlaždice ukazuje rozbor svého kusu, ne cizí",
+  d63.dlazdic === d63.kusu && d63.spatne.length === 0,
+  JSON.stringify([d63.dlazdic, d63.kusu, d63.spatne.slice(0, 5)]));
+check("…a u kusu se známým IV nestojí „IV neznámé“",
+  d63.bezIV === 0, String(d63.bezIV));
+
+/* 64) Lista kalendare se pod datem nehybe.
+
+   Datum bylo prosty text mezi tlacitky, takze delsi rozsah
+   ("28. prosince 2026 – 3. ledna 2027" proti "listopad 2026") odsunul
+   Dnes i sipky jinam. Ma mit pevne misto a stat v nem na stred. */
+const p64 = await otevri(1500, []);
+const d64 = await p64.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("eventsCard");
+  await az(() => !!document.querySelector("#atlasCalendar .ac-rozsah"), 2500);
+  const kde = () => {
+    const l = (s) => {
+      const e = document.querySelector("#atlasCalendar " + s);
+      return e ? Math.round(e.getBoundingClientRect().left) : null;
+    };
+    const r = document.querySelector("#atlasCalendar .ac-rozsah");
+    return { dnes: l("[data-ac-today]"), vpred: l('[data-ac-shift="1"]'),
+      tyden: l('[data-ac-mode="week"]'),
+      sirka: Math.round(r.getBoundingClientRect().width),
+      text: r.textContent.trim(), preteka: r.scrollWidth > r.clientWidth + 1 };
+  };
+  const stavy = {};
+  stavy.tyden = kde();
+  // Posun pres prelom roku: nejdelsi mozny popis rozsahu.
+  for (let i = 0; i < 11; i++) {
+    document.querySelector("#atlasCalendar [data-ac-shift='1']").click();
+    await cekej(140);
+  }
+  stavy.dlouhy = kde();
+  document.querySelector("#atlasCalendar [data-ac-mode='month']").click();
+  await cekej(320);
+  stavy.mesic = kde();
+  document.querySelector("#atlasCalendar [data-ac-mode='list']").click();
+  await cekej(320);
+  stavy.seznam = kde();
+  return stavy;
+}, AZ);
+await p64.close();
+{
+  const s = Object.values(d64);
+  const stejne = (k) => s.every((x) => x[k] === s[0][k]);
+  check("datum má v liště kalendáře pevné místo",
+    stejne("sirka") && d64.tyden.sirka >= 240,
+    JSON.stringify(s.map((x) => x.sirka)));
+  check("…takže Dnes, šipky ani přepínač pohledů neuhýbají",
+    stejne("dnes") && stejne("vpred") && stejne("tyden"),
+    JSON.stringify(s.map((x) => [x.dnes, x.vpred, x.tyden])));
+  check("…a nejdelší rozsah se do něj vejde celý",
+    s.every((x) => x.preteka === false),
+    JSON.stringify(s.map((x) => x.text)));
+}
+
+/* 65) Logo v postrannim pruhu — a jeho dve podoby.
+
+   Napis v logu je svetle modry: na tmavem pruhu sviti, na bilem by zmizel.
+   Druhy soubor `logo-svetle.png` ma napis tmavy a prepina se podle vzhledu.
+   Kdyz se obrazek nenacte, nesmi po nem zustat prazdne misto — zustane
+   psany nazev. */
+const p65 = await otevri(1400, []);
+const d65 = await p65.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const znacka = document.querySelector(".atlas-brand");
+  await az(() => znacka.querySelectorAll(".atlas-brand-logo").length === 2, 3000);
+  const stav = () => {
+    const vid = [...znacka.querySelectorAll(".atlas-brand-logo")]
+      .filter((e) => e.offsetParent !== null);
+    return { tema: document.documentElement.dataset.theme,
+      videt: vid.map((e) => (e.getAttribute("src") || "").split("/").pop()),
+      nactene: vid.every((e) => e.complete && e.naturalWidth > 0),
+      sirka: vid[0] ? Math.round(vid[0].getBoundingClientRect().width) : 0,
+      // Psany nazev se pod obrazkem skryva, jinak by stal dvakrat.
+      textVidet: [...znacka.children]
+        .some((e) => !e.classList.contains("atlas-brand-logo") && e.offsetParent !== null) };
+  };
+  const tma = stav();
+  document.querySelector('[data-atlas-action="theme"]').click();
+  await cekej(350);
+  const svetlo = stav();
+  document.querySelector('[data-atlas-action="theme"]').click();
+  await cekej(250);
+  return { tma, svetlo, obrazku: znacka.querySelectorAll(".atlas-brand-logo").length,
+    siroky: znacka.querySelectorAll(".atlas-brand-logo").length === 2 };
+}, AZ);
+await p65.close();
+check("v pruhu stojí logo místo psaného názvu",
+  d65.tma.videt.length === 1 && d65.tma.nactene === true
+    && d65.tma.textVidet === false && d65.tma.sirka > 100,
+  JSON.stringify(d65.tma));
+check("…a na světlém vzhledu se vymění za podobu s tmavým nápisem",
+  d65.tma.videt[0] === "logo.png" && d65.svetlo.videt.length === 1
+    && d65.svetlo.videt[0] === "logo-svetle.png" && d65.svetlo.nactene === true,
+  JSON.stringify([d65.tma.videt, d65.svetlo.videt]));
+
+/* 66) Detail akce ma jeden CTA, a ten sedi na tu akci.
+
+   „Otevřít Tahák soubojů" stálo u každé akce — i u Community Day, kde se
+   žádný boss neporáží. U akce, která je o jednom druhu, vede tlačítko do
+   Vyhledávání; u raidu a Max soubojů zůstává Tahák. */
+const p66 = await otevri(1000, []);
+const d66 = await p66.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("eventsCard");
+  await az(() => !!document.querySelector("#atlasCalendar [data-ac-event]"), 2500);
+  const otevri = async (hledani) => {
+    let cil = null;
+    for (let i = 0; i < 6 && !cil; i++) {
+      cil = [...document.querySelectorAll("#atlasCalendar [data-ac-event]")]
+        .find((b) => hledani.test(b.textContent || ""));
+      if (cil) break;
+      document.querySelector("#atlasCalendar [data-ac-shift='-1']").click();
+      await cekej(400);
+    }
+    if (!cil) return null;
+    cil.click();
+    await az(() => document.getElementById("atlasEventDialog").open, 1500);
+    const m = document.getElementById("atlasEventDialog");
+    return { nadpis: (m.querySelector("h2") || {}).textContent || "",
+      tlacitka: [...m.querySelectorAll(".atlas-event-actions button")]
+        .map((e) => e.textContent.trim()),
+      druh: (m.querySelector("[data-event-druh]") || {}).dataset
+        ? m.querySelector("[data-event-druh]").dataset.eventDruh : "" };
+  };
+  const cd = await otevri(/Community Day/i);
+  let poKliku = null;
+  const m = document.getElementById("atlasEventDialog");
+  const btn = m.querySelector("[data-event-druh]");
+  if (btn) {
+    btn.click();
+    await az(() => !!document.getElementById("prohName"), 2000);
+    await cekej(300);
+    const pole = document.getElementById("prohName");
+    poKliku = { hodnota: pole ? pole.value : "", otevrene: m.open };
+  }
+  window.__pgoZalozka("eventsCard");
+  await cekej(600);
+  const raid = await otevri(/Raid Hour|Raid|Dynamax|Max/i);
+  return { cd, poKliku, raid };
+}, AZ);
+await p66.close();
+check("u akce o jednom druhu vede tlačítko do Vyhledávání",
+  !!d66.cd && d66.cd.tlacitka.length === 1
+    && /^Prohlédnout /.test(d66.cd.tlacitka[0]) && !!d66.cd.druh,
+  JSON.stringify(d66.cd));
+check("…a opravdu ten druh vyhledá",
+  !!d66.poKliku && d66.poKliku.hodnota === (d66.cd || {}).druh
+    && d66.poKliku.otevrene === false,
+  JSON.stringify(d66.poKliku));
+check("u souboje zůstává Tahák",
+  !!d66.raid && d66.raid.tlacitka.length === 1
+    && /Tahák/.test(d66.raid.tlacitka[0]),
+  JSON.stringify(d66.raid));
+
+/* 67) Poznamka pod staty nerozhoduje o sirce hlavicky.
+
+   Veta "Shadow: +20 % utok, -20 % obrana" byla sirsi nez pruhy nad ni,
+   takze roztahla sloupec statu a odsunula sekci IV i jmeno kusu. V hlavicce
+   z ni zustanou jen cisla (ze je kus shadow, stoji nad jmenem) a sirku
+   sloupce uz neurcuje. */
+const p67 = await otevri(1200, [
+  { pokemon: "Tangela", cp: 784, level: 13, ivAtk: 10, ivDef: 8, ivSta: 12,
+    forma: "Shadow", fastMove: "Vine Whip", charged1: "Power Whip" },
+  { pokemon: "Tangela", cp: 784, level: 13, ivAtk: 10, ivDef: 8, ivSta: 12,
+    fastMove: "Vine Whip", charged1: "Power Whip" },
+]);
+const d67 = await p67.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const zmer = async (i) => {
+    A.openDetail(P.getRows()[i].id);
+    await az(() => !!document.querySelector(".atlas-drawer .atlas-ident-stats"), 2000);
+    await cekej(200);
+    const ident = document.querySelector(".atlas-drawer .atlas-detail-identity");
+    const m = ident.querySelector(".atlas-ident-stats");
+    const pozn = m.querySelector(".d-note");
+    const boxy = [...m.querySelectorAll(".d-box")];
+    const out = { sloupce: getComputedStyle(m).gridTemplateColumns,
+      sirky: boxy.map((b) => Math.round(b.getBoundingClientRect().width)),
+      pozn: pozn ? pozn.textContent.trim() : "",
+      ivLeft: Math.round((boxy[1] || boxy[0]).getBoundingClientRect().left) };
+    A.closeDetail();
+    await cekej(200);
+    return out;
+  };
+  return { shadow: await zmer(0), bezny: await zmer(1) };
+}, AZ);
+await p67.close();
+check("v hlavičce zůstanou z poznámky jen čísla",
+  /^\+20 % útok/.test(d67.shadow.pozn), d67.shadow.pozn);
+check("…a shadow kus má hlavičku stejně širokou jako běžný",
+  d67.shadow.sloupce === d67.bezny.sloupce
+    // Levý okraj se porovnává s tolerancí pixelu: sloupce jsou na setiny
+    // stejné (184,219 px), zaokrouhlení ale umí dát 767 proti 768.
+    && Math.abs(d67.shadow.ivLeft - d67.bezny.ivLeft) <= 1
+    && JSON.stringify(d67.shadow.sirky) === JSON.stringify(d67.bezny.sirky),
+  JSON.stringify([d67.shadow, d67.bezny]));
+
+/* 68) Upravu utoku jde otevrit i prstem a klavesnici.
+
+   Dvojklik do sekce utoku byl jedina cesta: na telefonu se neda provest
+   vubec a klavesnici taky ne. Vedle nadpisu proto stoji tlacitko. */
+const p68 = await otevri(1400, [
+  { pokemon: "Tinkaton", cp: 1495, level: 25.5, ivAtk: 5, ivDef: 3, ivSta: 14,
+    fastMove: "Fairy Wind", charged1: "Play Rough", charged2: "Flash Cannon" },
+]);
+const d68 = await p68.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  A.openDetail(P.getRows()[0].id);
+  await az(() => !!document.querySelector(".atlas-ident-utoky"), 2500);
+  await cekej(200);
+  const btn = document.querySelector(".atlas-ident-utoky .atlas-utoky-upravit");
+  if (!btn) return { chyba: "tlacitko chybi" };
+  const r = btn.getBoundingClientRect();
+  btn.click();
+  await az(() => !!document.getElementById("atlasUtokyEditor"), 2000);
+  const poKliku = !!document.getElementById("atlasUtokyEditor");
+  document.querySelector("[data-editor-cancel]")?.click();
+  await cekej(300);
+  // klavesnice: tlacitko musi jit zaostrit (Enter na <button> je klik)
+  const btn2 = document.querySelector(".atlas-ident-utoky .atlas-utoky-upravit");
+  btn2.focus();
+  const vFokusu = document.activeElement === btn2;
+  btn2.click();
+  await az(() => !!document.getElementById("atlasUtokyEditor"), 2000);
+  const poKlavesnici = !!document.getElementById("atlasUtokyEditor");
+  document.querySelector("[data-editor-cancel]")?.click();
+  return { sirka: Math.round(r.width), popis: btn.getAttribute("aria-label"),
+    poKliku, vFokusu, poKlavesnici };
+}, AZ);
+await p68.close();
+check("úpravu útoků otevře tlačítko, ne jen dvojklik",
+  !!d68 && d68.poKliku === true && d68.vFokusu === true
+    && d68.poKlavesnici === true && /útoky/i.test(d68.popis || ""),
+  JSON.stringify(d68));
+
+/* 69) Tentyz druh pod dvema jmeny je jedna polozka.
+
+   Max pondeli veze "Dynamax Sableye" v sekci raidu a "Sableye" z nazvu
+   akce. Jakmile appka zacala poznavat i dynamaxova jmena, byly z toho dva
+   zaznamy tehoz druhu: dva stejne obrazky v dlazdici a dve stejna
+   tlacitka na vyber bosse. */
+const p69 = await otevri(1800, []);
+const d69 = await p69.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const ev = P.eventsData().events || [];
+  const U = window.AtlasEventUI;
+  // Vsechny akce: zadna nesmi vest dve jmena tehoz druhu.
+  const spatne = [];
+  ev.forEach((e) => {
+    const jm = U.names(e) || [];
+    const klice = jm.map((n) => P.dexKeyOf(n) || String(n).toLowerCase());
+    if (new Set(klice).size !== klice.length) spatne.push(e[0] + ": " + jm.join(" / "));
+  });
+  window.__pgoZalozka("eventsCard");
+  await az(() => !!document.querySelector("#atlasCalendar .ac-event"), 3000);
+  await cekej(300);
+  // A v dlazdici neni tyz obrazek dvakrat.
+  const dvakrat = [...document.querySelectorAll("#atlasCalendar .ac-event")]
+    .map((b) => [...b.querySelectorAll(".ac-art img")].map((i) => i.getAttribute("src") || ""))
+    .filter((srcs) => srcs.length > 1 && new Set(srcs).size !== srcs.length).length;
+  return { akci: ev.length, spatne, dvakrat };
+}, AZ);
+await p69.close();
+check("u žádné akce nestojí tentýž druh dvakrát",
+  d69.spatne.length === 0 && d69.akci > 0,
+  JSON.stringify(d69.spatne.slice(0, 4)));
+check("…a v dlaždici kalendáře není tentýž obrázek dvakrát",
+  d69.dvakrat === 0, String(d69.dvakrat));
+
+/* 70) Tabulka rosteru uz neni pohled pro uzivatele.
+
+   Vrstva ji nahradila dlazdicemi, ale vedly k ni dve cesty: prepinac vedle
+   razeni a tlacitko "Zapnout editaci tabulky". Tabulka zustava jen jako
+   skryte leseni, ze ktereho engine cte poradi — proklikat se do ni nesmi
+   jit nijak. Upravit kus jde v detailu, utoky tlacitkem u jejich nadpisu. */
+const p70 = await otevri(1500);
+const d70 = await p70.evaluate(async (azSrc) => {
+  const az = eval(azSrc);
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const videt = (el) => !!el && el.offsetParent !== null;
+  const out = {
+    compact: document.body.classList.contains("atlas-compact"),
+    prepinac: !!document.querySelector('[data-atlas-action="mode"]'),
+    editaceTabulky: !!document.getElementById("atlasTableEdit"),
+    tabulkaVidet: videt(document.querySelector(".table-wrap")),
+    radku: document.querySelectorAll("#tbody tr[data-row-id]").length,
+    dlazdic: document.querySelectorAll(".atlas-roster-tile").length,
+    // zadne viditelne tlacitko nesmi nabizet tabulku
+    nabizi: [...document.querySelectorAll("button,a")]
+      .filter((b) => videt(b) && /tabul/i.test(b.textContent || ""))
+      .map((b) => b.textContent.trim()),
+  };
+  // „Upravit údaje" musí otevřít editor vrstvy, ne přepnout na tabulku
+  window.__atlasTest.openDetail(P.getRows()[0].id);
+  await az(() => !!document.querySelector('[data-atlas-action="edit"]'), 2000);
+  document.querySelector('[data-atlas-action="edit"]').click();
+  await az(() => !!document.getElementById("atlasRowEditor"), 2000);
+  await cekej(200);
+  out.poUprave = {
+    editor: !!document.getElementById("atlasRowEditor"),
+    compact: document.body.classList.contains("atlas-compact"),
+    tabulkaVidet: videt(document.querySelector(".table-wrap")),
+  };
+  return out;
+}, AZ);
+await p70.close();
+check("k tabulce rosteru nevede žádné tlačítko",
+  d70.prepinac === false && d70.editaceTabulky === false
+    && d70.nabizi.length === 0,
+  JSON.stringify([d70.prepinac, d70.editaceTabulky, d70.nabizi]));
+check("…tabulka není vidět a vůbec se nestaví",
+  d70.compact === true && d70.tabulkaVidet === false && d70.radku === 0
+    && d70.dlazdic > 0,
+  JSON.stringify(d70));
+check("…a „Upravit údaje“ otevře editor vrstvy, ne tabulku",
+  d70.poUprave.editor === true && d70.poUprave.compact === true
+    && d70.poUprave.tabulkaVidet === false,
+  JSON.stringify(d70.poUprave));
+
+/* 71) Bublina ligy rika i to, kdo v zrcadle vystreli nabity utok driv.
+
+   Pod stropem CP se vyplaci nizky utok: sunda CP, takze se kus vejde na
+   vyssi level a ma vic obrany a HP. Dan za to je CMP — pri shodnem nabiti
+   strili driv ten s vyssim utocnym statem, takze nejodolnejsi kus druhu
+   je v zrcadle vzdycky ten druhy. Appka to dlouho nerekla nikde. */
+const p71 = await otevri(1500);
+const d71 = await p71.evaluate(async () => {
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const kus = (a, d, st) => ({ pokemon: "Cramorant", ivAtk: a, ivDef: d, ivSta: st,
+    level: 15, cp: 900, fastMove: "Wing Attack", charged1: "Surf" });
+  P.setRows([kus(0, 14, 11), kus(0, 7, 5)]);
+  await cekej(1800);
+  const tipy = [...document.querySelectorAll("[data-tip]")]
+    .map((x) => x.getAttribute("data-tip") || "")
+    .filter((t) => /zrcadle/i.test(t));
+  return {
+    policko: !!document.getElementById("cmpPasmo"),
+    bublin: tipy.length,
+    prvni: tipy[0] || "",
+    druhy: /vystřelí nabitý útok <b>druhý<\/b>/.test(tipy.join(" ")),
+    procenta: /\d+([.,]\d+)?\u00a0?% (nižší|vyšší)/.test(tipy.join(" "))
+  };
+});
+await p71.close();
+check("nastavení pásma CMP je v appce",
+  d71.policko === true, String(d71.policko));
+check("bublina ligy řekne, kdo v zrcadle vystřelí nabitý útok dřív",
+  d71.bublin > 0 && d71.druhy === true,
+  JSON.stringify([d71.bublin, d71.prvni.slice(0, 160)]));
+check("…a o kolik procent se ten útok liší",
+  d71.procenta === true, d71.prvni.slice(0, 200));
+
+/* 72) Sekce, kterou stranka akce MA, ale appka z ni nic neprecetla.
+
+   Driv vypadala stejne jako akce, ktera nic takoveho nema: nebyla videt.
+   Appka tim mlcky tvrdila, ze je zobrazeno vsechno — u `Into the Wild`
+   ma zdroj prazdny seznam vyzkumu, u Halloweenu jen vetu "tasks have not
+   yet been announced". Ted je z toho karta s vetou ze zdroje. */
+const p72 = await otevri(1500);
+const d72 = await p72.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  const vse = (P.eventsData() || {}).events || [];
+  const stav = (e) => Object.values((((e[8] || {}).zdroj || {}).sekce) || {});
+  const sNeumime = vse.filter((e) => stav(e).some((x) => x.stav === "neumime"));
+  const sVetou = sNeumime.filter((e) => stav(e).some((x) => x.stav === "neumime" && x.veta));
+  const out = { akci: vse.length, sProvenance: vse.filter((e) => ((e[8] || {}).zdroj || {}).sekce).length,
+    sNeumime: sNeumime.length, sVetou: sVetou.length };
+  const cil = sVetou[0];
+  if (cil) {
+    out.jmeno = cil[0];
+    window.AtlasEventUI.open(vse.indexOf(cil));
+    await cekej(600);
+    const dlg = document.getElementById("atlasEventDialog");
+    const karty = [...dlg.querySelectorAll(".atlas-event-neuplna")];
+    out.karet = karty.length;
+    out.text = karty[0] ? karty[0].textContent.replace(/\s+/g, " ").trim() : "";
+    out.zdroj = /Rozpis je ze stránky akce, stažený/.test(dlg.textContent);
+    out.pretece = dlg.scrollWidth > dlg.clientWidth + 2;
+    dlg.close();
+  }
+  // Akce s uplnymi daty zadnou takovou kartu mit nesmi.
+  const cisty = vse.find((e) => ((e[8] || {}).zdroj || {}).sekce
+    && stav(e).every((x) => x.stav === "nacteno" || x.stav === "mimo"));
+  if (cisty) {
+    window.AtlasEventUI.open(vse.indexOf(cisty));
+    await cekej(600);
+    const dlg = document.getElementById("atlasEventDialog");
+    out.cistaAkce = cisty[0];
+    out.cistaKaret = dlg.querySelectorAll(".atlas-event-neuplna").length;
+    dlg.close();
+  }
+  return out;
+});
+await p72.close();
+check("akce vezou stav sekcí ze zdroje",
+  d72.sProvenance > 10 && d72.sNeumime > 0 && d72.sVetou === d72.sNeumime,
+  JSON.stringify([d72.sProvenance, d72.sNeumime, d72.sVetou]));
+check("nepřečtená sekce má v detailu vlastní kartu s větou ze zdroje",
+  d72.karet > 0 && d72.text.length > 40,
+  JSON.stringify([d72.jmeno, d72.karet, (d72.text || "").slice(0, 120)]));
+check("…detail říká, kdy se stránka akce stahovala",
+  d72.zdroj === true && d72.pretece === false,
+  JSON.stringify([d72.zdroj, d72.pretece]));
+check("…a u akce s úplnými daty žádná taková karta není",
+  d72.cistaKaret === 0, JSON.stringify([d72.cistaAkce, d72.cistaKaret]));
+
+/* 73) Cesky to, co jde prelozit PRESNE.
+
+   Vety na strance akce jsou anglicky a vetsina z nich je formulkova
+   („2× Candy for catching Pokémon", „Five-Star Raids"). Prekladaji se
+   cele vety, na ktere sedi pravidlo; co se netrefi, zustava anglicky,
+   protoze pul ceska veta je horsi nez anglicka. Jmena pokemonu se
+   neprekladaji nikde v appce — tady taky ne. */
+const p73 = await otevri(1500);
+const d73 = await p73.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  const cz = window.AtlasEventUI.cz;
+  const vzorky = {
+    bonbony: cz("2× Candy for catching Pokémon"),
+    prach: cz("2× Stardust for catching Pokémon"),
+    deluxe: cz("GO Pass Deluxe: 3× Candy for catching Pokémon"),
+    raidy: cz("Five-Star Raids"),
+    vejce: cz("In 5 km Eggs"),
+    hvezda: cz("2× Max Particles from exploring*"),
+    shiny: cz("Increased chance to encounter Shiny Smoliv"),
+    druh: cz("Minior (Red Core)"),
+    proza: cz("This exact sentence never appears in the source data."),
+    prazdno: cz("")
+  };
+  // kolik textu v datech appka opravdu prelozi
+  document.querySelector('[data-tab="kalendar"], [data-atlas-tab="kalendar"]')?.click();
+  await cekej(900);
+  const vse = (P.eventsData() || {}).events || [];
+  let textu = 0, prelozeno = 0;
+  vse.forEach((e) => (e[7] || []).forEach((w) => Object.values(w[2] || {})
+    .forEach((v) => (v || []).forEach(([t]) => {
+      if (P.dexEntry(String(t).replace(/\s*\(.*\)$/, ""))) return;
+      textu++;
+      if (cz(t) !== String(t).trim()) prelozeno++;
+    }))));
+  // v detailu musi byt original dohledatelny
+  const skore = (e) => (e[7] || []).reduce((n, w) => n + ((w[2] || {}).bonus || []).length, 0);
+  const cil = vse.slice().sort((a, b) => skore(b) - skore(a))[0];
+  window.AtlasEventUI.open(vse.indexOf(cil));
+  await cekej(600);
+  const dlg = document.getElementById("atlasEventDialog");
+  const sPuvodnim = [...dlg.querySelectorAll("[title],[data-tip]")]
+    .filter((x) => /atlas-event-text|atlas-event-bonus/.test(x.className) || x.tagName === "H4").length;
+  const pretece = dlg.scrollWidth > dlg.clientWidth + 2;
+  dlg.close();
+  return { vzorky, textu, prelozeno, sPuvodnim, pretece };
+});
+await p73.close();
+check("formulkové věty jsou česky a číslo v nich zůstává",
+  d73.vzorky.bonbony === "2× bonbónů za chycení"
+    && d73.vzorky.prach === "2× prachu za chycení"
+    && d73.vzorky.deluxe === "GO Pass Deluxe: 3× bonbónů za chycení",
+  JSON.stringify(d73.vzorky));
+check("…mezinadpisy seznamů taky",
+  d73.vzorky.raidy === "5hvězdičkové raidy" && d73.vzorky.vejce === "Z 5km vajec",
+  JSON.stringify([d73.vzorky.raidy, d73.vzorky.vejce]));
+check("…hvězdička na konci věty se neztratí",
+  d73.vzorky.hvezda === "2× Max částic za chození*", d73.vzorky.hvezda);
+check("…jméno druhu ani souvislý text appka nepřekládá",
+  d73.vzorky.druh === "Minior (Red Core)"
+    && /^This exact sentence/.test(d73.vzorky.proza)
+    && d73.vzorky.prazdno === "",
+  JSON.stringify([d73.vzorky.druh, d73.vzorky.proza.slice(0, 40)]));
+check("…v datech je česky aspoň devět desetin textů (zbytek jsou jména)",
+  d73.textu > 100 && d73.prelozeno / d73.textu >= 0.9,
+  JSON.stringify([d73.prelozeno, d73.textu]));
+check("…a u přeloženého textu je původní znění pořád po ruce",
+  d73.sPuvodnim > 0 && d73.pretece === false,
+  JSON.stringify([d73.sPuvodnim, d73.pretece]));
+
+/* 74) Casovany vyzkum: kroky a odmeny v predmetech.
+
+   Parser dlouho umel jen terenni vyzkum, kde je odmenou pokemon. Vetsina
+   stranek ale pouziva casovany vyzkum s kroky a odmenami v predmetech
+   (inkubator, prach, XP) — pro ty sprite neexistuje, takze z nich nesmi
+   byt prazdna bublina druhu. A veta „odmeny jsou mozne, ne jiste" plati
+   o terennim vyzkumu; u casovaneho jsou predmety vypsane jako to, co
+   doopravdy dostanes. */
+const p74 = await otevri(1500);
+const d74 = await p74.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  document.querySelector('[data-tab="kalendar"], [data-atlas-tab="kalendar"]')?.click();
+  await cekej(900);
+  const vse = (P.eventsData() || {}).events || [];
+  const typy = {};
+  vse.forEach((e) => ((e[8] || {}).vyzkum || []).forEach((sk) => {
+    typy[sk.typ || "?"] = (typy[sk.typ || "?"] || 0) + 1;
+  }));
+  const out = { typy };
+  const cil = vse.find((e) => ((e[8] || {}).vyzkum || []).some((sk) => sk.typ === "timed"
+    && (sk.ukoly || []).some((u) => (u.krok || 0) > 1)));
+  if (cil) {
+    out.jmeno = cil[0];
+    window.AtlasEventUI.open(vse.indexOf(cil));
+    await cekej(700);
+    const dlg = document.getElementById("atlasEventDialog");
+    const sekce = dlg.querySelector(".atlas-event-vyzkum");
+    out.predmetu = dlg.querySelectorAll(".atlas-vyzkum-predmet").length;
+    out.kroku = dlg.querySelectorAll(".atlas-vyzkum-krok").length;
+    out.vyberVeta = /Odměny jsou možné/.test(sekce ? sekce.textContent : "");
+    out.prazdnaBublina = [...dlg.querySelectorAll(".atlas-event-specimen")]
+      .filter((x) => !x.querySelector("img,svg")).length;
+    out.pretece = dlg.scrollWidth > dlg.clientWidth + 2;
+    dlg.close();
+  }
+  // Terenni vyzkum tu vetu naopak mit musi.
+  const field = vse.find((e) => ((e[8] || {}).vyzkum || []).some((sk) => sk.typ === "field"));
+  if (field) {
+    window.AtlasEventUI.open(vse.indexOf(field));
+    await cekej(600);
+    const dlg = document.getElementById("atlasEventDialog");
+    out.fieldJmeno = field[0];
+    out.fieldVyberVeta = /Odměny jsou možné/.test(dlg.textContent);
+    dlg.close();
+  }
+  return out;
+});
+await p74.close();
+check("v datech je časovaný i terénní výzkum",
+  (d74.typy.timed || 0) > 0 && (d74.typy.field || 0) > 0, JSON.stringify(d74.typy));
+check("časovaný výzkum ukazuje kroky a odměny v předmětech",
+  d74.kroku > 1 && d74.predmetu > 3 && d74.prazdnaBublina === 0,
+  JSON.stringify([d74.jmeno, d74.kroku, d74.predmetu, d74.prazdnaBublina]));
+check("…a neslibuje u nich výběr, který zdroj neuvádí",
+  d74.vyberVeta === false && d74.pretece === false,
+  JSON.stringify([d74.vyberVeta, d74.pretece]));
+check("…zatímco u terénního výzkumu ta věta zůstává",
+  d74.fieldVyberVeta === true, JSON.stringify([d74.fieldJmeno, d74.fieldVyberVeta]));
+
+/* 75) Souhrn nahore odpovida na „co mi ta akce prinese".
+
+   Driv to byly navigacni udaje: termin vyzvednuti, pocet ukolu, ranky.
+   A-024 chce 2-4 konkretni DOLOZENE prinosy. Pocitaji se z dat —
+   premiera druhu, shiny premiera, odmena za dokonceni vyzkumu,
+   nejsilnejsi bonus, raidovy boss. Co nema podklad, kartu nedostane
+   a appka si nic nevymysli. */
+const p75 = await otevri(1500);
+const d75 = await p75.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  document.querySelector('[data-tab="kalendar"], [data-atlas-tab="kalendar"]')?.click();
+  await cekej(900);
+  const vse = (P.eventsData() || {}).events || [];
+  const PRINOS = /Premiéra|Shiny premiéra|Za dokončení|Největší bonus|V raidech/;
+  let sPrinosem = 0, maxKaret = 0, rozbitySkok = 0, bezPodkladu = [];
+  for (let i = 0; i < vse.length; i++) {
+    window.AtlasEventUI.open(i);
+    await cekej(110);
+    const dlg = document.getElementById("atlasEventDialog");
+    const btny = [...dlg.querySelectorAll(".atlas-event-highlights button")];
+    maxKaret = Math.max(maxKaret, btny.length);
+    const titulky = btny.map((b) => b.querySelector("small").textContent);
+    if (titulky.some((t) => PRINOS.test(t))) sPrinosem++;
+    btny.forEach((b) => { if (!dlg.querySelector(b.dataset.eventJump)) rozbitySkok++; });
+    // „Premiéra druhu" musí jmenovat druh, který v datech té akce opravdu je.
+    const prem = btny.find((b) => /Premiéra druhu/.test(b.querySelector("small").textContent));
+    if (prem) {
+      const jmeno = prem.querySelector("strong").textContent.split(",")[0].trim();
+      const vData = (vse[i][7] || []).some((w) => Object.values(w[2] || {})
+        .some((v) => (v || []).some(([t]) => String(t) === jmeno)));
+      if (!vData) bezPodkladu.push([vse[i][0], jmeno]);
+    }
+    dlg.close();
+  }
+  return { akci: vse.length, sPrinosem, maxKaret, rozbitySkok, bezPodkladu };
+});
+await p75.close();
+check("většina akcí má v souhrnu aspoň jeden doložený přínos",
+  d75.sPrinosem > 15 && d75.akci > 30, JSON.stringify([d75.sPrinosem, d75.akci]));
+check("…karet nikdy není víc než čtyři", d75.maxKaret > 0 && d75.maxKaret <= 4,
+  String(d75.maxKaret));
+check("…každá karta skáče na sekci, která v detailu existuje",
+  d75.rozbitySkok === 0, String(d75.rozbitySkok));
+check("…a karta „Premiéra druhu“ jmenuje druh z dat té akce",
+  d75.bezPodkladu.length === 0, JSON.stringify(d75.bezPodkladu.slice(0, 3)));
+
+/* 76) C-004: kalendar na telefonu umi Tyden, Mesic i Seznam.
+
+   Prepinac zobrazeni se na mobilu schovaval a videt byl jen pruh dnu
+   s programem vybraneho dne — k mesici ani seznamu se nedalo dostat.
+   Mesic je na tehle sirce mrizka cisel s body a pod ni program
+   vybraneho dne; seznam je agenda celeho tydne. Prepnuti nesmi zahodit
+   vybrany den ani kategorii. */
+const p76 = await otevri(390);
+const d76 = await p76.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const videt = (el) => { if (!el) return false; const r = el.getBoundingClientRect();
+    return getComputedStyle(el).display !== "none" && r.height > 0 && r.width > 0; };
+  document.querySelector('[data-menu-group="events"]')?.click();
+  await cekej(900);
+  const kal = () => document.getElementById("atlasCalendar");
+  const out = { prepinac: videt(kal().querySelector(".ac-views")) };
+  const dny = [...kal().querySelectorAll(".ac-mobile-view .ac-day")];
+  if (dny[3]) { dny[3].click(); await cekej(350); }
+  const kat = [...kal().querySelectorAll(".ac-filters button")].find((b) => b.dataset.acFilter === "raid");
+  if (kat) { kat.click(); await cekej(350); }
+  const prepni = async (rezim) => {
+    kal().querySelector(`.ac-views [data-ac-mode="${rezim}"]`).click();
+    await cekej(450);
+    const m = kal().querySelector(".ac-mobile-view");
+    const st = window.AtlasCalendar.getState();
+    return { mode: st.mode, den: st.selected, filtr: st.filter,
+      mrizka: !!m.querySelector(".ac-month"), agend: m.querySelectorAll(".ac-agenda-day").length,
+      pruhDnu: !!m.querySelector(".ac-days"), bodu: m.querySelectorAll(".ac-month-event").length,
+      bod: m.querySelector(".ac-month-event")
+        ? Math.round(m.querySelector(".ac-month-event").getBoundingClientRect().width) : null,
+      pretece: document.documentElement.scrollWidth > window.innerWidth + 1 };
+  };
+  out.mesic = await prepni("month");
+  out.seznam = await prepni("list");
+  out.tyden = await prepni("week");
+  return out;
+});
+await p76.close();
+check("na telefonu je vidět přepínač zobrazení kalendáře",
+  d76.prepinac === true, String(d76.prepinac));
+check("…Měsíc je mřížka čísel s body a pod ní program vybraného dne",
+  d76.mesic.mrizka === true && d76.mesic.bodu > 10 && d76.mesic.bod > 0
+    && d76.mesic.bod <= 12 && d76.mesic.agend === 1,
+  JSON.stringify(d76.mesic));
+check("…Seznam je agenda celého týdne a Týden pruh dnů s programem",
+  d76.seznam.agend === 7 && d76.tyden.pruhDnu === true && d76.tyden.agend === 2,
+  JSON.stringify([d76.seznam.agend, d76.tyden.pruhDnu, d76.tyden.agend]));
+check("…přepnutí nechá vybraný den i kategorii a nic nepřeteče",
+  [d76.mesic, d76.seznam, d76.tyden].every((x) => x.den === d76.mesic.den
+    && x.filtr === "raid" && x.pretece === false),
+  JSON.stringify([d76.mesic.den, d76.mesic.filtr, d76.seznam.den, d76.tyden.den]));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

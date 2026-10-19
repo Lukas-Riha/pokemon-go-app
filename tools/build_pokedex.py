@@ -168,12 +168,36 @@ def fetch_gm(refresh, ponechat):
         q = d.get("evolutionQuestTemplate")
         if q:
             quests[q.get("questTemplateId")] = q
-    out, nezname, buddy = {}, set(), {}
+    out, nezname, buddy, megy = {}, set(), {}, {}
+    # Cena proměny leží u druhu, ne u přepisu formy.
+    cena = {}
     for e in gm:
         ps = (e.get("data") or {}).get("pokemonSettings")
         if not ps:
             continue
         od = gm_key(ps.get("pokemonId"), ps.get("form"), ponechat)
+        # Mega a primal formy: staty, typy a cena proměny přímo ze hry.
+        # Bere se jen bezformová šablona — `_NORMAL` je její duplikát.
+        if not ps.get("form"):
+            # Cena proměny stojí ve větvi evoluce, u svého tempEvoId:
+            # Charizard má dvě (X a Y) a každá svou cenu.
+            for vetev in ps.get("evolutionBranch") or []:
+                if not vetev.get("temporaryEvolution"):
+                    continue
+                cena[(od, vetev["temporaryEvolution"])] = (
+                    vetev.get("temporaryEvolutionEnergyCostSubsequent"),
+                    vetev.get("temporaryEvolutionEnergyCost"))
+            for ov in ps.get("tempEvoOverrides") or []:
+                st = ov.get("stats") or {}
+                if not st.get("baseAttack"):
+                    continue
+                megy.setdefault(od, []).append({
+                    "id": ov.get("tempEvoId"),
+                    "atk": st.get("baseAttack"),
+                    "def": st.get("baseDefense"),
+                    "sta": st.get("baseStamina"),
+                    "typy": [t for t in (ov.get("typeOverride1"), ov.get("typeOverride2")) if t],
+                })
         # Kolik kilometrů ujdeš na JEDEN bonbón. Rozdíl mezi 1 km a 20 km
         # rozhoduje, jestli má chození vůbec smysl.
         if ps.get("kmBuddyDistance"):
@@ -199,7 +223,10 @@ def fetch_gm(refresh, ponechat):
                 nezname.add(q.get("questType"))
     if nezname:
         print("  nepřeložené typy úkolů: %s" % ", ".join(sorted(nezname)))
-    vysledek = {"ukoly": out, "buddyKm": buddy}
+    for klic, formy in megy.items():
+        for f in formy:
+            f["energie"], f["energiePoprve"] = cena.get((klic, f.get("id")), (None, None))
+    vysledek = {"ukoly": out, "buddyKm": buddy, "mega": megy}
     path.write_text(json.dumps(vysledek, ensure_ascii=False, indent=1), encoding="utf-8")
     return vysledek
 
@@ -459,6 +486,18 @@ def main():
     ZAKLADNI_FORMA = {
         "wishiwashi": "Solo",
         "palafin": "Zero",
+        # Aegislash drzis v boxu jako Shield (97/272); na Blade (272/97) se
+        # promeni az v boji po nabitem utoku. Doteď bral holý klíč Blade,
+        # takže appka počítala CP i obranu z útočné formy.
+        "aegislash": "Shield",
+        # Zacian i Zamazenta se chytají jako Hero of Many Battles; Crowned
+        # je forma s předmětem (Rusted Sword/Shield) a má i jiné typy —
+        # holý klíč tím tvrdil Fairy/Steel u kusu, co je jen Fairy.
+        "zacian": "Hero",
+        "zamazenta": "Hero",
+        # Lycanroc ma tri rovnocenne formy; holý klíč bral abecedně první
+        # (Dusk), což je ta nejvzácnější. Midday je ta běžná.
+        "lycanroc": "Midday",
         # Zygarde se skládá z buněk; 50 % je podoba, kterou bere i PvPoke
         # jako výchozí. Konkrétní formy mají vlastní klíče (zygarde-tenpercent).
         "zygarde": "Fifty_percent",
@@ -554,10 +593,48 @@ def main():
             # Poprvé je to dražší (200), každá další proměna už jen 40.
             # Bez toho druhého čísla by cena mega formy byla nepravdivá.
             m.get("first_time_mega_energy_required"),
+            # 0 = formu veze verejny mirror, tedy je ve hre opravdu k mani
+            0,
         ])
 
-    # Mega formy, které pogoapi ještě nemá. Niantic je přidává dřív, než se
-    # mirror stihne obnovit — Mega Malamar takhle v datech chyběl týdny.
+    # Mega formy, které pogoapi ještě nemá, ale hra ano. Mirror se obnovuje
+    # po svém: Mega Victreebel byl ve hře (raid i chycený kus) a appka u něj
+    # psala „Mega: Ne", protože v jejích datech ta forma nebyla.
+    TYP_Z_GM = lambda t: str(t or "").replace("POKEMON_TYPE_", "").capitalize()
+    JMENO_FORMY = {"TEMP_EVOLUTION_MEGA": "Mega {0}",
+                   "TEMP_EVOLUTION_MEGA_X": "Mega {0} X",
+                   "TEMP_EVOLUTION_MEGA_Y": "Mega {0} Y",
+                   "TEMP_EVOLUTION_PRIMAL": "Primal {0}"}
+    z_gm = 0
+    for key, formy in (gm.get("mega") or {}).items():
+        if key in mega or key not in species:
+            continue
+        jmeno_druhu = species[key][1]
+        zaznamy = []
+        for f in formy:
+            vzor = JMENO_FORMY.get(f.get("id"))
+            if not vzor:
+                continue
+            zaznamy.append([
+                vzor.format(jmeno_druhu),
+                f.get("atk"), f.get("def"), f.get("sta"),
+                [TYP_Z_GM(t) for t in (f.get("typy") or [])],
+                f.get("energie"),
+                "Primal" if f.get("id") == "TEMP_EVOLUTION_PRIMAL" else "Mega",
+                f.get("energiePoprve"),
+                # 1 = zna ji jen herni soubor. Muze byt cerstve vydana
+                # (Victreebel), ale taky nemusi byt ve hre vubec (Mewtwo),
+                # a to se z dat nepozna — do porovnavani priorit proto
+                # takova forma nejde.
+                1,
+            ])
+        if zaznamy:
+            mega[key] = zaznamy
+            z_gm += 1
+    if z_gm:
+        print(f"mega z GAME_MASTERu (pogoapi je nemá): {z_gm}")
+
+    # Poslední záchrana: ručně dopsaná forma, kterou nemá ani jeden zdroj.
     # Ručně dopsaný záznam se použije JEN tehdy, když pro ten druh z pogoapi
     # nepřijde nic, takže se sám vyřadí, jakmile se mirror doplní.
     doplnky_path = ROOT / "data" / "mega_doplnky.json"
@@ -613,6 +690,29 @@ def main():
     # existuje jen jako flabebe-blue a spol., ale appka klíčuje na „flabebe"),
     # a bez téhož doplnění by se evoluční linie u barevných forem nenašla.
     evoluce = {k: sorted(set(v)) for k, v in sorted(evo_next.items()) if v}
+
+    # Holý klíč musí být i CÍLEM evoluce, ne jen zdrojem. Aegislash sedí
+    # v grafu pod "aegislash-shield", ale v rosteru je pod holým jménem —
+    # evoluční řada se u něj proto vůbec nenašla (a totéž u Obstagoona,
+    # Urshifu, Gourgeista, Lycanroka a dalších patnácti druhů).
+    # Přepisuje se jen tam, kde holý klíč JE tatáž forma (shodný záznam),
+    # takže se cíl nikdy nepřepíše na něco, na co se druh nevyvíjí.
+    nahrada = {}
+    for key, zaznam in species.items():
+        if "-" not in key:
+            continue
+        holy = key.split("-")[0]
+        if species.get(holy) == zaznam and holy not in nahrada.values():
+            nahrada[key] = holy
+    if nahrada:
+        evoluce = {k: sorted({nahrada.get(c, c) for c in v})
+                   for k, v in evoluce.items()}
+        pozadavky = {k: {nahrada.get(c, c): v2 for c, v2 in v.items()}
+                     for k, v in pozadavky.items()}
+        # „Klíč finální evoluce" u species musí ukazovat na tentýž klíč.
+        for zaznam in species.values():
+            if zaznam[7] in nahrada:
+                zaznam[7] = nahrada[zaznam[7]]
     for key in list(species):
         if key in evoluce or "-" in key:
             continue
@@ -647,7 +747,8 @@ def main():
             "pozn": "Regeneruj přes: python tools/build_pokedex.py --refresh",
             "schema_species": "klíč -> [id, jméno, [typy], base_attack, base_defense, base_stamina, umí_se_vyvinout(0/1), klíč finální evoluce nebo \"\", vzácnost L/M/U nebo \"\", cena evoluce v bonbónech (0 = nevyvíjí se)]",
             "schema_mega": "klíč -> [[jméno, atk, def, sta, [typy], mega_energie,"
-                           " Mega|Primal, mega_energie_poprvé], …]",
+                           " Mega|Primal, mega_energie_poprvé,"
+                           " jen_z_herního_souboru 0/1], …]",
             "schema_evoPozadavky": "klíč -> {cílový klíč: {km, buddy, item, lure,"
                                    " pohlavi, den, noc, tradeZdarma, vzhuruNohama, ukol}}."
                                    " Prázdný objekt = zdroj ten přechod zná a žádná další"

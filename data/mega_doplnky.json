@@ -1,22 +1,7 @@
 {
   "_meta": {
-    "popis": "Mega formy, ktere pogoapi jeste nema. Rucne dopsane podle herniho zdroje, zapecou se jen tehdy, kdyz pro ten druh z pogoapi nic neprijde.",
-    "pravidlo": "Jakmile se druh objevi v pogoapi, tenhle zaznam se ignoruje a muze se smazat.",
+    "popis": "Posledni zachrana pro mega formu, kterou nema ani pogoapi, ani herni GAME_MASTER. Zapece se jen tehdy, kdyz pro ten druh z obou zdroju nic neprijde.",
+    "pravidlo": "Jakmile se druh objevi v pogoapi nebo v GAME_MASTERu, tenhle zaznam se ignoruje a muze se smazat. Malamar takhle odesel 7. 10. 2026 — GAME_MASTER ho ma, a navic se spravnou cenou promeny (rucne tu stalo 40, ve hre je to 60 a poprve 300).",
     "schema": "klic -> [[jmeno, atk, def, sta, [typy], mega_energie, Mega|Primal, mega_energie_poprve], ...]; posledni pole nech null, kdyz cenu prvniho premeneni zdroj neuvadi"
-  },
-  "malamar": [
-    [
-      "Mega Malamar",
-      208,
-      222,
-      200,
-      [
-        "Dark",
-        "Psychic"
-      ],
-      40,
-      "Mega",
-      null
-    ]
-  ]
+  }
 }

@@ -136,6 +136,7 @@ Kontrolní skripty:
 | `tools/audit_data.py` | integrita JSON dat: typy, evoluční řetězce, CPM bez děr, indexy útoků, klíče lig |
 | `tests/audit_app.test.mjs` | výpočty přes **celý pokédex**: CP roste, cíle lig nepřetečou cap, žádné NaN, žebříčky v rozsahu |
 | `tests/web_app.test.mjs` | chování appky (978 testů) |
+| `tests/okna.test.py` | parser časových oken LeekDucku na uložených stránkách: bonusy, které běží dýl než akce, i hvězdičky, které znamenají jen podmínku |
 
 Appka navíc sama vypíše varování, když v rosteru najde druh, který herní data
 neznají — tak se nová generace nikdy neprojeví tiše.
