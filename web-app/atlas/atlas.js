@@ -1185,19 +1185,11 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
     identita.querySelector('.atlas-ident-utoky')?.remove();
     const box=document.createElement('section');box.className='atlas-ident-utoky';
     const nadpis=document.createElement('div');nadpis.className='d-box-h';nadpis.textContent='Útoky';
-    /* Editace útoků se otevírá dvojklikem kamkoli do sekce. Na telefonu
-       ani klávesnicí to nejde, takže vedle nadpisu stojí tlačítko, které
-       dělá totéž — dvojklik zůstává jako zkratka pro myš. */
-    {const upravit=document.createElement('button');
-     upravit.type='button';upravit.className='atlas-utoky-upravit';
-     upravit.setAttribute('aria-label','Upravit útoky');
-     upravit.dataset.tip='Upravit útoky tohohle kusu';
-     upravit.innerHTML='<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true">'
-      +'<path d="M4 20h4L19 9l-4-4L4 16Zm11-15 4 4"/></svg>';
-     upravit.addEventListener('click',()=>{
-      if(window.AtlasUpravitUtoky)window.AtlasUpravitUtoky(row.id);
-     });
-     nadpis.append(upravit);}
+    /* Editace útoků se otevírá dvojklikem kamkoli do bloku. Tlačítko
+       s tužkou tu bylo kvůli dotyku a klávesnici, ale v hlavičce
+       překáželo — zůstává jen dvojklik a blok o něm po najetí myší
+       řekne sám (jinak by to nikdo neuhodl). */
+    box.dataset.tip='Dvojklik otevře úpravu útoků';
     // Kus bez vyplněných útoků: u nadpisu se rozsvítí vykřičník. Bez něj se
     // dalo snadno přehlédnout, že appka u toho kusu nic nezná — a rady se
     // pak počítaly z nejlepší možné sestavy, ne z jeho skutečné.

@@ -3059,21 +3059,16 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    rozhodovat o šířce a zalomí se podle místa, které sloupec má. */
 .atlas-test .atlas-ident-stats .d-note{width:0;min-width:100%}
 
-/* Claude (106): tlačítko „upravit útoky" v hlavičce bloku útoků.
-   Editace se dosud otevírala jen dvojklikem — prstem ani klávesnicí
-   se tam nikdo nedostal. Na telefonu má cíl 44 px, na desktopu stačí
-   menší, ať nepřebíjí nadpis. */
-.atlas-test .atlas-ident-utoky .d-box-h{display:flex;align-items:center;gap:8px}
-.atlas-test .atlas-utoky-upravit{margin-left:auto;align-self:center;
-  flex:0 0 auto;display:inline-flex;
-  align-items:center;justify-content:center;width:26px;height:26px;padding:0;
-  border:1px solid var(--border);border-radius:8px;background:var(--input-bg);
-  color:var(--text-secondary);cursor:pointer}
-.atlas-test .atlas-utoky-upravit:hover{border-color:var(--series-1);
-  color:var(--series-1)}
-.atlas-test .atlas-utoky-upravit .atlas-icon{width:14px;height:14px}
-@media(max-width:650px){.atlas-test .atlas-utoky-upravit{width:44px;height:44px}
-  .atlas-test .atlas-utoky-upravit .atlas-icon{width:18px;height:18px}}
+/* Claude (106): blok útoků se otevírá dvojklikem. Tužka vedle nadpisu
+   zmizela (překážela v hlavičce), takže musí být po najetí myší poznat,
+   že se s blokem dá něco dělat: jemný podklad, rámeček a kurzor. */
+.atlas-test .atlas-ident-utoky{border:1px solid transparent;border-radius:11px;
+  transition:background .12s ease,border-color .12s ease}
+.atlas-test .atlas-ident-utoky:hover{cursor:pointer;background:var(--atlas-soft,
+  color-mix(in srgb,var(--series-1) 9%,transparent));border-color:var(--border)}
+/* Vybrané útoky se při dvojkliku modře zvýrazní — tady je to k ničemu
+   a vypadá to jako chyba vykreslení. */
+.atlas-test .atlas-ident-utoky:hover{user-select:none}
 
 /* Claude (107): titulek detailu drží jeden řádek i na užším okně.
    Přibyl přepínač MEGA, takže se do řádku vešlo o jednu značku míň
