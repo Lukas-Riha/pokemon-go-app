@@ -7332,8 +7332,10 @@ try {
   // „Mimikyu Disguised" má klíč mimikyu-disguised, ale PvPoke ho vede pod
   // mimikyu. Bez fallbacku psala tabulka „tuhle ligu nehraje“, zatímco
   // odznáčky nad ní ukazovaly GL #5 a UL #1.
+  // Pořadí z PvPoke driftuje (Mimikyu byl UL #1, dnes UL #9), takže se
+  // sem nepíše natvrdo — testuje se, že se žebříček u té formy VŮBEC najde.
   check("žebříček se najde i u pojmenované formy",
-    pvpShoda["Mimikyu Disguised"].ligyVse.join(",").indexOf("UL=1") > -1,
+    /UL=\d+/.test(pvpShoda["Mimikyu Disguised"].ligyVse.join(",")),
     pvpShoda["Mimikyu Disguised"].ligyVse.join(","));
   // Kus drží slot v GL i UL. Karta má mluvit o téže lize, kterou mu dal
   // rozpočet — KTERÁ to je, záleží na pořadí v PvPoke a to driftuje
@@ -12984,11 +12986,17 @@ try {
     window.__pgoZalozka("prohlidkaCard");
     await new Promise((r) => setTimeout(r, 500));
     const pole = document.getElementById("prohName");
-    pole.value = "Zacian";
+    /* Píše se jen začátek jména: po přesné shodě se karta otevře a
+       našeptávač se zavře, takže by v něm nebylo co číst. */
+    pole.value = "Zaci";
     pole.dispatchEvent(new Event("input", { bubbles: true }));
     await new Promise((r) => setTimeout(r, 600));
     const napoveda = Array.from(document.querySelectorAll(".druh-napoveda .dn-jmeno"))
       .map((x) => x.textContent);
+    // Teprve teď celé jméno, ať se otevře karta, o které je zbytek scénáře.
+    pole.value = "Zacian";
+    pole.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 700));
     const skupiny = Array.from(document.querySelectorAll("#prohlidkaCard .d-liga-forma"))
       .map((x) => x.textContent.replace(/\s+/g, " ").trim());
     const radky = Array.from(document.querySelectorAll("#prohlidkaCard .d-ligy-tab tr"))
@@ -15391,8 +15399,12 @@ try {
 
   check("engine zna posun druhu v lize", !!posunLigy.posunDolu,
     JSON.stringify(posunLigy.posunDolu));
-  check("…a je to pokles, ne vzestup",
-    posunLigy.posunDolu && posunLigy.posunDolu.rozdil < 0,
+  // Směr posunu se mění s každou obnovou žebříčků, takže se nehlídá on,
+  // ale soulad: `rozdil` musí sedět s tím, odkud kam se druh pohnul.
+  check("…a rozdíl sedí s tím, odkud kam se druh pohnul",
+    !!posunLigy.posunDolu
+      && posunLigy.posunDolu.rozdil === posunLigy.posunDolu.drive - posunLigy.posunDolu.ted
+      && posunLigy.posunDolu.rozdil !== 0,
     JSON.stringify(posunLigy.posunDolu));
   check("…hlasi se jen liga, kde se opravdu neco hnulo",
     posunLigy.beziceZmeny >= 1 && posunLigy.beziceZmeny <= 4,
@@ -18183,8 +18195,12 @@ try {
   check("druh, který mezi změněnými není, šipku nedostane",
     posun.mimoCelkem > 0 && posun.cizi.length === 0,
     posun.mimoCelkem + " mimo, s šipkou: " + JSON.stringify(posun.cizi));
-  check("…a co je uložené, to se opravdu pohnulo — nic beze změny",
-    posun.bezPosunu === 0 && posun.celkem > 0,
+  /* Ukládá se jen to, co se v den srovnání pohnulo. Žebříček se ale může
+     časem vrátit na původní hodnotu — takový záznam pak sedí s dneškem
+     a šipku nedostane (hlídá kontrola výš). Pár takových je normální,
+     hromada by znamenala, že se základ přestal obnovovat. */
+  check("…a skoro všechno uložené se opravdu pohnulo",
+    posun.celkem > 0 && posun.bezPosunu / posun.celkem < 0.15,
     posun.bezPosunu + " beze změny z " + posun.celkem);
 
   const pametPoradi = await page.evaluate(() => {

@@ -3187,21 +3187,21 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test #atlasCalendar .ac-controls{flex-wrap:wrap;row-gap:8px}
   .atlas-test #atlasCalendar .ac-posun{order:1}
   .atlas-test #atlasCalendar .ac-rozsah{order:2;flex:1;text-align:right}
-  .atlas-test #atlasCalendar .ac-mobile-view .ac-month-day{min-height:62px;
+  .atlas-test #atlasCalendar .ac-month-day{min-height:62px;
     padding:3px;display:flex;flex-direction:column;align-items:center;gap:3px}
-  .atlas-test #atlasCalendar .ac-mobile-view .ac-month-day .ac-day{padding:2px;
+  .atlas-test #atlasCalendar .ac-month-day .ac-day{padding:2px;
     min-height:24px;justify-content:center}
-  .atlas-test #atlasCalendar .ac-mobile-view .ac-month-event{width:7px;height:7px;
+  .atlas-test #atlasCalendar .ac-month-event{width:7px;height:7px;
     min-height:7px;margin:0;padding:0;border:0;border-radius:50%;
     background:var(--ac-kind);font-size:0!important;overflow:hidden;
     text-indent:-999px;flex:0 0 auto}
   /* Body vedle sebe, ne pod sebou — do buňky se jich vejde pět. */
-  .atlas-test #atlasCalendar .ac-mobile-view .ac-month-day{flex-flow:row wrap;
+  .atlas-test #atlasCalendar .ac-month-day{flex-flow:row wrap;
     align-content:flex-start}
-  .atlas-test #atlasCalendar .ac-mobile-view .ac-month-day .ac-day{flex:1 0 100%}
+  .atlas-test #atlasCalendar .ac-month-day .ac-day{flex:1 0 100%}
   .atlas-test #atlasCalendar .ac-mobile-view .ac-more{flex:1 0 100%;font-size:10px;
     min-height:20px;padding:0}
-  .atlas-test #atlasCalendar .ac-mobile-view .ac-month-labels span{padding:6px 0;
+  .atlas-test #atlasCalendar .ac-month-labels span{padding:6px 0;
     font-size:11px}
 }
 

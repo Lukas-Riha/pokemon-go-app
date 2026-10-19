@@ -8679,12 +8679,23 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       /* Pásmo, ve kterém je kvalita prakticky stejná a rozhodne útok.
          Rozdíl dvou desetin procenta stat productu v souboji nikdo nepozná,
          nižší útok ale znamená, že kus v souběhu nabitých útoků střílí
-         druhý — a to pozná každý. */
+         druhý — a to pozná každý. Porovnávají se pásma, ne dvojice: po
+         dvojicích by to nebylo uspořádání a pořadí by záleželo na tom,
+         jak kusy leží v rosteru. */
       var cmpPasmo = Math.max(0, Math.min(20, num(s.cmpPasmo) || 0)) / 100;
+      // Špička pro každý rank zvlášť — pevný bod, od kterého se pásmo měří.
+      var spicka = {};
+      vsichni.forEach(function (x) {
+        if (!(spicka[x.rank] > x.pct)) spicka[x.rank] = x.pct;
+      });
+      var vPasmu = function (x) {
+        return cmpPasmo > 0 && (spicka[x.rank] || 0) - x.pct <= cmpPasmo;
+      };
       vsichni.sort(function (x, y) {
         if (x.rank !== y.rank) return x.rank - y.rank;
-        var rozdil = Math.abs(x.pct - y.pct);
-        if (cmpPasmo && rozdil <= cmpPasmo && x.atk !== y.atk) return y.atk - x.atk;
+        var vx = vPasmu(x), vy = vPasmu(y);
+        if (vx !== vy) return vx ? -1 : 1;
+        if (vx && x.atk && y.atk && x.atk !== y.atk) return y.atk - x.atk;
         return (y.pct - x.pct) || priShode(x.b, y.b);
       });
       zapisPoradi("pvp:" + lg.label, vsichni, function (x) { return x.b.row.id; });
@@ -8791,15 +8802,38 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
        útok ale znamená prohraný souběh nabitých útoků — a to pozná každý.
        0 % = jako dřív, rozhoduje jen stat product. */
     var cmpPasmoSlot = Math.max(0, Math.min(20, num(s.cmpPasmo) || 0)) / 100;
-    /** Vyhrává `x` nad `y` jen díky útoku? Jen uvnitř pásma a jen když
-     *  útok obou vůbec známe. */
-    function cmpRozhodne(xPct, xAtk, yPct, yAtk) {
-      if (!cmpPasmoSlot || !xAtk || !yAtk || xAtk === yAtk) return null;
-      if (Math.abs(xPct - yPct) > cmpPasmoSlot) return null;
-      return xAtk > yAtk;
+    /** Je kus prakticky stejně dobrý jako špička skupiny?
+     *
+     *  Porovnávat „jsme od sebe míň než pásmo" po DVOJICÍCH nelze: není to
+     *  uspořádání (A>B, B>C, ale A<C), takže by o verdiktu rozhodovalo
+     *  pořadí kusů v rosteru. Měří se proto od jednoho pevného bodu —
+     *  nejlepší kvality v té skupině.
+     */
+    function cmpVPasmu(pct, spicka) {
+      return cmpPasmoSlot > 0 && (num(spicka) || 0) - (num(pct) || 0) <= cmpPasmoSlot;
+    }
+    /** Komparátor dvou kusů TÉŽE skupiny: nejdřív ti, co jsou u špičky,
+     *  mezi nimi vyšší útok, pak kvalita. `null` = nerozhodnuto. */
+    function cmpPoradiKusu(xPct, xAtk, yPct, yAtk, spicka) {
+      var vx = cmpVPasmu(xPct, spicka), vy = cmpVPasmu(yPct, spicka);
+      if (vx !== vy) return vx ? -1 : 1;
+      // Útok rozhoduje jen u špičky a jen tam, kde ho u obou známe
+      // (po evoluci se mění základní staty, takže ho neznáme).
+      if (vx && xAtk && yAtk && xAtk !== yAtk) return xAtk > yAtk ? -1 : 1;
+      return null;
     }
     LIGY_VSE.forEach(function (lg) {
       var podleDruhu = {};
+      /* Špička druhu v téhle lize: nejlepší kvalita, jakou pro něj má
+         kterýkoli kus v rosteru. Od ní se měří, kdo je „prakticky stejně
+         dobrý" — pevný bod místo porovnávání po dvojicích. */
+      var spickaDruhu = {};
+      base.forEach(function (b) {
+        var pctB = lg.label === "ML" ? b.ivPct : potVLize(b, lg.label);
+        var klicB = (lg.label === "ML" ? (b.metaML ? b.groupKey : null) : b.groupKey);
+        if (pctB === null || !klicB) return;
+        if (!(spickaDruhu[klicB] > pctB)) spickaDruhu[klicB] = pctB;
+      });
       base.forEach(function (b) {
         var m = lg.label === "ML" ? b.metaML : metaIn(b, lg.label);
         // Druh, který za kus v lize OPRAVDU nastoupí. Podle něj se kusy
@@ -8850,6 +8884,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           }
         });
         var nejC = null;
+        // Špička mezi cestami TOHOTO kusu do téhle ligy.
+        var spickaCest = 0;
+        kandidati.forEach(function (k) {
+          if (k.pct !== null && k.pct > spickaCest) spickaCest = k.pct;
+        });
         kandidati.forEach(function (k) {
           if (k.pct === null || k.rank === null) return;
           // Práh se musí počítat pro každou cestu zvlášť — mají jiný rank,
@@ -8870,11 +8909,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           // nehrála vůbec, se kvůli minulému týdnu držet nemá.
           if (k.rank > s.rankLimit && !ok) return;
           var jenPamet = !!pm && ok && (k.rank > s.rankLimit || !projde(k.rank));
-          var cmpCesta = nejC ? cmpRozhodne(k.pct, k.atk, nejC.pct, nejC.atk) : null;
+          var cmpCesta = nejC
+            ? cmpPoradiKusu(k.pct, k.atk, nejC.pct, nejC.atk, spickaCest) : null;
           var lepsi = !nejC
             || (ok !== nejC.ok ? ok
               : (jenPamet !== nejC.jenPamet ? !jenPamet
-                : (cmpCesta !== null ? cmpCesta : k.pct > nejC.pct)));
+                : (cmpCesta !== null ? cmpCesta < 0 : k.pct > nejC.pct)));
           if (lepsi) {
             nejC = { rank: k.rank, pct: k.pct, atk: k.atk, ok: ok,
               poEvoluci: k.poEvoluci, hraje: k.hraje,
@@ -8917,10 +8957,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
            rozhodoval jen stat product, vyhrával kus s nulovým útokem: má
            nejlepší obranu a HP, ale v zrcadle střílí nabitý útok vždycky
            druhý. V pásmu, kde je kvalita prakticky stejná, proto rozhodne
-           útok. */
-        var cmpKus = cmpRozhodne(pct, zaznam.atk, g.pct, g.atk);
+           útok — a protože se porovnávají pásma, ne dvojice, nezáleží na
+           tom, v jakém pořadí kusy v rosteru leží. */
+        var cmpKus = cmpPoradiKusu(pct, zaznam.atk, g.pct, g.atk,
+          Math.max(spickaDruhu[druh] || 0, pct, g.pct));
         if (cmpKus !== null) {
-          if (cmpKus) podleDruhu[druh] = zaznam;
+          if (cmpKus < 0) podleDruhu[druh] = zaznam;
           return;
         }
         if (pct !== g.pct) {
@@ -8934,12 +8976,19 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // a mezi stejnými rankem lepší kus.
       // Druh držený jen pamětí jde až za ty, které dnes platí — dostane
       // místo, jen když na něj zbude.
+      // Špička pro každý rank zvlášť: kusy se stejným rankem jsou prakticky
+      // vždycky tentýž druh a porovnávají se mezi sebou.
+      var spickaRanku = {};
+      kand.forEach(function (k) {
+        if (!(spickaRanku[k.rank] > k.pct)) spickaRanku[k.rank] = k.pct;
+      });
       kand.sort(function (x, y) {
         if (x.prahOK !== y.prahOK) return x.prahOK ? -1 : 1;
         if (x.jenPamet !== y.jenPamet) return x.jenPamet ? 1 : -1;
         if (x.rank !== y.rank) return x.rank - y.rank;
-        var cmpPoradi = cmpRozhodne(x.pct, x.atk, y.pct, y.atk);
-        if (cmpPoradi !== null) return cmpPoradi ? -1 : 1;
+        var cmpPoradi = cmpPoradiKusu(x.pct, x.atk, y.pct, y.atk,
+          spickaRanku[x.rank] || 0);
+        if (cmpPoradi !== null) return cmpPoradi;
         return (y.pct - x.pct) || priShode(x.b, y.b);
       });
       // Šest míst + rezerva. Rezerva je jen pro dobré kusy, které se do

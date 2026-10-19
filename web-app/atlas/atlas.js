@@ -1971,7 +1971,11 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
   if(m&&kratke(m[2]))return {cislo:m[1]+' km',popis:kratke(m[2])};
   return null;
  }
- function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))];
+ /* Jmena druhu te akce. Krome mezinadpisu (-1) se musi vyhodit i VETY
+    ze zdroje: spawny nesou i podminky („As the Seasons change…"), a ty
+    se pak kreslily jako druh — v bocnim panelu stala cela veta a misto
+    ilustraci nic. Druh pozna `druhZTextu`. */
+ function eventNames(e){const names=[...new Set((e[7]||[]).flatMap(w=>((w[2]?.raid?.length?w[2].raid:w[2]?.spawn)||[]).filter(x=>x[1]!==-1).map(x=>x[0])).concat((e[6]||[]).filter(x=>x[1]!==-1).map(x=>x[0])))].filter(jm=>druhZTextu(jm));
   if(!names.length){
    for(const klic of NAHRADNI_SEKCE){
     for(const w of (e[7]||[])){

@@ -2085,7 +2085,10 @@ async function kartaUdalosti(sirka) {
     await new Promise((r) => setTimeout(r, 1200));
     const karta = document.querySelector("#atlasHome .atlas-event-card");
     const art = document.querySelector("#atlasHome .atlas-event-art");
-    return { karta: karta ? Math.round(karta.getBoundingClientRect().height) : null,
+    const r = karta ? karta.getBoundingClientRect() : null;
+    return { karta: r ? Math.round(r.height) : null,
+      sirka: r ? Math.round(r.width) : null,
+      pomer: r && r.width ? Math.round(r.height / r.width * 100) / 100 : null,
       art: art ? Math.round(art.getBoundingClientRect().height) : null };
   });
   await page.close();
@@ -2113,11 +2116,15 @@ check("vystredovani spritu obrazek na Prehledu nenafoukne",
 
 const k1600 = await kartaUdalosti(1600);
 const k2400 = await kartaUdalosti(2400);
-check("karta má na 1600 i 2400 px stejnou výšku",
-  k1600.karta !== null && k1600.karta === k2400.karta,
+/* Karta je od A-022 fluidni: roste se svoji sirkou v mrizce, ne s oknem
+   natvrdo. Hlida se proto POMER — na siroku nesmi vyrust do vyse nez
+   sirky — a to, ze ilustrace zustane uvnitr karty. */
+check("karta události si drží proporce i na širokém okně",
+  k1600.pomer > 0.6 && k1600.pomer < 1.4
+    && k2400.pomer > 0.6 && k2400.pomer < 1.4,
   JSON.stringify({ px1600: k1600, px2400: k2400 }));
-check("…a obrázek v ní taky",
-  k1600.art !== null && k1600.art === k2400.art,
+check("…a ilustrace z ní nevyroste",
+  k1600.art < k1600.karta && k2400.art < k2400.karta,
   JSON.stringify({ px1600: k1600, px2400: k2400 }));
 
 // ------------------------------- útoky v hlavičce, opakované uložení, úprava v úzkém okně
@@ -4594,11 +4601,14 @@ const d58 = await p58.evaluate(async (azSrc) => {
   const vety = [...dlg.querySelectorAll(".atlas-event-specimen")]
     .map((x) => x.textContent.replace(/\s+/g, " ").trim())
     .filter((t) => t.split(" ").length > 6);
+  /* Skryte casove obdobi (prepinac Prave ted / Predchozi / Cela akce)
+     ma v DOM nulovou velikost — merit ho jako ramecek nema smysl. */
+  const videt = ramecky.filter((x) => x !== "0x0");
   return { oken: kolik, sekce, unikatnich: new Set(sekce).size,
     okna: [...dlg.querySelectorAll(".atlas-event-okno")].map((x) => x.textContent.trim()),
     mezinadpisy: [...dlg.querySelectorAll(".atlas-event-sekce h4")].map((x) => x.textContent.trim()),
     druhu: dlg.querySelectorAll(".atlas-event-specimen").length,
-    ramecku: new Set(ramecky).size, ramecek: ramecky[0] || "",
+    ramecku: new Set(videt).size, ramecek: videt[0] || "",
     mimoRamecek: orez.filter((x) => x > 0).length, nejvicMimo: Math.max(0, ...orez),
     bublinyVet: vety.length,
     /* Zdroj u skoncene akce prestane uvadet termin, ale archiv ho ma —
@@ -4610,10 +4620,13 @@ check("akce s víc časovými okny má každou sekci jen jednou",
   d58.oken > 1 && d58.sekce.length > 0 && d58.sekce.length === d58.unikatnich,
   JSON.stringify([d58.oken, d58.sekce]));
 check("…a pořadí sekcí je pevné, ne jak to leželo ve zdroji",
-  (() => { const P = ["Ve volné přírodě", "Souboje", "Z vajec", "Výzkumy a odměny",
-    "Bonusy", "Speciální útoky", "Shiny", "Další obsah akce"];
-    const idx = d58.sekce.map((x) => P.indexOf(x));
-    return idx.every((x, i) => i === 0 || x > idx[i - 1]); })(),
+  (() => { const P = ["Ve volné přírodě", "Jen na kadidlo", "Souboje", "Z vajec",
+    "Výzkumy a odměny", "Bonusy", "Speciální útoky", "Shiny", "Další obsah akce"];
+    /* Výzkum a GO Pass maji vlastni karty pojmenovane podle zdroje
+       („Fall Marathon", „GO Pass: Fall Marathon") a stoji az za sekcemi —
+       do porovnani poradi proto nepatri. */
+    const idx = d58.sekce.map((x) => P.indexOf(x)).filter((x) => x >= 0);
+    return idx.length > 1 && idx.every((x, i) => i === 0 || x > idx[i - 1]); })(),
   JSON.stringify(d58.sekce));
 /* Mezinadpis ze zdroje, ktery rika totez co nadpis sekce, jen anglicky
    ("Wild Encounters" uvnitr "Ve volne prirode"), se zahazuje. */
@@ -5507,13 +5520,20 @@ const d76 = await p76.evaluate(async () => {
   const prepni = async (rezim) => {
     kal().querySelector(`.ac-views [data-ac-mode="${rezim}"]`).click();
     await cekej(450);
+    /* Mesic a seznam se kresli jednou pro oba pohledy (`.ac-shared-view`),
+       aby v DOM nebyly dve sady tlacitek se stejnym dnem; telefonni
+       cast (`.ac-mobile-view`) k mesici pridava program vybraneho dne. */
     const m = kal().querySelector(".ac-mobile-view");
+    const sd = kal().querySelector(".ac-shared-view");
     const st = window.AtlasCalendar.getState();
+    const bod = kal().querySelector(".ac-month-event");
     return { mode: st.mode, den: st.selected, filtr: st.filter,
-      mrizka: !!m.querySelector(".ac-month"), agend: m.querySelectorAll(".ac-agenda-day").length,
-      pruhDnu: !!m.querySelector(".ac-days"), bodu: m.querySelectorAll(".ac-month-event").length,
-      bod: m.querySelector(".ac-month-event")
-        ? Math.round(m.querySelector(".ac-month-event").getBoundingClientRect().width) : null,
+      mrizka: !!kal().querySelector(".ac-month"),
+      agend: m.querySelectorAll(".ac-agenda-day").length
+        + sd.querySelectorAll(".ac-agenda-day").length,
+      pruhDnu: !!m.querySelector(".ac-days"),
+      bodu: kal().querySelectorAll(".ac-month-event").length,
+      bod: bod ? Math.round(bod.getBoundingClientRect().width) : null,
       pretece: document.documentElement.scrollWidth > window.innerWidth + 1 };
   };
   out.mesic = await prepni("month");

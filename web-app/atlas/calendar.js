@@ -110,13 +110,23 @@
     Datum i kategorie prepnuti prezijou — resi je `selected` a `filter`,
     ktere se tu nemeni. */
  function mobilniObsah(){
-  if(mode==='month')return month()+agenda(selected);
-  if(mode==='list')return Array.from({length:7},(_,i)=>agenda(add(anchor,i))).join('');
+  /* Mesic i seznam kresli `sdilenyObsah()` jednou pro oba pohledy —
+     dve kopie mrizky v DOM by znamenaly dve sady tlacitek se stejnym
+     dnem. Na telefonu k mesici patri navic program vybraneho dne. */
+  if(mode==='month')return agenda(selected);
+  if(mode==='list')return '';
   return `<div class="ac-days">${Array.from({length:7},(_,i)=>dayButton(add(anchor,i))).join('')}</div>`
    +agenda(selected)+agenda(add(selected,1));
  }
+ /* Co vypada stejne na siroku i na telefonu. Tyden ne — tam ma desktop
+    sloupce a telefon pruh dnu s programem. */
+ function sdilenyObsah(){
+  if(mode==='month')return month();
+  if(mode==='list')return Array.from({length:7},(_,i)=>agenda(add(anchor,i))).join('');
+  return '';
+ }
  function render(){root.dataset.mode=mode;const range=mode==='month'?anchor.toLocaleDateString('cs-CZ',{month:'long',year:'numeric'}):rozsahDnu(anchor,add(anchor,6));
- root.innerHTML=`<div class="ac-layout"><div class="ac-content"><div class="ac-toolbar"><h2>Kalendář událostí</h2><div class="ac-controls"><div class="ac-posun" role="group" aria-label="Posun v čase"><button data-ac-today>Dnes</button><button data-ac-shift="-1" aria-label="Předchozí období">‹</button><button data-ac-shift="1" aria-label="Další období">›</button></div><b class="ac-rozsah" aria-live="polite">${esc(range)}</b><div class="ac-views" aria-label="Zobrazení kalendáře">${[['week','Týden'],['month','Měsíc'],['list','Seznam']].map(([k,v])=>`<button data-ac-mode="${k}" aria-pressed="${mode===k}">${v}</button>`).join('')}</div></div></div><div class="ac-filters" aria-label="Kategorie událostí">${Object.entries(categories).map(([k,v])=>`<button data-ac-filter="${k}" data-kind="${k}" aria-pressed="${filter===k}">${k==='all'?'':'<span class="ac-dot"></span>'}${v}</button>`).join('')}</div><div class="ac-desktop-view">${mode==='week'?week():mode==='month'?month():Array.from({length:7},(_,i)=>agenda(add(anchor,i))).join('')}</div><div class="ac-mobile-view">${mobilniObsah()}</div></div>${side()}</div>`;
+ root.innerHTML=`<div class="ac-layout"><div class="ac-content"><div class="ac-toolbar"><h2>Kalendář událostí</h2><div class="ac-controls"><div class="ac-posun" role="group" aria-label="Posun v čase"><button data-ac-today>Dnes</button><button data-ac-shift="-1" aria-label="Předchozí období">‹</button><button data-ac-shift="1" aria-label="Další období">›</button></div><b class="ac-rozsah" aria-live="polite">${esc(range)}</b><div class="ac-views" aria-label="Zobrazení kalendáře">${[['week','Týden'],['month','Měsíc'],['list','Seznam']].map(([k,v])=>`<button data-ac-mode="${k}" aria-pressed="${mode===k}">${v}</button>`).join('')}</div></div></div><div class="ac-filters" aria-label="Kategorie událostí">${Object.entries(categories).map(([k,v])=>`<button data-ac-filter="${k}" data-kind="${k}" aria-pressed="${filter===k}">${k==='all'?'':'<span class="ac-dot"></span>'}${v}</button>`).join('')}</div><div class="ac-desktop-view">${mode==='week'?week():''}</div><div class="ac-shared-view">${sdilenyObsah()}</div><div class="ac-mobile-view">${mobilniObsah()}</div></div>${side()}</div>`;
  }
  /* Na koho z akce s vic bossy ma mirit "Připravit tým". Nez si clovek
     vybere, plati prvni znamy druh; pri zmene udalosti se volba pousti. */
