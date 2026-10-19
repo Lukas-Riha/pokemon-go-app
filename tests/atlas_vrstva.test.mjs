@@ -5095,10 +5095,12 @@ check("…a shadow kus má hlavičku stejně širokou jako běžný",
     && JSON.stringify(d67.shadow.sirky) === JSON.stringify(d67.bezny.sirky),
   JSON.stringify([d67.shadow, d67.bezny]));
 
-/* 68) Upravu utoku jde otevrit i prstem a klavesnici.
+/* 68) Upravu utoku otevira dvojklik — a blok to rekne sam.
 
-   Dvojklik do sekce utoku byl jedina cesta: na telefonu se neda provest
-   vubec a klavesnici taky ne. Vedle nadpisu proto stoji tlacitko. */
+   Vedle nadpisu bylo tlacitko s tuzkou (kvuli dotyku a klavesnici), ale
+   v hlavicce prekazelo a vypadalo jako dalsi akce. Zustal dvojklik
+   kamkoli do bloku; aby se o nem vedelo, nese blok bublinu a po najeti
+   mysi zmeni kurzor. */
 const p68 = await otevri(1400, [
   { pokemon: "Tinkaton", cp: 1495, level: 25.5, ivAtk: 5, ivDef: 3, ivSta: 14,
     fastMove: "Fairy Wind", charged1: "Play Rough", charged2: "Flash Cannon" },
@@ -5111,30 +5113,25 @@ const d68 = await p68.evaluate(async (azSrc) => {
   A.openDetail(P.getRows()[0].id);
   await az(() => !!document.querySelector(".atlas-ident-utoky"), 2500);
   await cekej(200);
-  const btn = document.querySelector(".atlas-ident-utoky .atlas-utoky-upravit");
-  if (!btn) return { chyba: "tlacitko chybi" };
-  const r = btn.getBoundingClientRect();
-  btn.click();
+  const box = document.querySelector(".atlas-ident-utoky");
+  if (!box) return { chyba: "blok utoku chybi" };
+  const tlacitko = document.querySelectorAll(".atlas-utoky-upravit").length;
+  const napoveda = box.dataset.tip || "";
+  const kurzor = getComputedStyle(box).cursor;
+  box.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
   await az(() => !!document.getElementById("atlasUtokyEditor"), 2000);
-  const poKliku = !!document.getElementById("atlasUtokyEditor");
+  const poDvojkliku = !!document.getElementById("atlasUtokyEditor");
   document.querySelector("[data-editor-cancel]")?.click();
   await cekej(300);
-  // klavesnice: tlacitko musi jit zaostrit (Enter na <button> je klik)
-  const btn2 = document.querySelector(".atlas-ident-utoky .atlas-utoky-upravit");
-  btn2.focus();
-  const vFokusu = document.activeElement === btn2;
-  btn2.click();
-  await az(() => !!document.getElementById("atlasUtokyEditor"), 2000);
-  const poKlavesnici = !!document.getElementById("atlasUtokyEditor");
-  document.querySelector("[data-editor-cancel]")?.click();
-  return { sirka: Math.round(r.width), popis: btn.getAttribute("aria-label"),
-    poKliku, vFokusu, poKlavesnici };
+  return { tlacitko, napoveda, kurzor, poDvojkliku };
 }, AZ);
 await p68.close();
-check("úpravu útoků otevře tlačítko, ne jen dvojklik",
-  !!d68 && d68.poKliku === true && d68.vFokusu === true
-    && d68.poKlavesnici === true && /útoky/i.test(d68.popis || ""),
+check("úpravu útoků otevře dvojklik do bloku",
+  !!d68 && d68.poDvojkliku === true && d68.tlacitko === 0,
   JSON.stringify(d68));
+check("…a blok sám napoví, že se dá dvojkliknout",
+  !!d68 && /dvojklik/i.test(d68.napoveda || "") && d68.kurzor === "pointer",
+  JSON.stringify([d68 && d68.napoveda, d68 && d68.kurzor]));
 
 /* 69) Tentyz druh pod dvema jmeny je jedna polozka.
 
