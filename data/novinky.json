@@ -232,5 +232,16 @@
         "text": "**Appka má vlastní značku** — v postranním pruhu stojí logo GO Atlas místo psaného názvu, ve světlé i tmavé podobě. Data se zapisují bezpečně: když se denní obnova přeruší v půlce, zůstane platný starý soubor místo prázdného."
       }
     ]
+  },
+  "2.11": {
+    "nadpis": "Co je nového",
+    "body": [
+      {
+        "text": "**Kolik kusů si appka nechá na raid a na gym, si teď řídíš sám.** V Nastavení přibyla tři čísla: **útočníků na hlavní typ** (výchozí 6, tolik jich jde do lobby), **útočníků na ostatní typy** (3) a **obránců na gym** (8). Dřív to byly pevné hodnoty. Když ti přibude místo v boxu, zvedneš číslo a appka přestane ty kusy posílat pryč — projeví se to hned ve štítcích („Fighting 1/10“ místo 1/6), v Pokrytí rolí i v metodice."
+      },
+      {
+        "text": "**Útoky se upravují dvojklikem, tužka vedle nadpisu zmizela.** Překážela v hlavičce detailu. Dvojklik kamkoli do bloku útoků dělá totéž co dřív a blok to po najetí myší sám napoví."
+      }
+    ]
   }
 }

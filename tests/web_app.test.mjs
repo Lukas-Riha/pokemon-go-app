@@ -18656,6 +18656,56 @@ try {
     s286.sekce.filter((x) => /Rattata|Pidgey/.test(x.jm)).every((x) => x.sekce !== 2),
     JSON.stringify(s286.sekce));
 
+  console.log("\n309) Kolik kusu drzi role, si rekne uzivatel");
+  /* Liga mela „rezervu" a kopie druhu svoje cislo, ale raidove a gymove
+     sloty byly napevno 6 / 3 / 8. Kdo ma v boxu misto navic, nemel kde to
+     rict. Vychozi hodnoty se nemeni — bez zasahu uzivatele musi vyjit
+     presne to, co driv. */
+  await page.goto(URL);
+  await nacteno(page);
+  const s309 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rows = [];
+    for (let i = 0; i < 14; i++) {
+      rows.push({ pokemon: "Machamp", cp: 2800 - i * 10, level: 30, ivAtk: 15 - i % 3,
+        ivDef: 12, ivSta: 12, fastMove: "Counter", charged1: "Dynamic Punch" });
+      rows.push({ pokemon: "Blissey", cp: 2500 - i * 10, level: 30, ivAtk: 10,
+        ivDef: 15 - i % 3, ivSta: 15, fastMove: "Pound", charged1: "Dazzling Gleam" });
+    }
+    P.setRows(rows);
+    await cekej(2500);
+    const nastav = (id, v) => {
+      const el = document.getElementById(id);
+      el.value = v;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const stitky = () => {
+      const c = P.getComputed(), out = [];
+      Object.keys(c).forEach((id) => ((c[id] || {}).duvody || []).forEach((d) => {
+        if (d.druh === "gym" || d.druh === "raid") out.push(d.stitek);
+      }));
+      return [...new Set(out)];
+    };
+    const policka = ["raidSlotu", "raidSlotuMimo", "gymSlotu"]
+      .every((id) => !!document.getElementById(id));
+    const vychozi = stitky();
+    nastav("gymSlotu", 12);
+    nastav("raidSlotu", 10);
+    await cekej(2200);
+    const zvysene = stitky();
+    return { policka, vychozi, zvysene };
+  });
+  check("sloty rolí mají vlastní pole v nastavení", s309.policka === true, "");
+  check("…bez zásahu platí šestka na typ a osmička na gym",
+    s309.vychozi.some((t) => /^Fighting 1\/6$/.test(t))
+      && s309.vychozi.some((t) => /^Gym 1\/8$/.test(t)),
+    JSON.stringify(s309.vychozi));
+  check("…a po zvednutí drží role víc kusů",
+    s309.zvysene.some((t) => /^Fighting 1\/10$/.test(t))
+      && s309.zvysene.some((t) => /^Gym 1\/12$/.test(t)),
+    JSON.stringify(s309.zvysene));
+
   console.log("\n308) Pri skoro stejne kvalite rozhodne o lize utok (CMP)");
   /* Kdyz oba hraci zmacknou nabity utok ve stejnem tahu, vystreli driv ten
      s vyssim utocnym statem. Appka to dlouho nevedela a do ligy stavela

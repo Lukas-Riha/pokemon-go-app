@@ -3167,6 +3167,29 @@
           brání, zbude ze shadow jen ta srážka: <b>−17 %</b>.</span>
       </div>
       <div class="setting">
+        <label for="raidSlotu">Útočníků na <b>hlavní</b> typ do raidu</label>
+        <input type="number" id="raidSlotu" min="1" max="18" value="6" step="1" />
+        <span class="hint">Do raidu jde parta o <b>šesti</b>, proto je výchozí
+          šestka — sedmý kus se do lobby nevejde a drží místo v boxu jako
+          záloha. Zvedej, až budeš mít místa dost: každý slot navíc znamená
+          další kus, který appka přestane pouštět.</span>
+      </div>
+      <div class="setting">
+        <label for="raidSlotuMimo">Útočníků na <b>ostatní</b> typy</label>
+        <input type="number" id="raidSlotuMimo" min="0" max="12" value="3" step="1" />
+        <span class="hint">Typy mimo hlavní desítku. Šest Water útočníků
+          (správná odpověď na 7,8 % bossů) by zabralo místo, které jinde chybí
+          — tři stačí, aby se špičkový kus nezahodil. <b>0 = nedržet nic</b>
+          mimo hlavní typy.</span>
+      </div>
+      <div class="setting">
+        <label for="gymSlotu">Obránců na gym</label>
+        <input type="number" id="gymSlotu" min="1" max="20" value="8" step="1" />
+        <span class="hint">Víc než osm gymů najednou obsadit nejde, takže
+          osmička je strop toho, co se dá doopravdy využít. Vyšší číslo drží
+          náhradníky pro případ, že ti obránce někdo shodí.</span>
+      </div>
+      <div class="setting">
         <label for="rankLimit">Do kolikátého místa v lize brát druh vážně</label>
         <input type="number" id="rankLimit" min="5" max="500" value="50" />
         <span class="hint">Pořadí druhu v PvPoke žebříčku dané ligy. Do <b>#20</b> je
@@ -4594,6 +4617,18 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   // aby se špičkový kus nezahodil, a víc místa neberou.
   var SLOTU_MIMO_POKRYTI = 3;
   var SLOTU_NA_LIGU = 6;     // 3 do týmu + 3 odpovědi na to, co tě láme
+  /* Kolik kusů role drží. Konstanty výš jsou VÝCHOZÍ hodnoty; kdo má
+     v boxu místo navíc, zvedne si je v nastavení. Čte se přímo z pole,
+     protože tahle čísla potřebuje i rozpis rolí a metodika — tedy místa
+     mimo `getSettings()`. */
+  function slotuRole(id, vychozi, max) {
+    var v = num(nastaveniHodnota(id));
+    if (v === null || !isFinite(v)) return vychozi;
+    return Math.max(0, Math.min(max, Math.round(v)));
+  }
+  function slotuNaTyp() { return slotuRole("raidSlotu", SLOTU_NA_TYP, 18) || 1; }
+  function slotuMimoPokryti() { return slotuRole("raidSlotuMimo", SLOTU_MIMO_POKRYTI, 12); }
+  function slotuGymu() { return slotuRole("gymSlotu", SLOTU_GYM, 20) || 1; }
   // Kdo se do ligy nevešel, ač druh v limitu pořadí je — po lize, nejlepší
   // druh první. Bublina z toho odpoví na „proč mám v LC jen šest kusů".
   var ligaPodCarou = {};
@@ -6157,7 +6192,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "cmpPasmo", "pametPoradi", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "cmpPasmo", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -8708,7 +8743,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 
     // ------------------------------------------------------------ RAIDY
     typyRaid().forEach(function (typ, iTyp) {
-      var slotu = iTyp < TYPY_POKRYTI.length ? SLOTU_NA_TYP : SLOTU_MIMO_POKRYTI;
+      var slotu = iTyp < TYPY_POKRYTI.length ? slotuNaTyp() : slotuMimoPokryti();
       var kand = [];
       base.forEach(function (b) {
         var role = raidRoliVTypu(b, typ);
@@ -9072,20 +9107,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     vsichniGym.forEach(function (b) {
       var prijat = !!prijatGym[b.row.id];
       var poradi = prijat ? ++poziceGym : poziceGym + 1;
-      if (prijat && poradi <= SLOTU_GYM) return;
+      if (prijat && poradi <= slotuGymu()) return;
       var gymPoEvo = !!(b.gymRole && b.gymRole.poEvoluci);
       b.podCarou.push({ druh: "gym", typ: "Gym", silou: poradi,
-        poradi: prijat ? poradi : Math.max(poradi, SLOTU_GYM + 1), celkem: SLOTU_GYM,
+        poradi: prijat ? poradi : Math.max(poradi, slotuGymu() + 1), celkem: slotuGymu(),
         jmeno: b.row.pokemon, cp: b.row.cp || "",
         poEvoluci: gymPoEvo,
         jako: gymPoEvo && b.dex && b.dex.finalKey ? ((dexByKey(b.dex.finalKey) || {}).name || "") : "",
         pct: b.gymPct || 0, duvod: prijat ? "plno" : "kopie" });
     });
-    gymKand.slice(0, SLOTU_GYM).forEach(function (b, i) {
+    gymKand.slice(0, slotuGymu()).forEach(function (b, i) {
       b.sloty.push({
-        druh: "gym", klic: "gym", poradi: i + 1, celkem: SLOTU_GYM, jadro: true,
+        druh: "gym", klic: "gym", poradi: i + 1, celkem: slotuGymu(), jadro: true,
         mezera: (b.gymPct || 0) < s.roleThresh, pct: b.gymPct || 0,
-        popis: "obránce na gym, " + (i + 1) + ". z " + SLOTU_GYM
+        popis: "obránce na gym, " + (i + 1) + ". z " + slotuGymu()
           + " (" + Math.round((b.gymPct || 0) * 100) + " % špičky)"
       });
     });
@@ -12056,12 +12091,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + " Diglett: to procento říká „nejlepší možný Dugtrio“, ne „užitečný"
       + " pokémon“.</p>"
       + "<p>Rozpočet je tenhle:</p><ul>"
-      + "<li><strong>" + SLOTU_NA_TYP + " útočníků na každý z " + TYPY_POKRYTI.length
+      + "<li><strong>" + slotuNaTyp() + " útočníků na každý z " + TYPY_POKRYTI.length
       + " krytých typů</strong> (do raidu jde parta o šesti). Pořadí typů je"
       + " spočítané: prvních " + TYPU_V_JADRU + " pokryje 95 % bossů, všech "
       + TYPY_POKRYTI.length + " pak 100 %. Normal v seznamu není — proti"
       + " žádnému z těch 192 druhů není správná odpověď.</li>"
-      + "<li><strong>" + SLOTU_MIMO_POKRYTI + " útočníci na ostatní typy.</strong>"
+      + "<li><strong>" + slotuMimoPokryti() + " útočníci na ostatní typy.</strong>"
       + " Pokrytí je argument o tom, kam investovat napřed, ne o tom, co zahodit:"
       + " Kartana je špičkový Grass útočník, i když Grass v desítce není."
       + " Mimo pokrytí se ale drží jen kusy, které roli opravdu uzavírají —"
@@ -12089,7 +12124,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + " PvPoke přehazuje pořadí každý týden — Great League za čtyři dny posunula"
       + " polovinu top 50 o sedm a víc míst. Kus, který drží jen paměť, je taky"
       + " <em>Nechat – rezerva</em> a řadí se až za druhy, které platí dnes.</li>"
-      + "<li><strong>" + SLOTU_GYM + " obránců na gym.</strong> Strop je 50 mincí"
+      + "<li><strong>" + slotuGymu() + " obránců na gym.</strong> Strop je 50 mincí"
       + " denně a šest obsazených gymů ho vybere za hodinu a půl — víc obránců"
       + " už nic nepřinese.</li>"
       + "<li><strong>Jeden kus na každou megu</strong>, která za to stojí. Mega je"
@@ -22801,27 +22836,27 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     h += sekce("Raidy — jádro pokrytí (prvních " + TYPU_V_JADRU
       + " typů pokryje 95 % bossů)",
       TYPY_POKRYTI.slice(0, TYPU_V_JADRU).map(function (t) { return "raid:" + t; }),
-      SLOTU_NA_TYP);
+      slotuNaTyp());
     var chybiJadro = 0;
     TYPY_POKRYTI.forEach(function (t, i) {
       if (i >= TYPU_V_JADRU) return;
       var z = podleKlice["raid:" + t];
-      chybiJadro += Math.max(0, SLOTU_NA_TYP
+      chybiJadro += Math.max(0, slotuNaTyp()
         - (z ? z.kusy.filter(function (k) { return !k.mezera; }).length : 0));
-      h += radek("raid:" + t, t, SLOTU_NA_TYP);
+      h += radek("raid:" + t, t, slotuNaTyp());
     });
     h += sekce("Raidy — dorovnání na 100 % bossů",
       TYPY_POKRYTI.slice(TYPU_V_JADRU).map(function (t) { return "raid:" + t; }),
-      SLOTU_NA_TYP);
+      slotuNaTyp());
     TYPY_POKRYTI.slice(TYPU_V_JADRU).forEach(function (t) {
-      h += radek("raid:" + t, t, SLOTU_NA_TYP);
+      h += radek("raid:" + t, t, slotuNaTyp());
     });
     h += sekce("Raidy — ostatní typy (do pokrytí nepotřeba,"
       + " ale špičkový útočník se nezahazuje)",
       typyRaid().slice(TYPY_POKRYTI.length).map(function (t) { return "raid:" + t; }),
-      SLOTU_MIMO_POKRYTI);
+      slotuMimoPokryti());
     typyRaid().slice(TYPY_POKRYTI.length).forEach(function (t) {
-      h += radek("raid:" + t, t, SLOTU_MIMO_POKRYTI, ' class="rozp-nadjadro"');
+      h += radek("raid:" + t, t, slotuMimoPokryti(), ' class="rozp-nadjadro"');
     });
 
     h += sekce("Ligy — 6 druhů na ligu, po jedné kopii",
@@ -22831,7 +22866,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     h += radek("pvp:ML", "Master League", SLOTU_NA_LIGU);
 
     h += sekce("Ostatní", [], 0);
-    h += radek("gym", "Obránci gymů", SLOTU_GYM);
+    h += radek("gym", "Obránci gymů", slotuGymu());
 
     var megaKusy = [];
     base.forEach(function (b) {
@@ -22848,7 +22883,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     h += "</tbody></table>";
 
     var drzenych = Object.keys(drzene).length;
-    h += '<p class="hint">Do jádra osmi typů (' + (TYPU_V_JADRU * SLOTU_NA_TYP)
+    h += '<p class="hint">Do jádra osmi typů (' + (TYPU_V_JADRU * slotuNaTyp())
       + " kusů) chybí <b>" + chybiJadro + "</b>. Držených kusů celkem: <b>"
       + drzenych + "</b> z " + base.length
       + ". Plný rozpočet vyjde na zhruba <b>75 až 95 kusů</b> — cokoli nad to už"
