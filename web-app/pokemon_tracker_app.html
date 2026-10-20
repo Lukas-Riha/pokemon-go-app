@@ -10860,6 +10860,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       // Doteď byl PvP jediná role, kde se moveset vůbec neřešil: kus s parádními
       // IV a nepoužitelnými útoky prošel jako dobrý pick.
       var pvpRetrain = false, pvpTitle = "";
+      // Ligová sestava a jestli ji kus má — vedle útoků se to musí říct,
+      // protože barvy u nich měří raidové DPS, ne ligu.
+      var pvpSestava = "", pvpSestavaSedi = null, pvpSestavaLiga = "";
       var wantMoves = pvpRec.indexOf("Ano") === 0 || pvpRec.indexOf("ML #") === 0;
       // sestava se posuzuje podle ligy, do které ten kus doporučujeme
       var pvpEntry = null;
@@ -10870,6 +10873,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var haveCharged = [r.charged1, r.charged2].filter(Boolean).map(moveKey);
 
       if (rec) {
+        pvpSestava = rec.text;
+        pvpSestavaLiga = (b.strongPot && b.strongPot.league) || b.bestRankLeague || "";
+        /* „Sedí" znamená, že kus má DOPORUČENOU sestavu — ne jen útok,
+           který simulace občas použije. Jinak by appka tvrdila, že je
+           všechno v pořádku, i když má kus úplně jiné útoky než ty,
+           se kterými ten druh ligu hraje. */
+        var recKlice = [moveKey(rec.fastName)]
+          .concat(rec.chargedNames.map(moveKey));
+        pvpSestavaSedi = !!haveFast && recKlice.indexOf(haveFast) !== -1
+          && haveCharged.some(function (k) { return recKlice.indexOf(k) !== -1; });
         if (!haveFast && !haveCharged.length) {
           pvpTitle = "Útoky nejsou vyplněné. PvPoke pro tenhle druh doporučuje " + rec.text + ".";
         } else {
@@ -11649,6 +11662,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             nahrada: p.nahrada || "", nahradaElitni: !!p.nahradaElitni };
         }),
         konfliktSestav: konfliktSestav,
+        /* Ligová sestava z PvPoke a jestli ji kus má. Barvy u útoků měří
+           raidové DPS, takže u kusu, který hraje ligu, musí být vidět
+           i druhé měřítko — jinak si detail a Vyhledávání odporují. */
+        pvpSestava: pvpSestava,
+        pvpSestavaSedi: pvpSestavaSedi,
+        pvpSestavaLiga: pvpSestavaLiga,
         movesPct: mr && mr.pct !== null ? mr.pct : null,
         strongFromMoves: b.strongFromMoves,
         utocneTypy: b.strongFromMoves ? moveTypes(b.moveRating) : (b.dex ? b.dex.types : []),
@@ -16443,6 +16462,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + '<div class="d-why">' + escHtml(utoky.length ? (c.movesTitle || "")
           : (c.movesBest ? "Nejlepší možná sestava tohohle druhu. "
               + (c.movesTitle || "") : (c.movesTitle || "")))
+      /* Větu o ligové sestavě kreslí vzhledová vrstva (`atlas-utoky-liga`):
+         blok útoků si staví sama, takže by se sem stejně nedostala. Engine
+         k ní dodává data — `pvpSestava` a `pvpSestavaSedi`. */
       + "</div></div>";
 
     // Dvě sestavy vedle sebe: co je nejlepší TEĎ a co bude nejlepší PO

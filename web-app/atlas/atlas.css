@@ -3170,6 +3170,12 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   background:var(--warning-bg);color:var(--status-warning);font-size:10.5px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px}
 
+/* Claude (115): věta o ligové sestavě pod útoky. Barvy u útoků měří
+   raidové DPS — u kusu, který hraje ligu, tahle věta řekne, co se
+   v lize opravdu hraje. Drobná, ale nesmí splynout s chipy. */
+.atlas-test .atlas-utoky-liga{margin:6px 0 0;font-size:11.5px;line-height:1.5;
+  color:var(--text-secondary);max-width:46ch}
+
 /* Claude (114): než se sprite načte, nesmí na jeho místě probliknout
    jméno z `alt`. V čištění boxu to bylo nejvíc vidět: při přepnutí na
    dalšího pokémona se obrázek staví znovu a než dorazí, vykreslí

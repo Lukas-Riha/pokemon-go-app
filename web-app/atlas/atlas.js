@@ -1190,6 +1190,10 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
        překáželo — zůstává jen dvojklik a blok o něm po najetí myší
        řekne sám (jinak by to nikdo neuhodl). */
     box.dataset.tip='Dvojklik otevře úpravu útoků';
+    /* Barvy u utoku meri RAIDOVE DPS. U kusu, ktery hraje ligu, je to jen
+       pulka pravdy — v lize se hraje jina sestava a Vyhledavani ji ukazuje.
+       Bez tehle vety to vypadalo, ze si appka odporuje. */
+    const ligova=(c.pvpLigy||[]).length?c.pvpSestava:'';
     // Kus bez vyplněných útoků: u nadpisu se rozsvítí vykřičník. Bez něj se
     // dalo snadno přehlédnout, že appka u toho kusu nic nezná — a rady se
     // pak počítaly z nejlepší možné sestavy, ne z jeho skutečné.
@@ -1385,6 +1389,17 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
       const text=[...moves.querySelectorAll('.d-move-jm')].map(e=>e.textContent).find(x=>/\s\+\s/.test(x));
       if(text)pridej(row.pokemon||'teď',text.split(' + '),'Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
       else box.append(moves);
+    }
+    /* Ligova sestava pod utoky. Barvy u chipu meri raidove DPS; u kusu,
+       ktery hraje ligu, se hraje jina sestava a bez teto vety si detail
+       a Vyhledavani odporovaly. */
+    if(ligova){
+     const radek=document.createElement('p');
+     radek.className='atlas-utoky-liga';
+     radek.textContent=c.pvpSestavaSedi
+      ? 'V lize hraje PvPoke stejnou sestavu: '+ligova+'.'
+      : 'Barvy měří raidové DPS. V lize hraje PvPoke jinou sestavu: '+ligova+'.';
+     box.append(radek);
     }
     if(veta&&!box.dataset.tip)box.setAttribute('data-tip',veta);
     utokyBox=box;

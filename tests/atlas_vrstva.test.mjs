@@ -5649,6 +5649,55 @@ check("sprite nese jméno pro čtečku, ale není vidět",
   d78.sJmenem > 0 && d78.viditelne.length === 0,
   JSON.stringify([d78.celkem, d78.sJmenem, d78.viditelne]));
 
+/* 79) U utoku je videt, cim se meri.
+
+   Barvy u utoku pocitaji RAIDOVE DPS. Ve Vyhledavani stoji u tehoz
+   druhu sestava z PvPoke pro ligu — a ta byva uplne jina (Corviknight
+   ma Air Slash + Sky Attack, PvPoke hraje Sand Attack + Air Cutter).
+   Obe cisla jsou spravne, jen kazde o necem jinem; dokud to appka
+   nerekla, vypadalo to jako rozpor. */
+const p79 = await otevri(1500, [
+  { pokemon: "Corviknight", cp: 1492, level: 24, ivAtk: 0, ivDef: 14, ivSta: 1,
+    fastMove: "Air Slash", charged1: "Payback", charged2: "Sky Attack" },
+  { pokemon: "Machamp", cp: 2800, level: 30, ivAtk: 15, ivDef: 12, ivSta: 12,
+    fastMove: "Counter", charged1: "Dynamic Punch" },
+]);
+const d79 = await p79.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  const rows = P.getRows(), c = P.getComputed();
+  const corvi = rows.find((r) => r.pokemon === "Corviknight");
+  const machamp = rows.find((r) => r.pokemon === "Machamp");
+  const out = {
+    sestava: c[corvi.id].pvpSestava || "",
+    sedi: c[corvi.id].pvpSestavaSedi,
+    ligy: (c[corvi.id].pvpLigy || []).length,
+    raidLigy: (c[machamp.id].pvpLigy || []).length,
+  };
+  window.__atlasTest.openDetail(corvi.id);
+  await cekej(800);
+  out.veta = [...document.querySelectorAll("#atlasModal .atlas-utoky-liga")]
+    .map((x) => x.textContent.trim());
+  document.querySelector('#atlasModal [data-atlas-action="close"]')?.click();
+  await cekej(300);
+  window.__atlasTest.openDetail(machamp.id);
+  await cekej(800);
+  out.vetaRaid = [...document.querySelectorAll("#atlasModal .atlas-utoky-liga")].length;
+  return out;
+});
+await p79.close();
+check("engine zná ligovou sestavu z PvPoke",
+  /\+/.test(d79.sestava) && d79.ligy > 0, JSON.stringify([d79.sestava, d79.ligy]));
+check("…a pozná, že ji kus nemá", d79.sedi === false, String(d79.sedi));
+check("v detailu stojí u útoků věta, čím se měří",
+  d79.veta.length === 1 && /raidové DPS/.test(d79.veta[0])
+    && d79.veta[0].includes(d79.sestava),
+  JSON.stringify(d79.veta));
+check("…a u kusu, který ligu nehraje, se neplete",
+  d79.raidLigy === 0 && d79.vetaRaid === 0,
+  JSON.stringify([d79.raidLigy, d79.vetaRaid]));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

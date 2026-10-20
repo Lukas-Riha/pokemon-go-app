@@ -258,6 +258,9 @@
       },
       {
         "text": "**Než se obrázek načte, neprobliká jeho jméno.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu a než dorazil, ukázal prohlížeč jeho název („Minior (Meteor Core)“). Jméno v obrázku zůstává kvůli čtečkám obrazovky, jen ho není vidět."
+      },
+      {
+        "text": "**U útoků je vidět, čím se měří.** Barvy u útoků v detailu počítají **raidové DPS** — zelená znamená „proti bossovi je to dobré“. Ve Vyhledávání stojí u téhož druhu sestava, kterou v lize hraje PvPoke, a ta bývá úplně jiná: Corviknight má Air Slash + Sky Attack, do Great League se hraje Sand Attack + Air Cutter. Obojí platí, jen každé o něčem jiném. U kusu, který hraje ligu, teď pod útoky stojí věta s tou ligovou sestavou, takže si detail a Vyhledávání už neodporují."
       }
     ]
   }
