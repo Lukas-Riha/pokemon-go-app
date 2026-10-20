@@ -5620,6 +5620,35 @@ check("tahák zná i bosse, kteří teprve přijdou",
 check("…a sestavu na ně spočítá stejně jako na dnešní",
   d77.budouciMaSestavu === true, String(d77.budouciMaSestavu));
 
+/* 78) Nez se sprite nacte, nesmi probliknout jeho jmeno.
+
+   V cisteni boxu se pri prechodu na dalsiho pokemona stavi obrazek
+   znovu a nez dorazi, vykresli prohlizec `alt` — uzivatel videl
+   „Minior (Meteor Core)" misto obrazku. Text zustava kvuli ctecce,
+   jen neni videt. */
+const p78 = await otevri(1500, [
+  { pokemon: "Minior (Meteor Core)", cp: 900, level: 20, ivAtk: 10, ivDef: 10,
+    ivSta: 10, fastMove: "Tackle", charged1: "Swift" },
+]);
+const d78 = await p78.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  window.__atlasTest.openDetail(P.getRows()[0].id);
+  await cekej(700);
+  const vsechny = [...document.querySelectorAll("#atlasModal img")];
+  const sJmenem = vsechny.filter((i) => (i.getAttribute("alt") || "").trim());
+  return { celkem: vsechny.length, sJmenem: sJmenem.length,
+    viditelne: sJmenem.filter((i) => {
+      const c = getComputedStyle(i).color.replace(/\s/g, "");
+      return !(c === "rgba(0,0,0,0)" || c === "transparent");
+    }).map((i) => i.getAttribute("alt")) };
+});
+await p78.close();
+check("sprite nese jméno pro čtečku, ale není vidět",
+  d78.sJmenem > 0 && d78.viditelne.length === 0,
+  JSON.stringify([d78.celkem, d78.sJmenem, d78.viditelne]));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

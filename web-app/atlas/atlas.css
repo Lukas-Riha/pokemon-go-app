@@ -3170,6 +3170,16 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   background:var(--warning-bg);color:var(--status-warning);font-size:10.5px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px}
 
+/* Claude (114): než se sprite načte, nesmí na jeho místě probliknout
+   jméno z `alt`. V čištění boxu to bylo nejvíc vidět: při přepnutí na
+   dalšího pokémona se obrázek staví znovu a než dorazí, vykreslí
+   prohlížeč alt text („Minior (Meteor Core)"). Text se schová barvou,
+   takže pro čtečku obrazovky zůstává — jen ho není vidět. */
+.atlas-test img[data-atlas-pokemon],
+.atlas-test .atlas-event-obr img,
+.atlas-test .atlas-boss-art img,
+.atlas-test #atlasCalendar .ac-art img{color:transparent}
+
 /* Claude (113) — C-004: kalendář na telefonu umí všechny tři režimy.
    Přepínač Týden/Měsíc/Seznam se na mobilu schovával, takže se k měsíci
    ani seznamu nedalo dostat. Ovladače jsou ve třech řádcích v pořadí

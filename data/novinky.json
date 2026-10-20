@@ -255,6 +255,9 @@
       },
       {
         "text": "**Sekce Shiny neopakuje, co už hvězdičku má.** Zdroj u akce vypíše, kdo může být shiny — často přesně ty druhy, co stojí o kus výš v Soubojích a svoje ✦ už tam mají. V sekci Shiny zůstává jen to, co jinde není."
+      },
+      {
+        "text": "**Než se obrázek načte, neprobliká jeho jméno.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu a než dorazil, ukázal prohlížeč jeho název („Minior (Meteor Core)“). Jméno v obrázku zůstává kvůli čtečkám obrazovky, jen ho není vidět."
       }
     ]
   }
