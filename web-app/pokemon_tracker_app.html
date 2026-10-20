@@ -19865,9 +19865,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    *  sekci `raid` se jmény bossů, takže se z něj dá přečíst, co běží teď a co
    *  už skončilo. Snímek ze ScrapedDucku zůstává jako zdroj typů a CP a jako
    *  seznam stálé rotace (jedno- a tříhvězdičkoví bossové vlastní akci nemají). */
+  // Jak daleko dopředu se boss hlásí. Dva týdny jsou tak akorát: dost
+  // na to, aby se dal dotáhnout útočník, a ne tolik, aby tahák zarostl.
+  var DOPREDU_DNU = 14;
+
   function bossZAkci() {
     var ted = Date.now();
-    var bezi = {}, skoncilo = {};
+    var bezi = {}, skoncilo = {}, chysta = {};
     var tierZNazvu = function (nazev) {
       var n = String(nazev || "");
       if (/mega/i.test(n)) return "Mega Raids";
@@ -19887,8 +19891,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var klic = function (jm) {
       var n = String(jm || "");
       var predpona = (/^shadow\s/i.test(n) ? "s:" : "") + (/^mega\s/i.test(n) ? "m:" : "");
-      var k = dexKey(n.replace(/^(shadow|mega)\s+/i, ""));
-      return predpona + (k || n.toLowerCase().replace(/[^a-z0-9]+/g, ""));
+      var holy = n.replace(/^(shadow|mega)\s+/i, "");
+      var k = dexKey(holy);
+      /* Mega Charizard X a Y jsou DVA bossové s jinými typy (Dragon vs
+         Flying). `dexKey` písmeno formy zahazuje, takže by z nich byl
+         jeden a na druhého nešla připravit sestava. */
+      var forma = (holy.match(/ ([xy])$/i) || [])[1];
+      return predpona + (k || n.toLowerCase().replace(/[^a-z0-9]+/g, ""))
+        + (forma ? ":" + forma.toLowerCase() : "");
     };
 
     ((EVENTS && EVENTS.events) || []).forEach(function (e) {
@@ -19906,6 +19916,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
             bezi[klic(plne)] = { jmeno: plne, tier: tierZNazvu(e[0]), shiny: 1 };
           } else if (doKdy && doKdy.getTime() < ted) {
             skoncilo[klic(plne)] = true;
+          } else if (od && od.getTime() > ted
+              && od.getTime() <= ted + DOPREDU_DNU * 86400000) {
+            // Boss, který teprve přijde. Drží se ten NEJBLIŽŠÍ termín.
+            var k2 = klic(plne);
+            if (!chysta[k2] || chysta[k2].od > od.getTime()) {
+              chysta[k2] = { jmeno: plne, tier: tierZNazvu(e[0]), shiny: 1,
+                od: od.getTime() };
+            }
           }
         });
       });
@@ -19927,6 +19945,16 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       videno[k] = true;
       var d = dexEntry(jm.replace(/^shadow\s+/i, ""));
       out.push([jm, bezi[k].tier, d ? d.types : [], [], [], bezi[k].shiny]);
+    });
+    /* Co teprve přijde, až úplně nakonec a s datem v sedmém poli —
+       starší kód o něm neví a čte jen prvních šest. */
+    Object.keys(chysta).forEach(function (k) {
+      if (videno[k]) return;
+      var jm = chysta[k].jmeno;
+      videno[k] = true;
+      var d2 = dexEntry(jm.replace(/^shadow\s+/i, ""));
+      out.push([jm, chysta[k].tier, d2 ? d2.types : [], [], [], chysta[k].shiny,
+        new Date(chysta[k].od).toISOString().slice(0, 16)]);
     });
     return out;
   }
@@ -20952,6 +20980,9 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
        je srovná podle rozpisu akcí — tentýž seznam, jaký ukazuje žebříček
        „na koho dnes do raidu" v Událostech. */
     var raidySerazene = bossZAkci().slice().sort(function (a, z) {
+      // Co běží teď, je napřed; co teprve přijde, až za tím.
+      var ba = a[6] ? 1 : 0, bz = z[6] ? 1 : 0;
+      if (ba !== bz) return ba - bz;
       var d = TIER_PORADI(a[1]) - TIER_PORADI(z[1]);
       if (d) return d;
       // shadow verze až za normální — jsou to jiné souboje
@@ -20984,6 +21015,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         name: jmeno,
         tier: tier,
         types: typy,
+        // Odkdy ten boss je. Prázdno = běží teď.
+        odKdy: r[6] || "",
         cp: cp[0] ? cp[0] + "–" + cp[1] + " CP" : "",
         picks: scored.slice(0, COUNTERU).map(function (x) {
           return {
@@ -21148,9 +21181,11 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       /* Sbalené. Bossů bývá přes dvacet a každý veze šestku counterů, takže
          rozbalený Tahák znamená dlouhé scrollování k tomu, co člověk hledá.
          Kdo chce, klepne. */
+      var budoucich = sheet.bossove.filter(function (b) { return b.odKdy; }).length;
       h += '<details class="cs-sekce" id="csBossove"><summary class="cs-title">'
-        + "Raid bossové právě teď <span>(" + sheet.bossove.length + ")</span>"
-        + "</summary>";
+        + "Raid bossové <span>(" + sheet.bossove.length
+        + (budoucich ? ", z toho " + budoucich + " teprve přijde" : " právě teď")
+        + ")</span></summary>";
       h += '<div class="cs-grid">';
       sheet.bossove.forEach(function (b) {
         var bd = forFile ? null : dexEntry(b.name);
@@ -21159,7 +21194,12 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
           + (bd && !forFile ? obrazekHtml(b.name, bd, "cs-boss-obr") : "")
           + '<div class="cs-boss-text">'
           + '<div class="cs-type-name">' + escHtml(b.name)
-          + '<span class="cs-tier">' + escHtml(b.tier) + "</span></div>"
+          + '<span class="cs-tier">' + escHtml(b.tier) + "</span>"
+          /* Boss, který teprve přijde: sestava se počítá stejně (z typů),
+             jen je potřeba vědět, že dneska na něj nenarazíš. */
+          + (b.odKdy ? '<span class="cs-tier cs-boss-od">od '
+              + escHtml(kratkeDatum(b.odKdy)) + "</span>" : "")
+          + "</div>"
           + '<div class="cs-bosstypes">'
           + (b.types || []).map(typeChipHtml).join("")
           + (b.cp ? '<span class="cs-cp">' + b.cp + "</span>" : "")

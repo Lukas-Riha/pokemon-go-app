@@ -243,5 +243,19 @@
         "text": "**Útoky se upravují dvojklikem, tužka vedle nadpisu zmizela.** Překážela v hlavičce detailu. Dvojklik kamkoli do bloku útoků dělá totéž co dřív a blok to po najetí myší sám napoví."
       }
     ]
+  },
+  "2.12": {
+    "nadpis": "Co je nového",
+    "body": [
+      {
+        "text": "**Akce se dvěma bossy nabídne oba.** „Mega Charizard X and Mega Charizard Y“ je jedna akce, ale dva různé souboje — X je Dragon, Y Flying. Appka je slévala do jednoho, takže na druhého z nich nešlo připravit tým. Teď jsou v detailu akce oba, přepneš mezi nimi a Tahák i řazení rosteru jdou na toho, kterého si vybereš."
+      },
+      {
+        "text": "**Tahák zná i bosse, kteří teprve přijdou.** Dřív uměl jen dnešní raidy, takže klik na „Otevřít v Taháku“ u akce, co začíná za dva dny, skončil hláškou, že takový boss dnes není. Nově stojí v Taháku i bossové z raidů do čtrnácti dnů — s datem, odkdy jsou, a s obvyklou šestkou counterů, takže se dá připravit dopředu."
+      },
+      {
+        "text": "**Sekce Shiny neopakuje, co už hvězdičku má.** Zdroj u akce vypíše, kdo může být shiny — často přesně ty druhy, co stojí o kus výš v Soubojích a svoje ✦ už tam mají. V sekci Shiny zůstává jen to, co jinde není."
+      }
+    ]
   }
 }

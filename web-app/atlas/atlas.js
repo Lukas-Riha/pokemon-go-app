@@ -1994,9 +1994,14 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
   if(/(Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i.test(String(e[0]))
     ||/raid-hour|spotlight|community-day|max-monday|catch-mastery/.test(e[1])){const stem=String(e[0]).replace(/ (?:Raid Hour|Spotlight Hour|Community Day(?: Classic)?|Catch Mastery|during Max Monday)$/i,'');stem.split(/,\s*(?:and\s+)?|\s+and\s+/).reverse().forEach(name=>{if(!names.includes(name)&&(window.ATLAS_ART?.[P.dexKeyOf(name)]||P.atlasImage(name)))names.unshift(name)})}
   /* Tentyz druh pod dvema jmeny je jedna polozka: "Dynamax Sableye"
-     a "Sableye" davaly dva stejne obrazky i dve stejna tlacitka. */
+     a "Sableye" davaly dva stejne obrazky i dve stejna tlacitka. Klicem
+     je ale JMENO bez max predpony, ne druh — "Mega Charizard X" a
+     "Mega Charizard Y" jsou dva ruzni bossove s jinymi typy a slit je
+     do jednoho znamenalo, ze na druheho nesla pripravit sestava. */
   const videno=new Set();
-  return names.filter(n=>{const k=P.dexKeyOf(n)||String(n).toLowerCase();
+  return names.filter(n=>{
+   const k=String(n).toLowerCase().replace(/^(?:dynamax|gigantamax|g-?max|max)\s+/,'').trim()
+    ||String(n).toLowerCase();
    if(videno.has(k))return false;videno.add(k);return true}).slice(0,3)}
  function bossCards(es){return es.flatMap(e=>{const names=eventNames(e);return (names.length?names:[null]).map(name=>`<button class="atlas-boss" data-event-index="${events.indexOf(e)}"><span class="atlas-boss-art">${name?image(name):'<span aria-hidden="true">◇</span>'}</span><b>${esc(name&&/^Shadow /.test(e[0])&&!/^Shadow /.test(name)?'Shadow '+name:name||e[0])}</b><small>${/^max-/.test(e[1])?'Max souboj':'Raid'} · ${format(e[4])}</small></button>`)}).join('')}
  /* Okno akce, ktere pro dany den plati. Akce mivaji vic casti a kazda
@@ -2210,10 +2215,19 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
   const klice=[...new Set(okna.flatMap(w=>Object.keys(w[2]||{})))]
    .filter(k=>okna.some(w=>Array.isArray((w[2]||{})[k])&&(w[2][k].length)))
    .filter(k=>!(maVyzkum&&k==='vyzkum'));
+  /* Kdo uz ✦ ma jinde: sekce Shiny by ho opakovala. Beru jen druhy
+     s priznakem shiny=1 — u nich uz bublina hvezdicku ukazuje. */
+  const jizSHvezdou=new Set();
+  okna.forEach(w=>Object.entries(w[2]||{}).forEach(([k,v])=>{
+   if(k==='shiny')return;
+   (v||[]).forEach(([jm,f])=>{if(f===1)jizSHvezdou.add(String(jm).toLowerCase())});
+  }));
   klice.sort((a,b)=>{const ia=PORADI_SEKCI.indexOf(a),ib=PORADI_SEKCI.indexOf(b);
    return (ia<0?99:ia)-(ib<0?99:ib)});
   const html=klice.map(k=>{
-   const skupiny=okna.map(w=>({od:w[0],do:w[1],items:((w[2]||{})[k]||[])}))
+   const skupiny=okna.map(w=>({od:w[0],do:w[1],
+    items:((w[2]||{})[k]||[]).filter(([jm,f])=>
+     !(k==='shiny'&&f!==-1&&jizSHvezdou.has(String(jm).toLowerCase())))}))
     .filter(g=>g.items.length);
    const casovana=skupiny.some(g=>String(g.od)!==String(e[3])||String(g.do)!==String(e[4]));
    const ted=Date.now();

@@ -5151,7 +5151,11 @@ const d69 = await p69.evaluate(async (azSrc) => {
   const spatne = [];
   ev.forEach((e) => {
     const jm = U.names(e) || [];
-    const klice = jm.map((n) => P.dexKeyOf(n) || String(n).toLowerCase());
+    /* Duplicita se meri podle JMENA bez max predpony, ne podle druhu:
+       „Mega Charizard X" a „Mega Charizard Y" maji tyz dexKey, ale jsou
+       to dva ruzni bossove a oba musi jit vybrat. */
+    const klice = jm.map((n) => String(n).toLowerCase()
+      .replace(/^(?:dynamax|gigantamax|g-?max|max)\s+/, "").trim());
     if (new Set(klice).size !== klice.length) spatne.push(e[0] + ": " + jm.join(" / "));
   });
   window.__pgoZalozka("eventsCard");
@@ -5552,6 +5556,69 @@ check("…přepnutí nechá vybraný den i kategorii a nic nepřeteče",
   [d76.mesic, d76.seznam, d76.tyden].every((x) => x.den === d76.mesic.den
     && x.filtr === "raid" && x.pretece === false),
   JSON.stringify([d76.mesic.den, d76.mesic.filtr, d76.seznam.den, d76.tyden.den]));
+
+/* 77) Akce se dvema bossy, budouci bossove a Shiny bez opakovani.
+
+   „Mega Charizard X and Mega Charizard Y" je jedna akce a DVA souboje
+   s jinymi typy. Appka je slevala do jednoho (dexKey pismeno formy
+   zahazuje), takze na Y nesla pripravit sestava. Tahak navic znal jen
+   dnesni bosse — klik na akci, ktera zacina za dva dny, koncil hlaskou
+   „v dnesnich raidech neni". A sekce Shiny opakovala druhy, ktere uz
+   maji hvezdicku v Soubojich. */
+const p77 = await otevri(1500, [
+  { pokemon: "Rampardos", cp: 3000, level: 30, ivAtk: 15, ivDef: 12, ivSta: 12,
+    fastMove: "Smack Down", charged1: "Rock Slide" },
+  { pokemon: "Metagross", cp: 3400, level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Bullet Punch", charged1: "Meteor Mash" },
+]);
+const d77 = await p77.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  const vse = (P.eventsData() || {}).events || [];
+  // akce, ktera ma v jednom okne dva ruzne raidove bosse
+  const dvojice = vse.find((e) => {
+    const jm = [...new Set((e[7] || []).flatMap((w) => ((w[2] || {}).raid || [])
+      .filter((x) => x[1] !== -1).map((x) => x[0])))];
+    return jm.length > 1;
+  });
+  const out = { akce: dvojice ? dvojice[0] : null,
+    names: dvojice ? window.AtlasEventUI.names(dvojice) : [] };
+  if (dvojice) {
+    document.querySelector('[data-menu-group="events"]')?.click();
+    await cekej(900);
+    window.AtlasEventUI.open(vse.indexOf(dvojice));
+    await cekej(700);
+    const dlg = document.getElementById("atlasEventDialog");
+    const sekce = {};
+    dlg.querySelectorAll(".atlas-event-sekce").forEach((d) => {
+      const n = (d.querySelector("summary") || {}).textContent;
+      sekce[(n || "").trim()] = [...d.querySelectorAll(".atlas-event-jmeno")]
+        .map((x) => x.childNodes[0].textContent.trim());
+    });
+    out.sekce = sekce;
+    dlg.close();
+  }
+  const sheet = P.cheatSheetData();
+  out.bossu = (sheet.bossove || []).length;
+  out.budoucich = (sheet.bossove || []).filter((b) => b.odKdy).length;
+  out.budouciMaSestavu = (sheet.bossove || [])
+    .filter((b) => b.odKdy).every((b) => (b.picks || []).length > 0);
+  return out;
+});
+await p77.close();
+check("akce se dvěma bossy nabídne oba",
+  d77.names.length >= 2 && new Set(d77.names).size === d77.names.length,
+  JSON.stringify([d77.akce, d77.names]));
+check("…a sekce Shiny neopakuje, co už hvězdičku má",
+  !d77.sekce || !d77.sekce["Shiny"]
+    || !d77.sekce["Shiny"].some((x) => (d77.sekce["Souboje"] || []).includes(x)),
+  JSON.stringify(d77.sekce));
+check("tahák zná i bosse, kteří teprve přijdou",
+  d77.budoucich > 0 && d77.bossu > d77.budoucich,
+  JSON.stringify([d77.bossu, d77.budoucich]));
+check("…a sestavu na ně spočítá stejně jako na dnešní",
+  d77.budouciMaSestavu === true, String(d77.budouciMaSestavu));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
