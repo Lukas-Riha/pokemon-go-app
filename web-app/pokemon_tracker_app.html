@@ -16323,8 +16323,24 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
                 : "")
             + "</div></td>";
         }
+        /* Sestava, kterou se TAHLE liga hraje. Každá liga má vlastní —
+           v Ultra se často hraje jiný nabitý útok než v Great. Ukazuje
+           se jen tam, kde ten druh ligu opravdu hraje; jinde by to byla
+           rada do souboje, který nenastane. */
+        var ligaUtoky = (function () {
+          var kde = (L.ted && L.ted.rank) ? L.ted : ((L.po && L.po.rank) ? L.po : null);
+          if (!kde) return "";
+          var lk = ligaKlicZeZkratky(L.liga || L.label || "");
+          if (!lk) return "";
+          return sestavaText(metaZaznam(dexKey(kde.jmeno || r.pokemon), lk, r.forma));
+        })();
         h += '<tr><th><span class="d-lg-nazev">' + L.nazev + "</span>"
-          + '<span class="d-lg-cap">do ' + L.cap + " CP</span></th>"
+          + '<span class="d-lg-cap">do ' + L.cap + " CP</span>"
+          + (ligaUtoky ? '<span class="d-lg-utoky" title="Sestava, kterou'
+              + ' tenhle druh v téhle lize hraje podle PvPoke. Barvy'
+              + ' u útoků v hlavičce měří raidové DPS — to je jiné měřítko.">'
+              + escHtml(ligaUtoky) + "</span>" : "")
+          + "</th>"
           + bunka(L.ted, false) + (maEvoluci ? bunka(L.po, true) : "")
           + "</tr>";
       });

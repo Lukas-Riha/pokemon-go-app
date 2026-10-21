@@ -5679,6 +5679,13 @@ const d79 = await p79.evaluate(async () => {
   await cekej(800);
   out.veta = [...document.querySelectorAll("#atlasModal .atlas-utoky-liga")]
     .map((x) => x.textContent.trim());
+  // Ligova tabulka: u ligy, kterou druh hraje, stoji i jeji sestava.
+  out.tabulka = [...document.querySelectorAll("#atlasModal .d-ligy-tab th")]
+    .filter((th) => th.querySelector(".d-lg-nazev"))
+    .map((th) => [th.querySelector(".d-lg-nazev").textContent.trim(),
+      (th.querySelector(".d-lg-utoky") || {}).textContent || ""]);
+  out.pretece = [...document.querySelectorAll("#atlasModal .d-ligy-tab th")]
+    .filter((x) => x.scrollWidth > x.clientWidth + 2).length;
   document.querySelector('#atlasModal [data-atlas-action="close"]')?.click();
   await cekej(300);
   window.__atlasTest.openDetail(machamp.id);
@@ -5697,6 +5704,13 @@ check("v detailu stojí u útoků věta, čím se měří",
 check("…a u kusu, který ligu nehraje, se neplete",
   d79.raidLigy === 0 && d79.vetaRaid === 0,
   JSON.stringify([d79.raidLigy, d79.vetaRaid]));
+check("v ligové tabulce stojí sestava u ligy, kterou druh hraje",
+  d79.tabulka.filter((x) => x[1]).length >= 1
+    && d79.tabulka.filter((x) => x[1]).every((x) => x[1].includes("+"))
+    && d79.tabulka.some((x) => /Little Cup/.test(x[0]) && !x[1]),
+  JSON.stringify(d79.tabulka));
+check("…a nic se tím nerozsype do šířky",
+  d79.pretece === 0, String(d79.pretece));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
