@@ -3190,6 +3190,18 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .d-lg-pct{white-space:nowrap;flex:0 0 auto}
 .atlas-test .d-lg-hlava > b{flex:0 0 auto}
 .atlas-test .d-lg-bar{flex:0 1 46px;min-width:22px}
+/* Odznáček „nejvyšší CP před evolucí" je třetí řádek buňky a buňka má
+   pevnou výšku — s původní velikostí se mu ořezával spodek. Menší písmo
+   a těsnější řádkování ho do ní vejde celý; podklad má vlastní výšku,
+   takže se musí omezit i ta. */
+.atlas-test .d-ligy-tab td span.d-lg-strop{font-size:9.5px;line-height:1.25;
+  display:flex;align-items:center;min-height:14px}
+.atlas-test .d-ligy-tab td .d-lg-strop em{margin-left:5px;
+  display:inline-flex;align-items:center;gap:2px}
+.atlas-test .d-ligy-tab td .d-lg-strop em b{font-size:9.5px;line-height:1.3;
+  margin-left:0;padding:0 4px;border-radius:4px}
+.atlas-test .d-ligy-tab td .d-lg-cena{line-height:1.35}
+
 /* Sestava patří i do sloupce „po evoluci": podle ní se pozná, jestli
    útoky, které kus má teď, budou po vývinu k něčemu — a jestli má cenu
    do nich sypat TM ještě před evolucí. */

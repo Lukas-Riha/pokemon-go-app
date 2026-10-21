@@ -5665,6 +5665,10 @@ const p79 = await otevri(1500, [
     fastMove: "Air Slash", charged1: "Payback", charged2: "Sky Attack" },
   { pokemon: "Machamp", cp: 2800, level: 30, ivAtk: 15, ivDef: 12, ivSta: 12,
     fastMove: "Counter", charged1: "Dynamic Punch" },
+  /* Magikarp veze odznacek „nejvyssi CP pred evoluci" — tretí radek
+     v bunce s pevnou vyskou, kteremu se driv orezaval spodek. */
+  { pokemon: "Magikarp", cp: 161, level: 15, ivAtk: 10, ivDef: 14, ivSta: 14,
+    fastMove: "Splash", charged1: "Struggle" },
 ]);
 const d79 = await p79.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -5701,8 +5705,26 @@ const d79 = await p79.evaluate(async () => {
     }));
   out.pretece = [...document.querySelectorAll("#atlasModal .d-ligy-tab th, #atlasModal .d-ligy-tab td")]
     .filter((x) => x.scrollWidth > x.clientWidth + 2).length;
+  // Odznacek stropu se nesmi orezat o spodni hranu bunky.
+  const orez = (id) => {
+    window.__atlasTest.openDetail(id);
+    return null;
+  };
+  out.strop = [];
   document.querySelector('#atlasModal [data-atlas-action="close"]')?.click();
   await cekej(300);
+  const karp = rows.find((r) => r.pokemon === "Magikarp");
+  if (karp) {
+    window.__atlasTest.openDetail(karp.id);
+    await cekej(800);
+    out.strop = [...document.querySelectorAll("#atlasModal .d-lg-strop")].map((el) => {
+      const obal = el.closest(".d-lg-in"), b = el.querySelector("b");
+      if (!obal || !b) return null;
+      return Math.round(b.getBoundingClientRect().bottom - obal.getBoundingClientRect().bottom);
+    }).filter((x) => x !== null);
+    document.querySelector('#atlasModal [data-atlas-action="close"]')?.click();
+    await cekej(300);
+  }
   window.__atlasTest.openDetail(machamp.id);
   await cekej(800);
   out.vetaRaid = [...document.querySelectorAll("#atlasModal .atlas-utoky-liga")].length;
@@ -5737,6 +5759,9 @@ check("…stojí za pořadím, ne pod názvem ligy, a řádky mají stejnou vý�
   JSON.stringify(d79.tabulka.map((x) => [x.liga, x.podNazvem, x.vyska])));
 check("…a nic se tím nerozsype do šířky",
   d79.pretece === 0, String(d79.pretece));
+check("odznáček „nejvyšší CP před evolucí“ se neořezává",
+  d79.strop.length > 0 && d79.strop.every((x) => x <= 0),
+  JSON.stringify(d79.strop));
 
 /* 80) Rucni pridani: pohlavi misto hodin v gymu.
 
