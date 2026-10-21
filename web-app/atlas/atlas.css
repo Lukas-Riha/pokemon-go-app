@@ -3174,24 +3174,25 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    Pod názvem ligy roztahovala výšku řádku, která má zůstat pevná.
    Chipy skládá vrstva (`utokySestava`), tady jde jen o to, aby se
    vešly do řádku a nelámaly ho. */
-.atlas-test .d-lg-sestava{margin-left:18px;display:inline-flex;
-  align-items:center;gap:4px;flex:0 1 auto;min-width:0}
-.atlas-test .d-lg-sestava .atlas-utok-sada{flex-wrap:nowrap}
-/* Štítky v tabulce jsou menší než ve Vyhledávání — tam mají celý řádek,
-   tady sdílí buňku s pořadím a procentem. */
-.atlas-test .d-lg-sestava .atlas-utok-chip{font-size:10px;padding:2px 7px;gap:4px}
+.atlas-test .d-lg-sestava{margin-left:10px;display:inline-flex;
+  align-items:center;gap:2px;flex:0 1 auto;min-width:0}
+.atlas-test .d-lg-sestava .atlas-utok-sada{flex-wrap:nowrap;gap:2px}
+/* Štítky v tabulce jsou menší a těsnější než ve Vyhledávání — tam mají
+   celý řádek, tady sdílí buňku s pořadím a procentem a nesmí se zalomit
+   ani ve sloupci „po evoluci". */
+.atlas-test .d-lg-sestava .atlas-utok-chip{font-size:9.5px;padding:2px 5px;gap:3px}
 .atlas-test .d-lg-sestava .atlas-utok-chip svg,
-.atlas-test .d-lg-sestava .atlas-utok-chip img{width:11px;height:11px}
-.atlas-test .d-lg-sestava .atlas-utok-spoj{font-size:10px;margin:0 1px}
+.atlas-test .d-lg-sestava .atlas-utok-chip img{width:10px;height:10px}
+.atlas-test .d-lg-sestava .atlas-utok-spoj{font-size:9.5px;margin:0}
 /* Pořadí, procento a pruh drží na jednom řádku; „94,3 %" se nesmí
    rozpadnout na číslo a procento pod ním. */
 .atlas-test .d-lg-hlava{flex-wrap:nowrap;gap:6px}
 .atlas-test .d-lg-pct{white-space:nowrap;flex:0 0 auto}
 .atlas-test .d-lg-hlava > b{flex:0 0 auto}
 .atlas-test .d-lg-bar{flex:0 1 46px;min-width:22px}
-/* Sloupec „po evoluci" je o tom, čím se kus teprve stane — sestava tam
-   místo nemá a uřízlé štítky jsou horší než žádné. */
-.atlas-test .d-ligy-tab td + td .d-lg-sestava{display:none}
+/* Sestava patří i do sloupce „po evoluci": podle ní se pozná, jestli
+   útoky, které kus má teď, budou po vývinu k něčemu — a jestli má cenu
+   do nich sypat TM ještě před evolucí. */
 @media(max-width:1100px){.atlas-test .d-lg-sestava{display:none}}
 
 /* Claude (114): než se sprite načte, nesmí na jeho místě probliknout

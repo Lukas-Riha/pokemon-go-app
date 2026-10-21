@@ -260,7 +260,7 @@
         "text": "**Než se obrázek načte, neprobliká jeho jméno.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu a než dorazil, ukázal prohlížeč jeho název („Minior (Meteor Core)“). Jméno v obrázku zůstává kvůli čtečkám obrazovky, jen ho není vidět."
       },
       {
-        "text": "**Sestava do ligy je přímo v ligové tabulce.** U každé ligy, kterou ten druh hraje, stojí za jeho pořadím sestava z PvPoke — stejnými štítky s typem, jaké má Vyhledávání. Barvy u útoků v hlavičce měří něco jiného (raidové DPS), takže se ty dva údaje už nepletou. U ligy, kterou kus přerostl, se nic neukazuje."
+        "text": "**Sestava do ligy je přímo v ligové tabulce.** U každé ligy, kterou ten druh hraje, stojí za jeho pořadím sestava z PvPoke — stejnými štítky s typem, jaké má Vyhledávání, a **ve sloupci „po evoluci“ taky**: podle ní se pozná, jestli útoky, které kus má dnes, budou po vývinu k něčemu. Barvy u útoků v hlavičce měří něco jiného (raidové DPS), takže se ty dva údaje už nepletou. U ligy, kterou kus přerostl, se nic neukazuje."
       },
       {
         "text": "**Ruční přidání umí pohlaví.** Nešlo zadat vůbec, přitom u druhů, kde se samec a samice liší vzhledem, podle něj appka vybírá obrázek. Nahradilo pole „V gymu (h)“, které pomáhalo jen v jednom okrajovém případě."

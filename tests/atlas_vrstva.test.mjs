@@ -5693,6 +5693,8 @@ const d79 = await p79.evaluate(async () => {
       liga: tr.querySelector("th .d-lg-nazev").textContent.trim(),
       stav: (tr.querySelector(".d-lg-stav") || {}).textContent || "",
       utoky: (tr.querySelector("td .d-lg-sestava") || {}).textContent || "",
+      sestavVRadku: tr.querySelectorAll("td .d-lg-sestava").length,
+      sloupcuSPoradim: tr.querySelectorAll("td .d-lg-hlava").length,
       chipu: tr.querySelectorAll("td .d-lg-sestava .atlas-utok-sada > *").length,
       podNazvem: !!tr.querySelector("th .d-lg-sestava, th .d-lg-utoky"),
       vyska: Math.round(tr.getBoundingClientRect().height),
@@ -5721,6 +5723,11 @@ check("v ligové tabulce stojí sestava u ligy, kterou druh hraje",
   d79.tabulka.filter((x) => x.utoky).length >= 1
     && d79.tabulka.filter((x) => x.utoky).every((x) => x.chipu >= 3),
   JSON.stringify(d79.tabulka));
+/* Sestava patri i do sloupce „po evoluci": podle ni se pozna, jestli
+   utoky, ktere kus ma ted, budou po vyvinu k necemu. */
+check("…a je i ve sloupci po evoluci, kdyz tam kus ligu hraje",
+  d79.tabulka.every((x) => x.sestavVRadku === x.sloupcuSPoradim),
+  JSON.stringify(d79.tabulka.map((x) => [x.liga, x.sloupcuSPoradim, x.sestavVRadku])));
 check("…u ligy, kterou kus přerostl, žádná není",
   d79.tabulka.filter((x) => /přerostl/.test(x.stav)).every((x) => !x.utoky),
   JSON.stringify(d79.tabulka.map((x) => [x.liga, x.stav, x.utoky])));
