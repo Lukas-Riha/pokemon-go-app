@@ -13665,7 +13665,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + (ram ? ' data-vystredeno="1"' : "")
       + ' data-zaloha="' + nahradni + '"'
       + ' onload="this.style.opacity=1"'
-      + ' onerror="var z=(this.dataset.zaloha||&quot;&quot;).split(&quot;|&quot;)'
+      /* Ikonu rozbitého obrázku kreslí prohlížeč AŽ po chybě — proto se
+         obrázek v tu chvíli schová a `onload` ho zase ukáže, jakmile
+         některá náhradní adresa dorazí. U druhů, jejichž adresa
+         v mirroru není (Minior a jeho formy), se takhle vystřídá
+         několik adres a nic při tom neproblikne. */
+      + ' onerror="this.style.opacity=0;'
+      + 'var z=(this.dataset.zaloha||&quot;&quot;).split(&quot;|&quot;)'
       + '.filter(function(x){return !!x});'
       + 'if(z.length){this.src=z.shift();this.dataset.zaloha=z.join(&quot;|&quot;);}'
       + 'else{this.style.display=&quot;none&quot;;}" />';

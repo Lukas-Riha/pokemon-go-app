@@ -5642,7 +5642,15 @@ const d78 = await p78.evaluate(async () => {
   await cekej(700);
   const vsechny = [...document.querySelectorAll("#atlasModal img")];
   const sJmenem = vsechny.filter((i) => (i.getAttribute("alt") || "").trim());
-  return { celkem: vsechny.length, sJmenem: sJmenem.length,
+  /* Nenacteny obrazek musi byt skryty (opacity 0 nebo display none),
+     jinak na jeho miste svitI ikona rozbiteho obrazku. */
+  const rozbite = vsechny.filter((i) => {
+    if (i.complete && i.naturalWidth > 0) return false;
+    const cs = getComputedStyle(i);
+    return cs.display !== "none" && cs.opacity !== "0"
+      && i.getBoundingClientRect().width > 0;
+  }).length;
+  return { celkem: vsechny.length, sJmenem: sJmenem.length, rozbite,
     viditelne: sJmenem.filter((i) => {
       const c = getComputedStyle(i).color.replace(/\s/g, "");
       return !(c === "rgba(0,0,0,0)" || c === "transparent");
@@ -5652,6 +5660,11 @@ await p78.close();
 check("sprite nese jméno pro čtečku, ale není vidět",
   d78.sJmenem > 0 && d78.viditelne.length === 0,
   JSON.stringify([d78.celkem, d78.sJmenem, d78.viditelne]));
+/* A dokud obrazek nedorazi, nesmi svitit ani ikona rozbiteho obrazku:
+   u druhu jako Minior se vystrida nekolik nahradnich adres a prohlizec
+   mezi nimi kreslil svoji ikonu. Obrazek se po chybe schova. */
+check("…a nenačtený obrázek není vidět vůbec",
+  d78.rozbite === 0, String(d78.rozbite));
 
 /* 79) U utoku je videt, cim se meri.
 

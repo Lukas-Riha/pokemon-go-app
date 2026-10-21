@@ -257,7 +257,7 @@
         "text": "**Sekce Shiny neopakuje, co už hvězdičku má.** Zdroj u akce vypíše, kdo může být shiny — často přesně ty druhy, co stojí o kus výš v Soubojích a svoje ✦ už tam mají. V sekci Shiny zůstává jen to, co jinde není."
       },
       {
-        "text": "**Než se obrázek načte, neprobliká jeho jméno.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu a než dorazil, ukázal prohlížeč jeho název („Minior (Meteor Core)“). Jméno v obrázku zůstává kvůli čtečkám obrazovky, jen ho není vidět."
+        "text": "**Než se obrázek načte, neprobliká nic.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu — a než dorazil, ukázal prohlížeč jeho název, u druhů jako Minior dokonce ikonu rozbitého obrázku (jejich adresa v herním mirroru neexistuje, takže se zkouší několik náhradních). Teď je do té doby prázdno. Jméno v obrázku zůstává kvůli čtečkám obrazovky."
       },
       {
         "text": "**Sestava do ligy je přímo v ligové tabulce.** U každé ligy, kterou ten druh hraje, stojí za jeho pořadím sestava z PvPoke — stejnými štítky s typem, jaké má Vyhledávání, a **ve sloupci „po evoluci“ taky**: podle ní se pozná, jestli útoky, které kus má dnes, budou po vývinu k něčemu. Barvy u útoků v hlavičce měří něco jiného (raidové DPS), takže se ty dva údaje už nepletou. U ligy, kterou kus přerostl, se nic neukazuje."

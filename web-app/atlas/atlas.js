@@ -86,8 +86,14 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
     // prepinani kusu v cisteni to bylo videt u kazdeho.
     const adresa=art(r);
     const ram=P.atlasRamecek?P.atlasRamecek(adresa):null;
-    const styl=ram?` style="transform:translate(${ram.x}%, ${ram.y}%) scale(${ram.s})"`:'';
-    return `<img src="${adresa}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}" loading="lazy"${styl} ${extra}>`;
+    /* Obrazek zacina pruhledny: nez dorazi (a u druhu jako Minior se
+       vystrida i nekolik nahradnich adres), kreslil prohlizec svoji
+       ikonu rozbiteho obrazku. */
+    const transform=ram?`transform:translate(${ram.x}%, ${ram.y}%) scale(${ram.s});`:'';
+    const styl=` style="${transform}opacity:0"`;
+    return `<img src="${adresa}" alt="${esc(r.pokemon)}" data-atlas-pokemon="${esc(r.pokemon)}"`
+     +` loading="lazy"${styl} onload="this.style.opacity=1"`
+     +` onerror="this.style.opacity=0" ${extra}>`;
   };
   window.AtlasMonImage=monImage;
   const groups={home:[],roster:[['roster','Moji Pokémoni']],teams:[['cheatCard','Tahák'],['rozpocetCard','Pokrytí rolí'],['typesCard','Typy a počasí'],['refCard','Žebříčky'],['prohlidkaCard','Hledat druh'],['friendCard','Výměna']],invest:[['dustCard','Investiční plán']],events:[['eventsCard','Kalendář']],settings:[['settings-card','Nastavení'],['docsCard','Data a metodika']]};
