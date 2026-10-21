@@ -3598,8 +3598,13 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         <label>IV útok<input id="rbA" type="number" min="0" max="15" step="1" /></label>
         <label>IV obrana<input id="rbD" type="number" min="0" max="15" step="1" /></label>
         <label>IV HP<input id="rbS" type="number" min="0" max="15" step="1" /></label>
-        <label title="Nepovinné. Když CP nesedí na žádný level, pomůže to vybrat z možností.">V gymu (h)<input id="rbHod" type="number" min="0" max="2000" step="1"
-          placeholder="12" /></label>
+        <label title="Vyplň u druhů, kde se samec a samice liší vzhledem —
+          appka podle toho vybere správný obrázek. Jinde na ničem nezáleží."
+          >Pohlaví<select id="rbPohlavi">
+          <option value="">—</option>
+          <option value="Samec">Samec</option>
+          <option value="Samice">Samice</option>
+        </select></label>
       </div>
       <!-- Útoky, forma a značky. Sken je u kusu z gymu nebo z Dynamax spotu
            nedá, takže jediná cesta, jak je mít, je doplnit je tady. -->
@@ -25439,7 +25444,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     var pole = {
       name: document.getElementById("rbName"), cp: document.getElementById("rbCp"),
       a: document.getElementById("rbA"), d: document.getElementById("rbD"),
-      st: document.getElementById("rbS"), hod: document.getElementById("rbHod")
+      st: document.getElementById("rbS"),
+      pohlavi: document.getElementById("rbPohlavi")
     };
     var out = document.getElementById("rbOut");
     var pridat = document.getElementById("rbAdd");
@@ -25507,7 +25513,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       var lv = levelZCP(jm, cp, iv[0], iv[1], iv[2]);
       if (!lv) {
         return { chyba: true, cp: cp, jm: jm, iv: iv,
-          hodin: pole.hod.value === "" ? null : +pole.hod.value,
+          hodin: null,
           blizka: blizkaCP(jm, cp, iv[0], iv[1], iv[2], 1, 6) };
       }
       // Je ten kus v rosteru už podruhé? Tady se to POZNAT musí: ruční
@@ -25544,15 +25550,6 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // u kusu v gymu je zobrazené CP snížené motivací.
         out.className = "rb-out warn";
         var moznosti = (v.blizka ? v.blizka.pod.concat(v.blizka.nad) : []);
-        // Doba v gymu neurčuje CP, jen vybírá z už tak konečného seznamu.
-        var propad = odhadPropadu(v.hodin, v.cp);
-        var tip = null;
-        if (propad !== null && moznosti.length) {
-          var ceil = v.cp / (1 - propad);
-          moznosti.forEach(function (m) {
-            if (!tip || Math.abs(m.cp - ceil) < Math.abs(tip.cp - ceil)) tip = m;
-          });
-        }
         out.innerHTML = "Na CP <b>" + v.cp + "</b> s IV " + v.iv.join("/")
           + " nesedí žádný level. U kusu <b>v gymu</b> to je nejspíš"
           + " <b>motivací</b>: jak srdíčko klesá, klesá i zobrazené CP, takže"
@@ -25564,15 +25561,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
                   + (tip && m.cp === tip.cp ? ' class="tip"' : "") + ">" + m.cp
                   + " <i>L" + String(m.level).replace(".", ",") + "</i></button>";
               }).join("") + "</span>"
-            : " (žádné poblíž — zkontroluj IV)")
-          + (tip
-            ? " Podle " + sklonuj(v.hodin, "hodiny", "hodin", "hodin") + " v gymu"
-              + " tipuju <b>" + tip.cp + "</b> — ale je to <b>odhad</b>: propad"
-              + " není plochý, útok na gym sebere motivaci naráz o ~28 % a"
-              + " bobule ji vrátí. Ověř si CP nakrmením."
-            : (v.hodin === null && moznosti.length
-              ? " Když doplníš, kolik hodin tam je, zkusím z nich vybrat."
-              : ""));
+            : " (žádné poblíž — zkontroluj IV)");
         pridat.disabled = true;
         return;
       }
@@ -25666,6 +25655,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
         // spotu je tohle jediná cesta, jak se útoky a značky do rosteru dostanou.
         fastMove: hod("rbFast"), charged1: hod("rbCh1"), charged2: hod("rbCh2"),
         forma: hod("rbForma"), note: hod("rbNote"),
+        // Pohlaví rozhoduje o obrázku u druhů, kde se samec a samice liší.
+        pohlavi: hod("rbPohlavi"),
         dynamax: zaskrtnuto("rbDmax") ? "Ano" : "",
         megaKus: zaskrtnuto("rbMega") ? "Ano" : "",
         shiny: zaskrtnuto("rbShiny") ? "Ano" : "",

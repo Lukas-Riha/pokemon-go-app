@@ -1485,7 +1485,10 @@ const dDr = await pDr.evaluate(async () => {
   const rb = document.getElementById("rucniBox");
   const hod = document.getElementById("rbHod");
   out.pridat = { vyberu: rb ? rb.querySelectorAll(".atlas-utok-vyber").length : 0,
-    gymSkryty: hod && hod.closest("label") ? !!hod.closest("label").hidden : null };
+    /* Pole „V gymu (h)" uz v rucnim pridani neni vubec — ustoupilo
+       pohlavi, ktere se u druhu s rozdilnym vzhledem samce a samice
+       jinak neda zadat. */
+    gymPole: !!hod, pohlaviPole: !!document.getElementById("rbPohlavi") };
   return out;
 });
 await pDr.close();
@@ -1506,8 +1509,9 @@ check("Escape zavře nejdřív úpravu, až potom detail",
   JSON.stringify({ prvni: dDr.poPrvnimEsc, druhy: dDr.poDruhemEsc }));
 check("po odstranění kusu se detail zavře",
   dDr.smazano === 1 && dDr.detailZavreny === true, JSON.stringify(dDr));
-check("„Přidat pokémona“ má stejný výběr útoků a nemá pole o gymu",
-  dDr.pridat.vyberu === 3 && dDr.pridat.gymSkryty === true, JSON.stringify(dDr.pridat));
+check("„Přidat pokémona“ má stejný výběr útoků, pohlaví a žádné pole o gymu",
+  dDr.pridat.vyberu === 3 && dDr.pridat.gymPole === false
+    && dDr.pridat.pohlaviPole === true, JSON.stringify(dDr.pridat));
 
 // ------------------------- staty, nabídky a paměť smazaných
 // Pruhy statů a IV musí být stejně dlouhé (s `width:auto` u čísla si délku
@@ -5706,11 +5710,11 @@ await p79.close();
 check("engine zná ligovou sestavu z PvPoke",
   /\+/.test(d79.sestava) && d79.ligy > 0, JSON.stringify([d79.sestava, d79.ligy]));
 check("…a pozná, že ji kus nemá", d79.sedi === false, String(d79.sedi));
-check("v detailu stojí u útoků věta, čím se měří",
-  d79.veta.length === 1 && /raidové DPS/.test(d79.veta[0])
-    && d79.veta[0].includes(d79.sestava),
-  JSON.stringify(d79.veta));
-check("…a u kusu, který ligu nehraje, se neplete",
+/* Veta pod utoky uz tam neni: sestavu nese primo ligova tabulka,
+   takze by to bylo totez podruhe. */
+check("pod útoky se sestava neopakuje",
+  d79.veta.length === 0, JSON.stringify(d79.veta));
+check("…a u kusu, který ligu nehraje, se nic nepřidává",
   d79.raidLigy === 0 && d79.vetaRaid === 0,
   JSON.stringify([d79.raidLigy, d79.vetaRaid]));
 check("v ligové tabulce stojí sestava u ligy, kterou druh hraje",
@@ -5726,6 +5730,54 @@ check("…stojí za pořadím, ne pod názvem ligy, a řádky mají stejnou vý�
   JSON.stringify(d79.tabulka.map((x) => [x.liga, x.podNazvem, x.vyska])));
 check("…a nic se tím nerozsype do šířky",
   d79.pretece === 0, String(d79.pretece));
+
+/* 80) Rucni pridani: pohlavi misto hodin v gymu.
+
+   Pohlavi neslo zadat vubec, prestoze u druhu, kde se samec a samice
+   lisi vzhledem, rozhoduje o obrazku. Pole „V gymu (h)" naopak pomahalo
+   jen v jednom okrajovem pripade, tak ustoupilo. */
+const p80 = await otevri(1500, []);
+const d80 = await p80.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  P.setRows([]);
+  await cekej(600);
+  document.getElementById("addRowBtn")?.click();
+  await cekej(700);
+  const out = {
+    pohlavi: !!document.getElementById("rbPohlavi"),
+    hodiny: !!document.getElementById("rbHod"),
+    volby: [...document.querySelectorAll("#rbPohlavi option")].map((x) => x.value),
+  };
+  const nastav = (id, v) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = v;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  nastav("rbName", "Pikachu"); nastav("rbCp", "604");
+  nastav("rbA", "10"); nastav("rbD", "10"); nastav("rbS", "10");
+  nastav("rbPohlavi", "Samice");
+  await cekej(700);
+  document.getElementById("rbAdd")?.click();
+  await cekej(1200);
+  const r = P.getRows()[0] || {};
+  out.pridany = { druh: r.pokemon || "", pohlavi: r.pohlavi || "" };
+  out.hlaska = (document.getElementById("rbOut") || {}).textContent || "";
+  return out;
+});
+await p80.close();
+check("ruční přidání nabízí pohlaví a ne hodiny v gymu",
+  d80.pohlavi === true && d80.hodiny === false
+    && d80.volby.join("|") === "|Samec|Samice",
+  JSON.stringify([d80.pohlavi, d80.hodiny, d80.volby]));
+check("…a zadané pohlaví se s kusem uloží",
+  d80.pridany.druh === "Pikachu" && d80.pridany.pohlavi === "Samice",
+  JSON.stringify(d80.pridany));
+check("…o hodinách v gymu už appka nikde nemluví",
+  !/hodin/i.test(d80.hlaska), d80.hlaska.slice(0, 120));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 

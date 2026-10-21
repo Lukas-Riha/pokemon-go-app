@@ -260,7 +260,10 @@
         "text": "**Než se obrázek načte, neprobliká jeho jméno.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu a než dorazil, ukázal prohlížeč jeho název („Minior (Meteor Core)“). Jméno v obrázku zůstává kvůli čtečkám obrazovky, jen ho není vidět."
       },
       {
-        "text": "**U útoků je vidět, čím se měří.** Barvy u útoků v detailu počítají **raidové DPS** — zelená znamená „proti bossovi je to dobré“. Ve Vyhledávání stojí u téhož druhu sestava, kterou v lize hraje PvPoke, a ta bývá úplně jiná: Corviknight má Air Slash + Sky Attack, do Great League se hraje Sand Attack + Air Cutter. Obojí platí, jen každé o něčem jiném. U kusu, který hraje ligu, teď pod útoky stojí věta s tou ligovou sestavou, takže si detail a Vyhledávání už neodporují. **A v ligové tabulce u kusu stojí ta sestava za pořadím** — stejnými štítky s typem, jaké má Vyhledávání. Jen u ligy, kterou ten druh opravdu hraje: u ligy, kterou kus přerostl, by to byla rada do souboje, který nenastane."
+        "text": "**Sestava do ligy je přímo v ligové tabulce.** U každé ligy, kterou ten druh hraje, stojí za jeho pořadím sestava z PvPoke — stejnými štítky s typem, jaké má Vyhledávání. Barvy u útoků v hlavičce měří něco jiného (raidové DPS), takže se ty dva údaje už nepletou. U ligy, kterou kus přerostl, se nic neukazuje."
+      },
+      {
+        "text": "**Ruční přidání umí pohlaví.** Nešlo zadat vůbec, přitom u druhů, kde se samec a samice liší vzhledem, podle něj appka vybírá obrázek. Nahradilo pole „V gymu (h)“, které pomáhalo jen v jednom okrajovém případě."
       }
     ]
   }
