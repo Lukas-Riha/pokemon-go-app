@@ -3170,11 +3170,15 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   background:var(--warning-bg);color:var(--status-warning);font-size:10.5px;
   font-weight:700;text-transform:uppercase;letter-spacing:.4px}
 
-/* Claude (116): sestava do ligy v ligové tabulce detailu. Stojí pod
-   názvem ligy jako tichý druhý řádek — je to upřesnění, ne nadpis. */
-.atlas-test .d-lg-utoky{display:block;margin-top:3px;font-size:10.5px;
-  line-height:1.45;font-weight:500;color:var(--text-secondary);
-  max-width:30ch;white-space:normal}
+/* Claude (116): sestava do ligy stojí v řádku ZA pořadím a procentem.
+   Pod názvem ligy roztahovala výšku řádku, která má zůstat pevná.
+   Chipy skládá vrstva (`utokySestava`), tady jde jen o to, aby se
+   vešly do řádku a nelámaly ho. */
+.atlas-test .d-lg-sestava{margin-left:10px;display:inline-flex;
+  align-items:center;gap:4px;flex:0 1 auto;min-width:0;overflow:hidden}
+.atlas-test .d-lg-sestava .atlas-utok-sada{flex-wrap:nowrap}
+.atlas-test .d-lg-hlava{flex-wrap:nowrap}
+@media(max-width:900px){.atlas-test .d-lg-sestava{display:none}}
 
 /* Claude (115): věta o ligové sestavě pod útoky. Barvy u útoků měří
    raidové DPS — u kusu, který hraje ligu, tahle věta řekne, co se

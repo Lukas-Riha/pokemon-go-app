@@ -1390,6 +1390,14 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
       if(text)pridej(row.pokemon||'teď',text.split(' + '),'Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
       else box.append(moves);
     }
+    /* Sestava u ligy v ligove tabulce: engine ji da jako text, vrstva
+       z ni udela chipy s typem — stejne jako ve Vyhledavani. */
+    container.querySelectorAll('.d-lg-sestava').forEach(el=>{
+     const text=el.textContent.trim();
+     if(!text||el.dataset.chipy)return;
+     el.dataset.chipy='1';
+     if(window.AtlasUtokySestava)el.innerHTML=window.AtlasUtokySestava(text);
+    });
     /* Ligova sestava pod utoky. Barvy u chipu meri raidove DPS; u kusu,
        ktery hraje ligu, se hraje jina sestava a bez teto vety si detail
        a Vyhledavani odporovaly. */
@@ -3031,6 +3039,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`style="background:${esc(barvy[m.type]||'')}">${P.typIkona?P.typIkona(m.type):''}</span>`
    +`${esc(m.name)}</span>`;
  }
+ /* Skladani sestavy do chipu potrebuje i detail kusu (ligova tabulka),
+    a ten zije v jinem bloku — proto je funkce i na `window`. */
  function utokySestava(text){
   const casti=String(text).split(/\s*([+/])\s*/);
   const kusy=casti.map(c=>c==='+'||c==='/'
@@ -3040,6 +3050,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   return `<span class="atlas-utok-sada">`
    +kusy.map((x,i)=>x||esc(casti[i])).join('')+`</span>`;
  }
+ window.AtlasUtokySestava=utokySestava;
 
  /* Typ utocnika u raidu. Kdyz je to tyz typ, jaky druh sam ma, stoji
     vedle bubliny tehoz jmena dvakrat — to se vynecha. Jiny typ (druh mlati

@@ -5679,12 +5679,21 @@ const d79 = await p79.evaluate(async () => {
   await cekej(800);
   out.veta = [...document.querySelectorAll("#atlasModal .atlas-utoky-liga")]
     .map((x) => x.textContent.trim());
-  // Ligova tabulka: u ligy, kterou druh hraje, stoji i jeji sestava.
-  out.tabulka = [...document.querySelectorAll("#atlasModal .d-ligy-tab th")]
-    .filter((th) => th.querySelector(".d-lg-nazev"))
-    .map((th) => [th.querySelector(".d-lg-nazev").textContent.trim(),
-      (th.querySelector(".d-lg-utoky") || {}).textContent || ""]);
-  out.pretece = [...document.querySelectorAll("#atlasModal .d-ligy-tab th")]
+  /* Ligova tabulka: sestava stoji ZA poradim (ne pod nazvem ligy, kde
+     roztahovala vysku radku) a jen u ligy, kterou kus opravdu hraje —
+     u prerostle je k nicemu. Kresli se jako chipy, stejne jako ve
+     Vyhledavani. */
+  out.tabulka = [...document.querySelectorAll("#atlasModal .d-ligy-tab tr")]
+    .filter((tr) => tr.querySelector("th .d-lg-nazev"))
+    .map((tr) => ({
+      liga: tr.querySelector("th .d-lg-nazev").textContent.trim(),
+      stav: (tr.querySelector(".d-lg-stav") || {}).textContent || "",
+      utoky: (tr.querySelector("td .d-lg-sestava") || {}).textContent || "",
+      chipu: tr.querySelectorAll("td .d-lg-sestava .atlas-utok-sada > *").length,
+      podNazvem: !!tr.querySelector("th .d-lg-sestava, th .d-lg-utoky"),
+      vyska: Math.round(tr.getBoundingClientRect().height),
+    }));
+  out.pretece = [...document.querySelectorAll("#atlasModal .d-ligy-tab th, #atlasModal .d-ligy-tab td")]
     .filter((x) => x.scrollWidth > x.clientWidth + 2).length;
   document.querySelector('#atlasModal [data-atlas-action="close"]')?.click();
   await cekej(300);
@@ -5705,10 +5714,16 @@ check("…a u kusu, který ligu nehraje, se neplete",
   d79.raidLigy === 0 && d79.vetaRaid === 0,
   JSON.stringify([d79.raidLigy, d79.vetaRaid]));
 check("v ligové tabulce stojí sestava u ligy, kterou druh hraje",
-  d79.tabulka.filter((x) => x[1]).length >= 1
-    && d79.tabulka.filter((x) => x[1]).every((x) => x[1].includes("+"))
-    && d79.tabulka.some((x) => /Little Cup/.test(x[0]) && !x[1]),
+  d79.tabulka.filter((x) => x.utoky).length >= 1
+    && d79.tabulka.filter((x) => x.utoky).every((x) => x.chipu >= 3),
   JSON.stringify(d79.tabulka));
+check("…u ligy, kterou kus přerostl, žádná není",
+  d79.tabulka.filter((x) => /přerostl/.test(x.stav)).every((x) => !x.utoky),
+  JSON.stringify(d79.tabulka.map((x) => [x.liga, x.stav, x.utoky])));
+check("…stojí za pořadím, ne pod názvem ligy, a řádky mají stejnou výšku",
+  d79.tabulka.every((x) => !x.podNazvem)
+    && new Set(d79.tabulka.map((x) => x.vyska)).size === 1,
+  JSON.stringify(d79.tabulka.map((x) => [x.liga, x.podNazvem, x.vyska])));
 check("…a nic se tím nerozsype do šířky",
   d79.pretece === 0, String(d79.pretece));
 
