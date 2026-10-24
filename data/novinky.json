@@ -264,7 +264,9 @@
       },
       {
         "text": "**Ruční přidání umí pohlaví.** Nešlo zadat vůbec, přitom u druhů, kde se samec a samice liší vzhledem, podle něj appka vybírá obrázek. Nahradilo pole „V gymu (h)“, které pomáhalo jen v jednom okrajovém případě."
-      }
+      },
+      "**Co pustit, si vyhledáš přímo ve hře.** Po čištění boxu (nebo nad tím, co je zrovna vidět v tabulce) umí appka vyrobit filtr do herního vyhledávání: seznam druhů a k němu jedno rozpětí CP. Zkopíruješ, ve hře vložíš a v seznamu zůstanou jen kusy k puštění — označíš je prstem a pustíš najednou. Když se jich sejde víc, než se do herního pole vejde, rozdělí se do několika filtrů za sebou, každý se svým tlačítkem. Kusy, které si necháváš a do nálezu přesto spadnou (stejný druh a CP uvnitř rozpětí), appka vypíše jménem, ať je ve hře přeskočíš. Kolik znaků se do jednoho filtru vejde, se dá změnit v Nastavení.",
+      "**Detail akce přiznává, co o sekci neví.** U každé sekce je ikona, podle které se v dlouhém detailu rychleji hledá, a tam, kde zdroj uvádí jen část rozpisu, to u sekce stojí napsané i s odkazem na zdroj — místo aby to vypadalo jako úplný seznam."
     ]
   }
 }

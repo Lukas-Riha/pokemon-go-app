@@ -960,7 +960,7 @@ globalThis.AtlasBudget = (() => {
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){zavri();viceBtn.focus()}});
   }
   // Keep original button handlers and confirmations, only move the controls.
-  const toolbar=$('#addRowBtn')?.parentElement;if(toolbar){const menu=document.createElement('details');menu.className='atlas-roster-commands';menu.innerHTML='<summary>Správa rosteru ▾</summary><div></div>';toolbar.append(menu);for(const id of ['toggleImportBtn','exportBtn','backupBtn','backupNowBtn','starKeepersBtn','clearUnstarredBtn','clearBtn','forgetDiscardedBtn']){const el=$('#'+id);if(el){menu.lastChild.append(el);
+  const toolbar=$('#addRowBtn')?.parentElement;if(toolbar){const menu=document.createElement('details');menu.className='atlas-roster-commands';menu.innerHTML='<summary>Správa rosteru ▾</summary><div></div>';toolbar.append(menu);for(const id of ['hledaniBtn','toggleImportBtn','exportBtn','backupBtn','backupNowBtn','starKeepersBtn','clearUnstarredBtn','clearBtn','forgetDiscardedBtn']){const el=$('#'+id);if(el){menu.lastChild.append(el);
     // Import a export mají vlastní tlačítka nahoře v liště. Tady zůstávají
     // jen schované, aby na ně horní tlačítka měla kam klikat.
     if(id==='toggleImportBtn'||id==='exportBtn')el.hidden=true}}const umistit=()=>{const panel=menu.lastElementChild,sum=menu.querySelector('summary');if(!panel||!sum)return;if(!menu.open)return;const r=sum.getBoundingClientRect();panel.style.top=Math.round(r.bottom+6)+'px';panel.style.left=Math.round(Math.min(r.left,window.innerWidth-260))+'px';panel.style.minWidth=Math.round(Math.max(r.width,230))+'px'};menu.addEventListener('toggle',umistit);menu.querySelector('summary').addEventListener('pointerdown',()=>{if(!menu.open)requestAnimationFrame(umistit)});window.addEventListener('resize',umistit);window.addEventListener('scroll',umistit,true);document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.open=false});menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.open=false});}
@@ -2108,7 +2108,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
       vypsané jako to, co dostaneš — slíbit u nich výběr by lhalo. */
    const vyber=(sk.typ||'field')==='field';
    return `<details open class="atlas-event-sekce atlas-event-vyzkum">`
-    +`<summary>${esc(sk.nadpis||'Výzkum')}`
+    +`<summary>${ikonaSekce('vyzkum')}${esc(sk.nadpis||'Výzkum')}`
     +(sk.placene?' <span class="atlas-event-placene">placené</span>':'')
     +`</summary>`
     +(vyber?`<p class="atlas-event-text">Odměny jsou možné, ne jisté — zdroj je u každého`
@@ -2193,6 +2193,11 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
     mlcky tvrdila, ze je videt vsechno. Veta pod nadpisem je ze zdroje,
     ne od appky: u Halloweenu je to rovnou odpoved („tasks have not yet
     been announced"), ne hlaseni o chybe. */
+ // A029: jednotné ikony sekcí; pouze prezentace existujících dat.
+ function ikonaSekce(k){
+  const paths={spawn:'M12 21V10m0 5C3 16 2 7 2 7s9-1 10 8Zm0-3C12 4 22 3 22 3s1 9-10 9Z',kadidlo:'M8 21h8l-1-7H9l-1 7ZM10 10c-5-4 6-5 2-9m3 10c-3-3 5-4 3-7',raid:'m4 3 17 17m-1-17L3 20M3 3l4 1-3 3-1-4Zm14 14 4 4M3 16l5 5m8-18 5 5',vejce:'M19 14c0 5-3 8-7 8s-7-3-7-8S9 2 12 2s7 7 7 12Z',vyzkum:'M8 4H5v18h14V4h-3M8 2h8v5H8V2Zm0 10h8m-8 5h5',bonus:'M3 8h18v5H3V8Zm2 5v9h14v-9M12 8v14M12 8C2 8 6-3 12 8Zm0 0c10 0 6-11 0 0Z',utoky:'m13 2-9 12h7l-1 8 10-13h-8l1-7Z',shiny:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z',novinky:'M12 8v5m0 4h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',gopass:'M3 5h18v5a2 2 0 0 0 0 4v5H3v-5a2 2 0 0 0 0-4V5Zm12 0v14'};
+  return `<svg class="atlas-event-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[k]||paths.novinky}"/></svg>`;
+ }
  function nedostupneSekce(e,hotove){
   const m=e&&e[8]||{};
   const z=(m.zdroj||{}).sekce||{};
@@ -2205,11 +2210,12 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
    .filter(k=>!hotovo.has(k));
   chybi.sort((a,b)=>{const ia=PORADI_SEKCI.indexOf(a),ib=PORADI_SEKCI.indexOf(b);
    return (ia<0?99:ia)-(ib<0?99:ib)});
-  return chybi.map(k=>`<details class="atlas-event-sekce atlas-event-neuplna">`
-   +`<summary>${esc(sections[k]||z[k].nadpis||k)}</summary>`
-   +(z[k].veta?`<p class="atlas-event-text">${esc(z[k].veta)}</p>`:'')
+  return chybi.map(k=>`<details open class="atlas-event-sekce atlas-event-neuplna">`
+   +`<summary>${ikonaSekce(k)}${esc(sections[k]||z[k].nadpis||k)} <span class="atlas-event-placene">Neúplný rozpis</span></summary>`
+   +(z[k].veta?`<p class="atlas-event-text">${esc(cz(z[k].veta))}</p>`:'')
    +`<p class="atlas-small-note">Podrobnosti k téhle části appka ze zdroje`
-   +` nepřečetla. Co v ní je, ukáže stránka akce.</p></details>`).join('');
+   +` nepřečetla. Co v ní je, ukáže stránka akce.</p>`
+   +(safeUrl(e[5])?`<a class="atlas-mini-btn" href="${esc(safeUrl(e[5]))}" target="_blank" rel="noopener noreferrer">Otevřít podrobnosti ve zdroji ↗</a>`:'')+`</details>`).join('');
  }
  /* Odkud rozpis je a jak je stary. Bez data vypada tri tydny stary otisk
     stejne jako dnesni — a podle toho se planuje vecer ven. */
@@ -2251,7 +2257,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
    const vse=skupiny.every(platna);
    const aktivni=g=>+new Date(g.od)<=ted&&ted<+new Date(g.do);
    const vychozi=casovana&&vse&&skupiny.some(aktivni)?'now':'all';
-   return `<details open class="atlas-event-sekce atlas-event-sekce-${esc(k)}"><summary>${esc(sections[k]||k)}</summary>`
+   return `<details open class="atlas-event-sekce atlas-event-sekce-${esc(k)}"><summary>${ikonaSekce(k)}${esc(sections[k]||k)}</summary>`
     +(casovana&&vse?`<div class="atlas-event-periods" role="group" aria-label="Období sekce">${[['now','Právě teď'],['past','Předchozí'],['all','Celá akce']].map(([v,t])=>`<button type="button" data-event-period="${v}" aria-pressed="${v===vychozi}">${t}</button>`).join('')}</div><p class="atlas-period-empty" hidden>Pro toto období nejsou uvedené položky.</p>`:'')
     +skupiny.map(g=>{
       /* Datum se pise jen tam, kde neco rika: u jedine skupiny pres celou
@@ -2324,7 +2330,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
    +'<ul class="atlas-gopass-bonusy">'+bonusy+'</ul>');
   if(!radky.length)return '';
   return '<details open class="atlas-event-sekce atlas-event-gopass">'
-   +'<summary>'+esc(g.nazev||'GO Pass')+'</summary>'+radky.join('')+'</details>';
+   +'<summary>'+ikonaSekce('gopass')+esc(g.nazev||'GO Pass')+'</summary>'+radky.join('')+'</details>';
  }
 
  /* Termín vyzvednutí patří nahoru k datu akce: je jiný než konec akce

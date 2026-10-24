@@ -1452,6 +1452,12 @@
      ne odstavec. */
   .hled-box { margin: 8px 0 0; max-width: 620px; }
   .hled-radek { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+  /* Číslo filtru a počet kusů kolem pole: jeden filtr = jedno vložení
+     do hry, tak musí být vidět, kolikátý je a co pokrývá. */
+  .hled-cislo { flex: 0 0 auto; font-size: 11px; font-weight: 700;
+    color: var(--text-secondary); min-width: 26px; }
+  .hled-pocet { flex: 0 0 auto; font-size: 11px; color: var(--text-muted);
+    min-width: 58px; text-align: right; }
   .hled-radek input { flex: 1 1 auto; font-family: ui-monospace, monospace;
     font-size: 12.5px; padding: 6px 8px; }
   .dust-cil-popis { margin-left: 14px; }
@@ -3167,6 +3173,15 @@
           brání, zbude ze shadow jen ta srážka: <b>−17 %</b>.</span>
       </div>
       <div class="setting">
+        <label for="hledaniDelka">Délka jednoho filtru do hry (znaků)</label>
+        <input type="number" id="hledaniDelka" min="100" max="1000" value="400" step="20" />
+        <span class="hint">Tlačítko <b>Hledání do hry</b> vyrobí z pouštěných
+          kusů filtry, které ve hře vložíš do vyhledávání. Kolik znaků pole
+          ve hře unese, se nikde nepíše — čtyři stovky jsou bezpečný začátek.
+          Když ti ve hře projde delší, číslo zvedni a filtrů bude míň;
+          když se text ve hře ořízne, uber.</span>
+      </div>
+      <div class="setting">
         <label for="raidSlotu">Útočníků na <b>hlavní</b> typ do raidu</label>
         <input type="number" id="raidSlotu" min="1" max="18" value="6" step="1" />
         <span class="hint">Do raidu jde parta o <b>šesti</b>, proto je výchozí
@@ -3528,9 +3543,14 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       <button id="toggleImportBtn">Importovat data</button>
       <button id="novinkyBtn" title="Co se v appce změnilo v téhle verzi.">Novinky</button>
       <button id="exportBtn">Exportovat CSV</button>
+      <button id="hledaniBtn" title="Vyrobí filtry do herního vyhledávání
+z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">Hledání do hry</button>
       <input type="search" id="searchInput" placeholder="Hledat pokémona…" autocomplete="off" />
       <button id="zrusitFiltry" title="Zruší hledání, filtry ve sloupcích i řazení">
         Zrušit filtry</button>
+      <!-- Sem se vykreslí filtry do herního vyhledávání. Prázdné, dokud
+           na „Hledání do hry" nekliknete. -->
+      <div id="hledaniVysledek" class="hled-box" style="display:none"></div>
       <select id="viewSelect" title="Rozhodnutí = jen to podstatné. Vše = i sloupce ze skenu, které jdou editovat.">
         <option value="verdict">Zobrazení: Rozhodnutí</option>
         <option value="all">Zobrazení: Vše (editace)</option>
@@ -6197,7 +6217,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "cmpPasmo", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "cmpPasmo", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -26985,14 +27005,20 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       + " tlačily kusy na nízkém levelu — vylepšením zesílí skoro osmkrát,"
       + " takže poměr „síla za prach“ vyhrály i tehdy, když byly dražší"
       + " a slabší než jednička role.</td></tr>"
-      + "<tr><td><b>Hledání do hry</b></td><td>tlačítko <b>Hledat ve hře</b> "
-      + "vyrobí řetězec pro to, co je zrovna v tabulce vidět — vložíš ho do "
-      + "vyhledávání v Pokémon GO a máš přesně ty kusy. Hra umí tři operátory: "
-      + "čárka = NEBO, &amp; = A ZÁROVEŇ, ! = KROMĚ, plus rozsahy CP. "
-      + "<b>Čárka se ale vyhodnocuje dřív než &amp;</b>, takže „pidgey&amp;cp200,"
-      + "rattata&amp;cp300\" hra přečte jako nesmysl — použitelný tvar je seznam "
-      + "druhů a k tomu jeden společný filtr CP. Ten se přidá jen tehdy, když "
-      + "ubere aspoň čtvrtinu toho, co by našel samotný seznam. "
+      + "<tr><td><b>Hledání do hry</b></td><td>tlačítko <b>Hledání do hry</b> "
+      + "vyrobí filtry, které vložíš do vyhledávání v Pokémon GO a zůstanou ti "
+      + "v něm jen kusy, které pouštíš. Bere je z toho, co jsi dnes smazal "
+      + "z rosteru (tedy z dokončeného čištění boxu), jinak z toho, co je vidět "
+      + "v tabulce. Hra umí tři operátory: čárka = NEBO, &amp; = A ZÁROVEŇ, "
+      + "! = KROMĚ, plus rozsahy CP. <b>Čárka se vyhodnocuje dřív než &amp;</b>, "
+      + "takže „pidgey&amp;cp200,rattata&amp;cp300\" hra přečte jako nesmysl — "
+      + "použitelný tvar je seznam druhů a k tomu jeden společný filtr CP. "
+      + "Proto se kusy seřadí podle CP a nakrájejí na <b>pásma</b>: každé pásmo "
+      + "je jeden filtr se svým rozsahem a svými druhy. Kolik znaků se do "
+      + "jednoho filtru vejde, si nastavíš (výchozí 400 — kolik pole ve hře "
+      + "unese, se nikde nepíše). Kusy, které si necháváš a do nálezu přesto "
+      + "spadnou (stejný druh, CP v pásmu), appka vypíše jménem, ať je ve hře "
+      + "přeskočíš. "
       + "Čištění boxu jede podle téhož filtru, takže řetězec a seznam k projití "
       + "jsou tatáž množina kusů.</td></tr>"
       + "<tr><td><b>Cíl vylepšování</b></td><td>v rozpočtu se přepíná mezi "
@@ -27486,6 +27512,10 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
    * proto seznam druhů (čárkami) a k němu JEDEN společný filtr CP.
    */
   var HLEDANI_MAX_DRUHU = 40;
+  // Kolik znaků se vejde do jednoho filtru. Pole ve hře má omezenou délku
+  // a kolik přesně, se nikde nepíše — čtyři stovky jsou bezpečný začátek
+  // a uživatel si to po první zkoušce ve hře posune v nastavení.
+  var HLEDANI_DELKA = 400;
 
   /** Jméno tak, jak ho zná herní vyhledávání: bez formy, bez diakritiky. */
   function hledaciJmeno(r) {
@@ -27494,6 +27524,86 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
     // „Squawkabilly Blue" hra najde pod „squawkabilly"; formy se v hledání
     // řeší zvlášť (shadow, purified) a do jména nepatří.
     return deaccent(String(jm)).toLowerCase().replace(/[^a-z0-9' ]/g, "").trim();
+  }
+
+  /** Filtry do herního vyhledávání: na každý druh vlastní rozsah CP.
+   *
+   *  Herní hledání bere `,` jako „nebo" a `&` jako „a", přičemž `&` platí
+   *  dřív — „abra&cp10-20,onix&cp30-40" tedy znamená „abra v tom rozsahu
+   *  NEBO onix v tom svém". Díky tomu se dá jedním vložením vybrat přesně
+   *  to, co appka pouští, místo aby se do hry poslal seznam druhů a člověk
+   *  v něm pak hledal, které kusy to vlastně jsou.
+   *
+   *  Pole ve hře má omezenou délku, takže se filtry dělí — kolik znaků
+   *  se do jednoho vejde, si uživatel nastaví (`hledaniDelka`).
+   *
+   *  Vrací `{filtry, kusu, druhu, kolize}`; `kolize` jsou kusy, které si
+   *  necháváš a do nálezu přesto spadnou (stejný druh i CP v rozsahu) —
+   *  vyhledáváním je odlišit nejde, tak se aspoň vypíšou.
+   */
+  function hledaciFiltry(kusy) {
+    var maxDelka = Math.max(100, Math.min(1000,
+      num(nastaveniHodnota("hledaniDelka")) || HLEDANI_DELKA));
+    /* Kusy od nejnižšího CP: sousedé v seznamu pak mají blízké CP, takže
+       pásmo jednoho filtru zůstane úzké a nenabere zbytečně kusy, které
+       si člověk nechává. */
+    var vybrane = (kusy || []).filter(function (r) { return hledaciJmeno(r); })
+      .slice().sort(function (a, z) { return (num(a.cp) || 0) - (num(z.cp) || 0); });
+    if (!vybrane.length) return null;
+
+    var textFiltru = function (druhy, lo, hi) {
+      var jmena = Object.keys(druhy).sort().join(",");
+      return (lo === null || hi === null) ? jmena : jmena + "&cp" + lo + "-" + hi;
+    };
+    var filtry = [], akt = [], druhy = {}, lo = null, hi = null;
+    var uzavri = function () {
+      if (!akt.length) return;
+      filtry.push({ text: textFiltru(druhy, lo, hi), kusu: akt.length,
+        druhy: Object.keys(druhy), lo: lo, hi: hi });
+      akt = []; druhy = {}; lo = null; hi = null;
+    };
+    vybrane.forEach(function (r) {
+      var jm = hledaciJmeno(r), cp = num(r.cp);
+      var zkouskaDruhy = {};
+      Object.keys(druhy).forEach(function (k) { zkouskaDruhy[k] = true; });
+      zkouskaDruhy[jm] = true;
+      var zkouskaLo = (lo === null || (cp !== null && cp < lo)) ? cp : lo;
+      var zkouskaHi = (hi === null || (cp !== null && cp > hi)) ? cp : hi;
+      if (akt.length && textFiltru(zkouskaDruhy, zkouskaLo, zkouskaHi).length > maxDelka) {
+        uzavri();
+        zkouskaDruhy = {}; zkouskaDruhy[jm] = true;
+        zkouskaLo = cp; zkouskaHi = cp;
+      }
+      akt.push(r); druhy = zkouskaDruhy; lo = zkouskaLo; hi = zkouskaHi;
+    });
+    uzavri();
+
+    /* Kusy, které si necháváš a do nálezu přesto spadnou: mají druh
+       z některého filtru a CP uvnitř jeho pásma. Vyhledáváním je od
+       pouštěných odlišit nejde, tak se aspoň vypíšou jménem. */
+    var jeVybrany = {};
+    (kusy || []).forEach(function (r) { if (r && r.id) jeVybrany[r.id] = true; });
+    var comp = analyze();
+    var kolize = [], videl = {};
+    rows.forEach(function (r) {
+      if (jeVybrany[r.id]) return;
+      var v = comp[r.id];
+      if (v && !v.keepGood) return;     // taky k puštění, jen není ve výběru
+      var jm = hledaciJmeno(r), cp = num(r.cp);
+      var sedi = filtry.some(function (f) {
+        if (f.druhy.indexOf(jm) === -1) return false;
+        if (f.lo === null || cp === null) return true;
+        return cp >= f.lo && cp <= f.hi;
+      });
+      if (!sedi || videl[r.id]) return;
+      videl[r.id] = true;
+      kolize.push({ jmeno: r.pokemon, cp: r.cp || "" });
+    });
+
+    var vsechnyDruhy = {};
+    vybrane.forEach(function (r) { vsechnyDruhy[hledaciJmeno(r)] = true; });
+    return { filtry: filtry, kusu: vybrane.length,
+      druhu: Object.keys(vsechnyDruhy).length, kolize: kolize, maxDelka: maxDelka };
   }
 
   /** Postaví řetězec pro dané kusy. Vrací i to, co se do něj nevešlo. */
@@ -28710,8 +28820,28 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return;
     }
     if (hledaniBtn) hledaniBtn.classList.add("otevreno");
-    var kusy = viditelneKusy();
-    var r = hledaciRetezec(kusy);
+    /* Co se má do hry hledat: když jsi právě čistil box, jsou to kusy,
+       které jsi tam odklikal k puštění — přesně ty pak ve hře hledáš.
+       Jinak to, co je vidět v tabulce (filtr „Jen k puštění"). */
+    var zCisteni = [];
+    Object.keys(bmVolby || {}).forEach(function (id) {
+      if (bmVolby[id] !== "drop") return;
+      rows.forEach(function (x) { if (x.id === id) zCisteni.push(x); });
+    });
+    /* Po dokončeném čištění už ty kusy v rosteru nejsou — jsou smazané.
+       A právě je jdeš ve hře pustit, takže čerstvě smazané mají přednost
+       před tím, co je zrovna v tabulce. Den zpátky je rozumná hranice:
+       starší čištění už máš dávno odklikané. */
+    var DEN = 24 * 3600 * 1000, ted = Date.now();
+    var cerstveSmazane = (discarded || []).filter(function (d) {
+      return d && d.r && d.r.pokemon && d.del && (ted - d.del) < DEN;
+    }).map(function (d) { return d.r; });
+    var zTabulky = viditelneKusy();
+    var kusy = zCisteni.length ? zCisteni
+      : (cerstveSmazane.length ? cerstveSmazane : zTabulky);
+    var zdroj = zCisteni.length ? "cisteni"
+      : (cerstveSmazane.length ? "smazane" : "tabulka");
+    var r = hledaciFiltry(kusy);
     if (!r) {
       if (box) {
         box.style.display = "";
@@ -28726,30 +28856,57 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       return;
     }
     box.style.display = "";
+    /* Jeden filtr = jedno vložení do hry. Každý má vlastní tlačítko, ať
+       se dá projít po jednom: zkopíruj, ve hře označ a smaž, vrať se pro
+       další. Pořadí je abecední, takže se v něm dá orientovat. */
     box.innerHTML = '<button class="hled-x" id="hledaniZavrit" title="Zavřít">&#10005;</button>'
-      + '<div class="hled-radek"><input type="text" id="hledaniText" readonly>'
-      + '<button id="hledaniKopie" class="primary">Kopírovat</button></div>'
-      + '<span class="hint">Vlož do vyhledávání v Pokémon GO. Pokrývá '
+      + '<span class="hint">' + (zdroj === "cisteni"
+          ? "Kusy, které jsi odklikal k puštění v čištění boxu — "
+          : (zdroj === "smazane"
+            ? "Kusy, které jsi dnes smazal z rosteru a ve hře je ještě pustit musíš — "
+            : "Kusy, které jsou teď vidět v tabulce — "))
       + sklonuj(r.kusu, "kus", "kusy", "kusů") + " z "
-      + sklonuj(r.druhu, "druhu", "druhů", "druhů") + "."
-      + (r.cpFiltr ? " Filtr CP " + r.cpFiltr + " je tam proto, že stejný druh"
-          + " máš i mimo tenhle rozsah a ten vidět nechceš." : "")
-      + (r.zbylo ? " <b>Vešlo se jen prvních " + HLEDANI_MAX_DRUHU + " druhů</b>,"
-          + " zbylých " + r.zbylo + " zúž filtrem a vygeneruj znovu." : "")
-      + " Ve hře pak drž prst na kusu a označ víc najednou.</span>";
+      + sklonuj(r.druhu, "druhu", "druhů", "druhů") + ". "
+      + (r.filtry.length > 1
+          ? "<b>Nevejdou se do jednoho hledání</b>, tak jsou po "
+            + sklonuj(r.filtry.length, "filtru", "filtrech", "filtrech")
+            + " — vlož je ve hře jeden po druhém."
+          : "Vlož do vyhledávání v Pokémon GO.")
+      + " Každý filtr má svoje pásmo CP, aby ve hře nevyskočily kusy, které"
+      + " si necháváš. Pak drž prst na kusu a označ víc najednou.</span>"
+      + r.filtry.map(function (f, i) {
+          return '<div class="hled-radek">'
+            + (r.filtry.length > 1
+                ? '<span class="hled-cislo">' + (i + 1) + "/" + r.filtry.length + "</span>"
+                : "")
+            + '<input type="text" class="hled-text" readonly value="'
+            + escHtml(f.text) + '">'
+            + '<button class="primary hled-kopie" data-hled="' + i + '">Kopírovat</button>'
+            + '<span class="hled-pocet">' + sklonuj(f.kusu, "kus", "kusy", "kusů")
+            + "</span></div>";
+        }).join("")
+      + (r.kolize.length
+          ? '<span class="hint warn">Mezi nálezy budou i tyhle kusy, které'
+            + " si <b>necháváš</b> — mají stejný druh a CP v rozsahu, takže je"
+            + " hledání neodliší. Ve hře je přeskoč: "
+            + r.kolize.slice(0, 12).map(function (k) {
+                return escHtml(k.jmeno) + (k.cp ? " " + k.cp + " CP" : "");
+              }).join(" · ")
+            + (r.kolize.length > 12 ? " a další " + (r.kolize.length - 12) : "")
+            + ".</span>"
+          : "");
     var zavritBtn = document.getElementById("hledaniZavrit");
     if (zavritBtn) zavritBtn.addEventListener("click", function () {
       box.style.display = "none";
       hledaniBtn.classList.remove("otevreno");
     });
-    var pole = document.getElementById("hledaniText");
-    pole.value = r.text;
-    document.getElementById("hledaniKopie").addEventListener("click", function () {
+    box.querySelectorAll(".hled-kopie").forEach(function (btn) {
+     btn.addEventListener("click", function () {
+      var pole = btn.parentNode.querySelector(".hled-text");
       pole.select();
       var hotovo = function () {
-        var h = document.getElementById("hledaniKopie");
-        h.textContent = "Zkopírováno ✓";
-        setTimeout(function () { h.textContent = "Kopírovat"; }, 1600);
+        btn.textContent = "Zkopírováno ✓";
+        setTimeout(function () { btn.textContent = "Kopírovat"; }, 1600);
       };
       // navigator.clipboard nemusí na file:// fungovat, execCommand ano
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -28759,6 +28916,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       } else {
         try { document.execCommand("copy"); hotovo(); } catch (e) { }
       }
+     });
     });
   });
 

@@ -5824,6 +5824,72 @@ check("…a zadané pohlaví se s kusem uloží",
 check("…o hodinách v gymu už appka nikde nemluví",
   !/hodin/i.test(d80.hlaska), d80.hlaska.slice(0, 120));
 
+/* 81) Hledání do hry: filtry, které stačí vložit ve hře.
+
+   Dřív to byl jeden řetězec: seznam druhu (nejvys 40) a jeden spolecny
+   rozsah CP. Na rosteru se stovkami kusu k pusteni se do nej vesla
+   tretina druhu. Ted se kusy seradi podle CP a nakrajeji na pasma —
+   kazde pasmo je jeden filtr ve tvaru „druh,druh&cpLO-HI", ktery hra
+   cte stejne pri obou vykladech priority operatoru. */
+const p81 = await otevri(1500, []);
+const d81 = await p81.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  const dex = P.pokedex().species;
+  const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 60);
+  const rows = []; let seed = 11;
+  const nah = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  klice.forEach((k) => { const e = dex[k];
+    for (let i = 0; i < 3; i++) rows.push({ pokemon: e[1], cp: 200 + Math.floor(nah() * 2400),
+      level: 10 + Math.floor(nah() * 30), ivAtk: Math.floor(nah() * 16),
+      ivDef: Math.floor(nah() * 16), ivSta: Math.floor(nah() * 16) }); });
+  P.setRows(rows);
+  await cekej(5000);
+  const out = { tlacitko: !!document.getElementById("hledaniBtn"),
+    nastaveni: !!document.getElementById("hledaniDelka") };
+  // zdroj: kusy smazané dnes (tj. po dokončeném čištění boxu)
+  const ted = Date.now();
+  P.setDiscarded(P.getRows().filter((r, i) => i % 3 === 0).map((r, i) => ({ k: "t" + i, del: ted,
+    r: { pokemon: r.pokemon, cp: r.cp, ivAtk: r.ivAtk, ivDef: r.ivDef, ivSta: r.ivSta } })));
+  await cekej(800);
+  const delka = document.getElementById("hledaniDelka");
+  if (delka) { delka.value = "150"; delka.dispatchEvent(new Event("change", { bubbles: true })); }
+  document.getElementById("hledaniBtn")?.click();
+  await cekej(900);
+  const box = document.getElementById("hledaniVysledek");
+  const texty = [...box.querySelectorAll(".hled-text")].map((x) => x.value);
+  out.filtru = texty.length;
+  out.delky = texty.map((t) => t.length);
+  out.tvar = texty.every((t) => /^[a-z0-9' ,]+(&cp\d+-\d+)?$/.test(t));
+  out.jedenRozsah = texty.every((t) => (t.match(/&/g) || []).length <= 1);
+  out.kopii = box.querySelectorAll(".hled-kopie").length;
+  out.zdroj = /smazal z rosteru/.test((box.querySelector(".hint") || {}).textContent || "");
+  // pokryti: kazdy smazany kus musi sedet aspon do jednoho filtru
+  const jm = (n) => String(n).toLowerCase().replace(/[^a-z0-9' ]/g, "").trim();
+  const pravidla = texty.map((t) => {
+    const [cast, cp] = t.split("&cp");
+    const r = (cp || "").split("-");
+    return { druhy: new Set(cast.split(",")), lo: +r[0] || 0, hi: +r[1] || Infinity };
+  });
+  out.nepokryto = P.getDiscarded().filter((d) => !pravidla.some((pr) =>
+    pr.druhy.has(jm(d.r.pokemon)) && +d.r.cp >= pr.lo && +d.r.cp <= pr.hi)).length;
+  return out;
+});
+await p81.close();
+check("hledání do hry má tlačítko i nastavení délky",
+  d81.tlacitko === true && d81.nastaveni === true,
+  JSON.stringify([d81.tlacitko, d81.nastaveni]));
+check("…bere kusy smazané dnes a rozdělí je na filtry",
+  d81.zdroj === true && d81.filtru > 1 && d81.kopii === d81.filtru,
+  JSON.stringify([d81.zdroj, d81.filtru, d81.kopii]));
+check("…každý filtr je seznam druhů s jedním pásmem CP a drží délku",
+  d81.tvar === true && d81.jedenRozsah === true
+    && d81.delky.every((x) => x <= 150),
+  JSON.stringify([d81.tvar, d81.jedenRozsah, d81.delky]));
+check("…a žádný pouštěný kus nezůstane mimo filtry",
+  d81.nepokryto === 0, String(d81.nepokryto));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

@@ -3383,3 +3383,12 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test #atlasEventDialog .atlas-event-period-content[hidden],.atlas-test #atlasEventDialog .atlas-period-empty[hidden]{display:none}
 .atlas-test #atlasEventDialog .atlas-period-empty{font-size:13px;color:var(--text-secondary);padding:12px}
 @media(max-width:760px){.atlas-test #atlasEventDialog .atlas-event-highlights{grid-template-columns:1fr;gap:8px}.atlas-test #atlasEventDialog .atlas-event-highlights button{min-height:66px;padding:12px 30px 12px 14px;gap:4px}}
+
+/* A029 — čitelné ikony a přiznaná neúplnost přímo u sekce. */
+.atlas-test #atlasEventDialog .atlas-event-section-icon{width:24px;height:24px;flex:0 0 24px;color:#79cfff;vertical-align:middle;margin-right:10px}
+.atlas-test #atlasEventDialog .atlas-event-sekce>summary{display:flex;align-items:center;gap:6px;min-height:60px;line-height:1.4}
+.atlas-test #atlasEventDialog .atlas-event-sekce>summary:after{margin-left:auto;flex-shrink:0}
+.atlas-test #atlasEventDialog .atlas-event-neuplna{border-color:#a58142;background:linear-gradient(120deg,rgba(173,123,34,.10),transparent)}
+.atlas-test #atlasEventDialog .atlas-event-neuplna>.atlas-mini-btn{margin:0 20px 20px;display:inline-flex}
+.atlas-test #atlasEventDialog .atlas-event-neuplna .atlas-event-placene{margin-left:auto;font-size:11px;white-space:normal}
+@media(max-width:600px){.atlas-test #atlasEventDialog .atlas-event-sekce>summary{font-size:14px;padding:14px 12px}.atlas-test #atlasEventDialog .atlas-event-section-icon{width:20px;height:20px;flex-basis:20px;margin-right:3px}}
