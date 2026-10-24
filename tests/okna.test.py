@@ -237,8 +237,11 @@ check("stranka Halloween Part I je v repu", bool(dok8))
 if dok8:
     pr8 = mod.provenance(dok8, "", "", {"spawn": 3})
     vyz8 = pr8["sekce"].get("vyzkum", {})
+    # Co presne na strance stoji, se casem meni (Niantic doplni, co driv
+    # "nebylo oznameno"). Test proto stoji na chovani: sekce, ze ktere nic
+    # nevypadlo, musi nest vetu ze zdroje -- ne na konkretnim zneni.
     check("neprectena sekce nese vetu ze zdroje",
-          vyz8.get("stav") == "neumime" and "not yet been announced" in vyz8.get("veta", ""),
+          vyz8.get("stav") == "neumime" and len(vyz8.get("veta", "")) >= 20,
           vyz8)
     check("...u prectene sekce se veta neopakuje",
           "veta" not in pr8["sekce"].get("spawn", {}), pr8["sekce"].get("spawn"))
@@ -309,6 +312,48 @@ if dok12:
     check("prvni sablona GO Passu zustala, jak byla",
           bool(gp2) and any(b.get("rank") == 10 for b in (gp2.get("bonusy") or [])),
           (gp2 or {}).get("bonusy"))
+
+# --- text sekce: co stránka píše slovy -------------------------------
+# „Načteno" dřív znamenalo „appka ze sekce něco dostala" a tvářilo se jako
+# celý obsah. Sekce přitom mívá pod seznamem podmínku, která mění
+# rozhodnutí — a ta se nikde neukazovala.
+dok13 = stranka("halloween-2026-part-1")
+if dok13:
+    sekce13 = mod.nalezene_sekce(dok13)
+    check("sekce veze nadpis, vetu i cely text po kusech",
+          all(isinstance(v, tuple) and len(v) == 3 for v in sekce13.values()),
+          list(sekce13)[:3])
+    vsechen = " ".join(
+        p["text"] for _, _, polozky in sekce13.values() for p in polozky)
+    check("...a paticka webu se do textu sekce nepripletla",
+          "LeekDuck" not in vsechen and "rights reserved" not in vsechen,
+          vsechen[-120:])
+    check("...kazdy kus nese typ a text",
+          all(p.get("typ") in ("podnadpis", "odstavec", "bod") and p.get("text")
+              for _, _, polozky in sekce13.values() for p in polozky),
+          [p for _, _, pol in sekce13.values() for p in pol][:2])
+
+# Věta, kterou appka stejně vypisuje jinde, se neopakuje; podmínka zůstane.
+polozky13 = [
+    {"typ": "odstavec", "text": "Gengar and Dusknoir will appear in Raids."},
+    {"typ": "odstavec", "text": "Shiny Gengar will not be available during this event."},
+]
+zbylo = mod._zbyva(polozky13, ["Gengar", "Dusknoir", "Raids", "appear"])
+check("co uz appka vypisuje, se ve vetach neopakuje",
+      all("will appear in Raids" not in p["text"] for p in zbylo), zbylo)
+check("...ale podminka navic zustane",
+      any("will not be available" in p["text"] for p in zbylo), zbylo)
+
+# Stav „nacteno" nesmí znamenat „kompletní".
+if dok13:
+    pr13 = mod.provenance(dok13, "", "", {"bonus": 3, "vyzkum": 1}, {"bonus": ["XP"]})
+    sekce_p = pr13.get("sekce") or {}
+    s_textem = [k for k, v in sekce_p.items() if v.get("text")]
+    check("sekce s necim navic je oznacena jako neuplna",
+          all(sekce_p[k].get("uplne") is False for k in s_textem), s_textem)
+    check("...a nactena sekce muze byt neuplna taky",
+          any(sekce_p[k].get("stav") == "nacteno" for k in s_textem) or not s_textem,
+          {k: sekce_p[k]["stav"] for k in s_textem})
 
 print("\n%d kontrol proslo, %d selhalo" % (passed, len(failures)))
 if failures:

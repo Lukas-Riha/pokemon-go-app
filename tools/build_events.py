@@ -391,8 +391,31 @@ def main():
                     jm = druh_podle_ikony(o.get("jmeno") or "")
                     if jm:
                         o["jmeno"] = jm
+        # Co z té sekce appka doopravdy vypisuje. Porovnává se s textem
+        # sekce na stránce: co se nikde neukazuje, je podmínka nebo
+        # upřesnění, o které by člověk jinak nevěděl.
+        vypsane = {}
+        for w in okna:
+            for k, v in (w[2] or {}).items():
+                vypsane.setdefault(k, []).extend(
+                    str(x[0]) for x in (v or []) if x)
+        if gopass:
+            vypsane.setdefault("gopass", []).extend(
+                [gopass.get("nazev") or ""]
+                + [b.get("text") or "" for b in (gopass.get("bonusy") or [])])
+        for sk in vyzkumy:
+            texty = [sk.get("nadpis") or "", sk.get("podnadpis") or ""]
+            for u in (sk.get("ukoly") or []):
+                texty.append(u.get("ukol") or "")
+                texty.extend(o.get("jmeno") or "" for o in (u.get("odmeny") or []))
+            texty.extend(o.get("jmeno") or "" for o in (sk.get("odmeny_kroku") or []))
+            vypsane.setdefault("vyzkum", []).extend(texty)
+        if utok:
+            vypsane.setdefault("utoky", []).extend(
+                [utok.get("jmeno") or "", utok.get("podminka") or ""])
         zdroj = provenance_akce(html, e.get("link") or "",
-                                ZISKANO.get(e.get("link") or "", ""), napocitano)
+                                ZISKANO.get(e.get("link") or "", ""), napocitano,
+                                vypsane)
         if okna:
             s_okny += 1
         eventy.append([

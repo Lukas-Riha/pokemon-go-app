@@ -248,6 +248,18 @@
     "nadpis": "Co je nového",
     "body": [
       {
+        "sekce": "Roster a rozhodování"
+      },
+      {
+        "text": "**Sestava do ligy je přímo v ligové tabulce.** U každé ligy, kterou ten druh hraje, stojí za jeho pořadím sestava z PvPoke — stejnými štítky s typem, jaké má Vyhledávání, a **ve sloupci „po evoluci“ taky**: podle ní se pozná, jestli útoky, které kus má dnes, budou po vývinu k něčemu. Barvy u útoků v hlavičce měří něco jiného (raidové DPS), takže se ty dva údaje už nepletou. U ligy, kterou kus přerostl, se nic neukazuje."
+      },
+      "**Co pustit, si vyhledáš přímo ve hře.** Po čištění boxu (nebo nad tím, co je zrovna vidět v tabulce) vyrobí appka filtr do herního vyhledávání: zkopíruješ, ve hře vložíš a v seznamu zůstanou jen kusy k puštění — označíš je prstem a pustíš najednou. Platí u toho jediné tvrdé pravidlo: **ve filtru nikdy nevyskočí kus, který se nepouští**. Appka si každý filtr po sobě zkouší proti celému rosteru, a kus, který od ponechaného odlišit nejde (stejný druh i CP), schválně vynechá a vypíše k ručnímu dohledání. Filtrů bývá víc; první ověření ve hře (jeden testovací filtr, dvě tlačítka) je zkrátí na zlomek. Délka jednoho filtru je v Nastavení.",
+      "**Ruční přidání umí pohlaví.** Nešlo zadat vůbec, přitom u druhů, kde se samec a samice liší vzhledem, podle něj appka vybírá obrázek. Nahradilo pole „V gymu (h)“, které pomáhalo jen v jednom okrajovém případě.",
+      "**Řádek pod pořadím v lize má jednu barvu.** „Hotový · L25 je strop ligy → 1474 CP“ svítil napůl zeleně a napůl šedě, jako by půlka věty byla chyba. Teď je celý řádek zelený u kusu, do kterého se už nic investovat nemusí, a tlumený tam, kde ještě něco stojí.",
+      {
+        "sekce": "Akce a rozpis"
+      },
+      {
         "text": "**Akce se dvěma bossy nabídne oba.** „Mega Charizard X and Mega Charizard Y“ je jedna akce, ale dva různé souboje — X je Dragon, Y Flying. Appka je slévala do jednoho, takže na druhého z nich nešlo připravit tým. Teď jsou v detailu akce oba, přepneš mezi nimi a Tahák i řazení rosteru jdou na toho, kterého si vybereš."
       },
       {
@@ -256,17 +268,14 @@
       {
         "text": "**Sekce Shiny neopakuje, co už hvězdičku má.** Zdroj u akce vypíše, kdo může být shiny — často přesně ty druhy, co stojí o kus výš v Soubojích a svoje ✦ už tam mají. V sekci Shiny zůstává jen to, co jinde není."
       },
+      "**Detail akce přiznává, co o sekci neví.** U každé sekce je ikona, podle které se v dlouhém detailu rychleji hledá. A hlavně: pod seznamem stojí i věty ze stránky akce, které se do seznamu nevešly — „z vajec se líhne i víc druhů, než je vypsané“, „shiny tentokrát nebude“, dokdy je potřeba vyzvednout odměny. Sekce, kde appka něco přečíst neumí, to má napsané a odkazuje na zdroj — místo aby seznam vypadal jako celý obsah.",
+      {
+        "sekce": "Drobnosti a opravy"
+      },
       {
         "text": "**Než se obrázek načte, neprobliká nic.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu — a než dorazil, ukázal prohlížeč jeho název, u druhů jako Minior dokonce ikonu rozbitého obrázku (jejich adresa v herním mirroru neexistuje, takže se zkouší několik náhradních). Teď je do té doby prázdno. Jméno v obrázku zůstává kvůli čtečkám obrazovky."
       },
-      {
-        "text": "**Sestava do ligy je přímo v ligové tabulce.** U každé ligy, kterou ten druh hraje, stojí za jeho pořadím sestava z PvPoke — stejnými štítky s typem, jaké má Vyhledávání, a **ve sloupci „po evoluci“ taky**: podle ní se pozná, jestli útoky, které kus má dnes, budou po vývinu k něčemu. Barvy u útoků v hlavičce měří něco jiného (raidové DPS), takže se ty dva údaje už nepletou. U ligy, kterou kus přerostl, se nic neukazuje."
-      },
-      {
-        "text": "**Ruční přidání umí pohlaví.** Nešlo zadat vůbec, přitom u druhů, kde se samec a samice liší vzhledem, podle něj appka vybírá obrázek. Nahradilo pole „V gymu (h)“, které pomáhalo jen v jednom okrajovém případě."
-      },
-      "**Co pustit, si vyhledáš přímo ve hře.** Po čištění boxu (nebo nad tím, co je zrovna vidět v tabulce) umí appka vyrobit filtr do herního vyhledávání: seznam druhů a k němu jedno rozpětí CP. Zkopíruješ, ve hře vložíš a v seznamu zůstanou jen kusy k puštění — označíš je prstem a pustíš najednou. Když se jich sejde víc, než se do herního pole vejde, rozdělí se do několika filtrů za sebou, každý se svým tlačítkem. Kusy, které si necháváš a do nálezu přesto spadnou (stejný druh a CP uvnitř rozpětí), appka vypíše jménem, ať je ve hře přeskočíš. Kolik znaků se do jednoho filtru vejde, se dá změnit v Nastavení.",
-      "**Detail akce přiznává, co o sekci neví.** U každé sekce je ikona, podle které se v dlouhém detailu rychleji hledá, a tam, kde zdroj uvádí jen část rozpisu, to u sekce stojí napsané i s odkazem na zdroj — místo aby to vypadalo jako úplný seznam."
+      "**Ruční přidání zase pozná CP, které na žádný level nesedí.** Po přepsání pole „V gymu (h)“ na pohlaví zůstal v okně kus staré logiky a okno se při takovém CP zaseklo na předchozí hlášce — a tlačítko Přidat šlo zmáčknout. Teď zase nabídne platná CP a dokud si jedno nevybereš, přidat nejde."
     ]
   }
 }

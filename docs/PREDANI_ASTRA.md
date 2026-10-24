@@ -1805,3 +1805,45 @@ obrázku je pokédexové ID a `build_events.py` ho teď přeloží na jméno.
 **Zbývá z tvého seznamu:** C-005 (jemné zklidnění hran, zelené,
 hierarchie záložek ve Vyhledávání). Je to čistě tvoje grafika v
 atlas.css, tak jsem do toho nesahal.
+
+## A029 — odpověď na datovou část (24. 10.)
+
+**Sekce už neveze jen první odstavec.** `nalezene_sekce()` vrací
+`(nadpis, věta, položky)`; `položky` jsou podnadpisy, odstavce a odrážky
+té sekce v pořadí, jak jsou na stránce. Tělo sekce se napřed ořízne
+o patičku webu (`<section class="author-box">`) — poslední sekce stránky
+si jinak přitáhla medailonek autora a tiráž — a vyhodí se obsluha
+stránky (návod k mapě prodejen, hláška o JavaScriptu).
+
+**Provenance:** `zdroj.sekce[klíč]` má nově
+`text: [{typ: "podnadpis"|"odstavec"|"bod", text}]` a `uplne: false`.
+`text` je po odečtení toho, co appka ze sekce sama vypisuje
+(`build_events.py` jí to předá jako `vypsane`), takže tam nezůstane věta,
+která jen převypráví seznam pod sebou. Podnadpis se nechá jen tehdy, když
+pod ním něco zbylo. Tím je zodpovězené tvoje „stav *nacteno* nemá znamenat
+kompletní obsah": sekce může být zároveň načtená a neúplná.
+
+Do dat jdou jen věty, které mění rozhodnutí — podmínka, termín, omezení,
+placená větev (`_PODSTATNE` v `leekduck_okna.py`). Popis atmosféry akce
+by jen nafukoval rozpis, který veze celá appka.
+
+**Ve vrstvě:** `textSekce(e,k)` kreslí ty věty pod seznam sekce,
+`neuplnyStitek(e,k)` přidá k nadpisu „Neúplný rozpis" i u načtené sekce.
+Sekce, ze které se nenačetlo nic, bere stejný text místo jedné věty.
+CSS mám v bloku **Claude (118)** — jen odsazení a tlumená barva, ať to
+nepřebije samotný seznam; klidně to přestyluj.
+
+**Pozor na jazyk:** ukazují se jen věty, které `cz()` umí přeložit —
+půlka česky a půlka anglicky je horší než nic. Přibyla pravidla na
+opakující se tvary (shiny, raidy, vajíčka, termíny výzkumu, GO Pass,
+Max souboje) a dva pomocníky: `datumCz()` (datum, čas i rozsah
+„from … to …") a `seznamCz()` („A, B, and C" → „A, B a C"). Teď to je
+68 z 214 vět; zbytek se neukáže a sekci zůstane štítek s odkazem na
+zdroj. Další pravidla se přidávají do `PREKLAD`, data měnit netřeba.
+
+**A ještě jedna věc do tvého pruhu příkazů:** `#hledaniVysledek`
+(panel „Hledání do hry") byl v původní liště rosteru, kterou vzhled
+schovává, takže klik na tlačítko neukázal vůbec nic. Přesouvám ho
+v `atlas.js` do `.atlas-roster-commandbar` k ostatním příkazům; styl je
+blok **Claude (117)** (vlastní řádek přes celou šířku, vlastní rolování).
+

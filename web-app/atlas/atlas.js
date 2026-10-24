@@ -963,7 +963,8 @@ globalThis.AtlasBudget = (() => {
   const toolbar=$('#addRowBtn')?.parentElement;if(toolbar){const menu=document.createElement('details');menu.className='atlas-roster-commands';menu.innerHTML='<summary>Správa rosteru ▾</summary><div></div>';toolbar.append(menu);for(const id of ['hledaniBtn','toggleImportBtn','exportBtn','backupBtn','backupNowBtn','starKeepersBtn','clearUnstarredBtn','clearBtn','forgetDiscardedBtn']){const el=$('#'+id);if(el){menu.lastChild.append(el);
     // Import a export mají vlastní tlačítka nahoře v liště. Tady zůstávají
     // jen schované, aby na ně horní tlačítka měla kam klikat.
-    if(id==='toggleImportBtn'||id==='exportBtn')el.hidden=true}}const umistit=()=>{const panel=menu.lastElementChild,sum=menu.querySelector('summary');if(!panel||!sum)return;if(!menu.open)return;const r=sum.getBoundingClientRect();panel.style.top=Math.round(r.bottom+6)+'px';panel.style.left=Math.round(Math.min(r.left,window.innerWidth-260))+'px';panel.style.minWidth=Math.round(Math.max(r.width,230))+'px'};menu.addEventListener('toggle',umistit);menu.querySelector('summary').addEventListener('pointerdown',()=>{if(!menu.open)requestAnimationFrame(umistit)});window.addEventListener('resize',umistit);window.addEventListener('scroll',umistit,true);document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.open=false});menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.open=false});}
+    if(id==='toggleImportBtn'||id==='exportBtn')el.hidden=true}}
+    const umistit=()=>{const panel=menu.lastElementChild,sum=menu.querySelector('summary');if(!panel||!sum)return;if(!menu.open)return;const r=sum.getBoundingClientRect();panel.style.top=Math.round(r.bottom+6)+'px';panel.style.left=Math.round(Math.min(r.left,window.innerWidth-260))+'px';panel.style.minWidth=Math.round(Math.max(r.width,230))+'px'};menu.addEventListener('toggle',umistit);menu.querySelector('summary').addEventListener('pointerdown',()=>{if(!menu.open)requestAnimationFrame(umistit)});window.addEventListener('resize',umistit);window.addEventListener('scroll',umistit,true);document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.open=false});menu.addEventListener('click',e=>{if(e.target.closest('button'))menu.open=false});}
 })();
 
 (() => {
@@ -998,7 +999,10 @@ globalThis.AtlasBudget = (() => {
   window.addEventListener('atlas:route',heading);heading();
   const toolbar=$('#addRowBtn').closest('.toolbar');if(toolbar){const bar=document.createElement('div');bar.className='atlas-roster-commandbar';toolbar.before(bar);
   // V liště příkazů má „projít box" stejnou podobu jako tlačítko u nadpisu.
-  {const b=$('#boxModeBtn');if(b){b.classList.add('atlas-cta');b.innerHTML='<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></svg> Projít pokémony';}}for(const el of [$('#addRowBtn'),$('#boxModeBtn'),$('#searchInput'),$('.atlas-mode-controls'),$('#filterSelect'),$('#zrusitFiltry'),$('.atlas-roster-commands')])if(el)bar.append(el);}
+  {const b=$('#boxModeBtn');if(b){b.classList.add('atlas-cta');b.innerHTML='<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></svg> Projít pokémony';}}for(const el of [$('#addRowBtn'),$('#boxModeBtn'),$('#searchInput'),$('.atlas-mode-controls'),$('#filterSelect'),$('#zrusitFiltry'),$('.atlas-roster-commands')])if(el)bar.append(el);
+  // Výsledek hledání do hry drží engine v liště, kterou vzhled schovává.
+  // Bez přesunu sem by klik na „Hledání do hry" neukázal vůbec nic.
+  {const hv=$('#hledaniVysledek');if(hv)bar.append(hv);}}
   const applyTable=()=>{const computed=P.getComputed();$('#tbody').querySelectorAll('tr[data-row-id]').forEach(tr=>{const c=computed[tr.dataset.rowId],cell=tr.querySelector('[data-col="keep"]');if(!c||!cell)return;const v=AtlasVerdict(c);cell.dataset.atlasVerdict=v.tone;const badge=cell.querySelector('.badge');if(badge){badge.dataset.verdict=v.tone;badge.textContent=v.label;}})};
   new MutationObserver(applyTable).observe($('#tbody'),{childList:true});applyTable();
 })();
@@ -1815,6 +1819,38 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
  };
  const HVEZDY=/^(.*?)(\*+)$/;
  const CISLOVKA={one:1,two:2,three:3,four:4,five:5,six:6,seven:7};
+ /* Datum ve větě ze zdroje: „October 24, 2026, at 11:59 p.m. local time".
+    Bez převodu by i jinak přeložená věta nesla anglický měsíc. */
+ /* Regiony z vět o regionálních vajcích. Co tu není, se nepřekládá —
+    radši věta neukázaná než poloanglická. */
+ const REGIONY={europe:'Evropy',asia:'Asie','the americas':'Ameriky',
+  americas:'Ameriky',africa:'Afriky',australia:'Austrálie',
+  'new zealand':'Nového Zélandu','the middle east':'Blízkého východu',
+  'asia-pacific':'Asie a Tichomoří','north america':'Severní Ameriky',
+  'south america':'Jižní Ameriky','central america':'Střední Ameriky'};
+ const MESICE_EN={january:'ledna',february:'února',march:'března',april:'dubna',
+  may:'května',june:'června',july:'července',august:'srpna',september:'září',
+  october:'října',november:'listopadu',december:'prosince'};
+ /* Výčet jmen: „A, B, and C" se česky píše „A, B a C". Jména samotná
+    se nepřekládají — to jsou vlastní jména pokémonů. */
+ function seznamCz(text){
+  return String(text||'').replace(/,\s*and\s+/gi,' a ').replace(/\s+and\s+/gi,' a ')
+   .replace(/\s{2,}/g,' ').trim();
+ }
+ function datumCz(text){
+  let t=String(text||'').replace(/\b([A-Z][a-z]+) (\d{1,2})(?:,)? (\d{4})/g,
+   (cely,mes,den,rok)=>MESICE_EN[mes.toLowerCase()]?`${den}. ${MESICE_EN[mes.toLowerCase()]} ${rok}`:cely);
+  t=t.replace(/\b([A-Z][a-z]+) (\d{1,2})\b/g,
+   (cely,mes,den)=>MESICE_EN[mes.toLowerCase()]?`${den}. ${MESICE_EN[mes.toLowerCase()]}`:cely);
+  const cas=(h,m,ap)=>{let hod=+h%12;if(/p/i.test(ap))hod+=12;return hod+':'+(m||'00');};
+  // „from 12:00 a.m. to 5:00 p.m." = rozsah, ne dva samostatné údaje
+  t=t.replace(/\bfrom (\d{1,2})(?::(\d{2}))? ?([ap])\.?m\.? to (\d{1,2})(?::(\d{2}))? ?([ap])\.?m\.?/gi,
+   (cely,h1,m1,ap1,h2,m2,ap2)=>'od '+cas(h1,m1,ap1)+' do '+cas(h2,m2,ap2));
+  t=t.replace(/\bat (\d{1,2})(?::(\d{2}))? ?([ap])\.?m\.?/gi,(cely,h,m,ap)=>'v '+cas(h,m,ap));
+  t=t.replace(/(\d{1,2})(?::(\d{2}))? ?([ap])\.?m\.?/gi,(cely,h,m,ap)=>cas(h,m,ap));
+  t=t.replace(/\blocal time\b/gi,'místního času');
+  return t.replace(/\s+,/g,',').replace(/\s{2,}/g,' ').trim();
+ }
  const PREKLAD=[
   // --- mezinadpisy seznamů
   [/^Wild Encounters$/i,()=>'Ve volné přírodě'],
@@ -1924,7 +1960,65 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
   [/^Earn a Candy exploring with your buddy$/i,()=>'Získej bonbón chozením s parťákem'],
   [/^Catch (\d+) Pokémon$/i,(m)=>'Chyť '+m[1]+' pokémonů'],
   [/^Make (\d+) Great Throws$/i,(m)=>'Trefa „Great" '+m[1]+'×'],
-  [/^Power up Pokémon (\d+) times$/i,(m)=>'Vylepši pokémona '+m[1]+'×']
+  [/^Power up Pokémon (\d+) times$/i,(m)=>'Vylepši pokémona '+m[1]+'×'],
+  /* --- věty ze stránky akce (podmínky pod seznamem sekce) ---
+     Jsou to celé věty, ne popisky, takže pravidla musí sedět od začátku
+     do konce — půlka přeložená a půlka anglicky je horší než nic. */
+  [/^If you['’]re lucky, you may encounter (?:a |an )?Shiny (.+?)[.!]*$/i,
+   (m)=>'Když budeš mít štěstí, potkáš shiny '+seznamCz(m[1])+'.'],
+  [/^Shiny (.+?) will not be available during this event\.?$/i,
+   (m)=>'Shiny '+seznamCz(m[1])+' tahle akce nenabízí.'],
+  [/^Shiny encounters are not available(?: for this Pokémon)?\.?$/i,
+   ()=>'Shiny varianta tentokrát není.'],
+  [/^There are more Pokémon appearing in Eggs than the ones listed\.?$/i,
+   ()=>'Z vajec se líhne i víc druhů, než je tu vypsané.'],
+  [/^Regional: (.+?) is exclusive to Eggs obtained in (.+?)\.?$/i,
+   (m)=>{const kde=REGIONY[m[2].trim().toLowerCase()];
+    return kde?'Regionální: '+m[1].trim()+' se líhne jen z vajec z '+kde+'.':m[0];}],
+  [/^(.+?) will (?:be|appear) in (five|three|one)-star raid battles\.?$/i,
+   (m)=>seznamCz(m[1])+' bude v raidech ('+({five:'5',three:'3',one:'1'}[m[2].toLowerCase()]||m[2])+'★).'],
+  [/^(.+?) will (?:be|appear) in Shadow Raids\.?$/i,
+   (m)=>seznamCz(m[1])+' bude v shadow raidech.'],
+  [/^(.+?) will (?:be|appear) in Mega Raids\.?$/i,
+   (m)=>seznamCz(m[1])+' bude v mega raidech.'],
+  [/^(.+?) will (?:be|appear) in Max Battles\.?$/i,
+   (m)=>seznamCz(m[1])+' bude v Max soubojích.'],
+  [/^Trades will require (\d+)% less Stardust\.?$/i,
+   (m)=>'Výměny stojí o '+m[1]+' % méně prachu.'],
+  [/^One guaranteed (.+?) for winning in-person Max Battles\.?$/i,
+   (m,cz)=>'Jeden jistý '+cz(m[1].trim())+' za vyhraný Max souboj naživo.'],
+  [/^Timed Research tasks must be completed and all rewards claimed by (.+?)\.?$/i,
+   (m)=>'Úkoly časovaného výzkumu splň a odměny vyzvedni do '+datumCz(m[1])+'.'],
+  [/^Obtain the research by (.+?)\. Complete all tasks and claim all rewards before (.+?)\.?$/i,
+   (m)=>'Výzkum si vyzvedni do '+datumCz(m[1])+', splnit a odměny vybrat do '+datumCz(m[2])+'.'],
+  [/^This offer code can be redeemed until (.+?)\.?$/i,
+   (m)=>'Kód jde uplatnit do '+datumCz(m[1])+'.'],
+  [/^The (?:original )?event bonuses apply worldwide during event hours\.?$/i,
+   ()=>'Bonusy akce platí po celém světě po dobu jejích hodin.'],
+  [/^Please note:?\s*(.+)$/i,(m,cz)=>{const d=cz(m[1].trim());
+   return d===m[1].trim()?m[0]:'Pozor: '+d;}],
+  [/^The following bonuses will be active during the event\.?$/i,
+   ()=>'Po dobu akce platí tyhle bonusy.'],
+  [/^The following bonuses will be active on (.+?)\.?$/i,
+   (m)=>'Tyhle bonusy platí '+datumCz(m[1])+'.'],
+  [/^The following bonuses apply (.+?)\.?$/i,
+   (m)=>'Tyhle bonusy platí '+datumCz(m[1])+'.'],
+  [/^These are the known event-exclusive Field Research tasks\.?$/i,
+   ()=>'Tohle jsou známé úkoly terénního výzkumu jen pro tuhle akci.'],
+  [/^For US\$([\d.]+)(?: \(or the equivalent pricing tier in your local currency\))?, (?:you['’]ll|you will) be able to (?:access|purchase) (.+?)\.?$/i,
+   (m)=>'Za '+m[1]+' USD (nebo odpovídající cenu v místní měně) si pořídíš: '+m[2].trim()+'.'],
+  [/^Double (Incense|Star Piece|Lucky Egg) Duration$/i,
+   (m)=>'Dvojnásobná doba: '+({incense:'kadidlo','star piece':'hvězdný kousek',
+     'lucky egg':'šťastné vejce'}[m[1].toLowerCase()]||m[1])],
+  [/^Choose this bonus to double (.+?) duration for the remainder of your ticketed session\.?$/i,
+   (m)=>'Tenhle bonus zdvojnásobí dobu, po kterou platí '+m[1].trim()+', do konce tvé placené části.'],
+  [/^Reach Major Milestones on your GO Pass to unlock the following bonuses\.(?: Once unlocked, these bonuses will last until the current GO Pass ends!?)?$/i,
+   ()=>'Bonusy se odemykají milníky na GO Passu a pak platí až do konce toho GO Passu.'],
+  [/^(.+?) debuts? in (five|three|one)-star Max Battles(?: in their respective regions)?:?$/i,
+   (m)=>seznamCz(m[1])+' má premiéru v Max soubojích ('
+     +({five:'5',three:'3',one:'1'}[m[2].toLowerCase()]||m[2])+'★).'],
+  [/^Max Battles appear at Power Spots and require teamwork\..*$/i,
+   ()=>'Max souboje jsou na Power Spotech a nedají se zvládnout sám.']
  ];
  /* Hvězdičky na konci věty NESE význam (podmínka, delší čas), takže se
     před překladem odloží a pak vrátí — jinak by pravidlo nesedlo a věta
@@ -2198,6 +2292,32 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
   const paths={spawn:'M12 21V10m0 5C3 16 2 7 2 7s9-1 10 8Zm0-3C12 4 22 3 22 3s1 9-10 9Z',kadidlo:'M8 21h8l-1-7H9l-1 7ZM10 10c-5-4 6-5 2-9m3 10c-3-3 5-4 3-7',raid:'m4 3 17 17m-1-17L3 20M3 3l4 1-3 3-1-4Zm14 14 4 4M3 16l5 5m8-18 5 5',vejce:'M19 14c0 5-3 8-7 8s-7-3-7-8S9 2 12 2s7 7 7 12Z',vyzkum:'M8 4H5v18h14V4h-3M8 2h8v5H8V2Zm0 10h8m-8 5h5',bonus:'M3 8h18v5H3V8Zm2 5v9h14v-9M12 8v14M12 8C2 8 6-3 12 8Zm0 0c10 0 6-11 0 0Z',utoky:'m13 2-9 12h7l-1 8 10-13h-8l1-7Z',shiny:'m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z',novinky:'M12 8v5m0 4h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',gopass:'M3 5h18v5a2 2 0 0 0 0 4v5H3v-5a2 2 0 0 0 0-4V5Zm12 0v14'};
   return `<svg class="atlas-event-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[k]||paths.novinky}"/></svg>`;
  }
+ /* Co stránka o sekci píše navíc — věty, které se do seznamu nevejdou:
+    podmínky („jen s GO Passem Deluxe", „od ranku 1"), upřesnění termínu
+    nebo oznámení, že shiny tentokrát nebude. Bez nich vypadal seznam jako
+    celý obsah sekce, a to je u rozhodování ta horší chyba. */
+ function textSekce(e,k){
+  const t=((((e&&e[8]||{}).zdroj||{}).sekce||{})[k]||{}).text||[];
+  if(!t.length)return '';
+  /* Anglická věta se v appce neukazuje. Co appka neumí říct česky,
+     zůstane za štítkem „Neúplný rozpis" a odkazem na zdroj. */
+  const vybrane=t.map(p=>({typ:p&&p.typ,puvod:(p&&p.text)||'',text:cz((p&&p.text)||'')}))
+   .filter(p=>p.text&&p.text!==p.puvod);
+  if(!vybrane.length)return '';
+  return `<div class="atlas-event-doplnek"><p class="atlas-small-note">Ze stránky akce navíc:</p>`
+   +vybrane.map(p=>p.typ==='podnadpis'
+     ?`<p class="atlas-event-doplnek-nadpis">${esc(p.text)}</p>`
+     :`<p class="atlas-event-text">${esc(p.text)}</p>`).join('')
+   +`</div>`;
+ }
+ /* „Načteno" neznamená „kompletní": sekce může mít v textu další podmínky.
+    Štítek je tentýž jako u sekce, ze které se nenačetlo nic — rozdíl je
+    jen v tom, že tahle aspoň něco ukázala. */
+ function neuplnyStitek(e,k){
+  const z=((((e&&e[8]||{}).zdroj||{}).sekce||{})[k]||{});
+  return z.uplne===false&&(z.text||[]).length
+   ?` <span class="atlas-event-placene">Neúplný rozpis</span>`:'';
+ }
  function nedostupneSekce(e,hotove){
   const m=e&&e[8]||{};
   const z=(m.zdroj||{}).sekce||{};
@@ -2212,7 +2332,9 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
    return (ia<0?99:ia)-(ib<0?99:ib)});
   return chybi.map(k=>`<details open class="atlas-event-sekce atlas-event-neuplna">`
    +`<summary>${ikonaSekce(k)}${esc(sections[k]||z[k].nadpis||k)} <span class="atlas-event-placene">Neúplný rozpis</span></summary>`
-   +(z[k].veta?`<p class="atlas-event-text">${esc(cz(z[k].veta))}</p>`:'')
+   +(((z[k].text||[]).map(p=>({puvod:(p&&p.text)||'',text:cz((p&&p.text)||'')}))
+      .filter(p=>p.text&&p.text!==p.puvod)).map(p=>`<p class="atlas-event-text">${esc(p.text)}</p>`).join('')
+     ||(z[k].veta&&cz(z[k].veta)!==z[k].veta?`<p class="atlas-event-text">${esc(cz(z[k].veta))}</p>`:''))
    +`<p class="atlas-small-note">Podrobnosti k téhle části appka ze zdroje`
    +` nepřečetla. Co v ní je, ukáže stránka akce.</p>`
    +(safeUrl(e[5])?`<a class="atlas-mini-btn" href="${esc(safeUrl(e[5]))}" target="_blank" rel="noopener noreferrer">Otevřít podrobnosti ve zdroji ↗</a>`:'')+`</details>`).join('');
@@ -2257,7 +2379,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
    const vse=skupiny.every(platna);
    const aktivni=g=>+new Date(g.od)<=ted&&ted<+new Date(g.do);
    const vychozi=casovana&&vse&&skupiny.some(aktivni)?'now':'all';
-   return `<details open class="atlas-event-sekce atlas-event-sekce-${esc(k)}"><summary>${ikonaSekce(k)}${esc(sections[k]||k)}</summary>`
+   return `<details open class="atlas-event-sekce atlas-event-sekce-${esc(k)}"><summary>${ikonaSekce(k)}${esc(sections[k]||k)}${neuplnyStitek(e,k)}</summary>`
     +(casovana&&vse?`<div class="atlas-event-periods" role="group" aria-label="Období sekce">${[['now','Právě teď'],['past','Předchozí'],['all','Celá akce']].map(([v,t])=>`<button type="button" data-event-period="${v}" aria-pressed="${v===vychozi}">${t}</button>`).join('')}</div><p class="atlas-period-empty" hidden>Pro toto období nejsou uvedené položky.</p>`:'')
     +skupiny.map(g=>{
       /* Datum se pise jen tam, kde neco rika: u jedine skupiny pres celou
@@ -2272,6 +2394,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
       return `<div class="atlas-event-period-content" data-period-state="${stav}" data-period-common="${celaAkce}"${casovana&&vse&&vychozi==='now'&&!aktivni(g)?' hidden':''}>`
        +(popis?`<p class="atlas-event-okno">${esc(popis)}</p>`:'')+list(g.items,k)+'</div>';
      }).join('')
+    +textSekce(e,k)
     +`</details>`;
   }).join('');
   return (html+nedostupneSekce(e,klice))

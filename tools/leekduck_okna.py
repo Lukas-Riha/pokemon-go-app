@@ -89,15 +89,89 @@ POSLEDNI_CHYBA = ""
 # První odstavec sekce. U sekce, ze které nic nevypadlo, to bývá rovnou
 # odpověď („Specific tasks and encounters have not yet been announced.").
 _ODSTAVEC = re.compile(r"<p[^>]*>(.*?)</p>", re.I | re.S)
+# Kusy textu uvnitř sekce: podnadpis, odstavec, odrážka — v pořadí.
+_KUS_SEKCE = re.compile(r"<(h[2-6]|p|li)[^>]*>(.*?)</\1>", re.I | re.S)
+# Kde končí článek a začíná patička webu. Bez tohohle si poslední sekce
+# stránky přitáhla medailonek autora a tiráž.
+_PATICKA = re.compile(r"<(?:section|footer)[^>]*class=\"[^\"]*(?:author-box|site-footer|footer)",
+                      re.I)
+# Obsluha stránky, ne obsah akce: návod k mapě prodejen, hláška o
+# JavaScriptu, odkaz „Open the official map".
+# Věta, která mění rozhodnutí: podmínka, termín, omezení, placená větev.
+# Ostatní text sekce (uvítání, popis atmosféry) se do dat nebere — appka
+# ho stejně neukazuje a rozpis akcí by jen nafukoval.
+_PODSTATNE = re.compile(
+    r"\bshiny\b|\bonly\b|\bexclusive\b|\bmust\b|\brequire|\bticket|\bdeluxe\b"
+    r"|\brank \d|\bfree\b|\bpaid\b|\bnot be available|\bwill not\b|\bcannot\b"
+    r"|\bregional\b|\bby [A-Z][a-z]+ \d|\bbefore [A-Z][a-z]+ \d|\buntil\b"
+    r"|more .{0,30}than the ones listed|\bdebut|\bevolve\b|\bguarantee"
+    r"|\bper day\b|\bper account\b|\blimit|US\$|\bbonus(?:es)? (?:apply|will|last)"
+    r"|\bduring (?:the )?(?:event|hours)|\bafterwards\b|\bone-time\b|\bremote\b",
+    re.I)
+_NEOBSAH = re.compile(
+    r"javascript is required|interactive map|official (?:google )?map"
+    r"|search for a store|select gyms or pokestops|leek ?duck|all rights reserved",
+    re.I)
+
+
+def _polozky_sekce(telo):
+    """Text sekce po kusech: podnadpisy, odstavce a odrážky v pořadí.
+
+    Bere se i `<li>`, protože LeekDuck v odrážkách vozí podmínky bonusů
+    („Rank 1+", „pouze s GO Passem Deluxe"). Krátké popisky se zahodí —
+    samotné „Rank 1" bez věty kolem nic nevysvětluje.
+    """
+    kusy, videl = [], set()
+    for m in _KUS_SEKCE.finditer(telo or ""):
+        znacka = m.group(1).lower()
+        text = _cisty_text(m.group(2))
+        if len(text) < 15 or _NEOBSAH.search(text):
+            continue
+        klic = text.lower()
+        if klic in videl:
+            continue
+        videl.add(klic)
+        typ = "podnadpis" if znacka.startswith("h") else (
+            "bod" if znacka == "li" else "odstavec")
+        # Podnadpis se rozhoduje podle toho, co pod ním zbude; věta musí
+        # sama něco říkat — popis atmosféry akce do rozpisu nepatří.
+        kusy.append({"typ": typ, "text": text[:260],
+                     "bere": typ == "podnadpis" or bool(_PODSTATNE.search(text))})
+
+    # Podnadpis bez věty je prázdný ukazatel („Trick or Treat!"). Nechá se
+    # jen tehdy, když pod ním něco zůstalo.
+    out = []
+    for i, k in enumerate(kusy):
+        if k["typ"] == "podnadpis":
+            ma_obsah = False
+            for dalsi in kusy[i + 1:]:
+                if dalsi["typ"] == "podnadpis":
+                    break
+                if dalsi["bere"]:
+                    ma_obsah = True
+                    break
+            if not ma_obsah:
+                continue
+        elif not k["bere"]:
+            continue
+        out.append({"typ": k["typ"], "text": k["text"]})
+        if len(out) >= 8:
+            break
+    return out
 
 
 def nalezene_sekce(html):
-    """Které sekce stránka má → ``{klíč v datech: (nadpis, věta ze zdroje)}``.
+    """Které sekce stránka má → ``{klíč v datech: (nadpis, věta, položky)}``.
 
-    Věta je první odstavec té sekce. U sekce, která nic nevypsala, to je
-    jediné, co o ní zdroj říká — a je to víc než mlčení.
+    Věta je první odstavec té sekce (krátká, do 260 znaků) — tím se řídí
+    appka tam, kde se ze sekce nenačetlo nic. ``položky`` je celý text
+    sekce po kusech; teprve z něj se pozná, že „načteno" neznamená
+    „vypsáno všechno".
     """
     html = html or ""
+    konec_clanku = _PATICKA.search(html)
+    if konec_clanku:
+        html = html[:konec_clanku.start()]
     nalezy = list(_HLAVICKA.finditer(html))
     out = {}
     for i, m in enumerate(nalezy):
@@ -117,11 +191,51 @@ def nalezene_sekce(html):
             if len(kus) >= 40:
                 veta = kus[:260]
                 break
-        out[klic] = (_cisty_text(m.group(3)), veta)
+        out[klic] = (_cisty_text(m.group(3)), veta, _polozky_sekce(telo))
     return out
 
 
-def provenance(html, odkaz="", ziskano="", data=None):
+def _normalizovat(text):
+    """Text na porovnávání: malá písmena, jen písmena a číslice."""
+    return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).strip()
+
+
+def _zbyva(polozky, vypsane):
+    """Co ze sekce appka nikde neukazuje.
+
+    ``vypsane`` jsou texty, které už appka z té sekce vypsala (jména
+    pokémonů, texty bonusů, úkoly). Odstavec, který jen vyjmenovává to
+    samé, se zahodí — podmínka navíc („jen s Deluxe", „od ranku 1") ale
+    zůstane, protože ta ve vypsaném seznamu není.
+    """
+    blob = " ".join(_normalizovat(t) for t in (vypsane or []))
+    out = []
+    for po in polozky or []:
+        text = po.get("text") or ""
+        # Karta odměny vysázená do textu („??? REWARD Cherubi Max CP 407") —
+        # appka ji ukazuje jako odměnu, ve větách nemá co dělat.
+        if text.startswith("???") or ("Max CP" in text and "Min CP" in text):
+            continue
+        n = _normalizovat(text)
+        if not n:
+            continue
+        if blob and n in blob:
+            continue
+        # Věta, která jen převypráví vypsaný seznam: skoro všechna její
+        # slova už někde jsou. Podmínka navíc („jen s Deluxe", „od ranku 1")
+        # vlastní slova má, takže projde.
+        slova = [w for w in n.split() if len(w) > 3]
+        if blob and len(slova) > 3:
+            zname = sum(1 for w in slova if w in blob)
+            if zname >= len(slova) * 0.8:
+                continue
+        out.append(po)
+        if len(out) >= 6:
+            break
+    return out
+
+
+def provenance(html, odkaz="", ziskano="", data=None, vypsane=None):
     """Stav každé sekce stránky — co se povedlo přečíst a co ne.
 
     ``data`` je mapa ``{klíč sekce: počet položek}`` nebo rovnou to, co
@@ -132,9 +246,10 @@ def provenance(html, odkaz="", ziskano="", data=None):
     nic takového nemá.
     """
     data = data or {}
+    vypsane = vypsane or {}
     sekce = {}
     nalezene = nalezene_sekce(html)
-    for klic, (nadpis, veta) in nalezene.items():
+    for klic, (nadpis, veta, polozky) in nalezene.items():
         if klic in MIMO_ZAJEM:
             stav = "mimo"
         elif data.get(klic):
@@ -148,6 +263,12 @@ def provenance(html, odkaz="", ziskano="", data=None):
         # sekce by jen opakovala, co už je vidět v seznamu.
         if veta and stav in ("neumime", "chyba"):
             zaznam["veta"] = veta
+        # Text, který appka nikde neukazuje. U načtené sekce je to důkaz,
+        # že seznam není celý příběh: „načteno" neznamená „kompletní".
+        zbytek = _zbyva(polozky, vypsane.get(klic))
+        if zbytek and stav != "mimo":
+            zaznam["text"] = zbytek
+            zaznam["uplne"] = False
         sekce[klic] = zaznam
     # Sekce, kterou stránka nemá, se nevypisuje vůbec — „neni" je výchozí
     # stav a prázdný záznam by jen nafukoval data, která veze celá appka.

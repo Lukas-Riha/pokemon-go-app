@@ -7012,36 +7012,9 @@ try {
   check("hláška mluví o motivaci v gymu, ne o překlepu",
     gymCp.text.includes("motivací") && gymCp.text.includes("vyšší")
     && !gymCp.text.includes("překlep"), gymCp.text.slice(0, 200));
-  // Doba v gymu z konečného seznamu jen VYBÍRÁ — nesmí z toho být jistota.
-  const gymHod = await page.evaluate(() => {
-    const set = (id, v) => {
-      const e = document.getElementById(id);
-      e.value = v; e.dispatchEvent(new Event("input", { bubbles: true }));
-    };
-    const out = document.getElementById("rbOut");
-    set("rbName", "Lickitung"); set("rbCp", 128);
-    set("rbA", 2); set("rbD", 3); set("rbS", 15);
-    const bezHodin = out.textContent;
-    set("rbHod", 12);
-    const tip12 = out.querySelector("button.tip");
-    const text12 = out.textContent;
-    set("rbHod", 40);
-    const tip40 = out.querySelector("button.tip");
-    return { bezHodin, text12,
-      tip12: tip12 ? tip12.dataset.cp : null,
-      tip40: tip40 ? tip40.dataset.cp : null };
-  });
-  check("bez zadaných hodin appka o hodiny řekne", gymHod.bezHodin.includes("kolik hodin"),
-    gymHod.bezHodin.slice(-90));
-  // 12 h × ~1 %/h → 128 / 0,88 ≈ 145,5 → nejbližší platné je 145.
-  check("12 h v gymu vybere 145", gymHod.tip12 === "145", String(gymHod.tip12));
-  // Delší pobyt → větší propad → tipuje vyšší skutečné CP.
-  check("delší pobyt tipuje vyšší CP", +gymHod.tip40 > +gymHod.tip12,
-    gymHod.tip12 + " → " + gymHod.tip40);
-  check("tip se podává jako odhad, ne jako jistota",
-    gymHod.text12.includes("odhad") && gymHod.text12.includes("bobule"),
-    gymHod.text12.slice(-220));
-
+  /* Pole „V gymu (h)" nahradilo pohlaví: tip na skutečné CP z odhadnutého
+     propadu motivace se neosvědčil (odhad ±1 %/h, a kus stejně stačí nakrmit
+     bobulí). Zůstala jen nabídka platných CP, kterou ověřuje test níž. */
   check("nabídne platná CP nad zadaným", gymCp.nabidka.includes("145")
     && gymCp.nabidka.includes("163"), gymCp.nabidka.join(","));
   check("klik na nabídnuté CP ho doplní a odemkne přidání",
@@ -8848,12 +8821,21 @@ try {
       const c = P.counterScore(b, ["Rock", "Dragon"]);
       if (c) skore[b.row.pokemon] = { s: c.score, vydrz: c.vydrz };
     });
-    const bossove = P.getCheatSheet().bossove.map((b) => b.tier);
+    /* Tahák veze i bosse, kteří teprve přijdou — ti stojí až za dnešními.
+       Pořadí po hvězdách proto platí uvnitř obou skupin, ne přes ně. */
+    const vsichni = P.getCheatSheet().bossove;
+    const bossove = vsichni.map((b) => b.tier);
     const HODNOTA = (t) => /^1/.test(t) ? 1 : /^3/.test(t) ? 2 : /^5/.test(t) ? 3
       : /mega/i.test(t) ? 4 : 5;
+    const skupina = (b) => (b.odKdy ? 1 : 0);
     let serazeno = true;
-    for (let i = 1; i < bossove.length; i++) {
+    for (let i = 1; i < vsichni.length; i++) {
+      if (skupina(vsichni[i]) !== skupina(vsichni[i - 1])) continue;
       if (HODNOTA(bossove[i]) < HODNOTA(bossove[i - 1])) serazeno = false;
+    }
+    // Běžící nikdy nesmí stát až za tím, co teprve přijde.
+    for (let i = 1; i < vsichni.length; i++) {
+      if (skupina(vsichni[i]) < skupina(vsichni[i - 1])) serazeno = false;
     }
     return {
       maVydrz: Object.keys(skore).every((k) => typeof skore[k].vydrz === "number"
@@ -12567,6 +12549,7 @@ try {
       maRucni: !!document.getElementById("rucniBtn"),
       maSkenPlan: !!document.getElementById("skenPlanBtn"),
       maHledaniVeHre: !!document.getElementById("hledaniBtn"),
+      maHledaniPanel: !!document.getElementById("hledaniVysledek"),
       maPocitadloVRosteru: !!(document.getElementById("boxCheck")
         && document.getElementById("boxCheck").closest(".card.roster")),
       // …ale počítadlo nezmizelo, jen se přestěhovalo do nastavení
@@ -12592,8 +12575,15 @@ try {
   check("panel Gym je pryč", refaktor.maGym === false);
   check("panel „Do mobilu“ je pryč", refaktor.maDoMobilu === false);
   check("karta Souhrn je pryč", refaktor.maSouhrn === false);
-  check("tlačítka Ručně / Co skenovat / Hledat ve hře jsou pryč",
-    !refaktor.maRucni && !refaktor.maSkenPlan && !refaktor.maHledaniVeHre);
+  check("tlačítka Ručně / Co skenovat jsou pryč",
+    !refaktor.maRucni && !refaktor.maSkenPlan);
+  /* „Hledání do hry" se vrátilo — vyrábí filtry pro herní vyhledávání
+     z kusů, které jdou pustit. Dřív to bylo mrtvé tlačítko bez panelu,
+     proto zmizelo; teď panel má a hlídá, aby do filtru nespadl kus,
+     který se nepouští. */
+  check("…a „Hledání do hry“ je naopak zpátky, i s panelem",
+    refaktor.maHledaniVeHre === true && refaktor.maHledaniPanel === true,
+    JSON.stringify([refaktor.maHledaniVeHre, refaktor.maHledaniPanel]));
   check("počítadlo boxu není v rosteru", refaktor.maPocitadloVRosteru === false);
   // Nezmizelo — jen se přestěhovalo tam, kam patří.
   check("…ale je v nastavení", refaktor.pocitadloVNastaveni);
@@ -13080,9 +13070,15 @@ try {
     const jmena = Array.from(document.querySelectorAll(".rb-polozka b")).map((b) => b.textContent);
     // Kanonická identita = druh + forma + shadow/mega. Dvě jména téhož
     // pokémona musí spadnout na jeden klíč.
+    /* Kanonická identita = druh + forma + shadow/mega. Mega Charizard X
+       a Y jsou DVA bossové s jiným typem, takže písmeno formy do klíče
+       patří — bez něj by správný rozpis vypadal jako duplicita. */
     const klice = jmena.map((j) => {
       const predpona = (/^shadow\s/i.test(j) ? "s:" : "") + (/^mega\s/i.test(j) ? "m:" : "");
-      return predpona + window.__pgo.dexKeyOf(j.replace(/^(shadow|mega)\s+/i, ""));
+      const holy = j.replace(/^(shadow|mega)\s+/i, "").trim();
+      const forma = (holy.match(/ ([xy])$/i) || [])[1];
+      return predpona + window.__pgo.dexKeyOf(holy)
+        + (forma ? ":" + forma.toLowerCase() : "");
     });
     const dvakrat = klice.filter((k, i) => klice.indexOf(k) !== i);
     return { jmena: jmena, dvakrat: dvakrat };
@@ -19359,7 +19355,9 @@ try {
     if (!okno) return null;
     const out = { scrollTop: Math.round(okno.scrollTop),
       // Jen kdyz je okno delsi nez jeho ramecek, ma vubec kam odrolovat —
-      // jinak by test prochazel i rozbity.
+      // jinak by test prochazel i rozbity. U sceleneho seznamu o par
+      // bodech se obsah vejde cely a odrolovat nejde ani teoreticky.
+      bodu: okno.querySelectorAll(".novinky-seznam > li").length,
       roluje: okno.scrollHeight > okno.clientHeight + 4,
       fokusOk: !!(document.activeElement
         && document.activeElement.hasAttribute("data-novinky-ok")) };
@@ -19367,8 +19365,8 @@ try {
     return out;
   });
   check("okno novinek zacina nahore", !!s294 && s294.scrollTop === 0, JSON.stringify(s294));
-  check("…i kdyz je obsah delsi nez okno", !!s294 && s294.roluje === true,
-    JSON.stringify(s294));
+  check("…i kdyz je obsah delsi nez okno",
+    !!s294 && (s294.roluje === true || s294.bodu < 6), JSON.stringify(s294));
   check("Enter porad zavira — fokus zustal na „Rozumim\"",
     !!s294 && s294.fokusOk === true, JSON.stringify(s294));
 
@@ -19499,8 +19497,11 @@ try {
     okno.remove();
     return out;
   });
+  /* Sekce maji smysl az tam, kde je co clenit. Scelena verze o dvou
+     bodech je nema — a nadpis nad jedinym bodem je šum, ne pomoc. */
   check("novinky maji sekce a vejdou se do rozumneho poctu bodu",
-    !!s290 && s290.sekce.length >= 3 && s290.bodu > 0 && s290.bodu <= 40,
+    !!s290 && s290.bodu > 0 && s290.bodu <= 40
+      && (s290.bodu < 5 || s290.sekce.length >= 2),
     JSON.stringify(s290));
   check("v novinkach nezustaly hvezdicky z formatovani",
     !!s290 && s290.hvezdicky === false, JSON.stringify(s290 && s290.hvezdicky));
@@ -20046,6 +20047,172 @@ try {
     !/[a-z_]+\.(js|json|html)|window\.|verze\.json/.test(
       s276.text + " " + s276.textPriCisteni + " " + s276.textPoOdmitnuti),
     s276.text);
+
+  /* 310) Hledání do hry: filtr nesmí najít kus, který se nepouští.
+     --------------------------------------------------------------
+     Tohle je tvrdé pravidlo, ne preference: ve hře se maže hromadně,
+     takže kus, který do nálezu spadne omylem, je nenávratně pryč.
+
+     Test proto nestaví na tom, co si appka myslí, ale co by ve hře
+     doopravdy vyskočilo: každý vyrobený filtr se zkusí proti VŠEM
+     kusům v rosteru simulací herního hledání — a dokud uživatel
+     nemá ověřeno, jak jeho hra čte přednost operátorů, tak podle
+     obou výkladů najednou.
+
+     Roster je schválně protivný: stejná CP u kusu, který se nechává,
+     i u toho, co se pouští; druhy, jejichž jméno je částí jiného
+     (Mew v Mewtwo, Porygon v Porygon2); přezdívky, které obsahují
+     cizí jméno; kusy bez CP. */
+  await page.goto(URL);
+  await nacteno(page);
+
+  const s310 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const dex = P.pokedex().species;
+    const jmena = [];
+    Object.keys(dex).forEach((k) => {
+      if (k.indexOf("-") !== -1) return;
+      const n = dex[k][1];
+      if (n && jmena.indexOf(n) === -1) jmena.push(n);
+    });
+    // pasti: jméno jednoho druhu je částí jména druhého
+    const pasti = ["Mew", "Mewtwo", "Porygon", "Porygon2", "Dunsparce",
+      "Dudunsparce", "Nidoran", "Wooper", "Clodsire"];
+    const zaklad = pasti.filter((n) => jmena.indexOf(n) !== -1);
+    const vybraneDruhy = zaklad.concat(jmena.filter((n) => zaklad.indexOf(n) === -1).slice(0, 55));
+
+    const prohresky = [];
+    const souhrn = { bezi: 0, filtru: 0, kusu: 0, pokryto: 0, rucne: 0,
+      prilisDlouhych: 0, mimoFiltry: 0, bezFiltru: 0 };
+
+    for (let seed = 1; seed <= 12; seed++) {
+      let x = seed * 7919;
+      const nah = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
+      const cpPool = [10, 123, 500, 501, 1200, 1500, 1501, 2000, 2500, 3100];
+      const radky = [];
+      vybraneDruhy.forEach((n) => {
+        const kopii = 1 + Math.floor(nah() * 5);
+        for (let i = 0; i < kopii; i++) {
+          const bezCp = nah() < 0.06;
+          const r = { pokemon: n,
+            cp: bezCp ? "" : String(cpPool[Math.floor(nah() * cpPool.length)]
+              + Math.floor(nah() * 3)),
+            level: 20, ivAtk: Math.floor(nah() * 16), ivDef: Math.floor(nah() * 16),
+            ivSta: Math.floor(nah() * 16) };
+          // přezdívka, která obsahuje jméno jiného druhu — ve hře se na ni
+          // taky hledá, takže to appka musí brát jako cizí kus
+          if (nah() < 0.12) {
+            r.note = vybraneDruhy[Math.floor(nah() * vybraneDruhy.length)].toLowerCase()
+              + (nah() < 0.5 ? "100" : " top");
+          }
+          radky.push(r);
+        }
+      });
+      P.setRows(radky);
+      await cekej(60);
+      const vsechny = P.getRows();
+      const vybrane = vsechny.filter(() => nah() < 0.6);
+      if (!vybrane.length) continue;
+      const vybraneId = {};
+      vybrane.forEach((r) => { vybraneId[r.id] = true; });
+      const kus = (r) => ({ text: P.hledaciText(r),
+        cp: (r.cp === "" || r.cp === null || r.cp === undefined) ? null : +r.cp });
+      const cizi = vsechny.filter((r) => !vybraneId[r.id]);
+
+      ["", "or", "and"].forEach((rezim) => {
+        const el = document.getElementById("hledaniPriorita");
+        if (el) el.value = rezim;
+        const r = P.hledaciFiltry(vybrane);
+        souhrn.bezi++;
+        if (!r) { souhrn.bezFiltru++; return; }
+        souhrn.filtru += r.filtry.length;
+        souhrn.kusu += r.kusu;
+        souhrn.pokryto += r.pokryto;
+        souhrn.rucne += r.rucne.length;
+        const vyklady = rezim ? [rezim] : ["or", "and"];
+        // 1) ani jeden cizí kus nesmí na žádný filtr vyskočit
+        r.filtry.forEach((f) => {
+          if (f.text.length > r.maxDelka) souhrn.prilisDlouhych++;
+          cizi.forEach((c) => {
+            vyklady.forEach((v) => {
+              if (P.hledaciNajde(f.text, kus(c), v)) {
+                prohresky.push({ seed: seed, rezim: rezim, vyklad: v, filtr: f.text,
+                  kus: c.pokemon + " " + c.cp + " CP" });
+              }
+            });
+          });
+        });
+        // 2) co filtry nepokryjí, musí appka vypsat k ručnímu dohledání
+        const pokryte = {};
+        r.filtry.forEach((f) => {
+          vybrane.forEach((v) => {
+            if (vyklady.every((vy) => P.hledaciNajde(f.text, kus(v), vy))) pokryte[v.id] = true;
+          });
+        });
+        const rucneKlice = {};
+        r.rucne.forEach((k) => { rucneKlice[k.jmeno + "|" + k.cp] = true; });
+        vybrane.forEach((v) => {
+          if (pokryte[v.id]) return;
+          if (rucneKlice[v.pokemon + "|" + (v.cp || "")]) return;
+          souhrn.mimoFiltry++;
+        });
+      });
+    }
+    return { prohresky: prohresky.slice(0, 5), prohresku: prohresky.length, souhrn: souhrn };
+  });
+  check("hledani do hry: ve filtru nikdy nevyskoci kus, ktery se nepousti",
+    s310.prohresku === 0, JSON.stringify(s310.prohresky));
+  check("...a co filtry nepokryji, je vypsane k rucnimu dohledani",
+    s310.souhrn.mimoFiltry === 0, JSON.stringify(s310.souhrn));
+  check("...filtry drzi nastavenou delku a neco vzdy vyrobi",
+    s310.souhrn.prilisDlouhych === 0 && s310.souhrn.bezFiltru === 0
+      && s310.souhrn.filtru > 50 && s310.souhrn.pokryto > 0,
+    JSON.stringify(s310.souhrn));
+
+  /* 311) Tři konkrétní pasti, u kterých se dá přesně říct, co má vyjít. */
+  const s311 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.getElementById("hledaniPriorita").value = "";
+    P.setRows([
+      // a) stejný druh, stejné CP — jeden se nechává, druhý pouští
+      { pokemon: "Pidgey", cp: "500", level: 20, ivAtk: 1, ivDef: 1, ivSta: 1 },
+      { pokemon: "Pidgey", cp: "500", level: 20, ivAtk: 2, ivDef: 2, ivSta: 2 },
+      // b) jméno druhu je částí jiného jména
+      { pokemon: "Mew", cp: "1200", level: 20, ivAtk: 3, ivDef: 3, ivSta: 3 },
+      { pokemon: "Mewtwo", cp: "3000", level: 20, ivAtk: 4, ivDef: 4, ivSta: 4 },
+      // c) cizí kus s přezdívkou, ve které je jméno pouštěného druhu
+      { pokemon: "Rattata", cp: "300", level: 20, ivAtk: 5, ivDef: 5, ivSta: 5 },
+      { pokemon: "Bulbasaur", cp: "800", level: 20, ivAtk: 6, ivDef: 6, ivSta: 6,
+        note: "rattata king" },
+    ]);
+    await cekej(120);
+    const vse = P.getRows();
+    const najdi = (jm, cp) => vse.find((r) => r.pokemon === jm && String(r.cp) === String(cp));
+    const pidgeyDrop = vse.filter((r) => r.pokemon === "Pidgey")[1];
+    const vybrane = [pidgeyDrop, najdi("Mew", 1200), najdi("Rattata", 300)];
+    const r = P.hledaciFiltry(vybrane);
+    const texty = r.filtry.map((f) => f.text);
+    const jmenaRucne = r.rucne.map((k) => k.jmeno);
+    const kus = (x) => ({ text: P.hledaciText(x), cp: +x.cp });
+    const najdeCizi = ["or", "and"].some((v) => texty.some((t) =>
+      vse.filter((x) => vybrane.indexOf(x) === -1)
+        .some((c) => P.hledaciNajde(t, kus(c), v))));
+    return { texty: texty, rucne: jmenaRucne, najdeCizi: najdeCizi,
+      // Mew se pustit dá: Mewtwo má jiné CP, takže pásmo ho vynechá
+      mewVeFiltru: texty.some((t) => t.indexOf("mew") === 0),
+      // Pidgey se stejným CP oddělit nejde — patří do ručního seznamu
+      pidgeyRucne: jmenaRucne.indexOf("Pidgey") !== -1,
+      // Rattata má cizího jmenovce v přezdívce, ale s jiným CP
+      rattataPokryta: texty.some((t) => t.indexOf("rattata") === 0) };
+  });
+  check("hledani: kus se stejnym CP jako ponechany jde do rucniho seznamu",
+    s311.pidgeyRucne === true && s311.najdeCizi === false,
+    JSON.stringify(s311));
+  check("...jmenovec (Mew vs Mewtwo) i prezdivka se oddeli pasmem CP",
+    s311.mewVeFiltru === true && s311.rattataPokryta === true,
+    JSON.stringify(s311));
 
   await page.goto(URL);
   await nacteno(page);

@@ -5824,71 +5824,166 @@ check("…a zadané pohlaví se s kusem uloží",
 check("…o hodinách v gymu už appka nikde nemluví",
   !/hodin/i.test(d80.hlaska), d80.hlaska.slice(0, 120));
 
-/* 81) Hledání do hry: filtry, které stačí vložit ve hře.
+/* 81) Hledání do hry: panel je vidět a filtry nenajdou nic cizího.
 
-   Dřív to byl jeden řetězec: seznam druhu (nejvys 40) a jeden spolecny
-   rozsah CP. Na rosteru se stovkami kusu k pusteni se do nej vesla
-   tretina druhu. Ted se kusy seradi podle CP a nakrajeji na pasma —
-   kazde pasmo je jeden filtr ve tvaru „druh,druh&cpLO-HI", ktery hra
-   cte stejne pri obou vykladech priority operatoru. */
+   Vzhled si přestavuje lištu rosteru — tlačítko „Hledání do hry" si bere
+   do svého pruhu příkazů, a výsledek hledání musí jít s ním. Dokud tam
+   nebyl, klik na tlačítko neukázal ve vzhledu vůbec nic.
+
+   Druhá věc je to podstatné pravidlo: ve filtru nesmí vyskočit kus, který
+   se nepouští. Engine si to hlídá sám, tady se jen ověří, že to platí
+   i na tom, co panel opravdu vypíše. */
 const p81 = await otevri(1500, []);
 const d81 = await p81.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
   document.getElementById("novinkyOkno")?.remove();
   const P = window.__pgo;
+  document.getElementById("hledaniPriorita").value = "";
   const dex = P.pokedex().species;
-  const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 60);
+  const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 40);
   const rows = []; let seed = 11;
   const nah = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   klice.forEach((k) => { const e = dex[k];
     for (let i = 0; i < 3; i++) rows.push({ pokemon: e[1], cp: 200 + Math.floor(nah() * 2400),
       level: 10 + Math.floor(nah() * 30), ivAtk: Math.floor(nah() * 16),
       ivDef: Math.floor(nah() * 16), ivSta: Math.floor(nah() * 16) }); });
+  // past: dva stejné kusy se stejným CP — jeden se nechává, druhý pouští,
+  // a vyhledávání je od sebe neodliší
+  rows.push({ pokemon: "Pidgey", cp: 777, level: 20, ivAtk: 15, ivDef: 15, ivSta: 15 });
+  rows.push({ pokemon: "Pidgey", cp: 777, level: 20, ivAtk: 0, ivDef: 0, ivSta: 0 });
   P.setRows(rows);
   await cekej(5000);
   const out = { tlacitko: !!document.getElementById("hledaniBtn"),
     nastaveni: !!document.getElementById("hledaniDelka") };
-  // zdroj: kusy smazané dnes (tj. po dokončeném čištění boxu)
-  const ted = Date.now();
-  P.setDiscarded(P.getRows().filter((r, i) => i % 3 === 0).map((r, i) => ({ k: "t" + i, del: ted,
+
+  // zdroj: kusy smazané dnes (tedy po dokončeném čištění boxu)
+  const vse = P.getRows();
+  const smazat = vse.filter((r, i) => i % 3 === 0).slice(0, 45);
+  P.setDiscarded(smazat.map((r, i) => ({ k: "t" + i, del: Date.now(),
     r: { pokemon: r.pokemon, cp: r.cp, ivAtk: r.ivAtk, ivDef: r.ivDef, ivSta: r.ivSta } })));
-  await cekej(800);
+  P.setRows(vse.filter((r) => smazat.indexOf(r) === -1));
+  await cekej(1200);
+
   const delka = document.getElementById("hledaniDelka");
   if (delka) { delka.value = "150"; delka.dispatchEvent(new Event("change", { bubbles: true })); }
-  document.getElementById("hledaniBtn")?.click();
+  // záložka Roster, jinak je celá karta schovaná
+  const zal = [...document.querySelectorAll("button")]
+    .filter((b) => (b.textContent || "").trim() === "Roster");
+  if (zal[0]) zal[0].click();
+  await cekej(500);
+  document.getElementById("hledaniBtn").click();
   await cekej(900);
+
   const box = document.getElementById("hledaniVysledek");
-  const texty = [...box.querySelectorAll(".hled-text")].map((x) => x.value);
-  out.filtru = texty.length;
-  out.delky = texty.map((t) => t.length);
-  out.tvar = texty.every((t) => /^[a-z0-9' ,]+(&cp\d+-\d+)?$/.test(t));
-  out.jedenRozsah = texty.every((t) => (t.match(/&/g) || []).length <= 1);
+  const r = box.getBoundingClientRect();
+  out.videt = !!box.offsetParent && r.width > 200 && r.height > 50;
+  out.vPruhu = !!box.closest(".atlas-roster-commandbar");
+  const texty = () => [...box.querySelectorAll(".hled-radek .hled-text")].map((x) => x.value);
+  const filtry = () => texty().filter((t) => t.indexOf("cp9000-9999") === -1);
+  out.filtru = filtry().length;
+  out.delky = filtry().map((t) => t.length);
   out.kopii = box.querySelectorAll(".hled-kopie").length;
   out.zdroj = /smazal z rosteru/.test((box.querySelector(".hint") || {}).textContent || "");
-  // pokryti: kazdy smazany kus musi sedet aspon do jednoho filtru
-  const jm = (n) => String(n).toLowerCase().replace(/[^a-z0-9' ]/g, "").trim();
-  const pravidla = texty.map((t) => {
-    const [cast, cp] = t.split("&cp");
-    const r = (cp || "").split("-");
-    return { druhy: new Set(cast.split(",")), lo: +r[0] || 0, hi: +r[1] || Infinity };
-  });
-  out.nepokryto = P.getDiscarded().filter((d) => !pravidla.some((pr) =>
-    pr.druhy.has(jm(d.r.pokemon)) && +d.r.cp >= pr.lo && +d.r.cp <= pr.hi)).length;
+  out.rucne = /Najdi si je ve hře sám/.test(box.textContent);
+
+  /* To hlavní: žádný filtr nesmí najít kus, který zůstal v rosteru.
+     Počítá se to obojím výkladem přednosti operátorů, protože dokud
+     uživatel neověří, jak jeho hra čte filtr, platit může kterýkoli. */
+  const kus = (x) => ({ text: P.hledaciText(x),
+    cp: (x.cp === "" || x.cp === null || x.cp === undefined) ? null : +x.cp });
+  out.cizichNalezu = 0;
+  filtry().forEach((t) => P.getRows().forEach((x) => ["or", "and"].forEach((v) => {
+    if (P.hledaciNajde(t, kus(x), v)) out.cizichNalezu++;
+  })));
+
+  // nabídka ověření a co udělá odpověď
+  out.overeni = !!box.querySelector(".hled-overeni");
+  out.odpovedi = [...box.querySelectorAll(".hled-odpoved")].length;
+  const predOverenim = filtry().length;
+  const or = box.querySelector('.hled-odpoved[data-rezim="or"]');
+  if (or) or.click();
+  await cekej(700);
+  out.poOvereni = { filtru: filtry().length, mene: filtry().length < predOverenim,
+    ulozeno: document.getElementById("hledaniPriorita").value,
+    nabidkaPryc: !box.querySelector(".hled-overeni"),
+    znovu: !!box.querySelector(".hled-znovu") };
+  out.cizichPoOvereni = 0;
+  filtry().forEach((t) => P.getRows().forEach((x) => {
+    if (P.hledaciNajde(t, kus(x), "or")) out.cizichPoOvereni++;
+  }));
   return out;
 });
 await p81.close();
-check("hledání do hry má tlačítko i nastavení délky",
-  d81.tlacitko === true && d81.nastaveni === true,
-  JSON.stringify([d81.tlacitko, d81.nastaveni]));
-check("…bere kusy smazané dnes a rozdělí je na filtry",
-  d81.zdroj === true && d81.filtru > 1 && d81.kopii === d81.filtru,
-  JSON.stringify([d81.zdroj, d81.filtru, d81.kopii]));
-check("…každý filtr je seznam druhů s jedním pásmem CP a drží délku",
-  d81.tvar === true && d81.jedenRozsah === true
+check("hledání do hry je vidět i ve vzhledu, v pruhu příkazů",
+  d81.videt === true && d81.vPruhu === true && d81.tlacitko === true && d81.nastaveni === true,
+  JSON.stringify([d81.videt, d81.vPruhu, d81.tlacitko, d81.nastaveni]));
+check("…bere kusy smazané dnes a rozdělí je na filtry s tlačítky",
+  d81.zdroj === true && d81.filtru > 1 && d81.kopii >= d81.filtru
     && d81.delky.every((x) => x <= 150),
-  JSON.stringify([d81.tvar, d81.jedenRozsah, d81.delky]));
-check("…a žádný pouštěný kus nezůstane mimo filtry",
-  d81.nepokryto === 0, String(d81.nepokryto));
+  JSON.stringify([d81.zdroj, d81.filtru, d81.kopii, d81.delky]));
+check("…a na žádný z nich nevyskočí kus, který zůstal v rosteru",
+  d81.cizichNalezu === 0 && d81.cizichPoOvereni === 0,
+  JSON.stringify([d81.cizichNalezu, d81.cizichPoOvereni]));
+check("…kus, co se od ponechaného odlišit nedá, je vypsaný k ručnímu dohledání",
+  d81.rucne === true, String(d81.rucne));
+check("…a po ověření ve hře je filtrů míň",
+  d81.overeni === true && d81.odpovedi === 2 && d81.poOvereni.mene === true
+    && d81.poOvereni.ulozeno === "or" && d81.poOvereni.nabidkaPryc === true
+    && d81.poOvereni.znovu === true,
+  JSON.stringify([d81.overeni, d81.odpovedi, d81.poOvereni]));
+
+/* 82) Sekce akce ukáže i to, co o ní stránka píše slovy.
+
+   Seznam pokémonů vypadal jako celý obsah sekce, a rozhodnutí přitom
+   často mění až věta pod ním („z vajec se líhne i víc druhů", „shiny
+   tentokrát nebude", dokdy je potřeba vyzvednout odměny). Zároveň platí
+   pravidlo appky: nic v ní nesmí zůstat anglicky — co appka neumí říct
+   česky, se neukazuje a sekce si nechá štítek „Neúplný rozpis". */
+const p82 = await otevri(1500);
+const d82 = await p82.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  const cz = window.AtlasEventUI.cz;
+  const vse = (P.eventsData() || {}).events || [];
+  const maText = (e) => {
+    const z = ((e[8] || {}).zdroj || {}).sekce || {};
+    return Object.keys(z).some((k) => (z[k].text || []).length);
+  };
+  const akce = vse.filter(maText);
+  const out = { akci: akce.length, odstavcu: 0, anglickych: 0, stitku: 0,
+    ukazky: [], anglicke: [], nelezPrelozene: 0 };
+  // Anglická slova, která se v české větě nemají jak objevit.
+  const ANGL = /\b(the|will|and|for|with|during|your|from|this|that|are|you)\b/i;
+  for (const e of akce.slice(0, 12)) {
+    window.AtlasEventUI.open(vse.indexOf(e));
+    await cekej(300);
+    const dlg = document.getElementById("atlasEventDialog");
+    const vety = [...dlg.querySelectorAll(".atlas-event-doplnek p:not(.atlas-small-note)")]
+      .map((x) => x.textContent.trim());
+    out.odstavcu += vety.length;
+    vety.forEach((t) => { if (ANGL.test(t)) { out.anglickych++;
+      if (out.anglicke.length < 4) out.anglicke.push(e[0] + " | " + t.slice(0, 120)); } });
+    if (vety.length && out.ukazky.length < 3) out.ukazky.push(vety[0]);
+    out.stitku += dlg.querySelectorAll(".atlas-event-sekce>summary .atlas-event-placene").length;
+    // Věta, kterou appka neumí česky, se nesmí ukázat ani omylem.
+    const z = ((e[8] || {}).zdroj || {}).sekce || {};
+    Object.keys(z).forEach((k) => (z[k].text || []).forEach((po) => {
+      if (cz(po.text) === po.text && vety.indexOf(po.text) !== -1) out.nelezPrelozene++;
+    }));
+    dlg.querySelector(".atlas-drawer-header button")?.click();
+    await cekej(120);
+  }
+  return out;
+});
+await p82.close();
+check("věty ze stránky akce se v detailu ukážou",
+  d82.akci > 3 && d82.odstavcu > 3, JSON.stringify([d82.akci, d82.odstavcu, d82.ukazky]));
+check("…a to jen česky, nic anglického",
+  d82.anglickych === 0 && d82.nelezPrelozene === 0,
+  JSON.stringify([d82.anglickych, d82.nelezPrelozene, d82.anglicke]));
+check("…sekce, ke které zdroj píše víc, má štítek o neúplném rozpisu",
+  d82.stitku > 0, String(d82.stitku));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
