@@ -29197,11 +29197,25 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       rows.forEach(function (x) { if (x.id === id) zCisteni.push(x); });
     });
     if (zCisteni.length) return { kusy: zCisteni, zdroj: "cisteni" };
+    /* Poslední dávka smazání = jedno čištění. Pevné „za posledních 24 h"
+       znamenalo, že kdo vyčistil večer a ke hře se dostal až pozítří,
+       přišel o svůj seznam. Starší než týden se nenabízí — to už je
+       dávno puštěné. */
     var DEN = 24 * 3600 * 1000, ted = Date.now();
+    var DAVKA = 6 * 3600 * 1000, NEJSTARSI = 7 * DEN;
     var smazane = (discarded || []).filter(function (d) {
-      return d && d.r && d.r.pokemon && d.del && (ted - d.del) < DEN;
-    }).map(function (d) { return d.r; });
-    if (smazane.length) return { kusy: smazane, zdroj: "smazane" };
+      return d && d.r && d.r.pokemon && d.del && (ted - d.del) < NEJSTARSI;
+    });
+    if (smazane.length) {
+      var posledni = smazane.reduce(function (a, d) {
+        return Math.max(a, d.del);
+      }, 0);
+      var davka = smazane.filter(function (d) { return d.del >= posledni - DAVKA; })
+        .map(function (d) { return d.r; });
+      if (davka.length) {
+        return { kusy: davka, zdroj: "smazane", stari: ted - posledni };
+      }
+    }
     /* Z tabulky se berou JEN kusy, které appka pouští. Dřív to bylo
        „co je vidět" a spoléhalo se na filtr „Jen k puštění" — jenže kdo
        si v rosteru jen něco vyhledá, dostal do Transferu kusy s verdiktem
@@ -29324,8 +29338,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var kusu = (rH ? rH.kusu : 0) + (rP ? rP.kusu : 0);
       /* Úvod jsou dvě věty. Proč se tomu dá věřit a co appka neví,
          patří do bubliny — ne nad každý filtr znova. */
+      var dnu = Math.floor((z.stari || 0) / (24 * 3600 * 1000));
       var odkud = z.zdroj === "cisteni" ? "z čištění boxu"
-        : (z.zdroj === "smazane" ? "smazané dnes z rosteru" : "z tabulky");
+        : (z.zdroj === "smazane"
+          ? (dnu < 1 ? "smazané dnes z rosteru"
+            : "z čištění před " + sklonuj(dnu, "dnem", "dny", "dny"))
+          : "z tabulky");
       var uvod = '<span class="hint" title="Appka si každý filtr po sobě zkouší'
         + " proti celému rosteru; co by našlo i jiný kus, vůbec nenabídne."
         + " Zná ale jen roster — co jsi chytil po posledním skenu, o tom neví."
