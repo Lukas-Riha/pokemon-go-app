@@ -3985,7 +3985,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   var POCASI = {"Clear":["Grass","Ground","Fire"],"Fog":["Dark","Ghost"],"Overcast":["Fairy","Fighting","Poison"],"Partly Cloudy":["Normal","Rock"],"Rainy":["Water","Electric","Bug"],"Snow":["Ice","Steel"],"Windy":["Dragon","Flying","Psychic"]};
   // === POCASI END ===
   // === BUILD START
-  var BUILD = "2026-10-24 22:37";
+  var BUILD = "2026-10-25 09:54";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -27712,49 +27712,134 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var pasmo = function (lo, hi) { return "cp" + lo + "-" + hi; };
 
     if (rezim === "or") {
-      /* Ověřeno, že čárka platí dřív: do jednoho filtru jde víc druhů
-         a k nim jedno společné pásmo. Pásmo se smí roztáhnout jen tak,
-         aby v něm neležel cizí kus ŽÁDNÉHO z uvedených druhů. */
-      var kusyPodleCp = [];
-      smisene.forEach(function (z) {
-        pasmaTermu(z).forEach(function (ps) {
-          ps.kusy.forEach(function (r) {
-            kusyPodleCp.push({ r: r, cp: num(r.cp), z: z });
+      /* Ověřeno ve hře: čárka platí dřív než `&`. Do jedné skupiny proto
+         jde víc druhů A víc oken CP najednou — „a,b&cp10-20,cp90-99" je
+         „(a nebo b) a zároveň (CP 10-20 nebo 90-99)". Každá mezera mezi
+         ponechanými kusy je jedno okno; dřív to byl rovnou další filtr. */
+      var ciziCp = function (z) {
+        return z.cizi.slice();
+      };
+      /* Okna pro danou sadu druhů: body jsou CP pouštěných kusů, překážky
+         CP cizích kusů VŠECH uvedených druhů. Okno se natahuje, dokud do
+         něj nespadne překážka. */
+      var oknaPro = function (termy) {
+        var body = [], prekazky = [];
+        termy.forEach(function (t) {
+          termy_kusy[t].forEach(function (r) {
+            var cp = num(r.cp);
+            if (cp !== null) body.push(cp);
           });
+          ciziCp(termy_obj[t]).forEach(function (f) { prekazky.push(f); });
         });
-      });
-      kusyPodleCp.sort(function (a, b) { return a.cp - b.cp; });
-      var sk = null;
-      var uzavriSkupinu = function () {
-        if (!sk) return;
-        pridej(Object.keys(sk.termy).sort().join(",") + "&" + pasmo(sk.lo, sk.hi),
-          sk.kusy, Object.keys(sk.termy).sort(), sk.lo, sk.hi);
-        sk = null;
-      };
-      var bezpecne = function (termyMapa, lo, hi) {
-        return Object.keys(termyMapa).every(function (t) {
-          var z = termy[t];
-          return !z.ciziNezname && !z.cizi.some(function (f) { return f >= lo && f <= hi; });
-        });
-      };
-      kusyPodleCp.forEach(function (p) {
-        if (sk) {
-          var zkTermy = {};
-          Object.keys(sk.termy).forEach(function (t) { zkTermy[t] = true; });
-          zkTermy[p.z.term] = true;
-          var lo = Math.min(sk.lo, p.cp), hi = Math.max(sk.hi, p.cp);
-          var text = Object.keys(zkTermy).sort().join(",") + "&" + pasmo(lo, hi);
-          if (bezpecne(zkTermy, lo, hi) && text.length <= maxDelka) {
-            sk.termy = zkTermy; sk.lo = lo; sk.hi = hi; sk.kusy.push(p.r);
+        body.sort(function (a, b) { return a - b; });
+        prekazky.sort(function (a, b) { return a - b; });
+        var okna = [];
+        body.forEach(function (cp) {
+          if (prekazky.indexOf(cp) !== -1) return;      // kus s cizím dvojníkem
+          var posl = okna[okna.length - 1];
+          if (posl && !prekazky.some(function (f) { return f > posl[1] && f <= cp; })) {
+            posl[1] = cp;
             return;
           }
-          uzavriSkupinu();
-        }
-        var sam = {}; sam[p.z.term] = true;
-        if (!bezpecne(sam, p.cp, p.cp)) { doRucne(p.r); return; }
-        sk = { termy: sam, lo: p.cp, hi: p.cp, kusy: [p.r] };
+          okna.push([cp, cp]);
+        });
+        return okna;
+      };
+      var textSkupiny = function (termy, okna) {
+        return termy.slice().sort().join(",")
+          + (okna.length ? "&" + okna.map(function (o) {
+              return "cp" + o[0] + "-" + o[1];
+            }).join(",") : "");
+      };
+      /* Kolik oken se vejde do jedné skupiny. Víc oken = míň filtrů, ale
+         delší řetězec a nejistota, kolik termů herní pole spolkne — osm
+         je kompromis, který šel ve hře ověřit. */
+      var MAX_OKEN = 8;
+
+      // pomocné mapy: termín → kusy k puštění / záznam o druhu
+      var termy_kusy = {}, termy_obj = {};
+      var kFronte = [];
+      smisene.forEach(function (z) {
+        if (z.ciziNezname) { z.kusy.forEach(doRucne); return; }
+        termy_obj[z.term] = z;
+        termy_kusy[z.term] = z.kusy.filter(function (r) {
+          var cp = num(r.cp);
+          if (cp === null) { doRucne(r); return false; }   // bez CP to nejde zúžit
+          if (z.cizi.indexOf(cp) !== -1) { doRucne(r); return false; }
+          return true;
+        });
+        if (termy_kusy[z.term].length) kFronte.push(z.term);
       });
-      uzavriSkupinu();
+      // Napřed druhy s nejvíc kusy: velké skupiny se pak doplňují drobnými.
+      kFronte.sort(function (a, b) {
+        return termy_kusy[b].length - termy_kusy[a].length || (a < b ? -1 : 1);
+      });
+
+      /* Kolo za kolem: co se do oken zrovna nevešlo (CP padlo mimo okna
+         skupiny, protože jiný uvedený druh tam má ponechaný kus), jde do
+         dalšího kola s jinými sousedy. Po pár kolech už zbývají jen kusy,
+         které oddělit nejde — ty vypíšeme k ručnímu dohledání. */
+      var vOknech = function (okna, cp) {
+        return okna.some(function (o) { return cp >= o[0] && cp <= o[1]; });
+      };
+      for (var kolo = 0; kolo < 4 && kFronte.length; kolo++) {
+        var dalsiKolo = {};
+        var fronta = kFronte.slice();
+        var udelanoVKole = false;
+        while (fronta.length) {
+          var termy = [], okna = [], zbytek = [];
+          fronta.forEach(function (t) {
+            var zk = termy.concat([t]);
+            var o = oknaPro(zk);
+            if (termy.length && (o.length > MAX_OKEN
+                || textSkupiny(zk, o).length > maxDelka)) {
+              zbytek.push(t);
+              return;
+            }
+            termy = zk; okna = o;
+          });
+          if (!termy.length) {                       // ani sám se nevejde
+            termy = [fronta[0]];
+            okna = oknaPro(termy).slice(0, MAX_OKEN);
+            zbytek = fronta.slice(1);
+          }
+          var vzaty = [], nevzaty = [];
+          termy.forEach(function (t) {
+            termy_kusy[t].forEach(function (r) {
+              if (vOknech(okna, num(r.cp))) vzaty.push(r);
+              else (dalsiKolo[t] = dalsiKolo[t] || []).push(r);
+            });
+          });
+          if (vzaty.length) {
+            udelanoVKole = true;
+            pridej(textSkupiny(termy, okna), vzaty, termy.slice().sort(),
+              okna.length ? okna[0][0] : null,
+              okna.length ? okna[okna.length - 1][1] : null);
+          }
+          fronta = zbytek;
+        }
+        // co zbylo, jde do dalšího kola s jinými sousedy
+        kFronte = Object.keys(dalsiKolo);
+        kFronte.forEach(function (t) { termy_kusy[t] = dalsiKolo[t]; });
+        if (!udelanoVKole) break;
+      }
+      /* Co ani po kolech nesedlo do společné skupiny, dostane filtr samo
+         za sebe: jeden druh a k němu svoje okna. Je to o filtr navíc, ale
+         pořád lepší než poslat kus na ruční dohledání. */
+      kFronte.forEach(function (t) {
+        var zbyle = termy_kusy[t] || [];
+        if (!zbyle.length) return;
+        var okna = oknaPro([t]);
+        var vzaty = zbyle.filter(function (r) { return vOknech(okna, num(r.cp)); });
+        zbyle.forEach(function (r) { if (!vOknech(okna, num(r.cp))) doRucne(r); });
+        if (!vzaty.length) return;
+        // okna se počítají ze VŠECH kusů toho druhu ve výběru, ne jen ze
+        // zbylých — filtr pak najde i ty, které už pokryla jiná skupina;
+        // to nevadí, pustit se mají stejně.
+        okna = okna.slice(0, MAX_OKEN);
+        pridej(textSkupiny([t], okna), vzaty, [t], okna.length ? okna[0][0] : null,
+          okna.length ? okna[okna.length - 1][1] : null);
+      });
     } else if (rezim === "and") {
       /* Ověřeno, že & platí dřív: každý druh si nese vlastní rozsah
          a kousky se spojí čárkami. */

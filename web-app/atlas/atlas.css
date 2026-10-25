@@ -3407,3 +3407,33 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test #atlasEventDialog .atlas-event-doplnek .atlas-small-note{margin:0 0 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
 .atlas-test #atlasEventDialog .atlas-event-doplnek p{margin:0 0 6px}
 .atlas-test #atlasEventDialog .atlas-event-doplnek-nadpis{font-weight:700;color:var(--text-primary);font-size:12.5px;margin-top:8px}
+/* Astra A030 — přehlednější detail nad novými podmínkami od Clauda. */
+.atlas-test #atlasEventDialog .atlas-event-highlights{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.atlas-test #atlasEventDialog .atlas-event-highlights button{background:linear-gradient(135deg,var(--surface-2),var(--surface-1));border-top:2px solid #55b9ef;min-height:104px;box-shadow:0 5px 18px #0000000c}
+.atlas-test #atlasEventDialog .atlas-event-highlights button:hover{border-color:#55b9ef;background:var(--surface-2)}
+.atlas-test #atlasEventDialog .atlas-event-highlights button:focus-visible{outline:2px solid #79cfff;outline-offset:3px}
+.atlas-test #atlasEventDialog .atlas-event-sekce{--event-accent:#79cfff;align-self:start;box-shadow:0 5px 20px #0000000b}
+.atlas-test #atlasEventDialog .atlas-event-sekce-spawn{--event-accent:#77d5ab}
+.atlas-test #atlasEventDialog .atlas-event-sekce-kadidlo{--event-accent:#c7a0ff}
+.atlas-test #atlasEventDialog .atlas-event-sekce-raid{--event-accent:#f5a47d}
+.atlas-test #atlasEventDialog .atlas-event-sekce-bonus,.atlas-test #atlasEventDialog .atlas-event-gopass{--event-accent:#f1cd79}
+.atlas-test #atlasEventDialog .atlas-event-section-icon{color:var(--event-accent);padding:7px;box-sizing:content-box;border-radius:10px;background:color-mix(in srgb,var(--event-accent) 10%,transparent)}
+.atlas-test #atlasEventDialog .atlas-event-sekce>summary{padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+.atlas-test #atlasEventDialog .atlas-event-sekce>summary .atlas-event-placene{font-size:10px;line-height:1.5;max-width:100%;white-space:normal}
+.atlas-test #atlasEventDialog .atlas-event-doplnek{margin:16px 18px 18px;padding:15px 16px;border:1px solid var(--border);border-left:3px solid var(--event-accent);border-radius:0 10px 10px 0;background:var(--surface-2);font-size:13px;line-height:1.65;color:var(--text-secondary)}
+.atlas-test #atlasEventDialog .atlas-event-doplnek p{margin:0 0 10px}
+.atlas-test #atlasEventDialog .atlas-event-doplnek p:last-child{margin-bottom:0}
+.atlas-test #atlasEventDialog .atlas-event-doplnek .atlas-small-note{font-size:10px;letter-spacing:.09em;color:var(--text-secondary);margin-bottom:10px}
+.atlas-test #atlasEventDialog .atlas-event-doplnek-nadpis{font-size:13px;line-height:1.5;margin-top:16px}
+.atlas-test #atlasEventDialog .atlas-event-specimen{border:1px solid var(--border);border-radius:12px;background:linear-gradient(150deg,var(--surface-2),var(--surface-1))}
+.atlas-test #atlasEventDialog .atlas-event-okno{font-size:12px;line-height:1.5;color:var(--text-secondary)}
+:root[data-theme=light] .atlas-test #atlasEventDialog .atlas-event-section-icon{color:#286587}
+@media(max-width:760px){
+.atlas-test #atlasEventDialog .atlas-event-highlights{grid-template-columns:1fr 1fr;gap:8px}
+.atlas-test #atlasEventDialog .atlas-event-highlights button{min-height:100px;padding:12px 24px 12px 12px}
+.atlas-test #atlasEventDialog .atlas-event-highlights strong{font-size:13px;overflow-wrap:anywhere}
+.atlas-test #atlasEventDialog .atlas-event-highlights small{font-size:10px}
+.atlas-test #atlasEventDialog .atlas-event-section-icon{padding:5px}
+.atlas-test #atlasEventDialog .atlas-event-doplnek{margin:12px;padding:12px;font-size:13px}
+}
+@media(max-width:350px){.atlas-test #atlasEventDialog .atlas-event-highlights{grid-template-columns:1fr}}
