@@ -1451,6 +1451,40 @@
   /* Vyhledávací řetězec do hry — musí jít označit a zkopírovat, proto input,
      ne odstavec. */
   .hled-box { margin: 8px 0 0; max-width: 620px; }
+  /* Okno přes celou appku. Panel uvnitř lišty rosteru posouval při každém
+     otevření celou tabulku o kus dolů — a než člověk dorolovat zpátky,
+     ztratil místo, kde zrovna byl. */
+  .hled-plachta { position: fixed; inset: 0; z-index: 300; display: flex;
+    align-items: center; justify-content: center; padding: 16px;
+    background: rgba(0, 0, 0, .55); }
+  .hled-okno { background: var(--surface-1, #fff); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 14px; width: min(860px, 100%);
+    max-height: min(86vh, 900px); display: flex; flex-direction: column;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .45); }
+  .hled-hlava { display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .hled-hlava h3 { margin: 0; font-size: 15px; }
+  .hled-krizek { border: 0; background: none; font-size: 17px; line-height: 1;
+    color: var(--text-muted); cursor: pointer; padding: 4px 6px; }
+  .hled-krizek:hover { color: var(--text-primary); }
+  .hled-telo { padding: 14px 16px 18px; overflow: auto; }
+  .hled-telo > .hint { display: block; margin-bottom: 10px; }
+  /* Kusy, které filtr pokrývá. Rozbalují se až na vyžádání, protože
+     u velkého rosteru je to pár set obrázků. */
+  .hled-ukaz { font-size: 11px; padding: 4px 8px; white-space: nowrap; }
+  .hled-kusy { display: grid; gap: 6px; margin: 2px 0 10px;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .hled-karta { display: flex; flex-direction: column; align-items: center;
+    gap: 2px; padding: 6px 4px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--input-bg); text-align: center; }
+  .hled-karta b { font-size: 11px; line-height: 1.2; }
+  .hled-karta span { font-size: 10.5px; color: var(--text-muted); }
+  .hled-karta-obr { width: 44px; height: 44px; object-fit: contain; }
+  @media (max-width: 640px) {
+    .hled-okno { max-height: 92vh; }
+    .hled-radek { flex-wrap: wrap; }
+    .hled-radek input, .hled-radek textarea { flex-basis: 100%; }
+  }
   .hled-radek { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
   /* Číslo filtru a počet kusů kolem pole: jeden filtr = jedno vložení
      do hry, tak musí být vidět, kolikátý je a co pokrývá. */
@@ -1458,8 +1492,11 @@
     color: var(--text-secondary); min-width: 26px; }
   .hled-pocet { flex: 0 0 auto; font-size: 11px; color: var(--text-muted);
     min-width: 58px; text-align: right; }
-  .hled-radek input { flex: 1 1 auto; font-family: ui-monospace, monospace;
-    font-size: 12.5px; padding: 6px 8px; }
+  .hled-radek input, .hled-radek textarea { flex: 1 1 auto;
+    font-family: ui-monospace, monospace; font-size: 12.5px; padding: 6px 8px; }
+  /* Filtr je vidět celý — ořízlý řetězec se nedá zkontrolovat očima. */
+  .hled-radek textarea { resize: vertical; line-height: 1.35; min-height: 46px;
+    max-height: 120px; border-radius: 8px; }
   /* Jednorázové ověření, jak hra čte filtr o víc druzích. Je to nabídka,
      ne překážka — filtry nad ním fungují i bez něj, jen je jich víc. */
   .hled-overeni { border: 1px dashed var(--border); border-radius: 8px;
@@ -3568,7 +3605,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         Zrušit filtry</button>
       <!-- Sem se vykreslí filtry do herního vyhledávání. Prázdné, dokud
            na „Hledání do hry" nekliknete. -->
-      <div id="hledaniVysledek" class="hled-box" style="display:none"></div>
       <select id="viewSelect" title="Rozhodnutí = jen to podstatné. Vše = i sloupce ze skenu, které jdou editovat.">
         <option value="verdict">Zobrazení: Rozhodnutí</option>
         <option value="all">Zobrazení: Vše (editace)</option>
@@ -3985,7 +4021,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   var POCASI = {"Clear":["Grass","Ground","Fire"],"Fog":["Dark","Ghost"],"Overcast":["Fairy","Fighting","Poison"],"Partly Cloudy":["Normal","Rock"],"Rainy":["Water","Electric","Bug"],"Snow":["Ice","Steel"],"Windy":["Dragon","Flying","Psychic"]};
   // === POCASI END ===
   // === BUILD START
-  var BUILD = "2026-10-25 09:54";
+  var BUILD = "2026-10-25 10:56";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -29146,8 +29182,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   function zavriHledani() {
-    var box = document.getElementById("hledaniVysledek");
-    if (box) box.style.display = "none";
+    var box = document.getElementById("hledaniOkno");
+    if (box) box.remove();
     if (hledaniBtn) hledaniBtn.classList.remove("otevreno");
   }
 
@@ -29173,113 +29209,165 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     });
   }
 
+  /** Kartička kusu do náhledu filtru: obrázek, jméno, CP a kvalita. */
+  function hledaniKarta(r) {
+    var d = dexEntry(r.pokemon);
+    var obr = obrazekHtml(r.pokemon, d, "hled-karta-obr",
+      { shiny: r.shiny === "Ano", zena: pohlaviKusu(r) === "f" });
+    var a = num(r.ivAtk), d2 = num(r.ivDef), st = num(r.ivSta);
+    var iv = (a === null || d2 === null || st === null) ? null : (a + d2 + st) / 45;
+    return '<div class="hled-karta">' + obr
+      + '<b>' + escHtml(r.pokemon) + "</b>"
+      + '<span>' + (r.cp ? r.cp + " CP" : "bez CP")
+      + (iv === null ? "" : " · " + Math.round(iv * 100) + " %") + "</span></div>";
+  }
+
   function hledaniRadek(f, i, celkem) {
-    return '<div class="hled-radek">'
+    return '<div class="hled-radek" data-hled-radek="' + i + '">'
       + (celkem > 1 ? '<span class="hled-cislo">' + (i + 1) + "/" + celkem + "</span>" : "")
-      + '<input type="text" class="hled-text" readonly value="' + escHtml(f.text) + '">'
+      + '<textarea class="hled-text" readonly rows="2">' + escHtml(f.text) + "</textarea>"
       + '<button class="primary hled-kopie">Kopírovat</button>'
-      + '<span class="hled-pocet">' + sklonuj(f.kusu, "kus", "kusy", "kusů")
-      + "</span></div>";
+      + (f.kusu
+          ? '<button class="hled-ukaz" data-hled-kusy="' + i + '" aria-expanded="false">'
+            + sklonuj(f.kusu, "kus", "kusy", "kusů") + " ▾</button>"
+          : '<span class="hled-pocet"></span>')
+      + "</div>"
+      + (f.kusu ? '<div class="hled-kusy" data-hled-mrizka="' + i + '" hidden></div>' : "");
   }
 
   function vykresliHledani() {
-    var box = document.getElementById("hledaniVysledek");
-    if (!box) return;
-    if (hledaniBtn) hledaniBtn.classList.add("otevreno");
-    box.style.display = "";
     var z = hledaciZdroj();
     var r = hledaciFiltry(z.kusy);
+    var stare = document.getElementById("hledaniOkno");
+    if (stare) stare.remove();
+    if (hledaniBtn) hledaniBtn.classList.add("otevreno");
+
+    var box = document.createElement("div");
+    box.id = "hledaniOkno";
+    box.className = "hled-plachta";
+    var telo;
     if (!r) {
-      box.innerHTML = '<button class="hled-x" id="hledaniZavrit" title="Zavřít">&#10005;</button>'
-        + '<span class="hint warn">V tabulce teď nic není —'
+      telo = '<span class="hint warn">V tabulce teď nic není —'
         + " nastav filtr (třeba „Jen k puštění“) a zkus to znovu.</span>";
-      document.getElementById("hledaniZavrit").addEventListener("click", zavriHledani);
-      return;
+    } else {
+      var uvod = (z.zdroj === "cisteni"
+          ? "Kusy, které jsi odklikal k puštění v čištění boxu — "
+          : (z.zdroj === "smazane"
+            ? "Kusy, které jsi dnes smazal z rosteru a ve hře je ještě pustit musíš — "
+            : "Kusy, které jsou teď vidět v tabulce — "))
+        + sklonuj(r.kusu, "kus", "kusy", "kusů") + " z "
+        + sklonuj(r.druhu, "druhu", "druhů", "druhů") + ".";
+      var veta = r.filtry.length
+        ? (r.filtry.length > 1
+            ? " Je jich " + sklonuj(r.filtry.length, "filtr", "filtry", "filtrů")
+              + " — vlož je ve hře jeden po druhém, každý svým tlačítkem."
+            : " Vlož ho ve hře do vyhledávání.")
+          + " <b>Vyskočí na ně jen kusy, které pouštíš</b> — appka si každý filtr"
+          + " po sobě zkouší proti celému rosteru a ten, na který by vyskočilo"
+          + " i něco jiného, vůbec nenabídne."
+          /* Poctivá výhrada: appka zná jen to, co má v rosteru. Kus chycený
+             po posledním skenu v něm není, takže ho filtr nemá jak vynechat. */
+          + " Počítá přitom s rosterem — co jsi chytil po posledním skenu,"
+          + " o tom neví, takže se to mezi nálezy objevit může."
+        : " Ani jeden filtr se vyrobit nedá tak, aby na něj nevyskočily i kusy,"
+          + " které si necháváš. Projdi je ve hře ručně podle seznamu dole.";
+
+      var overeni = "";
+      if (r.test) {
+        overeni = '<div class="hled-overeni"><span class="hint">'
+          + "<b>Chceš jich míň?</b> Appka zatím neví, jak tvoje hra čte filtr"
+          + " o víc druzích, tak je dělí opatrně — po jednom druhu. Vlož ve hře"
+          + " tenhle jeden filtr a klikni, co se stalo. Pak jich bude zlomek"
+          + " a budou pořád stejně bezpečné.</span>"
+          + '<div class="hled-radek"><textarea class="hled-text" readonly rows="2">'
+          + escHtml(r.test.text) + "</textarea>"
+          + '<button class="primary hled-kopie">Kopírovat</button></div>'
+          + '<div class="hled-odpovedi">'
+          + '<button class="hled-odpoved" data-rezim="or">Nenašlo se nic</button>'
+          + '<button class="hled-odpoved" data-rezim="and">Vyskočili všichni '
+          + escHtml(r.test.druh) + " (" + r.test.kusu + ")</button></div></div>";
+      } else if (r.rezim) {
+        overeni = '<div class="hled-stav"><span class="hint">Hledání ve hře máš ověřené,'
+          + ' filtry jsou proto co nejkratší.</span>'
+          + '<button class="hled-znovu">Ověřit znovu</button></div>';
+      }
+
+      var rucne = "";
+      if (r.rucne.length) {
+        rucne = '<span class="hint warn">Tyhle kusy filtry schválně vynechávají —'
+          + " ve hře je nejde oddělit od kusu, který si necháváš (stejný druh"
+          + " i CP, nebo jméno, na které vyskočí i on). Najdi si je ve hře sám: "
+          + r.rucne.slice(0, 15).map(function (k) {
+              return escHtml(k.jmeno) + (k.cp ? " " + k.cp + " CP" : "");
+            }).join(" · ")
+          + (r.rucne.length > 15 ? " a další " + (r.rucne.length - 15) : "")
+          + ".</span>";
+      }
+      telo = '<span class="hint">' + uvod + veta + "</span>"
+        + overeni
+        + r.filtry.map(function (f, i) { return hledaniRadek(f, i, r.filtry.length); }).join("")
+        + rucne;
     }
 
-    var uvod = (z.zdroj === "cisteni"
-        ? "Kusy, které jsi odklikal k puštění v čištění boxu — "
-        : (z.zdroj === "smazane"
-          ? "Kusy, které jsi dnes smazal z rosteru a ve hře je ještě pustit musíš — "
-          : "Kusy, které jsou teď vidět v tabulce — "))
-      + sklonuj(r.kusu, "kus", "kusy", "kusů") + " z "
-      + sklonuj(r.druhu, "druhu", "druhů", "druhů") + ".";
-    var veta = r.filtry.length
-      ? (r.filtry.length > 1
-          ? " Je jich " + sklonuj(r.filtry.length, "filtr", "filtry", "filtrů")
-            + " — vlož je ve hře jeden po druhém, každý svým tlačítkem."
-          : " Vlož ho ve hře do vyhledávání.")
-        + " <b>Vyskočí na ně jen kusy, které pouštíš</b> — appka si každý filtr"
-        + " po sobě zkouší proti celému rosteru a ten, na který by vyskočilo"
-        + " i něco jiného, vůbec nenabídne."
-        /* Poctivá výhrada: appka zná jen to, co má v rosteru. Kus chycený
-           po posledním skenu v něm není, takže ho filtr nemá jak vynechat. */
-        + " Počítá přitom s rosterem — co jsi chytil po posledním skenu,"
-        + " o tom neví, takže se to mezi nálezy objevit může."
-      : " Ani jeden filtr se vyrobit nedá tak, aby na něj nevyskočily i kusy,"
-        + " které si necháváš. Projdi je ve hře ručně podle seznamu dole.";
+    box.innerHTML = '<div class="hled-okno" role="dialog" aria-modal="true"'
+      + ' aria-labelledby="hledNadpis">'
+      + '<div class="hled-hlava"><h3 id="hledNadpis">Hledání do hry</h3>'
+      + '<button type="button" class="hled-krizek" aria-label="Zavřít">\u2715</button></div>'
+      + '<div class="hled-telo">' + telo + "</div></div>";
+    document.body.appendChild(box);
 
-    var overeni = "";
-    if (r.test) {
-      overeni = '<div class="hled-overeni"><span class="hint">'
-        + "<b>Chceš jich míň?</b> Appka zatím neví, jak tvoje hra čte filtr"
-        + " o víc druzích, tak je dělí opatrně — po jednom druhu. Vlož ve hře"
-        + " tenhle jeden filtr a klikni, co se stalo. Pak jich bude zlomek"
-        + " a budou pořád stejně bezpečné.</span>"
-        + hledaniRadek({ text: r.test.text, kusu: 0 }, 0, 1).replace(
-            '<span class="hled-pocet">0 kusů</span>', "")
-        + '<div class="hled-odpovedi">'
-        + '<button class="hled-odpoved" data-rezim="or">Nenašlo se nic</button>'
-        + '<button class="hled-odpoved" data-rezim="and">Vyskočili všichni '
-        + escHtml(r.test.druh) + " (" + r.test.kusu + ")</button></div></div>";
-    } else if (r.rezim) {
-      overeni = '<div class="hled-stav"><span class="hint">Hledání ve hře máš ověřené,'
-        + ' filtry jsou proto co nejkratší.</span>'
-        + '<button class="hled-znovu">Ověřit znovu</button></div>';
-    }
-
-    var rucne = "";
-    if (r.rucne.length) {
-      rucne = '<span class="hint warn">Tyhle kusy filtry schválně vynechávají —'
-        + " ve hře je nejde oddělit od kusu, který si necháváš (stejný druh"
-        + " i CP, nebo jméno, na které vyskočí i on). Najdi si je ve hře sám: "
-        + r.rucne.slice(0, 15).map(function (k) {
-            return escHtml(k.jmeno) + (k.cp ? " " + k.cp + " CP" : "");
-          }).join(" · ")
-        + (r.rucne.length > 15 ? " a další " + (r.rucne.length - 15) : "")
-        + ".</span>";
-    }
-
-    box.innerHTML = '<button class="hled-x" id="hledaniZavrit" title="Zavřít">&#10005;</button>'
-      + '<span class="hint">' + uvod + veta + "</span>"
-      + overeni
-      + r.filtry.map(function (f, i) { return hledaniRadek(f, i, r.filtry.length); }).join("")
-      + rucne;
-
-    document.getElementById("hledaniZavrit").addEventListener("click", zavriHledani);
+    box.querySelector(".hled-krizek").addEventListener("click", zavriHledani);
+    // Klik mimo okno zavírá; uvnitř okna se klik nesmí počítat.
+    box.addEventListener("click", function (e) { if (e.target === box) zavriHledani(); });
+    document.addEventListener("keydown", function esc(e) {
+      if (e.key !== "Escape") return;
+      document.removeEventListener("keydown", esc);
+      if (document.getElementById("hledaniOkno")) zavriHledani();
+    });
     hledaniKopirovat(box);
-    box.querySelectorAll(".hled-odpoved").forEach(function (btn) {
-      btn.addEventListener("click", function () {
+
+    /* Náhled kusů ve filtru. Karty se staví až při prvním rozbalení —
+       u velkého rosteru by jinak okno stavělo stovky obrázků pro nic. */
+    if (r) {
+      box.querySelectorAll("[data-hled-kusy]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var i = +btn.getAttribute("data-hled-kusy");
+          var mrizka = box.querySelector('[data-hled-mrizka="' + i + '"]');
+          if (!mrizka) return;
+          var otevreno = !mrizka.hidden;
+          if (!otevreno && !mrizka.dataset.hotovo) {
+            mrizka.innerHTML = (r.filtry[i].kusy || []).map(hledaniKarta).join("");
+            mrizka.dataset.hotovo = "1";
+          }
+          mrizka.hidden = otevreno;
+          btn.setAttribute("aria-expanded", otevreno ? "false" : "true");
+          btn.textContent = sklonuj(r.filtry[i].kusu, "kus", "kusy", "kusů")
+            + (otevreno ? " ▾" : " ▴");
+        });
+      });
+      box.querySelectorAll(".hled-odpoved").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var el = document.getElementById("hledaniPriorita");
+          if (el) el.value = btn.getAttribute("data-rezim");
+          persist(true);
+          vykresliHledani();
+        });
+      });
+      var znovu = box.querySelector(".hled-znovu");
+      if (znovu) znovu.addEventListener("click", function () {
         var el = document.getElementById("hledaniPriorita");
-        if (el) { el.value = btn.getAttribute("data-rezim"); }
+        if (el) el.value = "";
         persist(true);
         vykresliHledani();
       });
-    });
-    var znovu = box.querySelector(".hled-znovu");
-    if (znovu) znovu.addEventListener("click", function () {
-      var el = document.getElementById("hledaniPriorita");
-      if (el) el.value = "";
-      persist(true);
-      vykresliHledani();
-    });
+    }
+    var krizek = box.querySelector(".hled-krizek");
+    try { krizek.focus({ preventScroll: true }); } catch (e) { krizek.focus(); }
   }
 
   if (hledaniBtn) hledaniBtn.addEventListener("click", function () {
-    var box = document.getElementById("hledaniVysledek");
-    // Druhý klik zavírá. Panel se dřív otevřel a nešel zavřít vůbec —
-    // zůstal viset nad tabulkou, dokud se appka nenačetla znovu.
-    if (box && box.style.display !== "none") { zavriHledani(); return; }
+    // Druhý klik zavírá — tlačítko je jedno a okno taky.
+    if (document.getElementById("hledaniOkno")) { zavriHledani(); return; }
     vykresliHledani();
   });
 

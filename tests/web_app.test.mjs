@@ -12549,7 +12549,16 @@ try {
       maRucni: !!document.getElementById("rucniBtn"),
       maSkenPlan: !!document.getElementById("skenPlanBtn"),
       maHledaniVeHre: !!document.getElementById("hledaniBtn"),
-      maHledaniPanel: !!document.getElementById("hledaniVysledek"),
+      maHledaniPanel: (function () {
+        // Panel je okno nad appkou, ne kus lišty — otevře se až klikem.
+        var b = document.getElementById("hledaniBtn");
+        if (!b) return false;
+        b.click();
+        var okno = document.getElementById("hledaniOkno");
+        var je = !!okno;
+        if (okno) okno.remove();
+        return je;
+      })(),
       maPocitadloVRosteru: !!(document.getElementById("boxCheck")
         && document.getElementById("boxCheck").closest(".card.roster")),
       // …ale počítadlo nezmizelo, jen se přestěhovalo do nastavení

@@ -3393,12 +3393,14 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test #atlasEventDialog .atlas-event-neuplna .atlas-event-placene{margin-left:auto;font-size:11px;white-space:normal}
 @media(max-width:600px){.atlas-test #atlasEventDialog .atlas-event-sekce>summary{font-size:14px;padding:14px 12px}.atlas-test #atlasEventDialog .atlas-event-section-icon{width:20px;height:20px;flex-basis:20px;margin-right:3px}}
 
-/* Claude (117): panel hledání do hry sedí v pruhu Správa rosteru — má
-   vlastní řádek přes celou šířku, aby se filtry nemačkaly vedle tlačítek
-   a dlouhý řetězec šel označit celý. */
-.atlas-roster-commandbar>.hled-box{flex-basis:100%;max-width:none;margin-top:10px;padding:12px 32px 12px 12px;background:var(--surface-1);border:1px solid var(--border);border-radius:10px;max-height:min(58vh,520px);overflow:auto;scrollbar-width:thin}
-.atlas-roster-commandbar>.hled-box .hled-radek input{background:var(--input-bg);border:1px solid var(--border);color:var(--text-primary)}
-.atlas-roster-commandbar>.hled-box .hled-odpoved{background:var(--input-bg)}
+/* Claude (117): hledání do hry je okno přes celou appku, ne kus lišty —
+   panel uvnitř rosteru posouval při každém otevření celou tabulku. Okno
+   si bere barvy vzhledu; kartičky kusů drží mřížku i na telefonu. */
+.atlas-test .hled-okno,.hled-plachta .hled-okno{background:var(--surface-1);border-color:var(--border);color:var(--text-primary)}
+.hled-plachta .hled-text{background:var(--input-bg);border:1px solid var(--border);color:var(--text-primary)}
+.hled-plachta .hled-karta{background:var(--input-bg);border-color:var(--border)}
+.hled-plachta .hled-ukaz,.hled-plachta .hled-odpoved,.hled-plachta .hled-znovu{background:var(--input-bg);border:1px solid var(--border);color:var(--text-primary);border-radius:8px}
+@media(max-width:650px){.atlas-top button[data-click=hledaniBtn] span{display:none}.hled-plachta{padding:8px}}
 
 /* Claude (118): věty ze stránky akce pod seznamem sekce. Jsou to podmínky,
    ne ozdoba — drží se u sekce, které patří, a odliší se jen odsazením

@@ -5824,15 +5824,16 @@ check("…a zadané pohlaví se s kusem uloží",
 check("…o hodinách v gymu už appka nikde nemluví",
   !/hodin/i.test(d80.hlaska), d80.hlaska.slice(0, 120));
 
-/* 81) Hledání do hry: panel je vidět a filtry nenajdou nic cizího.
+/* 81) Hledání do hry: okno nad appkou, tlačítko nahoře, náhled kusů.
 
-   Vzhled si přestavuje lištu rosteru — tlačítko „Hledání do hry" si bere
-   do svého pruhu příkazů, a výsledek hledání musí jít s ním. Dokud tam
-   nebyl, klik na tlačítko neukázal ve vzhledu vůbec nic.
+   Panel dřív rostl uvnitř lišty rosteru a při otevření posunul celou
+   tabulku. Teď je to okno přes appku a tlačítko sedí nahoře vedle
+   Novinek a Importu — tam, kde jsou akce, co se netýkají jednoho kusu.
 
-   Druhá věc je to podstatné pravidlo: ve filtru nesmí vyskočit kus, který
-   se nepouští. Engine si to hlídá sám, tady se jen ověří, že to platí
-   i na tom, co panel opravdu vypíše. */
+   Pravidlo zůstává to podstatné: ve filtru nesmí vyskočit kus, který se
+   nepouští. Engine si to hlídá sám, tady se ověřuje na tom, co panel
+   opravdu vypíše — a navíc že u každého filtru jde rozbalit, které kusy
+   v něm jsou. */
 const p81 = await otevri(1500, []);
 const d81 = await p81.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -5847,13 +5848,14 @@ const d81 = await p81.evaluate(async () => {
     for (let i = 0; i < 3; i++) rows.push({ pokemon: e[1], cp: 200 + Math.floor(nah() * 2400),
       level: 10 + Math.floor(nah() * 30), ivAtk: Math.floor(nah() * 16),
       ivDef: Math.floor(nah() * 16), ivSta: Math.floor(nah() * 16) }); });
-  // past: dva stejné kusy se stejným CP — jeden se nechává, druhý pouští,
-  // a vyhledávání je od sebe neodliší
+  // past: dva stejné kusy se stejným CP — jeden se nechává, druhý pouští
   rows.push({ pokemon: "Pidgey", cp: 777, level: 20, ivAtk: 15, ivDef: 15, ivSta: 15 });
   rows.push({ pokemon: "Pidgey", cp: 777, level: 20, ivAtk: 0, ivDef: 0, ivSta: 0 });
   P.setRows(rows);
   await cekej(5000);
-  const out = { tlacitko: !!document.getElementById("hledaniBtn"),
+  const tlacitko = document.querySelector('.atlas-top [data-click="hledaniBtn"]');
+  const out = { tlacitkoNahore: !!tlacitko && !!tlacitko.offsetParent,
+    vListe: !!document.querySelector('.atlas-roster-commands [id="hledaniBtn"]'),
     nastaveni: !!document.getElementById("hledaniDelka") };
 
   // zdroj: kusy smazané dnes (tedy po dokončeném čištění boxu)
@@ -5866,25 +5868,23 @@ const d81 = await p81.evaluate(async () => {
 
   const delka = document.getElementById("hledaniDelka");
   if (delka) { delka.value = "150"; delka.dispatchEvent(new Event("change", { bubbles: true })); }
-  // záložka Roster, jinak je celá karta schovaná
-  const zal = [...document.querySelectorAll("button")]
-    .filter((b) => (b.textContent || "").trim() === "Roster");
-  if (zal[0]) zal[0].click();
-  await cekej(500);
-  document.getElementById("hledaniBtn").click();
+  // roster se nikam neposune: okno je nad appkou, ne v liště
+  const predVyskou = document.body.scrollHeight;
+  tlacitko.click();
   await cekej(900);
 
-  const box = document.getElementById("hledaniVysledek");
-  const r = box.getBoundingClientRect();
-  out.videt = !!box.offsetParent && r.width > 200 && r.height > 50;
-  out.vPruhu = !!box.closest(".atlas-roster-commandbar");
-  const texty = () => [...box.querySelectorAll(".hled-radek .hled-text")].map((x) => x.value);
+  const okno = document.getElementById("hledaniOkno");
+  out.okno = !!okno;
+  out.nadAppkou = !!okno && okno.parentElement === document.body
+    && getComputedStyle(okno).position === "fixed";
+  out.rosterSeNeposunul = Math.abs(document.body.scrollHeight - predVyskou) < 4;
+  const texty = () => [...okno.querySelectorAll(".hled-radek .hled-text")].map((x) => x.value);
   const filtry = () => texty().filter((t) => t.indexOf("cp9000-9999") === -1);
   out.filtru = filtry().length;
   out.delky = filtry().map((t) => t.length);
-  out.kopii = box.querySelectorAll(".hled-kopie").length;
-  out.zdroj = /smazal z rosteru/.test((box.querySelector(".hint") || {}).textContent || "");
-  out.rucne = /Najdi si je ve hře sám/.test(box.textContent);
+  out.kopii = okno.querySelectorAll(".hled-kopie").length;
+  out.zdroj = /smazal z rosteru/.test((okno.querySelector(".hint") || {}).textContent || "");
+  out.rucne = /Najdi si je ve hře sám/.test(okno.textContent);
 
   /* To hlavní: žádný filtr nesmí najít kus, který zůstal v rosteru.
      Počítá se to obojím výkladem přednosti operátorů, protože dokud
@@ -5896,27 +5896,56 @@ const d81 = await p81.evaluate(async () => {
     if (P.hledaciNajde(t, kus(x), v)) out.cizichNalezu++;
   })));
 
+  // náhled kusů: rozbalí se až na kliknutí a ukáže kartičky s obrázkem
+  const ukaz = okno.querySelector("[data-hled-kusy]");
+  out.maUkaz = !!ukaz;
+  if (ukaz) {
+    const mrizka = okno.querySelector("[data-hled-mrizka]");
+    out.pred = { skryto: mrizka.hidden, karet: mrizka.querySelectorAll(".hled-karta").length };
+    ukaz.click();
+    await cekej(400);
+    out.po = { skryto: mrizka.hidden, karet: mrizka.querySelectorAll(".hled-karta").length,
+      obrazku: mrizka.querySelectorAll("img").length,
+      text: (mrizka.querySelector(".hled-karta") || {}).textContent || "" };
+    // počet kusů na tlačítku musí sedět s tím, co se rozbalí
+    out.pocetSedi = out.po.karet === +(ukaz.textContent.match(/\d+/) || [0])[0];
+  }
+
   // nabídka ověření a co udělá odpověď
-  out.overeni = !!box.querySelector(".hled-overeni");
-  out.odpovedi = [...box.querySelectorAll(".hled-odpoved")].length;
+  out.overeni = !!okno.querySelector(".hled-overeni");
+  out.odpovedi = [...okno.querySelectorAll(".hled-odpoved")].length;
   const predOverenim = filtry().length;
-  const or = box.querySelector('.hled-odpoved[data-rezim="or"]');
+  const or = okno.querySelector('.hled-odpoved[data-rezim="or"]');
   if (or) or.click();
   await cekej(700);
-  out.poOvereni = { filtru: filtry().length, mene: filtry().length < predOverenim,
+  const okno2 = document.getElementById("hledaniOkno");
+  const texty2 = [...okno2.querySelectorAll(".hled-radek .hled-text")].map((x) => x.value);
+  out.poOvereni = { filtru: texty2.length, mene: texty2.length < predOverenim,
     ulozeno: document.getElementById("hledaniPriorita").value,
-    nabidkaPryc: !box.querySelector(".hled-overeni"),
-    znovu: !!box.querySelector(".hled-znovu") };
+    nabidkaPryc: !okno2.querySelector(".hled-overeni"),
+    znovu: !!okno2.querySelector(".hled-znovu") };
   out.cizichPoOvereni = 0;
-  filtry().forEach((t) => P.getRows().forEach((x) => {
+  texty2.forEach((t) => P.getRows().forEach((x) => {
     if (P.hledaciNajde(t, kus(x), "or")) out.cizichPoOvereni++;
   }));
+
+  // zavření: křížek i Escape
+  okno2.querySelector(".hled-krizek").click();
+  await cekej(200);
+  out.zavrelKrizek = !document.getElementById("hledaniOkno");
+  tlacitko.click();
+  await cekej(600);
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await cekej(200);
+  out.zavrelEscape = !document.getElementById("hledaniOkno");
   return out;
 });
 await p81.close();
-check("hledání do hry je vidět i ve vzhledu, v pruhu příkazů",
-  d81.videt === true && d81.vPruhu === true && d81.tlacitko === true && d81.nastaveni === true,
-  JSON.stringify([d81.videt, d81.vPruhu, d81.tlacitko, d81.nastaveni]));
+check("hledání do hry má tlačítko nahoře a otevře okno nad appkou",
+  d81.tlacitkoNahore === true && d81.vListe === false && d81.okno === true
+    && d81.nadAppkou === true && d81.rosterSeNeposunul === true,
+  JSON.stringify([d81.tlacitkoNahore, d81.vListe, d81.okno, d81.nadAppkou,
+    d81.rosterSeNeposunul]));
 check("…bere kusy smazané dnes a rozdělí je na filtry s tlačítky",
   d81.zdroj === true && d81.filtru > 1 && d81.kopii >= d81.filtru
     && d81.delky.every((x) => x <= 150),
@@ -5924,13 +5953,22 @@ check("…bere kusy smazané dnes a rozdělí je na filtry s tlačítky",
 check("…a na žádný z nich nevyskočí kus, který zůstal v rosteru",
   d81.cizichNalezu === 0 && d81.cizichPoOvereni === 0,
   JSON.stringify([d81.cizichNalezu, d81.cizichPoOvereni]));
+check("…u filtru jde rozbalit, které kusy v něm jsou",
+  d81.maUkaz === true && d81.pred.skryto === true && d81.pred.karet === 0
+    && d81.po.skryto === false && d81.po.karet > 0
+    && d81.po.obrazku === d81.po.karet && d81.pocetSedi === true
+    && /CP/.test(d81.po.text),
+  JSON.stringify([d81.pred, d81.po, d81.pocetSedi]));
 check("…kus, co se od ponechaného odlišit nedá, je vypsaný k ručnímu dohledání",
   d81.rucne === true, String(d81.rucne));
-check("…a po ověření ve hře je filtrů míň",
+check("…po ověření ve hře je filtrů míň",
   d81.overeni === true && d81.odpovedi === 2 && d81.poOvereni.mene === true
     && d81.poOvereni.ulozeno === "or" && d81.poOvereni.nabidkaPryc === true
     && d81.poOvereni.znovu === true,
   JSON.stringify([d81.overeni, d81.odpovedi, d81.poOvereni]));
+check("…a okno zavře křížek i Escape",
+  d81.zavrelKrizek === true && d81.zavrelEscape === true,
+  JSON.stringify([d81.zavrelKrizek, d81.zavrelEscape]));
 
 /* 82) Sekce akce ukáže i to, co o ní stránka píše slovy.
 
