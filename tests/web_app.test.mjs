@@ -20129,7 +20129,10 @@ try {
         cp: (r.cp === "" || r.cp === null || r.cp === undefined) ? null : +r.cp });
       const cizi = vsechny.filter((r) => !vybraneId[r.id]);
 
-      ["", "or", "and"].forEach((rezim) => {
+      /* „test" = uživatel si vyžádal ověření a appka do té doby staví jen
+         tvary bezpečné pro oba výklady. Prázdná hodnota dnes znamená
+         ověřeno ve hře (čárka platí dřív), takže se měří jedním výkladem. */
+      ["test", "or", "and"].forEach((rezim) => {
         const el = document.getElementById("hledaniPriorita");
         if (el) el.value = rezim;
         const r = P.hledaciFiltry(vybrane);
@@ -20139,7 +20142,7 @@ try {
         souhrn.kusu += r.kusu;
         souhrn.pokryto += r.pokryto;
         souhrn.rucne += r.rucne.length;
-        const vyklady = rezim ? [rezim] : ["or", "and"];
+        const vyklady = rezim === "test" ? ["or", "and"] : [rezim];
         // 1) ani jeden cizí kus nesmí na žádný filtr vyskočit
         r.filtry.forEach((f) => {
           if (f.text.length > r.maxDelka) souhrn.prilisDlouhych++;
@@ -20183,7 +20186,8 @@ try {
   const s311 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-    document.getElementById("hledaniPriorita").value = "";
+    // neověřený stav: filtry musí vyjít stejně při obou výkladech přednosti
+    document.getElementById("hledaniPriorita").value = "test";
     P.setRows([
       // a) stejný druh, stejné CP — jeden se nechává, druhý pouští
       { pokemon: "Pidgey", cp: "500", level: 20, ivAtk: 1, ivDef: 1, ivSta: 1 },

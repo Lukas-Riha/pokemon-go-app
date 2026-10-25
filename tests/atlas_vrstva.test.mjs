@@ -5839,7 +5839,9 @@ const d81 = await p81.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
   document.getElementById("novinkyOkno")?.remove();
   const P = window.__pgo;
-  document.getElementById("hledaniPriorita").value = "";
+  // Prázdná hodnota = ověřeno ve hře (čárka platí dřív); „test" si vyžádá
+  // nové ověření, a to je stav, který tenhle blok zkouší.
+  document.getElementById("hledaniPriorita").value = "test";
   const dex = P.pokedex().species;
   const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 40);
   const rows = []; let seed = 11;
@@ -5851,6 +5853,11 @@ const d81 = await p81.evaluate(async () => {
   // past: dva stejné kusy se stejným CP — jeden se nechává, druhý pouští
   rows.push({ pokemon: "Pidgey", cp: 777, level: 20, ivAtk: 15, ivDef: 15, ivSta: 15 });
   rows.push({ pokemon: "Pidgey", cp: 777, level: 20, ivAtk: 0, ivDef: 0, ivSta: 0 });
+  /* Shiny a legendární hra do hromadného výběru nepustí — musí skončit
+     ve vlastní sekci, jinak se u hromadného označování zasekneš. */
+  rows.push({ pokemon: "Magikarp", cp: 212, level: 15, ivAtk: 1, ivDef: 1, ivSta: 1,
+    shiny: "Ano" });
+  rows.push({ pokemon: "Articuno", cp: 1890, level: 20, ivAtk: 2, ivDef: 3, ivSta: 4 });
   P.setRows(rows);
   await cekej(5000);
   const tlacitko = document.querySelector('.atlas-top [data-click="hledaniBtn"]');
@@ -5860,9 +5867,12 @@ const d81 = await p81.evaluate(async () => {
 
   // zdroj: kusy smazané dnes (tedy po dokončeném čištění boxu)
   const vse = P.getRows();
-  const smazat = vse.filter((r, i) => i % 3 === 0).slice(0, 45);
+  const zvlastni = vse.filter((r) => r.shiny === "Ano" || r.pokemon === "Articuno");
+  const smazat = vse.filter((r, i) => i % 3 === 0).slice(0, 45)
+    .concat(zvlastni).filter((r, i, pole) => pole.indexOf(r) === i);
   P.setDiscarded(smazat.map((r, i) => ({ k: "t" + i, del: Date.now(),
-    r: { pokemon: r.pokemon, cp: r.cp, ivAtk: r.ivAtk, ivDef: r.ivDef, ivSta: r.ivSta } })));
+    r: { pokemon: r.pokemon, cp: r.cp, ivAtk: r.ivAtk, ivDef: r.ivDef, ivSta: r.ivSta,
+      shiny: r.shiny } })));
   P.setRows(vse.filter((r) => smazat.indexOf(r) === -1));
   await cekej(1200);
 
@@ -5883,8 +5893,8 @@ const d81 = await p81.evaluate(async () => {
   out.filtru = filtry().length;
   out.delky = filtry().map((t) => t.length);
   out.kopii = okno.querySelectorAll(".hled-kopie").length;
-  out.zdroj = /smazal z rosteru/.test((okno.querySelector(".hint") || {}).textContent || "");
-  out.rucne = /Najdi si je ve hře sám/.test(okno.textContent);
+  out.zdroj = /smazané dnes z rosteru/.test((okno.querySelector(".hint") || {}).textContent || "");
+  out.rucne = /Najdi si je sám/.test(okno.textContent);
 
   /* To hlavní: žádný filtr nesmí najít kus, který zůstal v rosteru.
      Počítá se to obojím výkladem přednosti operátorů, protože dokud
@@ -5896,17 +5906,37 @@ const d81 = await p81.evaluate(async () => {
     if (P.hledaciNajde(t, kus(x), v)) out.cizichNalezu++;
   })));
 
+  out.nadpis = (okno.querySelector("#hledNadpis") || {}).textContent || "";
+  out.sekce = [...okno.querySelectorAll(".hled-sekce h4")].map((h) => h.textContent.trim());
+  /* Shiny a legendární patří do sekce „Po jednom" — hra je do hromadného
+     výběru nepustí a filtr, kde by byly spolu s ostatními, by se u
+     označování zasekl. */
+  const poJednom = [...okno.querySelectorAll(".hled-sekce")]
+    .filter((sek) => /Po jednom/.test(sek.querySelector("h4").textContent))[0];
+  out.poJednomText = poJednom ? poJednom.textContent : "";
+  const hromadna = [...okno.querySelectorAll(".hled-sekce")]
+    .filter((sek) => /Hromadným/.test(sek.querySelector("h4").textContent))[0];
+  out.hromadnaText = hromadna ? hromadna.textContent : "";
+
   // náhled kusů: rozbalí se až na kliknutí a ukáže kartičky s obrázkem
-  const ukaz = okno.querySelector("[data-hled-kusy]");
+  /* Rozbaluje se filtr s nejvíc kusy — u filtru o jednom kuse by se
+     pořadí podle CP měřit nedalo. */
+  const ukaz = [...okno.querySelectorAll("[data-hled-kusy]")]
+    .sort((a, b) => (parseInt(b.textContent, 10) || 0) - (parseInt(a.textContent, 10) || 0))[0];
   out.maUkaz = !!ukaz;
   if (ukaz) {
-    const mrizka = okno.querySelector("[data-hled-mrizka]");
+    const mrizka = okno.querySelector('[data-hled-mrizka="'
+      + ukaz.getAttribute("data-hled-kusy") + '"]');
     out.pred = { skryto: mrizka.hidden, karet: mrizka.querySelectorAll(".hled-karta").length };
     ukaz.click();
     await cekej(400);
+    const cp = [...mrizka.querySelectorAll(".hled-karta span")]
+      .map((x) => parseInt(x.textContent, 10)).filter((n) => n > 0);
     out.po = { skryto: mrizka.hidden, karet: mrizka.querySelectorAll(".hled-karta").length,
       obrazku: mrizka.querySelectorAll("img").length,
-      text: (mrizka.querySelector(".hled-karta") || {}).textContent || "" };
+      text: (mrizka.querySelector(".hled-karta") || {}).textContent || "",
+      // od nejvyššího CP dolů: podle CP se ve hře orientuje oko
+      podleCp: cp.every((v, i) => i === 0 || cp[i - 1] >= v), cpu: cp.length };
     // počet kusů na tlačítku musí sedět s tím, co se rozbalí
     out.pocetSedi = out.po.karet === +(ukaz.textContent.match(/\d+/) || [0])[0];
   }
@@ -5959,6 +5989,16 @@ check("…u filtru jde rozbalit, které kusy v něm jsou",
     && d81.po.obrazku === d81.po.karet && d81.pocetSedi === true
     && /CP/.test(d81.po.text),
   JSON.stringify([d81.pred, d81.po, d81.pocetSedi]));
+check("…a jdou od nejvyššího CP dolů",
+  d81.po.podleCp === true && d81.po.cpu > 1, JSON.stringify([d81.po.podleCp, d81.po.cpu]));
+check("okno se jmenuje Transfer a dělí kusy podle způsobu puštění",
+  /Transfer/.test(d81.nadpis) && d81.sekce.length === 2
+    && /Hromadným/.test(d81.sekce[0]) && /Po jednom/.test(d81.sekce[1]),
+  JSON.stringify([d81.nadpis, d81.sekce]));
+check("…shiny a legendární jsou v sekci po jednom, ne mezi hromadnými",
+  /articuno/.test(d81.poJednomText) && /magikarp/.test(d81.poJednomText)
+    && !/articuno/.test(d81.hromadnaText) && !/magikarp/.test(d81.hromadnaText),
+  JSON.stringify([d81.poJednomText.slice(0, 160), d81.hromadnaText.slice(0, 160)]));
 check("…kus, co se od ponechaného odlišit nedá, je vypsaný k ručnímu dohledání",
   d81.rucne === true, String(d81.rucne));
 check("…po ověření ve hře je filtrů míň",
@@ -6022,6 +6062,81 @@ check("…a to jen česky, nic anglického",
   JSON.stringify([d82.anglickych, d82.nelezPrelozene, d82.anglicke]));
 check("…sekce, ke které zdroj píše víc, má štítek o neúplném rozpisu",
   d82.stitku > 0, String(d82.stitku));
+
+/* 83) Transfer bere z tabulky JEN kusy, které se pouští.
+
+   Takhle to spadlo doopravdy: v rosteru si člověk vyhledá „rhy", v tabulce
+   zůstanou čtyři Rhyhorni a Rhyperior — všichni s verdiktem Ponechat — a
+   Transfer na ně nabídl filtr. Okno přitom bralo „co je vidět v tabulce"
+   a spoléhalo, že si napřed nastavíš filtr „Jen k puštění".
+
+   Zdroj je tu proto tabulka: žádné čištění, nic smazaného dnes. */
+const p83 = await otevri(1500, []);
+const d83 = await p83.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  const dex = P.pokedex().species;
+  const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 60);
+  let seed = 777;
+  const nah = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const radky = [];
+  klice.forEach((k) => { const n = dex[k][1];
+    for (let i = 0; i < 3; i++) radky.push({ pokemon: n,
+      cp: String(200 + Math.floor(nah() * 2800)), level: 10 + Math.floor(nah() * 30),
+      ivAtk: Math.floor(nah() * 16), ivDef: Math.floor(nah() * 16),
+      ivSta: Math.floor(nah() * 16) }); });
+  P.setRows(radky);
+  await cekej(6000);
+  P.setDiscarded([]);
+  await cekej(300);
+  const comp = P.getComputed(), vse = P.getRows();
+  const pousti = new Set(vse.filter((r) => comp[r.id] && !comp[r.id].keepGood).map((r) => r.id));
+  const out = { kusu: vse.length, kPusteni: pousti.size };
+
+  document.getElementById("hledaniBtn").click();
+  await cekej(900);
+  const box = document.getElementById("hledaniOkno");
+  const texty = [...box.querySelectorAll(".hled-text")].map((t) => t.value);
+  out.filtru = texty.length;
+  out.uvod = (box.querySelector(".hint") || {}).textContent || "";
+  const kus = (r) => ({ text: P.hledaciText(r), cp: +r.cp || null });
+  out.ponechaneNajde = 0;
+  texty.forEach((t) => vse.forEach((r) => {
+    if (!pousti.has(r.id) && P.hledaciNajde(t, kus(r), "or")) out.ponechaneNajde++;
+  }));
+  // kartičky ukazují taky jen pouštěné kusy
+  [...box.querySelectorAll("[data-hled-kusy]")].forEach((b) => b.click());
+  await cekej(500);
+  out.karet = box.querySelectorAll(".hled-karta").length;
+  const jmena = [...box.querySelectorAll(".hled-karta b")].map((b) => b.textContent);
+  out.ponechanaJmena = jmena.filter((jm) => {
+    const kusy = vse.filter((r) => r.pokemon === jm);
+    return kusy.length && kusy.every((r) => !pousti.has(r.id));
+  }).slice(0, 4);
+  box.remove();
+
+  // a když v tabulce není co pustit, okno to řekne a filtr nenabídne
+  const nechat = vse.filter((r) => !pousti.has(r.id)).slice(0, 10);
+  P.setRows(nechat.map((r) => ({ pokemon: r.pokemon, cp: r.cp, level: r.level,
+    ivAtk: r.ivAtk, ivDef: r.ivDef, ivSta: r.ivSta })));
+  await cekej(4000);
+  document.getElementById("hledaniBtn").click();
+  await cekej(700);
+  const box2 = document.getElementById("hledaniOkno");
+  out.prazdnaHlaska = (box2.querySelector(".hint") || {}).textContent || "";
+  out.filtruKdyzNic = box2.querySelectorAll(".hled-text").length;
+  return out;
+});
+await p83.close();
+check("Transfer bere z tabulky jen kusy k puštění",
+  d83.kPusteni > 0 && d83.filtru > 0 && d83.ponechaneNajde === 0
+    && d83.ponechanaJmena.length === 0 && d83.karet === d83.kPusteni,
+  JSON.stringify([d83.kusu, d83.kPusteni, d83.karet, d83.ponechaneNajde,
+    d83.ponechanaJmena]));
+check("…a když není co pustit, žádný filtr nenabídne",
+  d83.filtruKdyzNic === 0 && /nepouštěla|pouštěla/.test(d83.prazdnaHlaska),
+  JSON.stringify([d83.filtruKdyzNic, d83.prazdnaHlaska.slice(0, 80)]));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
