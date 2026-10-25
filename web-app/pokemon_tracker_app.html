@@ -2767,6 +2767,11 @@
   .d-lg-hlava { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .d-ligy-tab td b { font-size: 20px; line-height: 1.15; }
   .d-lg-pct { font-size: 12px !important; color: var(--text-secondary) !important; }
+  /* Pořadí kombinace IV mezi 4096 — menší a tlumené, číslo ligy musí
+     zůstat to první, co oko najde. */
+  .d-lg-iv { font-size: 10.5px; color: var(--text-muted); font-weight: 600;
+    border: 1px solid var(--border); border-radius: 5px; padding: 0 4px;
+    white-space: nowrap; }
   .d-ligy-tab td.d-lg-slaby::before { content: ""; position: absolute; left: 0; top: 6px;
     bottom: 6px; width: 5px; border-radius: 3px; background: var(--status-critical); }
   /* Podklad buňky se schválně netónuje: stav nese proužek vlevo a barva
@@ -4027,7 +4032,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   var POCASI = {"Clear":["Grass","Ground","Fire"],"Fog":["Dark","Ghost"],"Overcast":["Fairy","Fighting","Poison"],"Partly Cloudy":["Normal","Rock"],"Rainy":["Water","Electric","Bug"],"Snow":["Ice","Steel"],"Windy":["Dragon","Flying","Psychic"]};
   // === POCASI END ===
   // === BUILD START
-  var BUILD = "2026-10-25 15:38";
+  var BUILD = "2026-10-25 15:55";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4563,7 +4568,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var cacheKey = key + "|" + cap;
     if (spMaxCache[cacheKey] !== undefined) return spMaxCache[cacheKey];
 
-    var best = 0;
+    var best = 0, nej = null;
     // Celá mřížka, všech 4096 kombinací. Dřív se Def a Sta procházely jen
     // od 8 výš s odůvodněním, že optimum má vždycky vysoké Def/Sta. Jenže to
     // ale není pravda vždy: nižší stat drží CP při zemi a tím pustí kus o půl
@@ -4575,12 +4580,25 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           var idx = bestLevelIndex(dex, a, d, s, cap);
           if (idx < 0) continue;
           var sp = statProduct(dex, a, d, s, CPM_LEVELS[idx][1]);
-          if (sp > best) best = sp;
+          if (sp > best) { best = sp; nej = { a: a, d: d, s: s, idx: idx }; }
         }
       }
     }
-    spMaxCache[cacheKey] = { sp: best };
+    spMaxCache[cacheKey] = { sp: best, nej: nej };
     return spMaxCache[cacheKey];
+  }
+
+  /** Nejlepší kombinace IV pro druh v lize: `{iv, level, cp}` nebo null.
+   *  Je to ta, proti které se měří kvalita kusu — na pvpivs je to „rank 1". */
+  function nejKombinaceVLize(jmeno, cap) {
+    var dex = dexEntry(jmeno);
+    if (!dex || !cap) return null;
+    var profil = speciesProfil(dexKey(jmeno), dex, cap);
+    var n = profil && profil.nej;
+    if (!n) return null;
+    var cpm = CPM_LEVELS[n.idx][1];
+    return { iv: n.a + "/" + n.d + "/" + n.s, level: CPM_LEVELS[n.idx][0],
+      cp: cpAt(dex, n.a, n.d, n.s, cpm) };
   }
 
   /** Jen stat product — tvar, na který je zvyklý zbytek kódu. */
@@ -14069,6 +14087,34 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    *  s nejlepším kusem druhu v té lize, protože ten proti tobě nejspíš
    *  stojí. Master League strop nemá, tam se stat product nepočítá.
    */
+  /** Řádek o kvalitě IV kombinace do bubliny ligy. */
+  function ivRadekLigy(druhKlic, kusId, ligaKlic) {
+    if (kusId === undefined || kusId === null) return "";
+    var r = null;
+    rows.forEach(function (x) { if (x.id === kusId) r = x; });
+    if (!r) {
+      [lastBase, pomocnyBase].forEach(function (seznam) {
+        (seznam || []).forEach(function (x) {
+          if (!r && x.row && x.row.id === kusId) r = x.row;
+        });
+      });
+    }
+    if (!r) return "";
+    var jmeno = druhKlic || r.pokemon;
+    var iv = ivRankVLize(jmeno, r.ivAtk, r.ivDef, r.ivSta, ligaKlic);
+    if (!iv) return "";
+    var liga = null;
+    LEAGUES.forEach(function (l) { if (l.meta === ligaKlic) liga = l; });
+    var nej = liga ? nejKombinaceVLize(jmeno, liga.cap) : null;
+    var moje = [num(r.ivAtk), num(r.ivDef), num(r.ivSta)].join("/");
+    return '<div class="tip-radek tip-pozn">Kombinace <b>' + escHtml(moje)
+      + "</b> je v téhle lize <b>#" + iv.rank + "</b> ze " + iv.z
+      + " (" + iv.pct + " % nejlepší)."
+      + (nej ? " Nejlepší možná: <b>" + escHtml(nej.iv) + "</b> na L"
+          + String(nej.level).replace(".", ",") + ", " + nej.cp + " CP." : "")
+      + "</div>";
+  }
+
   function bublinaLigy(zkratka, druhKlic, uvod, kusId) {
     var ligaKlic = ligaKlicZeZkratky(zkratka);
     var h = '<div class="tip-hlava">' + escHtml(zkratka
@@ -14089,6 +14135,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         + " v PvPoke od " + escHtml(pos.odKdy)
         + " (#" + pos.drive + " → #" + pos.ted + ")</div>";
     }
+    /* Kvalita té konkrétní kombinace IV: pořadí mezi 4096 a nejlepší
+       možná kombinace pro ten druh. Dřív bylo v bublině jen procento,
+       takže nebylo s čím ho porovnat. */
+    h += ivRadekLigy(druhKlic, kusId, ligaKlic);
     var drzi = drziteleLigy(ligaKlic);
     var s = getSettings();
     var celkem = SLOTU_NA_LIGU + (s.ligaRezerva || 0);
@@ -16273,6 +16323,17 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
                   + " → #" + posun.ted) + '">'
                 + (posun.rozdil > 0 ? "▲" : "▼") + Math.abs(posun.rozdil) + "</span>" : "")
             + '<span class="d-lg-pct">' + (Math.round(v.pct * 1000) / 10) + " %</span>"
+            /* Pořadí TÉHLE kombinace IV mezi 4096 u téhož druhu — číslo,
+               kvůli kterému se jinak chodí na pvpivs. Master League strop
+               nemá, tam se nepočítá a odznáček se neukáže. */
+            + (function () {
+                var iv = ivRankVLize(v.jmeno || r.pokemon, r.ivAtk, r.ivDef,
+                  r.ivSta, ligaKlic);
+                return iv ? '<span class="d-lg-iv" title="'
+                  + escHtml("Pořadí téhle kombinace IV mezi 4096 možnými u toho"
+                    + " druhu v téhle lize (" + iv.pct + " % nejlepší).")
+                  + '">IV #' + iv.rank + "</span>" : "";
+              })()
             + '<span class="d-lg-bar"><i style="width:'
             + Math.max(3, Math.min(100, Math.round(v.pct * 100))) + '%"></i></span>'
             /* Sestava do téhle ligy hned za pořadím, v témže řádku —
@@ -29795,6 +29856,16 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     /* Číslo verze appky (vzhledová vrstva ho píše do postranní lišty). */
     verze: function () { return VERZE; },
     getDiscarded: function () { return discarded.slice(); },
+    /* Pořadí kombinace IV v lize — totéž číslo, jaké ukazuje detail kusu.
+       Testy ho porovnávají s pvpivs.com, kde se počítá ze stejného vzorce. */
+    ivRank: function (jmeno, a, d, st, ligaKlic) {
+      var iv = ivRankVLize(jmeno, a, d, st, ligaKlic);
+      if (!iv) return null;
+      var liga = null;
+      LEAGUES.forEach(function (l) { if (l.meta === ligaKlic) liga = l; });
+      iv.nej = liga ? nejKombinaceVLize(jmeno, liga.cap) : null;
+      return iv;
+    },
     /* Hledání do hry. Testy si filtry vyrábějí samy a pak si je proti
        rosteru zkoušejí obojím výkladem přednosti operátorů — pravidlo
        „ve filtru nesmí vyskočit kus, který se nepouští" se nesmí porušit
