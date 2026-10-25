@@ -5230,40 +5230,7 @@ check("…a „Upravit údaje“ otevře editor vrstvy, ne tabulku",
     && d70.poUprave.tabulkaVidet === false,
   JSON.stringify(d70.poUprave));
 
-/* 71) Bublina ligy rika i to, kdo v zrcadle vystreli nabity utok driv.
-
-   Pod stropem CP se vyplaci nizky utok: sunda CP, takze se kus vejde na
-   vyssi level a ma vic obrany a HP. Dan za to je CMP — pri shodnem nabiti
-   strili driv ten s vyssim utocnym statem, takze nejodolnejsi kus druhu
-   je v zrcadle vzdycky ten druhy. Appka to dlouho nerekla nikde. */
-const p71 = await otevri(1500);
-const d71 = await p71.evaluate(async () => {
-  const P = window.__pgo;
-  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-  document.getElementById("novinkyOkno")?.remove();
-  const kus = (a, d, st) => ({ pokemon: "Cramorant", ivAtk: a, ivDef: d, ivSta: st,
-    level: 15, cp: 900, fastMove: "Wing Attack", charged1: "Surf" });
-  P.setRows([kus(0, 14, 11), kus(0, 7, 5)]);
-  await cekej(1800);
-  const tipy = [...document.querySelectorAll("[data-tip]")]
-    .map((x) => x.getAttribute("data-tip") || "")
-    .filter((t) => /zrcadle/i.test(t));
-  return {
-    policko: !!document.getElementById("cmpPasmo"),
-    bublin: tipy.length,
-    prvni: tipy[0] || "",
-    druhy: /vystřelí nabitý útok <b>druhý<\/b>/.test(tipy.join(" ")),
-    procenta: /\d+([.,]\d+)?\u00a0?% (nižší|vyšší)/.test(tipy.join(" "))
-  };
-});
-await p71.close();
-check("nastavení pásma CMP je v appce",
-  d71.policko === true, String(d71.policko));
-check("bublina ligy řekne, kdo v zrcadle vystřelí nabitý útok dřív",
-  d71.bublin > 0 && d71.druhy === true,
-  JSON.stringify([d71.bublin, d71.prvni.slice(0, 160)]));
-check("…a o kolik procent se ten útok liší",
-  d71.procenta === true, d71.prvni.slice(0, 200));
+/* Blok 71 (CMP v bublině ligy) je pryč i s pravidlem, které popisoval. */
 
 /* 72) Sekce, kterou stranka akce MA, ale appka z ni nic neprecetla.
 

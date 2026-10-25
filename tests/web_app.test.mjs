@@ -18711,59 +18711,9 @@ try {
       && s309.zvysene.some((t) => /^Gym 1\/12$/.test(t)),
     JSON.stringify(s309.zvysene));
 
-  console.log("\n308) Pri skoro stejne kvalite rozhodne o lize utok (CMP)");
-  /* Kdyz oba hraci zmacknou nabity utok ve stejnem tahu, vystreli driv ten
-     s vyssim utocnym statem. Appka to dlouho nevedela a do ligy stavela
-     vzdycky nejlepsi stat product — Cramorant 0/14/11 tak v zrcadle strili
-     vzdycky druhy, zatimco 0/7/5 je o dve procenta min odolny, ale
-     vystreli prvni. V pasmu, kde je kvalita prakticky stejna, proto
-     rozhoduje utok; sirku pasma si uzivatel nastavi (0 % = jako driv). */
-  await page.goto(URL);
-  await nacteno(page);
-  const s308 = await page.evaluate(async () => {
-    const P = window.__pgo;
-    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-    const kus = (a, d, st) => ({ pokemon: "Cramorant", ivAtk: a, ivDef: d, ivSta: st,
-      level: 15, cp: 900, fastMove: "Wing Attack", charged1: "Surf" });
-    P.setRows([kus(0, 14, 11), kus(0, 7, 5)]);
-    await cekej(1500);
-    const nastav = (v) => {
-      const el = document.getElementById("cmpPasmo");
-      el.value = v;
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    };
-    const zmer = () => {
-      const rows = P.getRows(), c = P.getComputed();
-      return rows.map((r) => {
-        const v = c[r.id] || {};
-        const gl = (v.pvpLigy || []).filter((l) => l.liga === "GL")[0] || {};
-        return { iv: r.ivAtk + "/" + r.ivDef + "/" + r.ivSta,
-          pct: gl.pct || null, atk: gl.atk || null, cmp: gl.cmp || null,
-          duvody: (v.duvody || []).map((d) => d.stitek) };
-      });
-    };
-    nastav(0);
-    await cekej(1200);
-    const bez = zmer();
-    nastav(2);
-    await cekej(1200);
-    const s2 = zmer();
-    return { bez, s2 };
-  });
-  const glDrzi = (sada) => (sada.filter((x) => x.duvody.some((d) => /^GL /.test(d)))[0] || {}).iv;
-  check("utocny stat i pomer k nejlepsimu kusu druhu jsou u ligy k dispozici",
-    s308.bez.every((x) => typeof x.atk === "number" && typeof x.cmp === "number")
-      && s308.bez[1].atk > s308.bez[0].atk && s308.bez[1].cmp > 1,
-    JSON.stringify(s308.bez.map((x) => [x.iv, x.atk, x.cmp])));
-  check("s pasmem 0 % rozhoduje o lize jen stat product",
-    glDrzi(s308.bez) === "0/14/11",
-    JSON.stringify(s308.bez.map((x) => [x.iv, x.duvody])));
-  check("...a s pasmem 2 % vezme ligu kus, ktery v zrcadle strili prvni",
-    glDrzi(s308.s2) === "0/7/5",
-    JSON.stringify(s308.s2.map((x) => [x.iv, x.duvody])));
-  check("...pricemz ten druhy kus z rosteru nevypadne, jen hraje jinou ligu",
-    s308.s2.every((x) => x.duvody.length > 0),
-    JSON.stringify(s308.s2.map((x) => [x.iv, x.duvody])));
+  /* Blok 308 (CMP — kdo při shodném nabití vystřelí dřív) je pryč.
+     Pravidlo se neosvědčilo a appka ho nepoužívá: o tom, který kus druhu
+     ligu odehraje, rozhoduje jen kvalita kusu. */
 
   console.log("\n307) Dynamax a Gigantamax jsou porad tentyz druh");
   /* Jmeno se v `dexKey` zkracuje ZPRAVA, takze z "Gigantamax Cinderace"

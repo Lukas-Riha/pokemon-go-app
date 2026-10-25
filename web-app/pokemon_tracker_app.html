@@ -3295,8 +3295,6 @@
           „Nechat – rezerva".</span>
       </div>
       <div class="setting">
-        <label for="cmpPasmo">Přednost útoku při shodě (CMP) — <b>pásmo</b> (%)</label>
-        <input type="number" id="cmpPasmo" min="0" max="20" value="2" step="1" />
         <span class="hint">Když oba hráči zmáčknou nabitý útok ve stejném tahu,
           vystřelí dřív ten s vyšším <b>útočným statem</b> — ne ten, kdo rychleji
           klikl. Nižší útok ale sundá CP, takže se kus vejde na vyšší level a má
@@ -4029,7 +4027,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   var POCASI = {"Clear":["Grass","Ground","Fire"],"Fog":["Dark","Ghost"],"Overcast":["Fairy","Fighting","Poison"],"Partly Cloudy":["Normal","Rock"],"Rainy":["Water","Electric","Bug"],"Snow":["Ice","Steel"],"Windy":["Dragon","Flying","Psychic"]};
   // === POCASI END ===
   // === BUILD START
-  var BUILD = "2026-10-25 12:45";
+  var BUILD = "2026-10-25 15:38";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4559,16 +4557,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   var spMaxCache = {};
-  /** Profil druhu v lize: nejlepší stat product a útočný stat toho kusu.
-   *
-   *  `atkNej` je útok NEJLEPŠÍHO kusu podle stat productu — tedy toho, co
-   *  proti tobě v zrcadle nejspíš stojí. Z porovnání s ním vyjde, jestli
-   *  tvůj kus v souběhu nabitých útoků střílí první, nebo druhý (CMP).
-   */
+  /** Nejlepší stat product, jaký ten druh v lize může mít. Proti němu se
+   *  měří kvalita kusu. */
   function speciesProfil(key, dex, cap) {
     var cacheKey = key + "|" + cap;
     if (spMaxCache[cacheKey] !== undefined) return spMaxCache[cacheKey];
-    var atkNej = 0;
+
     var best = 0;
     // Celá mřížka, všech 4096 kombinací. Dřív se Def a Sta procházely jen
     // od 8 výš s odůvodněním, že optimum má vždycky vysoké Def/Sta. Jenže to
@@ -4581,11 +4575,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           var idx = bestLevelIndex(dex, a, d, s, cap);
           if (idx < 0) continue;
           var sp = statProduct(dex, a, d, s, CPM_LEVELS[idx][1]);
-          if (sp > best) { best = sp; atkNej = (dex.a + a) * CPM_LEVELS[idx][1]; }
+          if (sp > best) best = sp;
         }
       }
     }
-    spMaxCache[cacheKey] = { sp: best, atkNej: atkNej };
+    spMaxCache[cacheKey] = { sp: best };
     return spMaxCache[cacheKey];
   }
 
@@ -4930,7 +4924,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var cpm = CPM_LEVELS[idx][1];
       // Útočný stat na tom levelu, na který se kus v lize dostane. Tohle
       // číslo rozhoduje CMP — kdo při shodném nabití vystřelí dřív.
-      var atk = (v.dex.a + iva) * cpm;
       var kandidat = {
         league: lg.label,
         jmeno: v.jmeno,
@@ -4939,10 +4932,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         level: cilLevel,
         cp: cpAt(v.dex, iva, ivd, ivs, cpm),
         pct: statProduct(v.dex, iva, ivd, ivs, cpm) / max,
-        atk: atk,
-        // < 1 = v zrcadle střílí druhý, > 1 = první. Porovnává se s nejlepším
-        // kusem druhu v té lize, protože ten proti tobě nejspíš stojí.
-        cmp: profil.atkNej ? atk / profil.atkNej : null,
         cena: (ted !== null && ted < cilLevel) ? upgradeCost(ted, cilLevel, forma, name) : null,
         odsud: ted,
         // Jeden power up od vypadnutí z ligy — level dolů nejde, takže je to
@@ -5085,13 +5074,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // Útočný stat na cílovém levelu. Při shodném nabití vystřelí nabitý
       // útok dřív ten s vyšším útokem (CMP) — a nižší útok je přesně to,
       // čím kus platí za vyšší level, víc obrany a HP.
-      var atkKus = (dex.a + iva) * cpm;
       out.push({
         league: lg.label,
         pct: statProduct(dex, iva, ivd, ivs, cpm) / max,
-        atk: atkKus,
-        // < 1 = v zrcadle střílí druhý, 1 = stejně rychle jako nejlepší kus
-        cmp: profil.atkNej ? atkKus / profil.atkNej : null,
         level: cilLevel,
         cp: cpAt(dex, iva, ivd, ivs, cpm),
         prerostl: ted !== null && ted > cilLevel,
@@ -6279,7 +6264,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "cmpPasmo", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -8644,10 +8629,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       })(),
       /* O kolik procent kvality smí být kus horší, aby ho v lize přesto
          předběhl kvůli vyššímu útoku (CMP). 0 = rozhoduje jen stat product. */
-      cmpPasmo: (function () {
-        var v = num(nastaveniHodnota("cmpPasmo"));
-        return v === null ? 2 : Math.max(0, Math.min(20, v));
-      })(),
       // do kolikátého místa v lize se druh bere vážně (0 = neomezovat)
       rankLimit: num(nastaveniHodnota("rankLimit")) || 9999,
       // kolik míst navíc nad šest drží každá liga — rezerva, do které se neinvestuje
@@ -8721,21 +8702,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   /** Nejlepší potenciál kusu v dané lize (v %, null když se tam nevejde). */
-  /** Útočný stat kusu v dané lize. 0 = nevíme (kus se do ligy nedostane). */
-  function atkVLize(b, label) {
-    var v = 0;
-    (b.pvpPot || []).forEach(function (pp) {
-      if (pp.league === label && !pp.prerostl && typeof pp.atk === "number") v = pp.atk;
-    });
-    if (v || label !== "ML") return v;
-    // Master League nemá strop, všechny kusy míří na stejný level — útok
-    // je tedy přímo úměrný IV útoku a stačí ho spočítat na L50.
-    var dex = b.dex || dexEntry(b.row.pokemon);
-    var iva = num(b.row.ivAtk);
-    if (!dex || iva === null) return 0;
-    return (dex.a + iva) * CPM_LEVELS[CPM_LEVELS.length - 1][1];
-  }
-
   function potVLize(b, label) {
     var v = null;
     (b.pvpPot || []).forEach(function (pp) {
@@ -8793,31 +8759,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           if (lp && lp.rank) rank = lp.rank;
         }
         if (rank === null) return;
-        vsichni.push({ b: b, rank: rank, pct: pct,
-          // Útočný stat na levelu té ligy — rozhoduje CMP, tedy kdo při
-          // shodném nabití vystřelí nabitý útok dřív.
-          atk: (c2 && typeof c2.atk === "number") ? c2.atk : 0 });
+        vsichni.push({ b: b, rank: rank, pct: pct });
       });
-      /* Pásmo, ve kterém je kvalita prakticky stejná a rozhodne útok.
-         Rozdíl dvou desetin procenta stat productu v souboji nikdo nepozná,
-         nižší útok ale znamená, že kus v souběhu nabitých útoků střílí
-         druhý — a to pozná každý. Porovnávají se pásma, ne dvojice: po
-         dvojicích by to nebylo uspořádání a pořadí by záleželo na tom,
-         jak kusy leží v rosteru. */
-      var cmpPasmo = Math.max(0, Math.min(20, num(s.cmpPasmo) || 0)) / 100;
-      // Špička pro každý rank zvlášť — pevný bod, od kterého se pásmo měří.
-      var spicka = {};
-      vsichni.forEach(function (x) {
-        if (!(spicka[x.rank] > x.pct)) spicka[x.rank] = x.pct;
-      });
-      var vPasmu = function (x) {
-        return cmpPasmo > 0 && (spicka[x.rank] || 0) - x.pct <= cmpPasmo;
-      };
       vsichni.sort(function (x, y) {
         if (x.rank !== y.rank) return x.rank - y.rank;
-        var vx = vPasmu(x), vy = vPasmu(y);
-        if (vx !== vy) return vx ? -1 : 1;
-        if (vx && x.atk && y.atk && x.atk !== y.atk) return y.atk - x.atk;
         return (y.pct - x.pct) || priShode(x.b, y.b);
       });
       zapisPoradi("pvp:" + lg.label, vsichni, function (x) { return x.b.row.id; });
@@ -8919,31 +8864,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var LIGY_VSE = LEAGUES.map(function (l) { return { label: l.label, nazev: l.nazev }; })
       .concat([{ label: "ML", nazev: "Master League" }]);
     ligaPodCarou = {};
-    /* Pásmo, ve kterém je kvalita prakticky stejná a rozhodne útok. Rozdíl
-       pár desetin procenta stat productu v souboji nikdo nepozná, nižší
-       útok ale znamená prohraný souběh nabitých útoků — a to pozná každý.
-       0 % = jako dřív, rozhoduje jen stat product. */
-    var cmpPasmoSlot = Math.max(0, Math.min(20, num(s.cmpPasmo) || 0)) / 100;
-    /** Je kus prakticky stejně dobrý jako špička skupiny?
-     *
-     *  Porovnávat „jsme od sebe míň než pásmo" po DVOJICÍCH nelze: není to
-     *  uspořádání (A>B, B>C, ale A<C), takže by o verdiktu rozhodovalo
-     *  pořadí kusů v rosteru. Měří se proto od jednoho pevného bodu —
-     *  nejlepší kvality v té skupině.
-     */
-    function cmpVPasmu(pct, spicka) {
-      return cmpPasmoSlot > 0 && (num(spicka) || 0) - (num(pct) || 0) <= cmpPasmoSlot;
-    }
-    /** Komparátor dvou kusů TÉŽE skupiny: nejdřív ti, co jsou u špičky,
-     *  mezi nimi vyšší útok, pak kvalita. `null` = nerozhodnuto. */
-    function cmpPoradiKusu(xPct, xAtk, yPct, yAtk, spicka) {
-      var vx = cmpVPasmu(xPct, spicka), vy = cmpVPasmu(yPct, spicka);
-      if (vx !== vy) return vx ? -1 : 1;
-      // Útok rozhoduje jen u špičky a jen tam, kde ho u obou známe
-      // (po evoluci se mění základní staty, takže ho neznáme).
-      if (vx && xAtk && yAtk && xAtk !== yAtk) return xAtk > yAtk ? -1 : 1;
-      return null;
-    }
     LIGY_VSE.forEach(function (lg) {
       var podleDruhu = {};
       /* Špička druhu v téhle lize: nejlepší kvalita, jakou pro něj má
@@ -8978,11 +8898,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         // jinak by appka pustila Marill a čekala Azumarilla z nebe.
         var kandidati = [];
         var ligaKlic = ligaKlicZeZkratky(lg.label);
-        // Útočný stat kusu v téhle lize — kdo při shodném nabití střílí dřív.
-        var atkKus = atkVLize(b, lg.label);
         if (m) {
           kandidati.push({ rank: m[0], poEvoluci: false, hraje: mKlic || b.groupKey,
-            atk: atkKus,
             pct: lg.label === "ML" ? b.ivPct : potVLize(b, lg.label) });
         } else if (s.pametPoradi) {
           // Druh z mety vypadl úplně (není ani v ořezané tabulce), ale za
@@ -9031,14 +8948,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           // nehrála vůbec, se kvůli minulému týdnu držet nemá.
           if (k.rank > s.rankLimit && !ok) return;
           var jenPamet = !!pm && ok && (k.rank > s.rankLimit || !projde(k.rank));
-          var cmpCesta = nejC
-            ? cmpPoradiKusu(k.pct, k.atk, nejC.pct, nejC.atk, spickaCest) : null;
           var lepsi = !nejC
             || (ok !== nejC.ok ? ok
-              : (jenPamet !== nejC.jenPamet ? !jenPamet
-                : (cmpCesta !== null ? cmpCesta < 0 : k.pct > nejC.pct)));
+              : (jenPamet !== nejC.jenPamet ? !jenPamet : k.pct > nejC.pct));
           if (lepsi) {
-            nejC = { rank: k.rank, pct: k.pct, atk: k.atk, ok: ok,
+            nejC = { rank: k.rank, pct: k.pct, ok: ok,
               poEvoluci: k.poEvoluci, hraje: k.hraje,
               jenPamet: jenPamet, pamet: pm };
           }
@@ -9075,18 +8989,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           if (!zaznam.jenPamet) podleDruhu[druh] = zaznam;
           return;
         }
-        /* Tady se rozhoduje, KTERÝ kus druhu ligu odehraje. Dokud o tom
-           rozhodoval jen stat product, vyhrával kus s nulovým útokem: má
-           nejlepší obranu a HP, ale v zrcadle střílí nabitý útok vždycky
-           druhý. V pásmu, kde je kvalita prakticky stejná, proto rozhodne
-           útok — a protože se porovnávají pásma, ne dvojice, nezáleží na
-           tom, v jakém pořadí kusy v rosteru leží. */
-        var cmpKus = cmpPoradiKusu(pct, zaznam.atk, g.pct, g.atk,
-          Math.max(spickaDruhu[druh] || 0, pct, g.pct));
-        if (cmpKus !== null) {
-          if (cmpKus < 0) podleDruhu[druh] = zaznam;
-          return;
-        }
+        // Který kus druhu ligu odehraje: rozhoduje kvalita kusu.
         if (pct !== g.pct) {
           if (pct > g.pct) podleDruhu[druh] = zaznam;
           return;
@@ -9098,19 +9001,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // a mezi stejnými rankem lepší kus.
       // Druh držený jen pamětí jde až za ty, které dnes platí — dostane
       // místo, jen když na něj zbude.
-      // Špička pro každý rank zvlášť: kusy se stejným rankem jsou prakticky
-      // vždycky tentýž druh a porovnávají se mezi sebou.
-      var spickaRanku = {};
-      kand.forEach(function (k) {
-        if (!(spickaRanku[k.rank] > k.pct)) spickaRanku[k.rank] = k.pct;
-      });
       kand.sort(function (x, y) {
         if (x.prahOK !== y.prahOK) return x.prahOK ? -1 : 1;
         if (x.jenPamet !== y.jenPamet) return x.jenPamet ? 1 : -1;
         if (x.rank !== y.rank) return x.rank - y.rank;
-        var cmpPoradi = cmpPoradiKusu(x.pct, x.atk, y.pct, y.atk,
-          spickaRanku[x.rank] || 0);
-        if (cmpPoradi !== null) return cmpPoradi;
         return (y.pct - x.pct) || priShode(x.b, y.b);
       });
       // Šest míst + rezerva. Rezerva je jen pro dobré kusy, které se do
@@ -10786,9 +10680,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           }
           out.push({ liga: lg.label, stav: stav, pct: c.pct, level: c.level, cp: c.cp,
             jmeno: jmenoCile, evoluce: c.evoluce,
-            // Útok na cílovém levelu a jeho podíl proti nejlepšímu kusu
-            // druhu: pod 1 kus v zrcadle vystřelí nabitý útok druhý.
-            atk: c.atk, cmp: c.cmp,
             // Klíč DRUHU, o kterém ten odznáček mluví — u stavu „evo" je to
             // vyvinutá forma. Z něj se v bublině dohledá posun v PvPoke.
             klic: dexKey(stav === "evo" && jmenoCile ? jmenoCile : b.row.pokemon),
@@ -14178,28 +14069,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    *  s nejlepším kusem druhu v té lize, protože ten proti tobě nejspíš
    *  stojí. Master League strop nemá, tam se stat product nepočítá.
    */
-  function cmpRadek(zkratka, kusId) {
-    if (kusId === undefined || kusId === null || zkratka === "ML") return "";
-    var b = null;
-    [lastBase, pomocnyBase].forEach(function (seznam) {
-      (seznam || []).forEach(function (x) {
-        if (!b && x.row && x.row.id === kusId) b = x;
-      });
-    });
-    var c = b ? (b.cesty || {})[zkratka] : null;
-    if (!c || typeof c.cmp !== "number" || !c.cmp) return "";
-    var rozdil = Math.round((c.cmp - 1) * 1000) / 10;
-    var veta = Math.abs(rozdil) < 0.1
-      ? "Nabitý útok vystřelí v zrcadle zároveň s nejlepším kusem druhu."
-      : (rozdil > 0
-        ? "V zrcadle vystřelí nabitý útok <b>první</b> — útok má o " + rozdil
-          + "\u00a0% vyšší než nejlepší kus druhu."
-        : "V zrcadle vystřelí nabitý útok <b>druhý</b> — útok má o "
-          + Math.abs(rozdil) + "\u00a0% nižší než nejlepší kus druhu.");
-    return '<div class="tip-radek tip-pozn">' + veta
-      + " Při shodném nabití rozhoduje útočný stat, ne rychlost klikání.</div>";
-  }
-
   function bublinaLigy(zkratka, druhKlic, uvod, kusId) {
     var ligaKlic = ligaKlicZeZkratky(zkratka);
     var h = '<div class="tip-hlava">' + escHtml(zkratka
@@ -14213,7 +14082,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         + " ji drží legendární kusy a dotáhnout je stojí nejvíc prachu a XL.</div>";
     }
     if (!ligaKlic) return h;
-    h += cmpRadek(zkratka, kusId);
     var pos = druhKlic ? posunVLize(druhKlic, ligaKlic) : null;
     if (pos) {
       h += '<div class="tip-posun ' + (pos.rozdil > 0 ? "nahoru" : "dolu") + '">'
@@ -26722,18 +26590,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + "musí sedět <b>obě</b> podmínky.</p>"
       + "<p>Pod capem se vyplácí <b>nízký útok</b>: sundá CP, takže se vejdeš na vyšší "
       + "level a máš víc obrany i HP. Proto je 0/15/15 Azumarill lepší než 15/15/15.</p>"
-      + "<p><b>Má to ale druhou stranu: CMP.</b> Když oba hráči zmáčknou nabitý útok "
-      + "ve stejném tahu, vystřelí dřív ten s vyšším <b>útočným statem</b> — ne ten, "
-      + "kdo rychleji klikl. Kus s nulovým útokem tedy v zrcadle střílí vždycky "
-      + "druhý. Appka to teď počítá: u každé ligy zná útok kusu i to, o kolik je "
-      + "vyšší nebo nižší než u nejlepšího kusu druhu, a říká to v bublině ligy.</p>"
-      + "<p>Rozhodovat podle toho by ale bylo drahé — nejvyšší útok stojí u Cramoranta "
-      + "i sedm procent odolnosti. Appka proto nechává útok rozhodnout jen v <b>pásmu, "
-      + "kde je kvalita prakticky stejná</b>: dnes <b>" + (s.cmpPasmo || 0) + " %</b>. "
-      + "Dva kusy téhož druhu, které se liší o pár desetin procenta, se takhle seřadí "
-      + "podle toho, kdo v zrcadle střílí první. Na <b>0 %</b> se appka chová jako dřív "
-      + "a rozhoduje jen stat product. V Ultra a Master League se to skoro neprojeví — "
-      + "tam nejlepší kus bývá zároveň ten s nejvyšším útokem.</p>"
+      + "<p>O pořadí kusů téhož druhu rozhoduje <b>jen kvalita kusu</b> (stat product "
+      + "proti nejlepší možné kombinaci v té lize). Appka dřív zkoušela do rozhodování "
+      + "přimíchat útočný stat; to je pryč.</p>"
       + "<p><b>Calcy IV rank se do rozhodování nepouští.</b> Je to pořadí té IV kombinace "
       + "mezi 4096 možnými u téhož druhu — Calcy si ho počítá ze stejných IV, ze kterých "
       + "si stat product počítá appka sama. Je to druhý výpočet téhož vstupu, ne "
