@@ -503,7 +503,12 @@ globalThis.AtlasBudget = (() => {
     if(verdict){const v=window.AtlasVerdict(computed);verdict.dataset.verdict=v.tone;const label=verdict.querySelector('.d-verdict>b');if(label)label.textContent=v.label;}
     const evo=container.querySelector(':scope > :not(.atlas-plan-summary):not(.detail-main):not(.atlas-verdict-first)');
     if(evo){const group=document.createElement('details');group.className='atlas-detail-section atlas-evolution-column';group.open=true;
-      group.addEventListener('toggle',()=>{if(!group.open)group.open=true});group.innerHTML='<summary>Evoluční řada</summary>';evo.before(group);group.append(evo);evo.querySelectorAll('.d-evo-kus').forEach(kus=>{const im=kus.querySelector('img');if(im&&!(im.parentElement&&im.parentElement.classList.contains('atlas-evo-ram'))){const ram=document.createElement('span');ram.className='atlas-evo-ram';im.replaceWith(ram);ram.append(im)}if(kus.querySelector('.atlas-evo-popis'))return;const popis=document.createElement('span');popis.className='atlas-evo-popis';const zbytek=[...kus.childNodes].filter(n=>!(n.nodeType===1&&n.classList&&n.classList.contains('atlas-evo-ram')));zbytek.forEach(n=>popis.append(n));kus.append(popis)});const grid=document.createElement('div');grid.className='atlas-detail-columns';const column=document.createElement('div');column.className='atlas-detail-column';const children=[...container.children];container.prepend(grid);grid.append(column,group);children.filter(el=>el!==group).forEach(el=>column.append(el));}
+      group.addEventListener('toggle',()=>{if(!group.open)group.open=true});group.innerHTML='<summary>Evoluční řada</summary>';evo.before(group);group.append(evo);evo.querySelectorAll('.d-evo-kus').forEach(kus=>{const im=kus.querySelector('img');if(im&&!(im.parentElement&&im.parentElement.classList.contains('atlas-evo-ram'))){const ram=document.createElement('span');ram.className='atlas-evo-ram';im.replaceWith(ram);ram.append(im)}if(kus.querySelector('.atlas-evo-popis'))return;const popis=document.createElement('span');popis.className='atlas-evo-popis';const zbytek=[...kus.childNodes].filter(n=>!(n.nodeType===1&&n.classList&&n.classList.contains('atlas-evo-ram')));zbytek.forEach(n=>popis.append(n));kus.append(popis)});const grid=document.createElement('div');grid.className='atlas-detail-columns';const column=document.createElement('div');column.className='atlas-detail-column';const children=[...container.children];container.prepend(grid);grid.append(column,group);children.filter(el=>el!==group).forEach(el=>column.append(el));
+    /* Tabulka lig je široká: ve sloupci vedle evoluční řady se do buňky
+       nevejde sestava útoků a poslední chip se ořízne. Patří pod obě
+       kolony, přes celou šířku. */
+    const ligySekce=column.querySelector('[data-detail-section="ligy"]');
+    if(ligySekce)grid.after(ligySekce);}
     container.querySelectorAll('.d-evo-kus[data-tip]').forEach(el=>{el.tabIndex=0;const image=el.querySelector('img'),art=window.ATLAS_ART[window.__pgo.dexKeyOf(el.dataset.druh)];if(image&&art&&!/^(shellos|gastrodon)/i.test(el.dataset.druh)){image.removeAttribute('onerror');image.src=art;image.style.display=''};});
   };
 })();
@@ -1401,8 +1406,45 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
      const text=el.textContent.trim();
      if(!text||el.dataset.chipy)return;
      el.dataset.chipy='1';
+     el.dataset.cela=text;
      if(window.AtlasUtokySestava)el.innerHTML=window.AtlasUtokySestava(text);
+     if(!el.title)el.title=text;
     });
+    /* Co se do řádku nevejde, se složí do „+N": ořezaný chip v půlce slova
+       je horší než přiznané „ještě jeden". Celé znění drží title, takže se
+       nic neztratí, a výška řádku zůstává stejná. Měří se až po vykreslení,
+       protože šířka buňky závisí na okně i na tom, má-li kus sloupec po
+       evoluci. */
+    const srovnejSestavy=()=>{
+      document.querySelectorAll('.d-lg-sestava').forEach(el=>{
+        const sada=el.querySelector('.atlas-utok-sada');
+        if(!sada)return;
+        sada.querySelectorAll('[data-vic]').forEach(x=>x.remove());
+        const deti=[...sada.children];
+        deti.forEach(x=>{x.style.display=''});
+        if(el.scrollWidth<=el.clientWidth+1)return;
+        const vic=document.createElement('span');
+        vic.dataset.vic='1';vic.className='atlas-utok-chip d-lg-vic';
+        sada.append(vic);
+        let skryto=0;
+        for(let i=deti.length-1;i>=0&&el.scrollWidth>el.clientWidth+1;i--){
+          // `hidden` tu nestačí: třída chipu má vlastní display, který ho přebije.
+          deti[i].style.display='none';
+          if(!deti[i].classList.contains('atlas-utok-spoj')){
+            skryto++;vic.textContent='+'+skryto;
+          }
+        }
+        if(!skryto)vic.remove();
+      });
+    };
+    window.__atlasSrovnejSestavy=srovnejSestavy;
+    requestAnimationFrame(srovnejSestavy);
+    if(!window.__atlasSestavyResize){
+      window.__atlasSestavyResize=true;
+      window.addEventListener('resize',()=>requestAnimationFrame(()=>{
+        if(window.__atlasSrovnejSestavy)window.__atlasSrovnejSestavy();
+      }));
+    }
     if(veta&&!box.dataset.tip)box.setAttribute('data-tip',veta);
     utokyBox=box;
     utokySekce.remove();sestavySekce?.remove();

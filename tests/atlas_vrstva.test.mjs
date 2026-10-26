@@ -6105,6 +6105,44 @@ check("…a když není co pustit, žádný filtr nenabídne",
   d83.filtruKdyzNic === 0 && /nepouštěla|pouštěla/.test(d83.prazdnaHlaska),
   JSON.stringify([d83.filtruKdyzNic, d83.prazdnaHlaska.slice(0, 80)]));
 
+/* 84) Sestava útoků u ligy se nesmí oříznout uprostřed chipu.
+
+   Stalo se to dvakrát: poprvé, když sestava přibyla do řádku, podruhé,
+   když ji odsunul odznáček s pořadím IV. Buňka je úzká hlavně u kusu,
+   který má i sloupec „po evoluci" — proto se měří na takovém kusu a
+   při několika šířkách okna. Co se nevejde, musí být složené do „+N",
+   ne useknuté. */
+for (const sirka of [1100, 1280, 1600]) {
+  const p84 = await otevri(sirka, []);
+  const d84 = await p84.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.getElementById("novinkyOkno")?.remove();
+    const P = window.__pgo;
+    P.setRows([{ pokemon: "Dratini", cp: 900, level: 25, ivAtk: 14, ivDef: 12,
+      ivSta: 13, fastMove: "Dragon Breath", charged1: "Aqua Tail", charged2: "Wrap" }]);
+    await cekej(5000);
+    const A = window.__atlasTest;
+    if (A) { A.go("roster"); A.refresh(); await cekej(600); }
+    const karta = document.querySelector(".atlas-roster-tile, .atlas-row, #tbody tr[data-row-id]");
+    if (!karta) return { chyba: "není co kliknout" };
+    karta.click();
+    await cekej(1400);
+    const sestavy = [...document.querySelectorAll(".d-lg-sestava")];
+    return { sestav: sestavy.length,
+      orez: sestavy.map((el) => Math.max(0, el.scrollWidth - el.clientWidth)),
+      // co se nevejde, musí být přiznané chipem „+N"
+      vic: sestavy.map((el) => (el.querySelector("[data-vic]") || {}).textContent || ""),
+      // a celé znění zůstává v bublině
+      tituly: sestavy.map((el) => (el.title || "").length),
+      vLigach: !!document.querySelector(".d-ligy-tab .d-lg-sestava") };
+  });
+  await p84.close();
+  check("sestava u ligy se při " + sirka + " px neořízne",
+    !d84.chyba && d84.sestav > 0 && d84.orez.every((x) => x === 0)
+      && d84.tituly.every((x) => x > 5),
+    JSON.stringify(d84));
+}
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

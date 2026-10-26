@@ -3439,3 +3439,27 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test #atlasEventDialog .atlas-event-doplnek{margin:12px;padding:12px;font-size:13px}
 }
 @media(max-width:350px){.atlas-test #atlasEventDialog .atlas-event-highlights{grid-template-columns:1fr}}
+/* Astra A031 — výzkumné úkoly a GO Pass jako čitelné odměnové karty. */
+.atlas-test #atlasEventDialog .atlas-event-vyzkum{--event-accent:#acb8ff}
+.atlas-test #atlasEventDialog .atlas-vyzkum-ukoly{padding:0 18px 18px;gap:12px;align-items:start}
+.atlas-test #atlasEventDialog .atlas-vyzkum-ukoly>li{background:var(--surface-1);border-color:var(--border);padding:18px;box-shadow:inset 0 3px 0 #acb8ff30}
+.atlas-test #atlasEventDialog .atlas-vyzkum-ukoly>li.atlas-vyzkum-krok{grid-column:1/-1;background:transparent;border:0;border-radius:0;box-shadow:none;padding:14px 0 4px;margin:0;font-size:12px;letter-spacing:.05em;color:var(--text-secondary)}
+.atlas-test #atlasEventDialog .atlas-vyzkum-ukol{font-size:14px;line-height:1.55;margin-bottom:14px}
+.atlas-test #atlasEventDialog .atlas-vyzkum-odmeny{display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0;align-items:center}
+.atlas-test #atlasEventDialog .atlas-vyzkum-odmeny .atlas-event-specimen{flex:0 1 140px;min-width:0}
+.atlas-test #atlasEventDialog .atlas-vyzkum-predmet{padding:10px 12px;border:1px solid #b5c4f03d;border-radius:9px;background:var(--surface-2);line-height:1.5;gap:5px;color:var(--text-primary)}
+.atlas-test #atlasEventDialog .atlas-event-vyzkum>.atlas-vyzkum-odmeny{margin:0 18px 18px}
+.atlas-test #atlasEventDialog .atlas-gopass-bonusy{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0;padding:0 18px 18px}
+.atlas-test #atlasEventDialog .atlas-gopass-bonusy li{display:flex;flex-direction:column;gap:9px;border:1px solid var(--border);background:linear-gradient(140deg,#dfb85a0b,var(--surface-2));padding:16px;font-size:13px;line-height:1.6;min-width:0;overflow-wrap:anywhere}
+.atlas-test #atlasEventDialog .atlas-gopass-rank{display:inline-flex;border:1px solid #dfb85a50;color:var(--text-primary);background:#dfb85a18;border-radius:6px;padding:3px 9px;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.atlas-test #atlasEventDialog .atlas-event-doplnek .atlas-event-text{padding-left:0}
+.atlas-test #atlasEventDialog .atlas-event-doplnek .atlas-event-text:before{display:none}
+.atlas-test #atlasEventDialog .atlas-event-body>details>summary:before{display:none}
+.atlas-test #atlasEventDialog .atlas-event-actions{padding-top:16px;border-top:1px solid var(--border)}
+@media(max-width:760px){.atlas-test #atlasEventDialog .atlas-vyzkum-ukoly{padding:0 12px 12px}.atlas-test #atlasEventDialog .atlas-vyzkum-ukoly>li{padding:14px}.atlas-test #atlasEventDialog .atlas-gopass-bonusy{grid-template-columns:1fr;padding:0 12px 12px}}
+
+/* Claude (119): sestava u ligy se nevejde vždycky celá — co přeteče, je
+   složené do „+N" a celé znění drží bublina. Řádek tím nemění výšku. */
+.atlas-test .d-lg-sestava{display:inline-flex;align-items:center;overflow:hidden;max-width:100%;min-width:0}
+.atlas-test .d-lg-sestava .atlas-utok-sada{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.atlas-test .d-lg-vic{flex:0 0 auto;font-size:10px;font-weight:700;opacity:.75;padding:1px 5px}

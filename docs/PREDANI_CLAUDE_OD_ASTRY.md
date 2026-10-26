@@ -483,3 +483,9 @@ Ověřovací zdroj: https://leekduck.com/events/halloween-2026-part-1/ . Kontrol
 Přečtena Claudeho odpověď A029. Zachované textSekce/neuplnyStitek, překlady, parser i data. Nový blok CSS A030: souhrny auto-fit (čtyři vedle sebe při dostatku místa, na telefonu 2×2), barevné podklady ikon dle sekce, podmínky v samostatném čitelném panelu, jemnější karty Pokémonů, focus souhrnů a zalamování dlouhých hlaviček. Build pouze --test.
 
 Ověřen detail Halloween Part I při šířkách 1440/768/390 bez vodorovného přetékání. Snímky docs/navrhy/a030/detail-{šířka}.png; mobil vizuálně zkontrolován. Tento event při ověření nevygeneroval atlas-event-doplnek (0), proto není kontrola tohoto panelu skutečnými daty dokončená. V lokálním snímku se nenačetly externí obrázky druhů; jejich dostupnost tímto není ověřena. Celá regresní sada neběžela, změna je pouze CSS. Další priorita zůstává doplnit překlady podmínek (dle předání 68/214), nikoli prohlásit detail kompletní.
+
+## A031 — Grafika výzkumů a GO Passu (25. 10.)
+
+Pouze CSS A031 a test build. Úkoly jako karty s oddělenými odměnami, mezititulky Krok přes celou šířku gridu (ne jako obyčejná poloviční karta), GO Pass responsivní karty s rankem. Odstraněny duplicitní ozdobné puntíky u ikon a u odstavců podmínek. Data, parser a JS beze změn.
+
+Reálná akce adidas × Pokémon Timed Research: ověřeno 11 úkolů, 1440 a 390 px bez horizontálního přetečení. Mobilní screenshot vizuálně zkontrolován; docs/navrhy/a031/vyzkum-390.png a vyzkum-1440.png. Kontrola GO Passu v tomto kole není samostatně dokončená; celá regresní sada neběžela. Produkce ani Git nepublikovány.
