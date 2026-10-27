@@ -2824,6 +2824,9 @@
      stranou od tabulky, protože to není liga — je to formát s vlastním
      seznamem povolených druhů. */
   .d-cupy { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 2px; }
+  /* Prázdný blok (žádný cup neběží) se nikde neukazuje — místo si drží
+     jen panel čištění, kde se výška nesmí měnit mezi kusy. */
+  .d-cupy:empty { display: none; }
   .d-cup-radek { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
     font-size: 12px; padding: 5px 9px; border: 1px solid var(--border);
     border-radius: 8px; background: var(--input-bg); }
@@ -16803,10 +16806,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
          toho, na kterém kusu zrovna stojíš. */
       {
         h += '<div class="d-cupy">';
-        if (!cupyTed.length && !cupyPo.length) {
-          h += '<div class="d-cup-radek d-cup-prazdny"><span class="d-cup-info">'
-            + "Cupy — teď žádný, který by tenhle druh hrál</span></div>";
-        }
+        /* Když žádný cup neběží, nepíše se nic. Blok ale zůstává prázdný:
+           v čištění si tím drží místo (tam se výška panelu nesmí hýbat),
+           jinde ho CSS schová úplně. */
         var cupRadek = function (x, jmenoDruhu, poEvoluci) {
           if (x.zakladni) {
             return '<div class="d-cup-radek"><b>' + escHtml(x.cup.nazev) + "</b>"
