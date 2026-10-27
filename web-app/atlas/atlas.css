@@ -3511,4 +3511,29 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    lepily na dno sloupce. Když se sekce lig přestěhovala vedle, zůstala
    nad nimi prázdná plocha skoro tří set pixelů. Drží se normální odstup
    jako jinde v detailu. */
-#atlasDetailContent .detail-main>.d-roles.atlas-vyuziti{margin-top:22px}
+/* Pravý sloupec měl vynucených 520 px, takže vedle krátkého levého
+   sloupce zůstávala prázdná plocha — Astra ji schovala tím, že karty
+   rolí sedí na dně. Jenže od chvíle, co se sekce lig přestěhovala pod
+   mřížku, je levý sloupec krátký vždycky a díra byla vidět pokaždé.
+   Sloupec je proto vysoký tolik, kolik má obsah, a karty rolí se vrací
+   ke svému původnímu místu na jeho spodku. */
+#atlasDetailContent .atlas-evolution-column{min-height:0}
+
+/* Claude (124): detail se rozjížděl do šířky a pod kartami rolí zůstávalo
+   prázdno.
+
+   Evoluční sloupec potřebuje 330 px, ale dráha mřížky měla 270 — grid ho
+   nezmenšil, jen nechal přetéct, a dole naskočil vodorovný posuvník.
+   Dráha je proto široká tolik, kolik sloupec opravdu zabere, a obě dráhy
+   se smí smrsknout.
+
+   `.detail-main` se roztahovalo na celou výšku sloupce (`flex:1`), takže
+   po přestěhování sekce lig ven zbylo pod kartami rolí pár set pixelů
+   prázdna. Končí tam, kde končí obsah. */
+@media(min-width:1001px){
+  .atlas-test #atlasDetailContent .atlas-detail-columns{
+    grid-template-columns:minmax(0,1fr) 330px}
+}
+.atlas-test #atlasDetailContent .atlas-detail-columns>*{min-width:0}
+.atlas-test #atlasDetailContent .atlas-evolution-column .d-evo-kus{min-width:0}
+#atlasDetailContent .atlas-detail-column>.detail-main{flex:0 0 auto}
