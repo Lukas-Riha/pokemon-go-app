@@ -2220,7 +2220,12 @@ try {
   // žádné další obrázky a soubor se otevře z disku bez čekání.
   // Po překlopení na 2.9 nesou novinky pět snímků obrazovky — ty se s další
   // verzí zase ztratí (zapéká se vždycky jen aktuální verze).
-  check("appka se drží pod 2,25 MB", velikostSouboru < 2250000, String(velikostSouboru));
+  /* Strop je hlídač nechtěného nabobtnání, ne fyzický limit. Zvednutý
+     vědomě (27. 10.) spolu s hlubším žebříčkem PvPoke: tabulka se peče
+     do 300 druhů na ligu místo 200, což je +64 KB dat. Změřeno na tom
+     větším souboru: appka je hotová za 185 ms, při 4× zpomaleném CPU
+     (zhruba průměrný telefon) za 988 ms, a po síti jde 668 KB gzipem. */
+  check("appka se drží pod 2,45 MB", velikostSouboru < 2450000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {

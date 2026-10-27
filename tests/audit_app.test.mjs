@@ -638,8 +638,13 @@ try {
   check("každý druh z mety si drží své pořadí",
     zebricky.chybi.length === 0 && zebricky.jinePoradi.length === 0,
     zebricky.chybi.slice(0, 3).concat(zebricky.jinePoradi.slice(0, 3)).join(" | "));
+  /* Dřív se měřil jen „zbytek" (> 1000). Jenže ten se zmenšuje tím, jak
+     roste meta: od hlubšího bake (300 druhů na ligu místo 200) je víc
+     druhů v hlavní tabulce a ve zbytku míň. Smysl kontroly je, že appka
+     zná pořadí i mimo metu — tedy součet obou tabulek. */
   check("mimo metu se dohledá taky",
-    zebricky.vseCelkem > 1000, String(zebricky.vseCelkem));
+    zebricky.vseCelkem > 300 && zebricky.metaCelkem + zebricky.vseCelkem > 1000,
+    zebricky.metaCelkem + " meta + " + zebricky.vseCelkem + " zbytek");
   check("dohromady je to víc než samotná meta",
     zebricky.metaCelkem + zebricky.vseCelkem > zebricky.metaCelkem * 2,
     zebricky.metaCelkem + " meta + " + zebricky.vseCelkem + " zbytek");

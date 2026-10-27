@@ -152,7 +152,10 @@ def seed_z_gitu():
 
 BASE = "https://raw.githubusercontent.com/pvpoke/pvpoke/master/src/data/rankings/all/overall/"
 LEAGUES = {"little": 500, "great": 1500, "ultra": 2500, "master": 10000}
-DEFAULT_TOP = 200
+# Kolik druhů z žebříčku se peče. Počítá se zvlášť pro běžnou a shadow
+# tabulku: v syrovém seznamu jsou shadow varianty promíchané mezi ostatní,
+# takže „top 200" dřív znamenalo jen ~145 běžných druhů.
+DEFAULT_TOP = 300
 # Útok se bere jako v pořádku, když ho simulace použila aspoň takovým podílem
 # oproti nejpoužívanějšímu útoku téhož druhu.
 OK_SHARE = 0.4
@@ -171,6 +174,9 @@ FORM_SUFFIX = {
     "sky": "sky", "land": "land", "hero": "hero",
     "crownedsword": "crownedsword", "crownedshield": "crownedshield",
     "icerider": "icerider", "shadowrider": "shadowrider",
+    # Velikosti Gourgeista a Pumpkaboa. Nejsou to kosmetické formy — liší se
+    # staty, a tedy i pořadím v lize. Bez nich se tři ze čtyř zahodily.
+    "small": "small", "average": "average", "large": "large", "super": "super",
 }
 # Přípony o dvou slovech. Id se dělí na podtržítkách, takže by se každé
 # slovo hledalo zvlášť — a „crowned"+„sword" nezná ani jedno. Slepí se
@@ -294,12 +300,16 @@ def main():
     for league, rows in raw.items():
         table = {}
         shadow_table = {}
-        for i, r in enumerate(rows[:top], start=1):
+        for i, r in enumerate(rows, start=1):
+            if len(table) >= top and len(shadow_table) >= top:
+                break
             key = dex_key(r.get("speciesId", ""), znami)
             if znami and key not in znami:
                 nesparovane.append(f"{league}: {r.get('speciesId')} -> {key}")
             # Shadow do vlastní tabulky: je to jiný kus, ne jiný název.
             cil = shadow_table if je_shadow(r) else table
+            if len(cil) >= top:
+                continue          # tahle tabulka je plná, druhá ještě ne
             if not key or key in cil:
                 continue  # lepší (výš postavená) varianta té formy už tam je
             if float(r.get("score") or 0) < MIN_SCORE:
