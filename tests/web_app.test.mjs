@@ -20182,6 +20182,66 @@ try {
     s311.mewVeFiltru === true && s311.rattataPokryta === true,
     JSON.stringify(s311));
 
+  /* 312) Pruh „tenhle už jsi pustil, ale teď by se zase vešel" musí mlčet,
+     když se od rozhodnutí nic nestalo.
+
+     Dvě díry, obě z reálného průchodu:
+
+     a) Návrat k rozdělanému čištění zahodil počítadlo, podle kterého appka
+        pozná, v jakém rosteru se co rozhodovalo. Po návratu pak vypadalo
+        každé dřívější rozhodnutí jako udělané jinde a nabídka vyskočila
+        bez důvodu.
+     b) Kus puštěný navzdory „Ponechat" se vejde vždycky, jen co ho vrátíš.
+        Nabízet mu to po každé další změně je rada o ničem — a vypadá to,
+        že appka mluví o cizím kusu bez příčiny. */
+  console.log("\n312) Vraceni se nenabizi, kdyz se nic nezmenilo");
+  await page.goto(URL);
+  await nacteno(page);
+  const s312 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Metagross", cp: "3400", level: 40, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { pokemon: "Metagross", cp: "3300", level: 39, ivAtk: 13, ivDef: 13, ivSta: 12 },
+      { pokemon: "Machamp", cp: "2900", level: 38, ivAtk: 14, ivDef: 12, ivSta: 12 },
+      { pokemon: "Gardevoir", cp: "2600", level: 36, ivAtk: 13, ivDef: 11, ivSta: 14 },
+      { pokemon: "Azumarill", cp: "1480", level: 29, ivAtk: 2, ivDef: 14, ivSta: 15 },
+      { pokemon: "Azumarill", cp: "1470", level: 29, ivAtk: 1, ivDef: 13, ivSta: 15 },
+    ]);
+    await cekej(3000);
+    P.boxOtevrit();
+    await cekej(800);
+    const out = {};
+    const prvni = P.bmSeznam()[P.boxStav().index];
+    out.prvniVerdikt = prvni ? prvni.c.keep : "?";
+    // pustit kus navzdory doporučení
+    P.boxRozhodnout("drop");
+    await cekej(600);
+    out.hnedPoPusteni = P.boxVraceni().length;
+    // a teď pustit ještě jeden — roster se změnil, ale ten první se
+    // nabízet nemá: nešel pryč proto, že mu místo držel někdo jiný
+    P.boxRozhodnout("drop");
+    await cekej(600);
+    out.poDalsimPusteni = P.boxVraceni().length;
+    const volby = JSON.parse(JSON.stringify(P.boxStav().volby));
+    const sekce = {};
+    P.bmSeznam().forEach((x) => { sekce[x.row.id] = x.sekce; });
+    P.boxZavritNatvrdo();
+    await cekej(400);
+    // návrat k rozdělanému čištění
+    P.boxOtevrit({ volby: volby, sekce: sekce });
+    await cekej(1500);
+    out.poNavratu = P.boxVraceni().length;
+    out.indexPoNavratu = P.boxStav().index;
+    P.boxZavritNatvrdo();
+    return out;
+  });
+  check("kus puštěný navzdory „Ponechat" se zpátky nenabízí",
+    !/Zahodit/.test(s312.prvniVerdikt) && s312.hnedPoPusteni === 0
+      && s312.poDalsimPusteni === 0, JSON.stringify(s312));
+  check("…a po návratu k rozdělanému čištění taky ne",
+    s312.poNavratu === 0 && s312.indexPoNavratu === 2, JSON.stringify(s312));
+
   await page.goto(URL);
   await nacteno(page);
 

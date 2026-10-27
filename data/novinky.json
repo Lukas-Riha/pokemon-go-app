@@ -283,7 +283,8 @@
       {
         "text": "**Než se obrázek načte, neprobliká nic.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu — a než dorazil, ukázal prohlížeč jeho název, u druhů jako Minior dokonce ikonu rozbitého obrázku (jejich adresa v herním mirroru neexistuje, takže se zkouší několik náhradních). Teď je do té doby prázdno. Jméno v obrázku zůstává kvůli čtečkám obrazovky."
       },
-      "**Ruční přidání zase pozná CP, které na žádný level nesedí.** Po přepsání pole „V gymu (h)“ na pohlaví zůstal v okně kus staré logiky a okno se při takovém CP zaseklo na předchozí hlášce — a tlačítko Přidat šlo zmáčknout. Teď zase nabídne platná CP a dokud si jedno nevybereš, přidat nejde."
+      "**Ruční přidání zase pozná CP, které na žádný level nesedí.** Po přepsání pole „V gymu (h)“ na pohlaví zůstal v okně kus staré logiky a okno se při takovém CP zaseklo na předchozí hlášce — a tlačítko Přidat šlo zmáčknout. Teď zase nabídne platná CP a dokud si jedno nevybereš, přidat nejde.",
+      "**Čištění boxu: hlášky, které se nikdy neukázaly, a nabídka, která mátla.** Když v čištění řekneš, že jsi kus ve hře očistil, vyvinul nebo vylepšil, stojí nad tlačítky věta o tom, co to udělalo — nové IV a jestli se verdikt pohnul, nebo zůstává. Dřív nebylo poznat, jestli to appka vůbec zaznamenala: stejným místem navíc propadala i starší hláška „Přepočítáno“, takže vysvětlení ke změně verdiktu uprostřed čištění nikdo nikdy neviděl. A pruh „Tenhle už jsi pustil, ale teď by se zase vešel“ přestal mluvit do větru: nenabízí kus, kterého jsi pustil navzdory „Ponechat“ (ten se vejde vždycky, jen co ho vrátíš), nenabízí nic po návratu k rozdělanému čištění, a když ho vyvolá tvoje úprava kusu, je u něj napsané, čí změna to byla."
     ]
   }
 }

@@ -6143,6 +6143,74 @@ for (const sirka of [1100, 1280, 1600]) {
     JSON.stringify(d84));
 }
 
+/* 85) Co udělala úprava kusu ve hře, musí být vidět.
+
+   Uživatel v čištění očistil shadow kusa. Čísla v rozboru se přepsala,
+   verdikt zůstal „Zahodit" a jediná hláška, která vyskočila, mluvila o
+   docela jiném kusu — nedalo se poznat, jestli appka očištění vůbec
+   zaznamenala.
+
+   Věta o tom patří nad tlačítka, do lišty, kam vrstva stěhuje hlášky
+   panelu. Právě ten přesun ji ale uměl smazat: vyvolal druhou přestavbu
+   a ta lištu vyprázdnila. Tenhle test hlídá, že tam věta zůstane — platí
+   to i pro starší hlášku „Přepočítáno", která mizela stejně. */
+console.log("\n85) Uprava kusu ve hre je videt nad tlacitky");
+const p85 = await otevri(1500, []);
+const d85 = await p85.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  const P = window.__pgo;
+  P.setRows([
+    { pokemon: "Hitmontop", cp: "1800", level: 30, ivAtk: 10, ivDef: 8, ivSta: 6,
+      forma: "Shadow" },
+    { pokemon: "Machamp", cp: "2900", level: 38, ivAtk: 14, ivDef: 12, ivSta: 12 },
+  ]);
+  await cekej(3000);
+  P.boxOtevrit();
+  await cekej(900);
+  { const o = document.getElementById("appOknoOk");
+    if (o && !document.getElementById("appOkno").hidden) o.click(); }
+  await cekej(300);
+  for (let i = 0; i < 8; i++) {
+    const st = P.boxStav();
+    if (st.index >= st.delka || st.aktualni === "Hitmontop") break;
+    P.boxRozhodnout("keep");
+    await cekej(200);
+  }
+  const out = { kus: P.boxStav().aktualni };
+  const btn = document.querySelector('#boxMode [data-hra="ocista"]');
+  out.maTlacitko = !!btn;
+  if (btn) {
+    btn.click();
+    await cekej(500);
+    const ul = document.getElementById("hraUlozit");
+    if (ul && !ul.hidden) { ul.click(); await cekej(2000); }
+  }
+  const x = P.bmSeznam()[P.boxStav().index];
+  out.ivPo = x ? x.row.ivAtk + "/" + x.row.ivDef + "/" + x.row.ivSta : "";
+  out.forma = x ? x.row.forma || "" : "";
+  // Uvítání sekce je samostatné okno; tohle hlídá, že věta o úpravě
+  // žádné další okno neotevřela a nezastavila tím rozhodování.
+  { const o = document.getElementById("appOknoOk");
+    if (o && !document.getElementById("appOkno").hidden) o.click(); }
+  await cekej(300);
+  const radek = document.querySelector(".atlas-box-prepocet .bm-prepocet");
+  out.text = radek ? radek.textContent.trim() : "";
+  out.viditelny = !!(radek && radek.getBoundingClientRect().height > 0);
+  out.oknoOtevrene = !document.getElementById("appOkno").hidden;
+  P.boxZavritNatvrdo();
+  return out;
+});
+await p85.close();
+check("očištění v čištění se propíše do kusu",
+  d85.maTlacitko && d85.ivPo === "12/10/8" && d85.forma === "Purified",
+  JSON.stringify(d85));
+check("…a nad tlačítky stojí, co to udělalo s verdiktem",
+  d85.viditelny && /O\u010di\u0161t\u011bn\u00ed/.test(d85.text)
+    && /12\/10\/8/.test(d85.text) && /verdikt/.test(d85.text)
+    && !d85.oknoOtevrene,
+  JSON.stringify(d85));
+
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
 
 await browser.close();

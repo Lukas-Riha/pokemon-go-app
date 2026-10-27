@@ -17281,7 +17281,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     // rozhodování a chce jen vidět, že se změna propsala do rozboru před ním.
     var boxEl = document.getElementById("boxMode");
     if (boxEl && !boxEl.hidden) {
-      bmObnovAktualni();
+      bmObnovAktualni({ evoluce: "Evoluce", vylepseni: "Vylep\u0161en\u00ed",
+        ocista: "O\u010di\u0161t\u011bn\u00ed" }[hraAkce] || "");
     } else {
       zamerKus(r.id);
     }
@@ -27639,6 +27640,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
      v pruhu s vypadlými kusy. Puštění kusu příčinu nenastavuje — tam je
      důvod zřejmý z toho, co člověk právě udělal. */
   var bmVypadliPricina = "", bmVypadliPricinaText = "";
+  var bmVraceniPricinaText = "";
+  /* Co se u kusu stalo ve hře. Drží se u jeho id, aby to na dalším kusu
+     nesvítilo dál. */
+  var bmUpravaId = null, bmUpravaText = "";
 
   function bmTradeKlic(jm) {
     return dexKey(String(jm || "").trim());
@@ -28336,6 +28341,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     });
     bmIndex = 0;
     bmVolby = {};
+    bmVerzeRosteru = 0;
+    bmVerzeRozhodnuti = {};
+    bmVerdiktRozhodnuti = {};
     if (prubeh) {
       var je = {};
       bmList.forEach(function (x) { je[x.row.id] = true; });
@@ -28344,15 +28352,23 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       });
       // Pokračuje se u prvního kusu, který ještě rozhodnutý není.
       while (bmIndex < bmList.length && bmVolby[bmList[bmIndex].row.id]) bmIndex++;
+      /* U každého rozhodnutí si appka pamatuje, kolik kusů bylo v tu chvíli
+         puštěných — podle toho pozná, že se od něj nic nestalo a nemá co
+         nabízet zpátky. Po návratu k rozdělanému čištění se to musí
+         dopočítat ZNOVU, v pořadí seznamu; dřív se počítadlo zahodilo a
+         appka pak nabízela k vrácení kusy, u kterých se od jejich
+         rozhodnutí nic nezměnilo. */
+      bmList.forEach(function (x) {
+        var volba = bmVolby[x.row.id];
+        if (!volba) return;
+        if (volba === "drop") bmVerzeRosteru++;
+        bmVerzeRozhodnuti[x.row.id] = bmVerzeRosteru;
+        bmVerdiktRozhodnuti[x.row.id] = x.c ? x.c.keep : "";
+      });
       // Puštěné kusy uvolnily sloty — zbytek se musí přepočítat, jinak by
       // appka radila podle rozpočtu, který už neplatí.
-      if (Object.keys(bmVolby).some(function (id) { return bmVolby[id] === "drop"; })) {
-        bmVerzeRosteru++;
-        bmPrepocitatZbytek();
-      }
+      if (bmVerzeRosteru > 0) bmPrepocitatZbytek();
     }
-    bmVerzeRosteru = 0;
-    bmVerzeRozhodnuti = {};
     bmSekceNaposled = 0;
     if (!bmList.length) {
       appHlaska("Není co čistit — pod aktivním filtrem není ani jeden kus.");
@@ -28711,11 +28727,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // se neřekne, že ji způsobilo předchozí rozhodnutí uživatele.
       // Hlásí se jen PŘEKLOPENÍ nechat/pustit — přeformulování téhož
       // rozhodnutí („Zahodit – kopie" -> „Zahodit") žádná zpráva není.
-      + (bmZmenaRozhodnuti(r.id, c.keep)
-          ? '<div class="bm-prepocet">Přepočítáno: původně <b>'
-            + escHtml(bmPuvodni[r.id]) + "</b>, teď <b>" + escHtml(c.keep || "?")
-            + "</b>" + bmProcPrepocet(r.id, c) + "</div>"
-          : "")
+      /* Obě věty jdou do JEDNOHO rámečku: vzhledová vrstva ho přesouvá nad
+         tlačítka a bere první, který najde — druhý by zůstal uprostřed
+         rozboru. */
+      + (function () {
+          var vety = [];
+          if (bmUpravaId === r.id && bmUpravaText) vety.push(escHtml(bmUpravaText));
+          if (bmZmenaRozhodnuti(r.id, c.keep)) {
+            vety.push("Přepočítáno: původně <b>" + escHtml(bmPuvodni[r.id])
+              + "</b>, teď <b>" + escHtml(c.keep || "?") + "</b>"
+              + bmProcPrepocet(r.id, c));
+          }
+          return vety.length
+            ? '<div class="bm-prepocet">' + vety.join(" ") + "</div>" : "";
+        })()
       + '<div class="bm-roles">' + role + "</div>"
       + ligyHtml;
 
@@ -28765,6 +28790,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        vyskočí hláška o cizím kusu a nedá se poznat proč. */
     bmVypadliPricina = idPredtim
       ? ((radekPodleId(idPredtim) || {}).pokemon || "") : "";
+    /* Značka přehazuje rozpočet celého rosteru — kdo byl k zahození, se
+       teď může vejít. Je to jiný roster než ten, ve kterém se dřívější
+       kusy rozhodovaly. */
+    bmVerzeRosteru++;
     // Verdikty PŘED změnou — bez nich by se nedalo poznat, komu se to
     // překlopilo. bmPuvodni si drží jen to, co změnil přepočet po puštění.
     var predtim = {}, stitkyPredtim = {};
@@ -28818,18 +28847,41 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Po úpravě kusu ve hře (vylepšil / vyvinul / očistil) se v čištění boxu
    *  překreslí jen rozbor před uživatelem. Řazení se nemění — kus zůstane
    *  tam, kde v sekci je, jen s novými čísly. */
-  function bmObnovAktualni() {
+  function bmObnovAktualni(popis) {
     if (bmIndex >= bmList.length) return;
     var x = bmList[bmIndex];
     if (!x) return;
+    var verdiktDrive = x.c ? x.c.keep : "";
+    /* Očista, evoluce i vylepšení mění roster stejně jako puštění kusu:
+       jiné staty znamenají jiný rozpočet, takže kus, který byl dřív k
+       zahození, se teď může vejít. Verze se proto posune — a u obou pruhů
+       pak stojí, čí změna je vyvolala. Bez té věty to vypadalo, že appka
+       mluví o cizím kusu bez důvodu. */
+    bmVerzeRosteru++;
+    bmVypadliPricina = x.row.pokemon || "";
     var comp = analyze();
     var novy = comp[x.row.id];
     if (novy) {
       x.c = novy;
       lastBase.forEach(function (b) { if (b.row.id === x.row.id) x.b = b; });
     }
+    /* Bez téhle věty se nedalo poznat, jestli appka úpravu zaregistrovala:
+       na obrazovce se přepsalo pár čísel a verdikt klidně zůstal stejný —
+       zatímco pruh, který vyskočil, mluvil o cizím kusu, kterému se po
+       změně rozpočtu uvolnilo místo. */
+    bmUpravaId = null;
+    bmUpravaText = "";
+    if (popis && x.c) {
+      var ivPo = num(x.row.ivAtk) + "/" + num(x.row.ivDef) + "/" + num(x.row.ivSta);
+      var pohnulo = bmJeZahodit(verdiktDrive) !== bmJeZahodit(x.c.keep);
+      bmUpravaId = x.row.id;
+      bmUpravaText = popis + " se propsalo: IV " + ivPo + ", verdikt "
+        + (pohnulo ? "je te\u010f " : "z\u016fst\u00e1v\u00e1 ")
+        + (x.c.keep || "") + ".";
+    }
     bmPrepocitatZbytek();
     bmVykreslit();
+    bmVypadliPricina = "";
   }
 
   function bmPrepocitatZbytek() {
@@ -28882,6 +28934,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    */
   function bmNajdiNaVraceni(zbyle) {
     bmVratitSe = {};
+    // Text se drží u seznamu: pruh se překresluje i jindy než hned po změně.
+    bmVraceniPricinaText = bmVypadliPricina || "";
     var kandidati = [];
     for (var j = 0; j < bmIndex; j++) {
       var y = bmList[j];
@@ -28889,6 +28943,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // Od jeho rozhodnutí se nic dalšího nepustilo: roster je pořád ten,
       // ve kterém mu vyšlo „zahodit". Nabízet ho zpátky by byl nesmysl.
       if (bmVerzeRozhodnuti[y.row.id] === bmVerzeRosteru) continue;
+      /* Pustil ho navzdory „Ponechat"? Pak se nezměnilo nic, co by appka
+         měla hlásit: kus se vejde vždycky, jen co ho vrátíš. */
+      var priRozhodnuti = bmVerdiktRozhodnuti[y.row.id];
+      if (priRozhodnuti !== undefined && !bmJeZahodit(priRozhodnuti)) continue;
       var sila = bmSilaKusu(y.c);
       if (sila <= 0) continue;   // kus bez jakékoli role se vrátit nemá proč
       kandidati.push({ x: y, sila: sila });
@@ -29050,7 +29108,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (!ids.length) { box.hidden = true; box.innerHTML = ""; return; }
     var h = '<div class="bm-vraceni-h"><i>&#9888;</i>'
       + (ids.length === 1 ? "Tenhle už jsi pustil, ale teď by se zase vešel"
-         : "Tyhle už jsi pustil, ale teď by se zase vešly") + "</div>";
+         : "Tyhle už jsi pustil, ale teď by se zase vešly")
+      + (bmVraceniPricinaText
+          ? ' <span class="bm-vraceni-proc">po změně u '
+            + escHtml(bmVraceniPricinaText) + " — úprava kusu mění rozpočet"
+            + " celého rosteru, ne jen toho kusu</span>"
+          : "")
+      + "</div>";
     ids.forEach(function (id) {
       var v = bmVratitSe[id];
       var d = v.row.pokemon ? dexEntry(v.row.pokemon) : null;
@@ -29146,14 +29210,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
      dává smysl jen tehdy, když se od jeho rozhodnutí roster opravdu změnil. */
   var bmVerzeRosteru = 0;
   var bmVerzeRozhodnuti = {};
+  /* Co appka o kusu říkala ve chvíli, kdy se o něm rozhodovalo. Kus
+     puštěný navzdory „Ponechat" se vejde vždycky, jen co ho vrátíš —
+     nabízet mu to zpátky není rada, ale hluk. */
+  var bmVerdiktRozhodnuti = {};
 
   function bmRozhodnout(volba) {
     if (bmIndex >= bmList.length) return;
+    bmUpravaId = null; bmUpravaText = "";
     var x = bmList[bmIndex];
     bmVolby[x.row.id] = volba;
     bmIndex++;
     if (volba === "drop") bmVerzeRosteru++;
     bmVerzeRozhodnuti[x.row.id] = bmVerzeRosteru;
+    bmVerdiktRozhodnuti[x.row.id] = x.c ? x.c.keep : "";
     if (volba === "drop" && bmDrzelSlot(x)) bmPrepocitatZbytek();
     bmUlozitPrubeh();
     bmVykreslit();
@@ -29161,11 +29231,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
   function bmZpet() {
     if (bmIndex === 0) return;
+    bmUpravaId = null; bmUpravaText = "";
     bmIndex--;
     var x = bmList[bmIndex];
     var bylPusteny = bmVolby[x.row.id] === "drop";
     delete bmVolby[x.row.id];
     delete bmVerzeRozhodnuti[x.row.id];
+    delete bmVerdiktRozhodnuti[x.row.id];
     if (bylPusteny) bmVerzeRosteru++;
     // Vrácené rozhodnutí musí slot zase zabrat.
     if (bylPusteny && bmDrzelSlot(x)) bmPrepocitatZbytek();
@@ -30882,6 +30954,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     boxRozhodnout: bmRozhodnout, boxZpet: bmZpet, boxPrepocitat: bmPrepocitat,
     // Pro testy: koho appka nabízí vrátit a kdo naopak vypadl ze slotu.
     boxVraceni: function () { return Object.keys(bmVratitSe); },
+    /* Věta o úpravě kusu ve hře (očista, evoluce, vylepšení) a příčina
+       u pruhu s vracením — testy hlídají, že u hlášky o cizím kusu stojí,
+       čí změna ji vyvolala. */
+    boxUprava: function () {
+      return { id: bmUpravaId, text: bmUpravaText, pricina: bmVraceniPricinaText };
+    },
     boxVypadli: function () {
       return Object.keys(bmVypadli).map(function (id) {
         return { id: id, drive: bmVypadli[id].drive, ted: bmVypadli[id].c.keep };

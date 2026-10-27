@@ -1570,7 +1570,8 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
       udelal": na telefonu se stehuje sem, a bez teto vyjimky se prestavba
       volala donekonecna a stranka zamrzla. */
    const naseUzly=n=>n.nodeType===1&&n.classList
-     &&(n.classList.contains('atlas-box-rozbor')||n.classList.contains('hra-pruh'));
+     &&(n.classList.contains('atlas-box-rozbor')||n.classList.contains('hra-pruh')
+       ||n.classList.contains('bm-prepocet'));
    new MutationObserver(zaznamy=>{
      const jenNase=zaznamy.every(z=>[...z.addedNodes,...z.removedNodes].every(naseUzly));
      if(!jenNase&&!boxPrestavba)boxRozbor();
