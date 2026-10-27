@@ -2804,6 +2804,17 @@
      ne důvod držet — barva proto klidná, ne zelená jako „ponechat". */
   .dv-chip.dv-trade { border-color: var(--series-1, #195be8); color: var(--series-1, #195be8);
     font-weight: 700; letter-spacing: .04em; }
+  /* Cupy pod tabulkou lig: jeden řádek na cup, co zrovna jede. Stojí
+     stranou od tabulky, protože to není liga — je to formát s vlastním
+     seznamem povolených druhů. */
+  .d-cupy { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 2px; }
+  .d-cup-radek { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    font-size: 12px; padding: 5px 9px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--input-bg); }
+  .d-cup-radek b { font-size: 12.5px; }
+  .d-cup-poradi { font-weight: 700; }
+  .d-cup-kus { color: var(--text-secondary); }
+  .d-cup-info { font-size: 11px; color: var(--text-muted); }
   .d-lg-iv { font-size: 10.5px; color: var(--text-muted); font-weight: 600;
     border: 1px solid var(--border); border-radius: 5px; padding: 0 4px;
     white-space: nowrap; }
@@ -14191,8 +14202,25 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    */
   function cupyDruhu(klicDruhu, forma, jenBezici) {
     var out = [];
-    cupyZRozpisu().forEach(function (cup) {
-      if (jenBezici && !cup.bezi) return;
+    var seznam = cupyZRozpisu();
+    if (jenBezici) {
+      var bezi = seznam.filter(function (c) { return c.bezi; });
+      if (bezi.length) {
+        seznam = bezi;
+      } else {
+        /* Mezi dvěma okny rozpisu neběží nic. Ukázat prázdno by vypadalo,
+           že cupy skončily — ukáže se nejbližší ohlášený, ale jen takový,
+           ve kterém ten druh opravdu je. Jinak by u kusu svítil cup, se
+           kterým nemá co dělat. */
+        var prvni = null;
+        seznam.forEach(function (c) {
+          if (prvni || c.zakladni) return;
+          if (cupZaznam(klicDruhu, c.klic, forma)) prvni = c;
+        });
+        seznam = prvni ? [prvni] : [];
+      }
+    }
+    seznam.forEach(function (cup) {
       // Catch Cup a spol. vlastní žebříček nemají: jedou na pořadí základní
       // ligy a omezují, co smíš postavit. Tvrdit u nich pořadí by bylo lhaní.
       if (cup.zakladni) { out.push({ cup: cup, zakladni: true }); return; }
@@ -14203,10 +14231,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return out;
   }
 
-  /** „běží do 27. 10." / „od 10. 11." — termín cupu do jedné věty. */
+  /** „běží do 27. 10." / „od 10. 11." — termín cupu do jedné věty.
+   *  `kratkeDatum` čeká ISO text, tady jsou objekty Date z rozpisu. */
+  function cupDen(d) {
+    return d && d.getDate ? d.getDate() + ". " + (d.getMonth() + 1) + "." : "";
+  }
   function cupTermin(cup) {
-    return cup.bezi ? "běží do " + kratkeDatum(cup.doKdy)
-      : "od " + kratkeDatum(cup.od);
+    return cup.bezi ? "běží do " + cupDen(cup.doKdy) : "od " + cupDen(cup.od);
   }
 
   /** Totéž pro kompletní pořadí (bez sestav). */
@@ -15531,6 +15562,31 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
                 || (l.jeMeta ? "–" : "mimo metu — sestavu appka nemá")) + "</td></tr>";
         });
         h += "</table>";
+        /* Cupy pod ligami: omezený formát má vlastní seznam povolených
+           druhů, takže pořadí z Great League o něm neříká nic. Vypisují se
+           všechny z rozpisu GBL — i ty, které teprve přijdou, ať je vidět,
+           na co se vyplatí kus schovat. */
+        var cupyDruh = cupyDruhu(dexKey(sk.jmeno), "", false);
+        if (cupyDruh.length) {
+          h += '<table class="d-ligy-tab d-cupy-tab"><tr><th>Cup</th>'
+            + "<th>Pořadí druhu</th><th>Doporučená sestava</th></tr>";
+          cupyDruh.forEach(function (x) {
+            h += "<tr><td><b>" + escHtml(x.cup.nazev) + "</b>"
+              + '<span class="d-lg-cap">'
+              + (x.cup.cp ? "do " + x.cup.cp + " CP · " : "")
+              + escHtml(cupTermin(x.cup)) + "</span></td>";
+            if (x.zakladni) {
+              h += '<td colspan="2"><span class="d-lg-stav">vlastní žebříček'
+                + " nemá — jede na pořadí základní ligy, omezuje jen to, co"
+                + " smíš postavit</span></td></tr>";
+              return;
+            }
+            h += "<td><b>#" + x.rank + "</b><span>"
+              + String(x.skore).replace(".", ",") + " bodů v cupu</span></td>"
+              + "<td>" + escHtml(sestavaText(x.sestava) || "–") + "</td></tr>";
+          });
+          h += "</table>";
+        }
       });
     } else {
       h += '<p class="d-note">Do žádné z lig se tenhle druh nedostal.</p>';
@@ -30460,6 +30516,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        rosteru zkoušejí obojím výkladem přednosti operátorů — pravidlo
        „ve filtru nesmí vyskočit kus, který se nepouští" se nesmí porušit
        ani omylem. */
+    /* Karta druhu (Vyhledávání) — testy v ní hledají tabulku cupů. */
+    druhHtml: function (jmeno) {
+      var d = dexEntry(jmeno);
+      return d ? druhHtml(dexKey(jmeno), d) : "";
+    },
     /* Rozpis GBL: co běží a co přijde (pro pruh v kalendáři). */
     ligyRozpis: function () { return ligyRozpis(); },
     /* Omezené cupy: co appka vyčetla z rozpisu a co o druhu ví. */

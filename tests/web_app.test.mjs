@@ -20298,6 +20298,58 @@ try {
   check("…a v rezervě stojí jen kusy se špičkovou kombinací",
     s313.kombinaci > 0 && s313.slabeKombinace.length === 0, JSON.stringify(s313));
 
+  /* 314) Omezené cupy: žebříček z rozpisu GBL, ne z Great League.
+
+     Cup má vlastní seznam povolených druhů, takže ligové pořadí o něm
+     neříká nic. Zapékají se jen cupy z rozpisu a appka si je s termínem
+     páruje podle jména — tenhle test hlídá, že se to spáruje, že cup bez
+     vlastního žebříčku (Catch Cup) pořadí netvrdí a že je výpis vidět
+     v detailu i ve Vyhledávání. Pořadí se nikam nepíše natvrdo: rotace
+     cupů se mění každý týden. */
+  console.log("\n314) Omezene cupy z rozpisu GBL");
+  await page.goto(URL);
+  await nacteno(page);
+  const s314 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const rozpis = P.cupyRozpis();
+    const out = { cupu: rozpis.length, spatnyTermin: 0, sRankem: 0,
+      zlyRank: [], tabulka: "", radek: "", druh: "" };
+    rozpis.forEach((c) => {
+      if (!(c.doKdy > c.od) || !c.nazev || !c.liga) out.spatnyTermin++;
+    });
+    const dex = P.pokedex().species;
+    const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 500);
+    for (const k of klice) {
+      const c = P.cupyDruhu(dex[k][1], "", false);
+      if (c.some((x) => x.rank)) { out.druh = dex[k][1]; break; }
+    }
+    if (!out.druh) return out;
+    const vse = P.cupyDruhu(out.druh, "", false);
+    out.sRankem = vse.filter((x) => x.rank).length;
+    // Cup bez vlastního žebříčku nesmí předstírat pořadí.
+    out.zlyRank = vse.filter((x) => x.zakladni && x.rank).map((x) => x.cup.nazev);
+    const host = document.createElement("div");
+    host.innerHTML = P.druhHtml(out.druh);
+    const tab = host.querySelector(".d-cupy-tab");
+    out.tabulka = tab ? tab.textContent.replace(/\s+/g, " ").trim().slice(0, 160) : "";
+    // a řádek v detailu kusu
+    P.setRows([{ pokemon: out.druh, cp: "1480", level: 28, ivAtk: 2, ivDef: 14, ivSta: 14 }]);
+    await new Promise((r) => setTimeout(r, 2500));
+    const host2 = document.createElement("div");
+    document.body.appendChild(host2);
+    P.atlasDetail(P.getRows()[0].id, host2);
+    await new Promise((r) => setTimeout(r, 800));
+    const radek = host2.querySelector(".d-cupy");
+    out.radek = radek ? radek.textContent.replace(/\s+/g, " ").trim().slice(0, 160) : "";
+    return out;
+  });
+  check("cupy z rozpisu mají termín, ligu i žebříček",
+    s314.cupu === 0 || (s314.spatnyTermin === 0 && s314.sRankem > 0),
+    JSON.stringify(s314));
+  check("…cup bez vlastního žebříčku pořadí netvrdí a výpis je vidět",
+    s314.cupu === 0 || (s314.zlyRank.length === 0 && /Cup/.test(s314.tabulka)
+      && /#\d/.test(s314.radek)), JSON.stringify(s314));
+
   await page.goto(URL);
   await nacteno(page);
 
