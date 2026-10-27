@@ -2823,10 +2823,11 @@
   /* Cupy pod tabulkou lig: jeden řádek na cup, co zrovna jede. Stojí
      stranou od tabulky, protože to není liga — je to formát s vlastním
      seznamem povolených druhů. */
-  .d-cupy { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 2px; }
-  /* Prázdný blok (žádný cup neběží) se nikde neukazuje — místo si drží
-     jen panel čištění, kde se výška nesmí měnit mezi kusy. */
-  .d-cupy:empty { display: none; }
+  /* Místo si blok drží i prázdný: jinak by se všechno pod ním posouvalo
+     podle toho, jestli zrovna nějaký cup běží a jestli ho ten druh hraje.
+     Když neběží nic, nekreslí se text — jen zůstane volné místo. */
+  .d-cupy { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 2px;
+    min-height: 31px; }
   .d-cup-radek { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
     font-size: 12px; padding: 5px 9px; border: 1px solid var(--border);
     border-radius: 8px; background: var(--input-bg); }
