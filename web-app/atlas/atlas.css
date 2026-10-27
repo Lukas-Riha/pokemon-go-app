@@ -3487,3 +3487,21 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .ac-ligy-radek>small{font-size:11px;color:var(--text-muted)}
 .atlas-test .ac-liga-chip{border:1px solid var(--border);border-radius:999px;
   padding:2px 8px;background:var(--input-bg);white-space:nowrap}
+
+/* Claude (122): řádek s cupy pod ligami potřebuje vlastní místo. Panel
+   čištění má pevnou výšku, takže se o něj dosud squeezly štítky typů nad
+   tabulkou — panel i sekce lig proto rostou o jeden řádek. */
+.atlas-test .box-mode.siroky .bm-panel{height:min(1020px,100%)}
+.atlas-test .box-mode.siroky .atlas-box-rozbor [data-detail-section=ligy]{max-height:512px}
+/* Pevná výška: řádek s cupem a náhradní věta „teď žádný" se liší o dva
+   pixely a tabulka lig by se o ně posouvala mezi kusy. */
+.atlas-test .atlas-box-rozbor .d-cupy{margin:4px 0 0;min-height:31px}
+.atlas-test .atlas-box-rozbor .d-cup-radek{align-items:center}
+.atlas-test .atlas-box-rozbor .d-cup-radek{padding:4px 8px;font-size:11.5px}
+/* Dlouhá věta v kartě role přetékala z mřížky: karta je sloupec, takže se
+   prvek roztáhl na šířku obsahu a ellipsis neměl co ořezávat. Detail se
+   tím rozjel do šířky a dole naskočil vodorovný posuvník, který tam nemá
+   co dělat. Text se radši zalomí — místo pod ním je. */
+.atlas-test .atlas-detail-modern .atlas-vyuziti .d-role-radek>*{max-width:100%}
+.atlas-test .atlas-vyuziti .d-role-radek .d-role-v{white-space:normal;
+  overflow:visible;text-overflow:clip;word-break:normal;overflow-wrap:anywhere}

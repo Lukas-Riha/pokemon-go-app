@@ -1490,7 +1490,8 @@
      pole i tlačítko „Kopírovat" a žádné nestojí pod tím nad ním. */
   .hled-ukaz { font-size: 11px; padding: 4px 8px; white-space: nowrap;
     flex: 0 0 auto; min-width: 86px; text-align: center; }
-  .hled-kusy { display: grid; gap: 6px; margin: 2px 0 10px;
+  /* Mřížka karet začíná pod polem s textem, ne pod číslem řádku. */
+  .hled-kusy { display: grid; gap: 6px; margin: 2px 0 10px 48px;
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
   /* Bez tohohle se náhled nikdy nesbalil: `display: grid` ze třídy přebije
      `display: none`, které k atributu `hidden` dává prohlížeč. */
@@ -1513,16 +1514,22 @@
     margin-bottom: 4px; }
   /* Číslo filtru a počet kusů kolem pole: jeden filtr = jedno vložení
      do hry, tak musí být vidět, kolikátý je a co pokrývá. */
+  /* Pevná šířka: u „10/14" je číslo širší než u „1/14" a posunulo by
+     začátek pole — řádky by pak lámaly text každý jinde. */
   .hled-cislo { flex: 0 0 auto; font-size: 11px; font-weight: 700;
-    color: var(--text-secondary); min-width: 26px; }
+    color: var(--text-secondary); width: 42px; min-width: 42px;
+    text-align: right; padding-top: 6px; }
   .hled-pocet { flex: 0 0 auto; font-size: 11px; color: var(--text-muted);
     min-width: 86px; text-align: right; }
   .hled-kopie { flex: 0 0 auto; min-width: 104px; }
   .hled-radek input, .hled-radek textarea { flex: 1 1 auto; min-width: 0;
     font-family: ui-monospace, monospace; font-size: 12.5px; padding: 6px 8px; }
   /* Filtr je vidět celý — ořízlý řetězec se nedá zkontrolovat očima. */
-  .hled-radek textarea { resize: vertical; line-height: 1.35; height: 62px;
-    min-height: 62px; max-height: 160px; border-radius: 8px; }
+  /* Tři řádky textu se musí vejít bez posuvníku: 3 × 16,9 px + 12 px
+     vnitřního okraje. Čtvrtý řádek se pak posouvá — to je v pořádku,
+     filtr se čte po částech. */
+  .hled-radek textarea { resize: vertical; line-height: 1.35; height: 70px;
+    min-height: 70px; max-height: 160px; border-radius: 8px; }
   /* Jednorázové ověření, jak hra čte filtr o víc druzích. Je to nabídka,
      ne překážka — filtry nad ním fungují i bez něj, jen je jich víc. */
   /* Vlastní předfiltry: zaškrtávátka nad filtry. */
@@ -16778,8 +16785,15 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         if (!cilCupu && L.po && L.po.jmeno) cilCupu = L.po.jmeno;
       });
       var cupyPo = cilCupu ? cupyDruhu(dexKey(cilCupu), r.forma, true) : [];
-      if (cupyTed.length || cupyPo.length) {
+      /* Místo pro cupy je vyhrazené vždycky, i když tenhle druh v žádném
+         nehraje: jinak by se tabulka lig a všechno nad ní posouvalo podle
+         toho, na kterém kusu zrovna stojíš. */
+      {
         h += '<div class="d-cupy">';
+        if (!cupyTed.length && !cupyPo.length) {
+          h += '<div class="d-cup-radek d-cup-prazdny"><span class="d-cup-info">'
+            + "Cupy — teď žádný, který by tenhle druh hrál</span></div>";
+        }
         var cupRadek = function (x, jmenoDruhu, poEvoluci) {
           if (x.zakladni) {
             return '<div class="d-cup-radek"><b>' + escHtml(x.cup.nazev) + "</b>"
@@ -29762,8 +29776,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Kartička kusu do náhledu filtru: obrázek, jméno, CP a kvalita. */
   function hledaniKarta(r) {
     var d = dexEntry(r.pokemon);
+    /* Karty se staví až při rozbalení a jsou vidět všechny naráz —
+       `lazy` je proto načítalo jednu po druhé před očima. */
     var obr = obrazekHtml(r.pokemon, d, "hled-karta-obr",
-      { shiny: r.shiny === "Ano", zena: pohlaviKusu(r) === "f" });
+      { shiny: r.shiny === "Ano", zena: pohlaviKusu(r) === "f" })
+      .replace('loading="lazy"', 'loading="eager"');
     var a = num(r.ivAtk), d2 = num(r.ivDef), st = num(r.ivSta);
     var iv = (a === null || d2 === null || st === null) ? null : (a + d2 + st) / 45;
     return '<div class="hled-karta">' + obr
@@ -29795,7 +29812,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   function hledaniRadek(f, i, celkem, predpona) {
     var id = predpona + i;
     return '<div class="hled-radek" data-hled-radek="' + id + '">'
-      + (celkem > 1 ? '<span class="hled-cislo">' + (i + 1) + "/" + celkem + "</span>" : "")
+      /* Číslo se u jediného filtru nepíše, ale místo po něm zůstává:
+         jinak ten řádek začíná jinde než všechny ostatní. */
+      + '<span class="hled-cislo">'
+      + (celkem > 1 ? (i + 1) + "/" + celkem : "") + "</span>"
       + '<textarea class="hled-text" readonly rows="2">'
       + escHtml(hledaniPredponaText() + f.text) + "</textarea>"
       + '<button class="primary hled-kopie">Kopírovat</button>'
@@ -29881,7 +29901,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         overeni = '<div class="hled-overeni"><span class="hint">'
           + "Vlož ve hře tenhle filtr a klikni, co se stalo — podle toho"
           + " appka pozná, jak hra čte filtr o víc druzích.</span>"
-          + '<div class="hled-radek"><textarea class="hled-text" readonly rows="2">'
+          /* Prázdné číslo drží stejné odsazení jako u filtrů — jinak
+             tenhle řádek začíná jinde než všechny pod ním. */
+          + '<div class="hled-radek"><span class="hled-cislo"></span>'
+          + '<textarea class="hled-text" readonly rows="2">'
           + escHtml(r0.test.text) + "</textarea>"
           + '<button class="primary hled-kopie">Kopírovat</button></div>'
           + '<div class="hled-odpovedi">'
