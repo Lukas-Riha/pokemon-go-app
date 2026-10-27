@@ -1887,3 +1887,35 @@ vidět. Dlaždice `ch-item`, bloky `ch-blok`, mřížka `ch-grid`.
 Dmax do plánu, XL i při cíli L40 jako samostatný údaj), teprve potom
 vzhled. Opačně by se nalakovala stránka, která u většiny akcí mlčí.
 
+## Pro Astru: omezené cupy a pruh s ligami (27. 10.)
+
+Tři nová místa, která jsem postavil funkčně a nechal v enginovém vzhledu —
+grafika je na tobě. Nic z toho není v `atlas.css` nastylované (kromě
+nutného minima, bloky Claude 121–124).
+
+**1. Řádek s cupem v detailu kusu** (`.d-cupy` > `.d-cup-radek`, uvnitř
+sekce lig, hned pod tabulkou). Stojí v něm název cupu, pořadí druhu
+v cupu, kvalita kusu, pořadí jeho kombinace IV a termín:
+
+    Mega Halloween Cup   druh #80   kus 98,87 % · IV #49   běží do 3. 11.
+
+Třídy: `.d-cup-radek b` (název), `.d-cup-poradi`, `.d-cup-kus`,
+`.d-cup-info` (termín a poznámky). Vypisují se jen cupy, které **právě
+běží**; když neběží žádný, zůstane blok prázdný — **místo se drží
+vždycky** (31 px), jinak by se obsah pod ním posouval mezi kusy. Tohle
+pravidlo prosím zachovej.
+
+**2. Tabulka cupů ve Vyhledávání** (`.d-cupy-tab`, stejná struktura jako
+`.d-ligy-tab`: Cup / Pořadí druhu / Doporučená sestava). Tam je místo na
+všechny cupy z rozpisu, i ty, co teprve přijdou. Cup bez vlastního
+žebříčku (Catch Cup) má místo pořadí větu přes dvě buňky.
+
+**3. Pruh s ligami na Přehledu** (`.ac-ligy` > `.ac-ligy-radek`, hned pod
+mřížkou karet akcí, kreslí `calendar.js`). Formát: `Teď [chip] [chip] do
+27. 10.` a `Pak …`. Chip je `.ac-liga-chip`.
+
+**Odkud data jsou:** žebříčky cupů peče `tools/build_meta.py` jen pro ty
+cupy, které jsou v rozpisu GBL (z LeekDucku, `events.json` → `ligy`).
+Rozpis se tedy obměňuje sám; když Niantic ohlásí cup, jehož jméno se
+netrefí do názvu formátu v PvPoke, bake to vypíše jako „cupy bez
+žebříčku" a dopíše se ruční alias.
