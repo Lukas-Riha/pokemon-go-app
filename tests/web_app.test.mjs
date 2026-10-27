@@ -20236,11 +20236,67 @@ try {
     P.boxZavritNatvrdo();
     return out;
   });
-  check("kus puštěný navzdory „Ponechat" se zpátky nenabízí",
+  check("kus puštěný navzdory „Ponechat“ se zpátky nenabízí",
     !/Zahodit/.test(s312.prvniVerdikt) && s312.hnedPoPusteni === 0
       && s312.poDalsimPusteni === 0, JSON.stringify(s312));
   check("…a po návratu k rozdělanému čištění taky ne",
     s312.poNavratu === 0 && s312.indexPoNavratu === 2, JSON.stringify(s312));
+
+  /* 313) Druh hluboko v žebříčku se do ligy dostane, jen když je ta
+     kombinace IV skoro nejlepší možná — a jen do rezervy.
+
+     Pořadí druhů v omezených cupech skáče, takže tvrdá závora „beru vážně
+     jen do #N" zahazovala i kusy, které se shánějí nejhůř. Změkčení ale
+     nesmí znamenat, že se do šestky, do které teče prach, dostane druh,
+     co ligu dnes nehraje. Pořadí z PvPoke se do testu nepíše natvrdo:
+     hlídají se vztahy mezi tím, co appka spočítala. */
+  console.log("\n313) Mimo zebricek jen se spickovou kombinaci a jen do rezervy");
+  await page.goto(URL);
+  await nacteno(page);
+  const s313 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const dex = P.pokedex().species;
+    const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 150);
+    let x = 4242;
+    const nah = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const rows = [];
+    klice.forEach((k) => { const n = dex[k][1];
+      for (let i = 0; i < 3; i++) rows.push({ pokemon: n,
+        cp: String(300 + Math.floor(nah() * 2700)), level: 15 + Math.floor(nah() * 25),
+        ivAtk: Math.floor(nah() * 16), ivDef: Math.floor(nah() * 16),
+        ivSta: Math.floor(nah() * 16) }); });
+    P.setRows(rows);
+    await cekej(9000);
+    const s = P.nastaveni(), base = P.base();
+    const out = { kusu: base.length, rankLimit: s.rankLimit, pojistka: s.pvpPojistka,
+      jadroMimoLimit: [], slabeKombinace: [], kombinaci: 0, jadra: 0 };
+    base.forEach((b) => {
+      (b.sloty || []).forEach((sl) => {
+        if (sl.druh !== "pvp") return;
+        if (!sl.rezerva) {
+          out.jadra++;
+          // do šestky, do které teče prach, patří jen druh, který ligu hraje
+          if (sl.rank > s.rankLimit) {
+            out.jadroMimoLimit.push(b.row.pokemon + " " + sl.typ + " #" + sl.rank);
+          }
+          return;
+        }
+        if (sl.rezervaDuvod !== "kombinace") return;
+        out.kombinaci++;
+        if (sl.rank <= s.rankLimit
+            || (sl.pct || 0) * 100 < s.pvpPojistka) {
+          out.slabeKombinace.push(b.row.pokemon + " " + sl.typ + " #" + sl.rank
+            + " " + Math.round((sl.pct || 0) * 1000) / 10 + " %");
+        }
+      });
+    });
+    return out;
+  });
+  check("do šestky v lize se druh mimo žebříček nedostane",
+    s313.jadra > 0 && s313.jadroMimoLimit.length === 0, JSON.stringify(s313));
+  check("…a v rezervě stojí jen kusy se špičkovou kombinací",
+    s313.kombinaci > 0 && s313.slabeKombinace.length === 0, JSON.stringify(s313));
 
   await page.goto(URL);
   await nacteno(page);

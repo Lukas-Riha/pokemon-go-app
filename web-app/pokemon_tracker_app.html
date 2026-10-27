@@ -9051,18 +9051,29 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           var pm = s.pametPoradi ? pametPoradi(k.hraje, ligaKlic, b.row.forma) : null;
           if (pm && pm.rank >= k.rank) pm = null;
           var rankR = pm ? pm.rank : k.rank;
-          if (rankR > s.rankLimit) return;
+          /* Druh za hranicí „beru vážně do #N" se dřív o ligu neucházel
+             vůbec. Pustí se tam, jen když je ta kombinace IV skoro
+             nejlepší možná — v omezených cupech se pořadí druhů
+             přehazuje a takový kus se shání nejhůř. Místo dostane až za
+             druhy, které ligu hrají dnes, a jen v rezervě. */
+          var mimoLimit = false;
+          if (rankR > s.rankLimit) {
+            if (!s.pvpPojistka || k.pct === null
+                || k.pct * 100 < s.pvpPojistka) return;
+            mimoLimit = true;
+          }
           var ok = projde(rankR);
           // Paměť zachraňuje jen DOBRÉ kusy: náplast, která by dnes ligu
           // nehrála vůbec, se kvůli minulému týdnu držet nemá.
-          if (k.rank > s.rankLimit && !ok) return;
+          if (k.rank > s.rankLimit && !ok && !mimoLimit) return;
           var jenPamet = !!pm && ok && (k.rank > s.rankLimit || !projde(k.rank));
           var lepsi = !nejC
             || (ok !== nejC.ok ? ok
-              : (jenPamet !== nejC.jenPamet ? !jenPamet : k.pct > nejC.pct));
+              : (mimoLimit !== nejC.mimoLimit ? !mimoLimit
+                : (jenPamet !== nejC.jenPamet ? !jenPamet : k.pct > nejC.pct)));
           if (lepsi) {
             nejC = { rank: k.rank, pct: k.pct, ok: ok,
-              poEvoluci: k.poEvoluci, hraje: k.hraje,
+              poEvoluci: k.poEvoluci, hraje: k.hraje, mimoLimit: mimoLimit,
               jenPamet: jenPamet, pamet: pm };
           }
         });
@@ -9087,7 +9098,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         // a druhou ligu nechala prázdnou.
         var uzHraje = (b.sloty || []).some(function (sl) { return sl.druh === "pvp"; });
         var zaznam = { b: b, rank: rank, pct: pct, atk: nejC.atk || 0,
-          prahOK: prahOK, uzHraje: uzHraje,
+          prahOK: prahOK, uzHraje: uzHraje, mimoLimit: !!nejC.mimoLimit,
           poEvoluci: nejC.poEvoluci, jenPamet: nejC.jenPamet, pamet: nejC.pamet, hraje: druh };
         if (!g) { podleDruhu[druh] = zaznam; return; }
         if (uzHraje !== g.uzHraje) {
@@ -9112,6 +9123,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // místo, jen když na něj zbude.
       kand.sort(function (x, y) {
         if (x.prahOK !== y.prahOK) return x.prahOK ? -1 : 1;
+        // Druh mimo žebříček bere místo až jako poslední — i za pamětí.
+        if (x.mimoLimit !== y.mimoLimit) return x.mimoLimit ? 1 : -1;
         if (x.jenPamet !== y.jenPamet) return x.jenPamet ? 1 : -1;
         if (x.rank !== y.rank) return x.rank - y.rank;
         return (y.pct - x.pct) || priShode(x.b, y.b);
@@ -9136,20 +9149,24 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           return;
         }
         obsazeno++;
-        var rez = vRezerve || k.jenPamet;
+        var rez = vRezerve || k.jenPamet || k.mimoLimit;
         var i = obsazeno - 1;
         k.b.sloty.push({
           druh: "pvp", klic: "pvp:" + lg.label, typ: lg.label, nazev: lg.nazev,
           poradi: i + 1, celkem: celkemLiga, jadro: !rez,
           rank: k.rank, mezera: !k.prahOK, poEvoluci: k.poEvoluci, pct: k.pct, hraje: k.hraje,
           // rezerva = nechat, vyvinout smí, prach ne
-          rezerva: rez, rezervaDuvod: k.jenPamet ? "pamet" : (vRezerve ? "misto" : ""),
+          rezerva: rez,
+          rezervaDuvod: k.mimoLimit ? "kombinace"
+            : (k.jenPamet ? "pamet" : (vRezerve ? "misto" : "")),
           pamet: k.pamet ? { rank: k.pamet.rank, datum: k.pamet.datum } : null,
           popis: lg.nazev + " #" + k.rank + (k.poEvoluci ? " (po evoluci)" : "")
             + ", " + (i + 1) + ". z " + celkemLiga
-            + (k.jenPamet ? " — drží ho paměť (#" + k.pamet.rank + " ještě "
-                + kratkeDatum(k.pamet.datum) + ")"
-              : (vRezerve ? " — rezerva" : ""))
+            + (k.mimoLimit
+              ? " — mimo žebříček, ale špičková kombinace IV"
+              : (k.jenPamet ? " — drží ho paměť (#" + k.pamet.rank + " ještě "
+                  + kratkeDatum(k.pamet.datum) + ")"
+                : (vRezerve ? " — rezerva" : "")))
         });
       });
     });
@@ -10291,16 +10308,23 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         keepLabel = "Nechat – rezerva";
         keepTone = "warning";
         keepSubLate = rs.typ + " #" + rs.rank
-          + (rs.rezervaDuvod === "pamet" && rs.pamet ? " · bylo #" + rs.pamet.rank
-            : " · " + rs.poradi + ". z " + rs.celkem);
-        keepTitle = (rs.rezervaDuvod === "pamet" && rs.pamet
+          + (rs.rezervaDuvod === "kombinace" ? " · špičková kombinace"
+            : (rs.rezervaDuvod === "pamet" && rs.pamet ? " · bylo #" + rs.pamet.rank
+              : " · " + rs.poradi + ". z " + rs.celkem));
+        keepTitle = (rs.rezervaDuvod === "kombinace"
+            ? "Druh je v " + rs.nazev + " až na #" + rs.rank + ", takže ho appka"
+              + " běžně nebere vážně. Tenhle kus je ale mezi 4096 kombinacemi IV"
+              + " jedna z nejlepších — a právě pořadím druhů umí omezené cupy"
+              + " pořádně zamávat. Drží se v rezervě: pustit ne, prach do něj"
+              + " ale taky ne."
+          : (rs.rezervaDuvod === "pamet" && rs.pamet
             ? rs.nazev + " ho dnes má na #" + rs.rank + ", ale ještě "
               + kratkeDatum(rs.pamet.datum) + " byl na #" + rs.pamet.rank + ". Pořadí"
               + " v PvPoke skáče každý týden, takže se kus nepouští hned — drží ho"
               + " paměť pořadí (nejlepší místo za posledních 30 dní)."
             : "Do šesti míst v " + rs.nazev + " se nevešel (je " + rs.poradi + ". z "
               + rs.celkem + "), drží ho rezerva. Pořadí v PvPoke se mění každý týden"
-              + " a za týden může být zpátky v šestce.")
+              + " a za týden může být zpátky v šestce."))
           + (b.evoMeta || evoTargetName
             ? " Vyvinout ho klidně můžeš, prach do něj zatím nesypej."
             : " Prach do něj zatím nesypej.");
