@@ -1919,3 +1919,45 @@ cupy, které jsou v rozpisu GBL (z LeekDucku, `events.json` → `ligy`).
 Rozpis se tedy obměňuje sám; když Niantic ohlásí cup, jehož jméno se
 netrefí do názvu formátu v PvPoke, bake to vypíše jako „cupy bez
 žebříčku" a dopíše se ruční alias.
+
+## Úkol pro Astru: přestavba nastavení (zadal Lukáš 27. 10.)
+
+**Co je dnes:** jedna karta `<details class="card settings-card">`, jeden
+souhrnný nadpis a pod ním **27 polí v jednom sloupci** (16,5 kB HTML),
+k tomu 31 vysvětlujících vět. Všechno se válí v jedné hromadě bez ohledu
+na to, čeho se to týká — práh IV sousedí s počtem obránců v gymu a s
+délkou filtru pro Transfer. Vrstva se karty zatím vůbec nedotkla (v
+`atlas.js` je u ní jen popisek trasy `settings-card`).
+
+**Cíl:** přehledné, členěné, dohledatelné. Návrh rozdělení podle toho,
+čeho se nastavení týká:
+
+* **Rozpočet a prach** — `dustBudget`, `prachZaBod`, `cilLevel`,
+  `krokyPlan`, `bezXL`, `roleThresh`
+* **Ligy a PvP** — `spThresh`, `rankLimit`, `prahSleva`, `ligaRezerva`,
+  `pametPoradi`, `ligaVaha`, `pvpStovka`, `pvpPojistka`, `rankThresh`
+* **Raidy, gym a Dynamax** — `raidSlotu`, `raidSlotuMimo`, `gymSlotu`,
+  `gymCountRoster`, `dmaxKeep`, `dmaxSlotu`
+* **Kusy a kopie** — `ivThresh`, `tradeThresh`, `keepCopies`, `keepRare`,
+  `boxCountRoster`
+* **Transfer a čištění** — `hledaniDelka`, `boxSekce`, `discardKeepDays`
+* **Ostatní** — `weatherSelect`
+
+**Čeho se nesmíš dotknout:**
+
+1. **`id` polí.** Engine je čte přes `nastaveniHodnota("<id>")` a ukládá
+   podle seznamu `SETTING_IDS` (34 položek). Přesunout pole v DOM je v
+   pohodě, přejmenovat nebo zdvojit `id` rozbije ukládání.
+2. **Čtyři skrytá pole** — `hledaniPriorita`, `hledaniPredpony`,
+   `hledaniDavka`, `chciBonbony`. Ovládají se ve svých oknech (Transfer,
+   Co chytat), v nastavení musí zůstat v DOM a zůstat skrytá.
+3. **Místa, kam engine píše** — například `#rankThreshInfo` (kolik kusů
+   zrovna projde prahem). Takové uzly musí zůstat se svými `id`.
+4. **Znění vět.** Texty jsou obsah, ne grafika — jestli je chceš schovat
+   do bublin nebo zkrátit, napiš to Lukášovi/Claudovi a uděláme to v
+   enginu. Nepřepisuj je v `atlas.css` ani `atlas.js`.
+
+**Co by pomohlo nad rámec členění:** u každého pole je vidět, co dělá,
+ale ne co dnes znamená — hodnota bez kontextu („práh 96 %") toho moc
+neřekne. Pokud na to vymyslíš místo (malý řádek pod polem), engine umí
+dodat číslo, kolik kusů se po změně pohne.
