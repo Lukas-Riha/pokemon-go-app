@@ -3158,7 +3158,8 @@
         <label for="ivThresh">Práh „vysoké IV“ (%)</label>
         <input type="number" id="ivThresh" min="0" max="100" value="90" />
         <span class="hint">Používá se jako <b>tiebreak mezi kusy, které soupeří o tutéž roli</b>,
-          a jako práh pro Master League (ta nemá CP limit, takže se tam hraje na syrovou sílu).
+          a jako tiebreak mezi kusy, které soupeří o tutéž roli. <b>Do lig se nepoužívá</b> —
+          tam rozhoduje kvalita kusu (stat product), včetně Master League.
           <b>Sám o sobě kus neudrží</b> — Diglett s 91 % je pořád Diglett: to procento říká
           jen „nejlepší možný Dugtrio“, ne „užitečný pokémon“. O ponechání rozhoduje
           <b>rozpočet rolí</b> (záložka Role).</span>
@@ -4043,7 +4044,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   var POCASI = {"Clear":["Grass","Ground","Fire"],"Fog":["Dark","Ghost"],"Overcast":["Fairy","Fighting","Poison"],"Partly Cloudy":["Normal","Rock"],"Rainy":["Water","Electric","Bug"],"Snow":["Ice","Steel"],"Windy":["Dragon","Flying","Psychic"]};
   // === POCASI END ===
   // === BUILD START
-  var BUILD = "2026-10-27 13:34";
+  var BUILD = "2026-10-27 14:54";
   // === BUILD END ===
 
   // === DATA INFO START (stáří dat) ===
@@ -4617,6 +4618,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return speciesProfil(key, dex, cap).sp;
   }
 
+  /* Best buddy dá +1 level, takže v lize bez stropu CP se hraje na L51.
+     pvpivs na něm staví pořadí kombinací a appka ho používá na totéž —
+     do ceny vylepšení ale nepatří, protože se nekupuje prachem. */
+  var CPM_BEST_BUDDY = 0.84529999;
+
+  /** Kvalita kusu v Master League: stat product téhle kombinace proti
+   *  nejlepší možné u toho druhu. Je to stejné číslo, jaké ukazuje tabulka
+   *  lig i pvpivs — a od téhle chvíle se podle něj rozhoduje i rozpočet.
+   *  Vrací podíl 0–1, nebo null, když se spočítat nedá. */
+  function kvalitaML(jmeno, iva, ivd, ivs) {
+    var iv = ivRankVLize(jmeno, iva, ivd, ivs, "master");
+    return iv && iv.pct !== null ? iv.pct / 100 : null;
+  }
+
   var spMrizkaCache = {};
   /**
    * Pořadí konkrétní kombinace IV mezi 4096 možnými — v JEDNÉ lize.
@@ -4644,13 +4659,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var cisla = [a, d, st].map(Number);
     if (cisla.some(function (x) { return !isFinite(x) || x < 0 || x > 15; })) return null;
     var strop = liga.cap || Infinity;
-    var klic = dexKey(jmeno) + "|" + strop;
+    // Bez stropu CP se pořadí počítá na nejvyšším levelu, jaký jde mít —
+    // tedy s best buddy. Se stropem rozhoduje level, který se pod něj vejde.
+    var cpmBezStropu = liga.cap ? null : CPM_BEST_BUDDY;
+    var klic = dexKey(jmeno) + "|" + strop + (cpmBezStropu ? "|bb" : "");
     var mrizka = spMrizkaCache[klic];
     if (!mrizka) {
       mrizka = [];
       for (var i = 0; i <= 15; i++) {
         for (var j = 0; j <= 15; j++) {
           for (var k = 0; k <= 15; k++) {
+            if (cpmBezStropu) {
+              mrizka.push(statProduct(dex, i, j, k, cpmBezStropu));
+              continue;
+            }
             var idx = bestLevelIndex(dex, i, j, k, strop);
             mrizka.push(idx < 0 ? 0 : statProduct(dex, i, j, k, CPM_LEVELS[idx][1]));
           }
@@ -4659,9 +4681,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       mrizka.sort(function (x, y) { return y - x; });
       spMrizkaCache[klic] = mrizka;
     }
-    var mujIdx = bestLevelIndex(dex, cisla[0], cisla[1], cisla[2], strop);
-    if (mujIdx < 0) return null;      // do limitu se ten kus nevejde vůbec
-    var muj = statProduct(dex, cisla[0], cisla[1], cisla[2], CPM_LEVELS[mujIdx][1]);
+    var muj;
+    if (cpmBezStropu) {
+      muj = statProduct(dex, cisla[0], cisla[1], cisla[2], cpmBezStropu);
+    } else {
+      var mujIdx = bestLevelIndex(dex, cisla[0], cisla[1], cisla[2], strop);
+      if (mujIdx < 0) return null;    // do limitu se ten kus nevejde vůbec
+      muj = statProduct(dex, cisla[0], cisla[1], cisla[2], CPM_LEVELS[mujIdx][1]);
+    }
     var lepsich = 0;
     for (var q = 0; q < mrizka.length; q++) {
       if (mrizka[q] > muj) lepsich++; else break;
@@ -4669,12 +4696,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var nej = mrizka[0] || 0;
     var nejhorsi = mrizka[mrizka.length - 1] || 0;
     return { rank: lepsich + 1, z: mrizka.length,
-      pct: nej ? Math.round((muj / nej) * 1000) / 10 : null,
+      // Dvě desetinná místa, ať jde číslo porovnat s pvpivs kus po kuse.
+      pct: nej ? Math.round((muj / nej) * 10000) / 100 : null,
       // Nejhorší možná kombinace: teprve proti ní je procento čitelné.
       // V Great League bývá škála jen 90-100 %, takže i poslední místo
       // má přes devadesát.
       odKud: nej ? Math.round((nejhorsi / nej) * 1000) / 10 : null,
-      liga: liga.nazev };
+      bestBuddy: !!cpmBezStropu, liga: liga.nazev };
   }
 
   // Ligy s CP limitem. Master (bez limitu) se tu neřeší — stat product tam
@@ -8919,7 +8947,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
          dobrý" — pevný bod místo porovnávání po dvojicích. */
       var spickaDruhu = {};
       base.forEach(function (b) {
-        var pctB = lg.label === "ML" ? b.ivPct : potVLize(b, lg.label);
+        var pctB = lg.label === "ML"
+          ? kvalitaML(b.row.pokemon, num(b.row.ivAtk), num(b.row.ivDef), num(b.row.ivSta))
+          : potVLize(b, lg.label);
         var klicB = (lg.label === "ML" ? (b.metaML ? b.groupKey : null) : b.groupKey);
         if (pctB === null || !klicB) return;
         if (!(spickaDruhu[klicB] > pctB)) spickaDruhu[klicB] = pctB;
@@ -8948,7 +8978,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         var ligaKlic = ligaKlicZeZkratky(lg.label);
         if (m) {
           kandidati.push({ rank: m[0], poEvoluci: false, hraje: mKlic || b.groupKey,
-            pct: lg.label === "ML" ? b.ivPct : potVLize(b, lg.label) });
+            pct: lg.label === "ML"
+              ? kvalitaML(b.row.pokemon, num(b.row.ivAtk), num(b.row.ivDef), num(b.row.ivSta))
+              : potVLize(b, lg.label) });
         } else if (s.pametPoradi) {
           // Druh z mety vypadl úplně (není ani v ořezané tabulce), ale za
           // posledních 30 dní v ní byl dost vysoko — o šanci přijít nesmí
@@ -8958,7 +8990,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
             var tedVse = ligovePoradi(b.groupKey, ligaKlic, b.row.forma);
             kandidati.push({ rank: tedVse && tedVse.rank ? tedVse.rank : 9999,
               poEvoluci: false, hraje: b.groupKey,
-              pct: lg.label === "ML" ? b.ivPct : potVLize(b, lg.label) });
+              pct: lg.label === "ML"
+                ? kvalitaML(b.row.pokemon, num(b.row.ivAtk), num(b.row.ivDef), num(b.row.ivSta))
+                : potVLize(b, lg.label) });
           }
         }
         (b.evoMetaVse || []).forEach(function (k) {
@@ -8980,10 +9014,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           if (k.pct === null || k.rank === null) return;
           // Práh se musí počítat pro každou cestu zvlášť — mají jiný rank,
           // takže i jinou slevu za umístění.
+          /* Práh je ve všech ligách stejný: kolik procent nejlepší možné
+             kombinace musí kus mít, se slevou podle pořadí druhu. ML měla
+             dřív vlastní práh na IV procento — dvě měřítka na jednu věc. */
           var projde = function (r) {
-            return lg.label === "ML"
-              ? k.pct >= s.ivThresh
-              : k.pct >= prahProRank(s.spThresh, r, s.rankLimit, s.prahSleva);
+            return k.pct >= prahProRank(s.spThresh, r, s.rankLimit, s.prahSleva);
           };
           // O nechat/pustit rozhoduje nejlepší pořadí za 30 dní. Dnešní
           // pořadí zůstává v `rank` — podle něj se řadí a ukazuje.
@@ -9007,9 +9042,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         });
         if (!nejC) return;
         var rank = nejC.rank, pct = nejC.pct, prahOK;
-        // Master League nemá CP limit, takže se tam nehraje na stat product,
-        // ale na syrovou sílu — prahem je práh vysokého IV. Spočítané je to
-        // už u kandidáta výš.
+        // Práh je ve všech ligách týž: kvalita kusu proti nejlepší možné
+        // kombinaci. Master League se dřív měřila IV procentem a měla vlastní
+        // práh — dvě měřítka na jednu věc, mezi kterými se nedalo vyznat.
         prahOK = nejC.ok;
         // V Master League se náplasti nedrží. Nemá CP limit, takže se tam
         // hraje na syrovou sílu a kus se musí dotáhnout na L50 — čtvrt milionu
@@ -9069,8 +9104,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           (ligaPodCarou[lg.label] = ligaPodCarou[lg.label] || []).push({
             id: k.b.row.id, jmeno: k.b.row.pokemon, cp: k.b.row.cp || "", rank: k.rank,
             pct: k.pct, poEvoluci: !!k.poEvoluci,
-            prah: lg.label === "ML" ? s.ivThresh
-              : prahProRank(s.spThresh, k.rank, s.rankLimit, s.prahSleva),
+            prah: prahProRank(s.spThresh, k.rank, s.rankLimit, s.prahSleva),
             duvod: k.prahOK ? "plno" : "prah"
           });
           return;
@@ -14539,17 +14573,25 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         nej.jeEvo ? dexKey(nej.jmeno) : b.groupKey);
     });
     if (!drziLigu.ML && b.ivPct !== null) {
+      var mlPct = kvalitaML(b.row.pokemon, num(b.row.ivAtk), num(b.row.ivDef),
+        num(b.row.ivSta));
       var ml = null;
-      if (b.metaML) ml = { rank: b.metaML[0], pct: b.ivPct, jeEvo: false, jmeno: b.row.pokemon };
+      if (b.metaML) ml = { rank: b.metaML[0], pct: mlPct, jeEvo: false, jmeno: b.row.pokemon };
       if (b.isFinalEvo === false) {
         moznaFinale(b).forEach(function (fk) {
           var e = metaZaznam(fk, "master", b.row.forma);
           if (e && (!ml || e[0] < ml.rank)) {
-            ml = { rank: e[0], pct: b.ivPct, jeEvo: true, jmeno: (dexByKey(fk) || {}).name || fk, klic: fk };
+            ml = { rank: e[0], pct: kvalitaML(((dexByKey(fk) || {}).name || fk),
+                num(b.row.ivAtk), num(b.row.ivDef), num(b.row.ivSta)),
+              jeEvo: true, jmeno: (dexByKey(fk) || {}).name || fk, klic: fk };
           }
         });
       }
-      if (ml) pridejLigu("ML", "Master League", ml, s.ivThresh, ml.klic || b.groupKey);
+      if (ml && ml.pct !== null) {
+        pridejLigu("ML", "Master League", ml,
+          prahProRank(s.spThresh, ml.rank, s.rankLimit, s.prahSleva),
+          ml.klic || b.groupKey);
+      }
     }
     (b.podCarou || []).slice().sort(function (x, y) {
       return ((x.druh === "gym") - (y.druh === "gym")) || (x.poradi - y.poradi)
@@ -30700,6 +30742,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     coChytat: function () { return coChytat(lastBase || [], analyze()); },
     biomProDruh: biomProDruh,
     prahProRank: prahProRank,
+    /* Nastavení tak, jak ho čte rozbor — testy a měření si podle něj
+       ověřují prahy, aniž by musely znát id políček. */
+    nastaveni: function () { return getSettings(); },
     dalsiRotaceNestu: dalsiRotaceNestu,
     rotaceNestuText: rotaceNestuText,
     historie: function () { return historie.slice(); },

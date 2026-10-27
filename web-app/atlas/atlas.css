@@ -3465,8 +3465,13 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .d-lg-vic{flex:0 0 auto;font-size:10px;font-weight:700;opacity:.75;padding:1px 5px}
 
 /* Claude (120): ikonka typu v kolečku útoku byla malá a špatně čitelná.
-   Glyf je větší v témže 18px kolečku (nic se nezvětšilo), a kolečko má
-   od levého kraje oválu o kousek víc vzduchu. */
-.atlas-test .atlas-utok-typ svg{width:13.5px;height:13.5px;stroke-width:2}
+   Důvod byl, že ikona má v sobě VLASTNÍ barevné kolečko — uvnitř kolečka
+   chipu tak bylo druhé a na glyf zbyla půlka místa. Vlastní kolečko se
+   proto schová, svg vyplní celý chip a glyf se zvětší a vycentruje
+   (měřeno: kresba sedí vodorovně na střed, svisle je o ~4/256 níž). */
+.atlas-test .atlas-utok-typ svg{width:18px;height:18px;stroke-width:2}
+.atlas-test .atlas-utok-typ svg .typ-ik-kruh{display:none}
+.atlas-test .atlas-utok-typ svg>g{transform-box:view-box;transform-origin:center;
+  transform:translateY(-4px) scale(1.2)}
 .atlas-test .atlas-utok-chip{padding-left:4px}
 .atlas-test .d-lg-sestava .atlas-utok-chip{padding:2px 6px 2px 4px}
