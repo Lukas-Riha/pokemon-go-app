@@ -1486,9 +1486,15 @@
   .hled-telo > .hint { display: block; margin-bottom: 10px; }
   /* Kusy, které filtr pokrývá. Rozbalují se až na vyžádání, protože
      u velkého rosteru je to pár set obrázků. */
-  .hled-ukaz { font-size: 11px; padding: 4px 8px; white-space: nowrap; }
+  /* Pravý sloupec má pevnou šířku: jinak „7 kusů" a „119 kusů" posunou
+     pole i tlačítko „Kopírovat" a žádné nestojí pod tím nad ním. */
+  .hled-ukaz { font-size: 11px; padding: 4px 8px; white-space: nowrap;
+    flex: 0 0 auto; min-width: 86px; text-align: center; }
   .hled-kusy { display: grid; gap: 6px; margin: 2px 0 10px;
     grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  /* Bez tohohle se náhled nikdy nesbalil: `display: grid` ze třídy přebije
+     `display: none`, které k atributu `hidden` dává prohlížeč. */
+  .hled-kusy[hidden] { display: none; }
   .hled-karta { display: flex; flex-direction: column; align-items: center;
     gap: 2px; padding: 6px 4px; border: 1px solid var(--border); border-radius: 8px;
     background: var(--input-bg); text-align: center; }
@@ -1500,20 +1506,38 @@
     .hled-radek { flex-wrap: wrap; }
     .hled-radek input, .hled-radek textarea { flex-basis: 100%; }
   }
-  .hled-radek { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+  /* Tlačítka musí stát pod sebou: zarovnávají se proto nahoru a pole mají
+     všechna stejnou výšku. Dřív byla výška podle obsahu a každé „Kopírovat"
+     sedělo jinde. */
+  .hled-radek { display: flex; gap: 6px; align-items: flex-start;
+    margin-bottom: 4px; }
   /* Číslo filtru a počet kusů kolem pole: jeden filtr = jedno vložení
      do hry, tak musí být vidět, kolikátý je a co pokrývá. */
   .hled-cislo { flex: 0 0 auto; font-size: 11px; font-weight: 700;
     color: var(--text-secondary); min-width: 26px; }
   .hled-pocet { flex: 0 0 auto; font-size: 11px; color: var(--text-muted);
-    min-width: 58px; text-align: right; }
-  .hled-radek input, .hled-radek textarea { flex: 1 1 auto;
+    min-width: 86px; text-align: right; }
+  .hled-kopie { flex: 0 0 auto; min-width: 104px; }
+  .hled-radek input, .hled-radek textarea { flex: 1 1 auto; min-width: 0;
     font-family: ui-monospace, monospace; font-size: 12.5px; padding: 6px 8px; }
   /* Filtr je vidět celý — ořízlý řetězec se nedá zkontrolovat očima. */
-  .hled-radek textarea { resize: vertical; line-height: 1.35; min-height: 46px;
-    max-height: 120px; border-radius: 8px; }
+  .hled-radek textarea { resize: vertical; line-height: 1.35; height: 62px;
+    min-height: 62px; max-height: 160px; border-radius: 8px; }
   /* Jednorázové ověření, jak hra čte filtr o víc druzích. Je to nabídka,
      ne překážka — filtry nad ním fungují i bez něj, jen je jich víc. */
+  /* Vlastní předfiltry: zaškrtávátka nad filtry. */
+  .hled-pred { border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; margin: 0 0 10px; }
+  .hled-pred .hint { margin: 0 0 6px; display: block; }
+  .hled-pred-sez { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .hled-pred-kus { display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-family: ui-monospace, monospace;
+    border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; }
+  .hled-pred-kus button { border: 0; background: none; color: var(--text-muted);
+    cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+  .hled-pred-kus button:hover { color: var(--status-critical); }
+  .hled-pred-nove { font-family: ui-monospace, monospace; font-size: 12px;
+    padding: 4px 8px; width: 150px; }
   .hled-overeni { border: 1px dashed var(--border); border-radius: 8px;
     padding: 8px 10px; margin: 6px 0 10px; }
   .hled-overeni .hint { margin: 0 0 6px; display: block; }
@@ -3270,10 +3294,13 @@
       </div>
       <div class="setting">
         <label for="hledaniDelka">Délka jednoho filtru pro transfer (znaků)</label>
-        <input type="number" id="hledaniDelka" min="100" max="1000" value="400" step="20" />
+        <input type="number" id="hledaniDelka" min="100" max="1000" value="700" step="20" />
         <!-- Co uživatel ověřil ve hře: jak se čte filtr o víc druzích.
              Nemá vlastní ovládání, mění se tlačítky v panelu hledání. -->
         <input type="hidden" id="hledaniPriorita" value="" />
+        <!-- Vlastní předfiltry Transferu jako JSON: [{text, zap}]. Pole je
+             skryté, protože se spravuje přímo v okně Transferu. -->
+        <input type="hidden" id="hledaniPredpony" value="" />
         <span class="hint">Tlačítko <b>Hledání do hry</b> vyrobí z pouštěných
           kusů filtry, které ve hře vložíš do vyhledávání. Kolik znaků pole
           ve hře unese, se nikde nepíše — čtyři stovky jsou bezpečný začátek.
@@ -6363,7 +6390,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "pvpStovka", "pvpPojistka", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "pvpStovka", "pvpPojistka", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -22625,6 +22652,29 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return out;
   }
 
+  /**
+   * Rozpis GBL pro vzhledovou vrstvu: co běží a co přijde.
+   *
+   * Vrací okna, která ještě neskončila, od nejbližšího. `ligy` jsou
+   * otevřené ligy (zkratky), `formaty` omezené formáty a cupy — ty mají
+   * vlastní pravidla, takže patří zvlášť.
+   */
+  function ligyRozpis() {
+    var ted = new Date(), out = [];
+    ((EVENTS && EVENTS.ligy) || []).forEach(function (l) {
+      var od = new Date(l[1]), doKdy = new Date(l[2]);
+      if (isNaN(od.getTime()) || isNaN(doKdy.getTime()) || doKdy < ted) return;
+      out.push({ nazev: l[0] || "", od: od, doKdy: doKdy, odkaz: l[4] || "",
+        bezi: ted >= od && ted < doKdy,
+        ligy: (l[3] || []).slice(),
+        formaty: (l[5] || []).map(function (f) {
+          return { nazev: f && f[0] ? f[0] : "", liga: f && f[1] ? f[1] : "" };
+        }).filter(function (f) { return !!f.nazev; }) });
+    });
+    out.sort(function (a, b) { return a.od - b.od; });
+    return out;
+  }
+
   /** Nejbližší liga, která teprve začne. Null, když data žádnou neznají. */
   function nejblizsiLiga() {
     var ted = new Date(), nej = null;
@@ -27864,7 +27914,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   // Kolik znaků se vejde do jednoho filtru. Pole ve hře má omezenou délku
   // a kolik přesně, se nikde nepíše — čtyři stovky jsou bezpečný začátek
   // a uživatel si to po první zkoušce ve hře posune v nastavení.
-  var HLEDANI_DELKA = 400;
+  /* Do herního vyhledávání se vejde víc, než se zprvu zdálo — ověřeno
+     vložením celého filtru. Čím delší, tím míň filtrů na projití. */
+  var HLEDANI_DELKA = 700;
   // Rozsah CP, který ve hře nemůže mít nikdo (nejvyšší CP ve hře je kolem
   // 5600). Používá ho ověřovací filtr: když se čárka vyhodnotí dřív,
   // nenajde se nic; když &, vyskočí celý první druh.
@@ -27973,9 +28025,47 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    *
    *  Vrací {filtry, kusu, pokryto, druhu, rucne, rezim, test, maxDelka}.
    */
+  /**
+   * Vlastní předfiltry — co si člověk ve hře označkoval.
+   *
+   * Appka o herních značkách neví nic: „trade" nebo „nechat" je text,
+   * který si uživatel vymyslel a hra podle něj umí hledat. Zaškrtnuté se
+   * přilepí před každý filtr přes `&`, takže z něj vyřadí, co nechce
+   * pustit. Odebírat umí jen kusy, nikdy přidat cizí — pravidlo o tom,
+   * že ve filtru nesmí vyskočit kus, který se nepouští, tím platí dál.
+   */
+  function hledaniPredpony() {
+    var txt = nastaveniHodnota("hledaniPredpony") || "";
+    var out = [];
+    try {
+      (JSON.parse(txt) || []).forEach(function (x) {
+        if (x && x.text) out.push({ text: String(x.text), zap: !!x.zap });
+      });
+    } catch (e) { /* prázdné nebo pokažené = žádné předfiltry */ }
+    return out;
+  }
+
+  function hledaniPredponyUloz(list) {
+    var el = document.getElementById("hledaniPredpony");
+    if (!el) return;
+    el.value = JSON.stringify(list || []);
+    persist(true);
+  }
+
+  /** Text, který se lepí před filtr (i s koncovým `&`), nebo "". */
+  function hledaniPredponaText() {
+    var zap = hledaniPredpony().filter(function (x) { return x.zap; });
+    if (!zap.length) return "";
+    return zap.map(function (x) { return x.text; }).join("&") + "&";
+  }
+
   function hledaciFiltry(kusy) {
+    /* Předfiltry se do délky počítají: ve hře je to jedno pole a limit
+       platí na celé. */
     var maxDelka = Math.max(100, Math.min(1000,
-      num(nastaveniHodnota("hledaniDelka")) || HLEDANI_DELKA));
+      num(nastaveniHodnota("hledaniDelka")) || HLEDANI_DELKA))
+      - hledaniPredponaText().length;
+    maxDelka = Math.max(60, maxDelka);
     var rezim = hledaciRezim();
     var vyber = (kusy || []).filter(function (r) { return r && hledaciJmeno(r); });
     if (!vyber.length) return null;
@@ -29626,11 +29716,32 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + (iv === null ? "" : " · " + Math.round(iv * 100) + " %") + "</span></div>";
   }
 
+  /** Blok se zaškrtávátky nad filtry. */
+  function hledaniPredponyHtml() {
+    var list = hledaniPredpony();
+    return '<div class="hled-pred"><span class="hint">Vlastní předfiltry —'
+      + " co máš ve hře označkované a nechceš pustit. Zaškrtnuté se přidají"
+      + " před každý filtr (platí na celý výběr).</span>"
+      + '<div class="hled-pred-sez">'
+      + list.map(function (x, i) {
+          return '<label class="hled-pred-kus"><input type="checkbox"'
+            + ' data-pred-zap="' + i + '"' + (x.zap ? " checked" : "") + ">"
+            + escHtml(x.text)
+            + '<button type="button" data-pred-pryc="' + i
+            + '" title="Smazat">\u2715</button></label>';
+        }).join("")
+      + '<input type="text" class="hled-pred-nove" placeholder="!trade"'
+      + ' aria-label="Nový předfiltr" />'
+      + '<button type="button" class="hled-pred-pridat">Přidat</button>'
+      + "</div></div>";
+  }
+
   function hledaniRadek(f, i, celkem, predpona) {
     var id = predpona + i;
     return '<div class="hled-radek" data-hled-radek="' + id + '">'
       + (celkem > 1 ? '<span class="hled-cislo">' + (i + 1) + "/" + celkem + "</span>" : "")
-      + '<textarea class="hled-text" readonly rows="2">' + escHtml(f.text) + "</textarea>"
+      + '<textarea class="hled-text" readonly rows="2">'
+      + escHtml(hledaniPredponaText() + f.text) + "</textarea>"
       + '<button class="primary hled-kopie">Kopírovat</button>'
       + (f.kusu
           ? '<button class="hled-ukaz" data-hled-kusy="' + id + '" aria-expanded="false">'
@@ -29750,7 +29861,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + ".</span>"
         : "";
 
-      telo = uvod + overeni
+      telo = uvod + hledaniPredponyHtml() + overeni
         + hledaniSekce("Nejdřív vyměnit",
             "Po výměně se vyvinou za nula bonbónů — tyhle profesorovi"
             + " neposílej, dokud je nevyměníš.", rT, "t")
@@ -29803,6 +29914,44 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         btn.textContent = sklonuj(filtr.kusu, "kus", "kusy", "kusů")
           + (otevreno ? " ▾" : " ▴");
       });
+    });
+    /* Předfiltry: zaškrtnutí, smazání, přidání. Po každé změně se okno
+       překreslí — filtry se musí složit znovu, protože předfiltr ubírá
+       z délky. */
+    box.querySelectorAll("[data-pred-zap]").forEach(function (el) {
+      el.addEventListener("change", function () {
+        var list = hledaniPredpony();
+        var i = +el.getAttribute("data-pred-zap");
+        if (!list[i]) return;
+        list[i].zap = !!el.checked;
+        hledaniPredponyUloz(list);
+        vykresliHledani();
+      });
+    });
+    box.querySelectorAll("[data-pred-pryc]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        var list = hledaniPredpony();
+        list.splice(+btn.getAttribute("data-pred-pryc"), 1);
+        hledaniPredponyUloz(list);
+        vykresliHledani();
+      });
+    });
+    var pridat = box.querySelector(".hled-pred-pridat");
+    var novePole = box.querySelector(".hled-pred-nove");
+    var pridejPredponu = function () {
+      var text = (novePole.value || "").trim();
+      if (!text) return;
+      var list = hledaniPredpony();
+      if (!list.some(function (x) { return x.text === text; })) {
+        list.push({ text: text, zap: true });
+        hledaniPredponyUloz(list);
+      }
+      vykresliHledani();
+    };
+    if (pridat) pridat.addEventListener("click", pridejPredponu);
+    if (novePole) novePole.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); pridejPredponu(); }
     });
     box.querySelectorAll(".hled-odpoved").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -30311,6 +30460,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        rosteru zkoušejí obojím výkladem přednosti operátorů — pravidlo
        „ve filtru nesmí vyskočit kus, který se nepouští" se nesmí porušit
        ani omylem. */
+    /* Rozpis GBL: co běží a co přijde (pro pruh v kalendáři). */
+    ligyRozpis: function () { return ligyRozpis(); },
     /* Omezené cupy: co appka vyčetla z rozpisu a co o druhu ví. */
     cupyRozpis: function () { return cupyZRozpisu(); },
     cupyDruhu: function (jmeno, forma, jenBezici) {

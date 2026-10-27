@@ -3475,3 +3475,15 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   transform:translateY(-4px) scale(1.2)}
 .atlas-test .atlas-utok-chip{padding-left:4px}
 .atlas-test .d-lg-sestava .atlas-utok-chip{padding:2px 6px 2px 4px}
+
+/* Claude (121): pruh s ligami pod kartami akcí na Přehledu. Rozpis GBL
+   appka má, ale byl schovaný mezi akcemi — tohle je jeden řádek: co se
+   hraje teď a co přijde. */
+.atlas-test .ac-ligy{display:flex;flex-direction:column;gap:4px;margin:8px 0 2px}
+.atlas-test .ac-ligy-radek{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  font-size:12px}
+.atlas-test .ac-ligy-radek>b{font-size:11px;font-weight:700;color:var(--text-secondary);
+  min-width:26px}
+.atlas-test .ac-ligy-radek>small{font-size:11px;color:var(--text-muted)}
+.atlas-test .ac-liga-chip{border:1px solid var(--border);border-radius:999px;
+  padding:2px 8px;background:var(--input-bg);white-space:nowrap}
