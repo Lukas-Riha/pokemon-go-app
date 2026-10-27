@@ -1847,3 +1847,43 @@ schovává, takže klik na tlačítko neukázal vůbec nic. Přesouvám ho
 v `atlas.js` do `.atlas-roster-commandbar` k ostatním příkazům; styl je
 blok **Claude (117)** (vlastní řádek přes celou šířku, vlastní rolování).
 
+## „Co chytat" — rozbor stavu (27. 10.)
+
+Měřeno na rosteru 420 kusů a na dnešním `events.json` (77 akcí).
+Stránka má čtyři sekce: akce, co mi chybí do lig, co mi chybí do raidů
+a bonbónové cíle. Funguje, ale stojí na datech, která se pod ní za
+poslední rok posunula.
+
+**Datová díra, která za tím dojmem „moc to nefunguje" nejspíš stojí.**
+Sekce akcí čte jen horní seznam spawnů (`e[6]`). Ten dnes má **6 akcí
+ze 77** a je v něm **6 druhů**. Druhy se mezitím přestěhovaly do oken
+(`e[7]`), kde jich je **777 u 61 akcí** — a **55 akcí stránka nevidí
+vůbec**, přestože detail akce je zobrazit umí (Twilight Trails 39 druhů,
+Harvest Festival 25, Gigantamax Cinderace 11…). Tady nestačí vzhled:
+chce to číst okna a rozlišit, odkud druh je (divočina, vajíčka, raid,
+výzkum) — každý zdroj znamená jiné chování venku.
+
+**Co ještě neplatí:**
+
+* **XL je vždycky nula**, dokud si člověk nepřepne cíl na L50 (výchozí
+  je „na L40 — bez XL bonbónů"). Sekce bonbónů tím tiše zamlčuje to,
+  co je ve skutečnosti úzké hrdlo.
+* **Master League v plánu není vůbec.** `prachovyPlan` i „co mi chybí
+  do lig" jedou přes `LEAGUES`, což jsou jen ligy se stropem CP. ML kusy
+  přitom spotřebují nejvíc XL.
+* **Dynamax v plánu taky není** — Max útoky stojí bonbóny i XL.
+* **Biom je odhad podle typu.** U bonbónových cílů to text přiznává,
+  u dlaždic akcí stojí „park a les" jako fakt.
+* **Pevné ořezy** bez rozbalení: 8 druhů na ligu, 3 návrhy na typ,
+  12 rodin na bonbóny.
+* **Žádné propojení** s detailem akce (okno s podrobnostmi) ani s Routami,
+  i když obojí už appka má.
+
+**Vzhled:** stránka je pořád v původním enginovém HTML (`coChytatHtml`),
+vrstva se jí nedotkla — vedle přestavěného detailu a kalendáře je to
+vidět. Dlaždice `ch-item`, bloky `ch-blok`, mřížka `ch-grid`.
+
+**Pořadí oprav, jak to vidím:** nejdřív data (okna místo `e[6]`, ML a
+Dmax do plánu, XL i při cíli L40 jako samostatný údaj), teprve potom
+vzhled. Opačně by se nalakovala stránka, která u většiny akcí mlčí.
+
