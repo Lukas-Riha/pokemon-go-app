@@ -14522,6 +14522,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     };
     (b.ligyVse || []).forEach(function (L) {
       if (drziLigu[L.liga]) return;
+      /* Master League má vlastní blok níž. Měří se v ní něco jiného: strop
+         CP nemá, takže o místo rozhoduje syrová síla — IV kusu proti prahu
+         vysokého IV, ne stat product proti nejlepší kombinaci. Když ji
+         tenhle cyklus počítal taky (od chvíle, co je ML i v tabulce lig),
+         vyšel u kusu dvakrát štítek a ten první navíc tvrdil „pořadí
+         i kvalita stačí" podle čísla, kterým se rozpočet neřídí. */
+      if (L.liga === "ML") return;
       var nej = null;
       [L.ted, L.po].forEach(function (v) {
         if (!v || v.nevejde || v.prerostl || !v.rank || v.pct === null || v.pct === undefined) return;
