@@ -81,7 +81,10 @@ meta = {"leagues": meta_all["leagues"],
         "poradiPamet": meta_all.get("poradiPamet") or {"dni": 30, "ligy": {}, "shadow": {}},
         # kompletní pořadí pro prohlídku druhu (bez ořezu na metu)
         "poradiVse": meta_all.get("poradiVse") or {},
-        "poradiVseShadow": meta_all.get("poradiVseShadow") or {}}
+        "poradiVseShadow": meta_all.get("poradiVseShadow") or {},
+        # Žebříčky omezených cupů — jen ty z rozpisu GBL (běžící a ohlášené).
+        # Appka si je s termínem páruje přes `aliasy` (jméno z rozpisu).
+        "cupy": meta_all.get("cupy") or {}}
 
 # stáří dat se ukazuje přímo v appce, ať je poznat, kdy je obnovit
 data_info = {

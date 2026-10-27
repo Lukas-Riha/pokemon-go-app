@@ -14097,6 +14097,91 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return ((META.leagues || {})[ligaKlic] || {})[klic] || null;
   }
 
+  /* ================================================================
+     OMEZENÉ CUPY
+
+     Cup je liga s vlastním seznamem povolených druhů: pořadí z Great
+     League o něm neříká nic. Žebříčky se zapékají jen pro cupy z rozpisu
+     GBL (běžící i ohlášené), termín je v témže rozpisu — appka si je páruje
+     podle názvu, pod kterým cup v rozpisu stojí.
+     ================================================================ */
+  function cupNorm(nazev) {
+    return String(nazev === undefined || nazev === null ? "" : nazev)
+      .toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  var cupyCache = null;
+  /** Cupy z rozpisu, které ještě neskončily — od nejbližšího. */
+  function cupyZRozpisu() {
+    if (cupyCache) return cupyCache;
+    var tabulky = META.cupy || {};
+    var podleAliasu = {};
+    Object.keys(tabulky).forEach(function (klic) {
+      (tabulky[klic].aliasy || []).forEach(function (a) {
+        podleAliasu[cupNorm(a)] = klic;
+      });
+    });
+    var ted = new Date(), out = [], videno = {};
+    ((EVENTS && EVENTS.ligy) || []).forEach(function (l) {
+      var od = new Date(l[1]), doKdy = new Date(l[2]);
+      if (isNaN(od.getTime()) || isNaN(doKdy.getTime()) || doKdy < ted) return;
+      (l[5] || []).forEach(function (f) {
+        var nazevVRozpisu = f && f[0] ? f[0] : "";
+        var klic = podleAliasu[cupNorm(nazevVRozpisu)];
+        if (!klic) return;
+        var t = tabulky[klic];
+        // Tentýž cup bývá v rozpisu víckrát (jede dva týdny po sobě).
+        // Zajímá nás nejbližší termín, ne seznam opakování.
+        if (videno[klic]) return;
+        videno[klic] = true;
+        out.push({ klic: klic, nazev: t.nazev, cp: t.cp, liga: t.liga,
+          zakladni: !!t.zakladni, od: od, doKdy: doKdy,
+          bezi: ted >= od && ted < doKdy });
+      });
+    });
+    out.sort(function (a, b) { return a.od - b.od; });
+    cupyCache = out;
+    return out;
+  }
+
+  /** Záznam druhu v cupu — shadow má vlastní tabulku jako v lize. */
+  function cupZaznam(klicDruhu, cupKlic, forma) {
+    var t = (META.cupy || {})[cupKlic];
+    if (!t || !klicDruhu) return null;
+    if (jeShadowForma(forma)) {
+      var sh = (t.shadow || {})[klicDruhu];
+      if (sh) return sh;
+    }
+    return (t.tabulka || {})[klicDruhu] || null;
+  }
+
+  /**
+   * Co ten druh umí v cupech.
+   *
+   * `jenBezici` omezí výpis na cupy, které zrovna jedou — v detailu kusu
+   * je místo nanejvýš na pár řádků a cup, který začne za měsíc, se tam
+   * plete. Ve Vyhledávání se vypisují všechny.
+   */
+  function cupyDruhu(klicDruhu, forma, jenBezici) {
+    var out = [];
+    cupyZRozpisu().forEach(function (cup) {
+      if (jenBezici && !cup.bezi) return;
+      // Catch Cup a spol. vlastní žebříček nemají: jedou na pořadí základní
+      // ligy a omezují, co smíš postavit. Tvrdit u nich pořadí by bylo lhaní.
+      if (cup.zakladni) { out.push({ cup: cup, zakladni: true }); return; }
+      var z = cupZaznam(klicDruhu, cup.klic, forma);
+      if (!z) return;
+      out.push({ cup: cup, rank: z[0], skore: z[1], sestava: z, zakladni: false });
+    });
+    return out;
+  }
+
+  /** „běží do 27. 10." / „od 10. 11." — termín cupu do jedné věty. */
+  function cupTermin(cup) {
+    return cup.bezi ? "běží do " + kratkeDatum(cup.doKdy)
+      : "od " + kratkeDatum(cup.od);
+  }
+
   /** Totéž pro kompletní pořadí (bez sestav). */
   function metaZaznamVse(klic, ligaKlic, forma) {
     if (!klic) return null;
@@ -16599,6 +16684,49 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // Vysvětlení „% vs #" je v hlavičce sloupců a v bublinách — odstavec pod
       // tabulkou zabíral půl obrazovky a četl ho člověk jednou za život.
 
+      /* Cupy, které právě jedou. Víc než dva naráz nebývají, takže se pod
+         tabulku vejdou — a když žádný neběží nebo v něm druh není, není tu
+         vůbec nic. Pořadí je z cupu, procento je kvalita TOHOHLE kusu pro
+         ten CP limit (stejné měřítko jako v lize se stejným stropem). */
+      var cupyTed = cupyDruhu(dexKey(r.pokemon), r.forma, true);
+      // Po evoluci se druh mění — cup to musí počítat z toho, čím se stane.
+      var cilCupu = "";
+      (c.ligyVse || []).forEach(function (L) {
+        if (!cilCupu && L.po && L.po.jmeno) cilCupu = L.po.jmeno;
+      });
+      var cupyPo = cilCupu ? cupyDruhu(dexKey(cilCupu), r.forma, true) : [];
+      if (cupyTed.length || cupyPo.length) {
+        h += '<div class="d-cupy">';
+        var cupRadek = function (x, jmenoDruhu, poEvoluci) {
+          if (x.zakladni) {
+            return '<div class="d-cup-radek"><b>' + escHtml(x.cup.nazev) + "</b>"
+              + '<span class="d-cup-info">vlastní žebříček nemá — jede na pořadí'
+              + " základní ligy, omezuje jen to, co smíš postavit · "
+              + escHtml(cupTermin(x.cup)) + "</span></div>";
+          }
+          var iv = ivRankVLize(jmenoDruhu, num(r.ivAtk), num(r.ivDef), num(r.ivSta),
+            x.cup.liga);
+          var cp = num(r.cp);
+          var nevejde = x.cup.cp && cp !== null && cp > x.cup.cp;
+          return '<div class="d-cup-radek"><b>' + escHtml(x.cup.nazev) + "</b>"
+            + '<span class="d-cup-poradi">druh #' + x.rank + "</span>"
+            + (iv ? '<span class="d-cup-kus">kus ' + String(iv.pct).replace(".", ",")
+                + " % · IV #" + iv.rank + "</span>" : "")
+            + (poEvoluci ? '<span class="d-cup-info">až po evoluci na '
+                + escHtml(jmenoDruhu) + "</span>" : "")
+            + (nevejde ? '<span class="d-cup-info">nevejde se pod ' + x.cup.cp
+                + " CP</span>" : "")
+            + '<span class="d-cup-info">' + escHtml(cupTermin(x.cup))
+            + "</span></div>";
+        };
+        cupyTed.forEach(function (x) { h += cupRadek(x, r.pokemon, false); });
+        cupyPo.forEach(function (x) {
+          // Co umí druh sám, se neopakuje kvůli evoluci.
+          var uzJe = cupyTed.some(function (y) { return y.cup.klic === x.cup.klic; });
+          if (!uzJe) h += cupRadek(x, cilCupu, true);
+        });
+        h += "</div>";
+      }
     }
 
     // --- akce ---
@@ -30183,6 +30311,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        rosteru zkoušejí obojím výkladem přednosti operátorů — pravidlo
        „ve filtru nesmí vyskočit kus, který se nepouští" se nesmí porušit
        ani omylem. */
+    /* Omezené cupy: co appka vyčetla z rozpisu a co o druhu ví. */
+    cupyRozpis: function () { return cupyZRozpisu(); },
+    cupyDruhu: function (jmeno, forma, jenBezici) {
+      return cupyDruhu(dexKey(jmeno), forma, jenBezici);
+    },
     hledaciFiltry: function (kusy) { return hledaciFiltry(kusy); },
     hledaciNajde: function (text, kus, priorita) { return hledaciNajde(text, kus, priorita); },
     hledaciText: function (r) { return hledaciText(r); },

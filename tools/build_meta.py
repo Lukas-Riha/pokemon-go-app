@@ -284,6 +284,161 @@ def je_shadow(zaznam):
     return sid.endswith("_shadow") or sid.endswith("shadow") or "(shadow)" in jmeno
 
 
+
+# --- omezené cupy ----------------------------------------------------
+CUP_BASE = "https://raw.githubusercontent.com/pvpoke/pvpoke/master/src/data/rankings/"
+FORMATY_URL = ("https://raw.githubusercontent.com/pvpoke/pvpoke/master/src/data/"
+               "gamemaster/formats.json")
+# Kolik druhů z cupu se peče. Pole je v cupu užší než v lize, takže
+# šedesátka pokryje i to, co se hraje jen občas.
+CUP_TOP = 60
+# Slova, která o formátu nic neříkají — jsou skoro v každém názvu.
+CUP_VYPLN = {"cup", "league", "edition", "go", "pokemon", "the", "series"}
+# Cupy, jejichž název v rozpisu se do názvu formátu netrefí ani po slovech.
+CUP_RUCNE = {"laic": "laic2027", "ciaic": "ciaic2027", "eulic": "eulic2027",
+             "nalic": "nalic2027", "worlds": "worlds2027"}
+# Ligy bez omezení: když rozpis ukáže „Great League", žádný cup to není.
+CUP_ZAKLADNI = {"great", "ultra", "master", "little"}
+LIGA_PRO_CP = {500: "little", 1500: "great", 2500: "ultra", 10000: "master"}
+
+
+def _slova(nazev):
+    """Název formátu na porovnatelná slova (bez výplně a interpunkce)."""
+    cisty = re.sub(r"[^a-z0-9 ]", " ", str(nazev or "").lower())
+    return {w for w in cisty.split() if w and w not in CUP_VYPLN}
+
+
+def nacti_formaty(refresh):
+    """Seznam formátů PvPoke: [(klíč, název, cp, meta)]."""
+    cesta = RAW / "pvpoke_formaty.json"
+    if refresh or not cesta.exists():
+        print("stahuji seznam formátů …")
+        with urllib.request.urlopen(FORMATY_URL, timeout=60) as r:
+            cesta.write_bytes(r.read())
+    out = []
+    for f in json.loads(cesta.read_text(encoding="utf-8")):
+        adresar = f.get("cup") or f.get("meta")
+        if not adresar:
+            continue
+        # Tři mega formáty sdílejí adresář `mega` a liší se jen CP a `meta`
+        # (megagreat / megaultra / mega). Klíčem je proto `meta`, cestou
+        # k žebříčku `cup`.
+        out.append((str(f.get("meta") or adresar), str(f.get("title") or adresar),
+                    int(f.get("cp") or 1500), str(adresar)))
+    return out
+
+
+def rozpis_cupu():
+    """Formáty z rozpisu GBL, které ještě neskončily.
+
+    Rozpis peče `build_events.py` z LeekDucku: každý řádek je jedno okno
+    s názvem, termínem a seznamem formátů, které v něm jedou."""
+    cesta = ROOT / "data" / "events.json"
+    if not cesta.exists():
+        return []
+    try:
+        data = json.loads(cesta.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    dnes = date.today().isoformat()
+    nazvy = []
+    for radek in (data.get("ligy") or []):
+        do = radek[2] if len(radek) > 2 else ""
+        if do and do[:10] < dnes:
+            continue
+        for polozka in (radek[5] if len(radek) > 5 else []):
+            nazev = polozka[0] if isinstance(polozka, list) else polozka
+            if nazev and nazev not in nazvy:
+                nazvy.append(nazev)
+    return nazvy
+
+
+def najdi_format(nazev, formaty):
+    """Který formát PvPoke je ten cup z rozpisu? Vrací (klíč, cp, meta)."""
+    slova = _slova(nazev.split("|")[0])
+    for klic, rucne in CUP_RUCNE.items():
+        if klic in slova:
+            for f in formaty:
+                if f[0] == rucne:
+                    return f
+    nej = None
+    for f in formaty:
+        fs = _slova(f[1])
+        if not fs or not fs <= slova:
+            continue
+        # Mezi dvěma shodami vyhrává ta, která nestojí jen na „mega /
+        # great / ultra": „Mega Halloween Cup" před „Mega Great League".
+        vlastni = len(fs - {"mega", "great", "ultra", "master", "little"})
+        skore = (vlastni, len(fs))
+        if not nej or skore > nej[0]:
+            nej = (skore, f)
+    return nej[1] if nej else None
+
+
+def stahni_cup(adresar, cp, refresh):
+    cesta = RAW / f"pvpoke_cup_{adresar}_{cp}.json"
+    if refresh or not cesta.exists():
+        print(f"stahuji žebříček cupu {adresar} ({cp}) …")
+        url = f"{CUP_BASE}{adresar}/overall/rankings-{cp}.json"
+        with urllib.request.urlopen(url, timeout=90) as r:
+            cesta.write_bytes(r.read())
+    return json.loads(cesta.read_text(encoding="utf-8"))
+
+
+def postav_cupy(refresh, znami):
+    """Tabulky cupů z rozpisu. Klíč = formát v PvPoke."""
+    nazvy = rozpis_cupu()
+    if not nazvy:
+        print("rozpis GBL v datech není — cupy se nepečou")
+        return {}, []
+    formaty = nacti_formaty(refresh)
+    cupy = {}
+    nesparovane = []
+    for nazev in nazvy:
+        f = najdi_format(nazev, formaty)
+        if not f:
+            nesparovane.append(nazev)
+            continue
+        klic, titul, cp, adresar = f
+        liga = LIGA_PRO_CP.get(cp, "great")
+        if klic in CUP_ZAKLADNI:
+            # Catch Cup a spol. vlastní žebříček nemají — jedou na pořadí
+            # základní ligy a omezení je v tom, co smíš postavit. Appka to
+            # musí říct, ne tiše ukázat ligové pořadí jako cupové.
+            cupy[nazev] = {"nazev": titul, "cp": cp, "liga": liga,
+                           "zakladni": True, "aliasy": [nazev],
+                           "tabulka": {}, "shadow": {}}
+            continue
+        zaznam = cupy.get(klic)
+        if zaznam:
+            if nazev not in zaznam["aliasy"]:
+                zaznam["aliasy"].append(nazev)
+            continue
+        try:
+            rows = stahni_cup(adresar, cp, refresh)
+        except Exception as e:                       # noqa: BLE001
+            print(f"  cup {klic}: žebříček se nestáhl ({e})")
+            nesparovane.append(nazev)
+            continue
+        tabulka, shadow = {}, {}
+        for i, r in enumerate(rows, start=1):
+            if len(tabulka) >= CUP_TOP and len(shadow) >= CUP_TOP:
+                break
+            key = dex_key(r.get("speciesId", ""), znami)
+            if not key:
+                continue
+            cil = shadow if je_shadow(r) else tabulka
+            if len(cil) >= CUP_TOP or key in cil:
+                continue
+            mv = [alias_utoku(x) for x in (r.get("moveset") or [])][:3]
+            cil[key] = [i, round(float(r.get("score") or 0), 1),
+                        r.get("speciesName", ""), mv]
+        cupy[klic] = {"nazev": titul, "cp": cp, "liga": liga,
+                      "zakladni": False, "aliasy": [nazev],
+                      "tabulka": tabulka, "shadow": shadow}
+    return cupy, nesparovane
+
+
 def main():
     refresh = "--refresh" in sys.argv
     top = DEFAULT_TOP
@@ -442,6 +597,8 @@ def main():
         "shadow": {l.split(":", 1)[1]: t for l, t in nejlepsi.items() if l.startswith("shadow:")},
     }
 
+    cupy, cupy_nesparovane = postav_cupy(refresh, znami)
+
     out = {
         "_meta": {
             "zdroj": "https://github.com/pvpoke/pvpoke (src/data/rankings/all/overall)",
@@ -458,11 +615,18 @@ def main():
         "poradiVseShadow": poradi_vse_shadow,
         "poradiDrive": drive,
         "poradiPamet": pamet,
+        # Omezené cupy z rozpisu GBL. Klíč = formát v PvPoke, `aliasy` jsou
+        # jména, pod kterými cup stojí v rozpisu — podle nich si je appka
+        # spáruje s termínem.
+        "cupy": cupy,
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     with_moves = {k: sum(1 for v in t.values() if len(v) > 3 and v[3]) for k, t in leagues.items()}
     print({k: len(v) for k, v in leagues.items()}, "s movesetem:", with_moves,
           "->", OUT, OUT.stat().st_size, "B")
+    print("cupy z rozpisu:", {k: len(v["tabulka"]) for k, v in cupy.items()})
+    if cupy_nesparovane:
+        print("  cupy bez žebříčku:", ", ".join(cupy_nesparovane))
     print("shadow varianty:", {k: len(v) for k, v in shadow_leagues.items()})
     print("kompletni poradi:", {k: len(v) for k, v in poradi_vse.items()},
           "+ shadow", {k: len(v) for k, v in poradi_vse_shadow.items()})
