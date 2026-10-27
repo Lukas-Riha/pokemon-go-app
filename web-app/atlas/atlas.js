@@ -504,11 +504,11 @@ globalThis.AtlasBudget = (() => {
     const evo=container.querySelector(':scope > :not(.atlas-plan-summary):not(.detail-main):not(.atlas-verdict-first)');
     if(evo){const group=document.createElement('details');group.className='atlas-detail-section atlas-evolution-column';group.open=true;
       group.addEventListener('toggle',()=>{if(!group.open)group.open=true});group.innerHTML='<summary>Evoluční řada</summary>';evo.before(group);group.append(evo);evo.querySelectorAll('.d-evo-kus').forEach(kus=>{const im=kus.querySelector('img');if(im&&!(im.parentElement&&im.parentElement.classList.contains('atlas-evo-ram'))){const ram=document.createElement('span');ram.className='atlas-evo-ram';im.replaceWith(ram);ram.append(im)}if(kus.querySelector('.atlas-evo-popis'))return;const popis=document.createElement('span');popis.className='atlas-evo-popis';const zbytek=[...kus.childNodes].filter(n=>!(n.nodeType===1&&n.classList&&n.classList.contains('atlas-evo-ram')));zbytek.forEach(n=>popis.append(n));kus.append(popis)});const grid=document.createElement('div');grid.className='atlas-detail-columns';const column=document.createElement('div');column.className='atlas-detail-column';const children=[...container.children];container.prepend(grid);grid.append(column,group);children.filter(el=>el!==group).forEach(el=>column.append(el));
-    /* Tabulka lig je široká: ve sloupci vedle evoluční řady se do buňky
-       nevejde sestava útoků a poslední chip se ořízne. Patří pod obě
-       kolony, přes celou šířku. */
-    const ligySekce=column.querySelector('[data-detail-section="ligy"]');
-    if(ligySekce)grid.after(ligySekce);}
+    /* Tabulka lig zůstává v levém sloupci, hned pod kartami rolí. Dřív
+       stála pod oběma kolonami kvůli šířce — jenže evoluční řada o třech
+       stupních je vyšší než celý levý sloupec a mezi kartami rolí a
+       tabulkou pak zelo přes dvě stě pixelů prázdna. Sestava útoků se
+       do užší buňky vejde: co přeteče, schová `srovnejSestavy` do „+N". */}
     container.querySelectorAll('.d-evo-kus[data-tip]').forEach(el=>{el.tabIndex=0;const image=el.querySelector('img'),art=window.ATLAS_ART[window.__pgo.dexKeyOf(el.dataset.druh)];if(image&&art&&!/^(shellos|gastrodon)/i.test(el.dataset.druh)){image.removeAttribute('onerror');image.src=art;image.style.display=''};});
   };
 })();
