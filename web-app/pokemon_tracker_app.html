@@ -1532,6 +1532,15 @@
     min-height: 70px; max-height: 160px; border-radius: 8px; }
   /* Jednorázové ověření, jak hra čte filtr o víc druzích. Je to nabídka,
      ne překážka — filtry nad ním fungují i bez něj, jen je jich víc. */
+  /* Vlastní bonbónový cíl: zvýrazněná karta a tlačítko k přepnutí. */
+  .ch-item.ch-chci { border-color: var(--status-good); }
+  .ch-chci-btn { font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+    margin: 2px 0; align-self: flex-start; }
+  .ch-pridat { display: flex; gap: 6px; margin: 8px 0 2px; }
+  .ch-pridat input { flex: 0 1 220px; font-size: 12px; padding: 5px 8px; }
+  .hled-davka { margin: 2px 0 10px; font-size: 12px; }
+  .hled-davka label { display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-secondary); cursor: pointer; }
   /* Vlastní předfiltry: zaškrtávátka nad filtry. */
   .hled-pred { border: 1px solid var(--border); border-radius: 8px;
     padding: 8px 10px; margin: 0 0 10px; }
@@ -3319,6 +3328,10 @@
         <!-- Vlastní předfiltry Transferu jako JSON: [{text, zap}]. Pole je
              skryté, protože se spravuje přímo v okně Transferu. -->
         <input type="hidden" id="hledaniPredpony" value="" />
+        <!-- Zapnutá dávka na den: Transfer nabídne jen prvních sto kusů. -->
+        <input type="hidden" id="hledaniDavka" value="" />
+        <!-- Vlastní bonbónové cíle (klíče evolučních řad) jako JSON. -->
+        <input type="hidden" id="chciBonbony" value="" />
         <span class="hint">Tlačítko <b>Hledání do hry</b> vyrobí z pouštěných
           kusů filtry, které ve hře vložíš do vyhledávání. Kolik znaků pole
           ve hře unese, se nikde nepíše — čtyři stovky jsou bezpečný začátek.
@@ -6408,7 +6421,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "pvpStovka", "pvpPojistka", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "hledaniDavka", "chciBonbony", "pvpStovka", "pvpPojistka", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -22184,6 +22197,54 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    *  kolik jich chce plán: vylepšení do cílového levelu plus případná evoluce.
    *  Sčítá se po evolučních řadách, protože bonbóny jsou společné pro celou
    *  řadu (Larvitar, Pupitar i Tyranitar berou ze stejné hromádky). */
+  /* ================================================================
+     VLASTNÍ BONBÓNOVÉ CÍLE
+
+     Co chce člověk sbírat sám, nad rámec toho, co spočítá rozpočet.
+     Ukládají se klíče evoluční řady (koreny), protože bonbóny jsou
+     společné pro celou řadu.
+     ================================================================ */
+  function chciBonbonyList() {
+    var txt = nastaveniHodnota("chciBonbony") || "";
+    var out = [];
+    try {
+      (JSON.parse(txt) || []).forEach(function (k) {
+        if (k && out.indexOf(String(k)) === -1) out.push(String(k));
+      });
+    } catch (e) { /* prázdné nebo pokažené = žádné cíle */ }
+    return out;
+  }
+
+  function chciBonbonyUloz(list) {
+    var el = document.getElementById("chciBonbony");
+    if (!el) return;
+    el.value = JSON.stringify(list || []);
+    persist(true);
+  }
+
+  /** Přepne cíl. Vrací true, když je po přepnutí v seznamu. */
+  function chciBonbonyPrepni(klic) {
+    if (!klic) return false;
+    var list = chciBonbonyList();
+    var i = list.indexOf(klic);
+    if (i === -1) list.push(klic); else list.splice(i, 1);
+    chciBonbonyUloz(list);
+    return i === -1;
+  }
+
+  /** Přidá druh podle napsaného jména (bere se kořen evoluční řady). */
+  function chciBonbonyPridejJmeno(jmeno) {
+    var d = dexEntry(jmeno);
+    if (!d) return null;
+    var koren = evoKoren(dexKey(d.name));
+    var list = chciBonbonyList();
+    if (list.indexOf(koren) === -1) {
+      list.push(koren);
+      chciBonbonyUloz(list);
+    }
+    return koren;
+  }
+
   function bonbonoveCile(base, computed) {
     var rodiny = {};
     prachovyPlan(base, computed).forEach(function (e) {
@@ -22198,16 +22259,31 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       if (e.evoluce && d.evoCandy) r.candy += d.evoCandy;
       r.kusy[e.row.pokemon] = true;
     });
-    return Object.keys(rodiny).map(function (k) {
+    var vlastni = chciBonbonyList();
+    var zPlanu = Object.keys(rodiny).map(function (k) {
       var r = rodiny[k];
       var d = dexByKey(k) || {};
       return { klic: k, jmeno: d.name || k, typy: d.types || [],
         kde: biomProDruh(d.types), candy: Math.round(r.candy), xl: Math.round(r.xl),
         km: (POKEDEX.buddyKm || {})[k] || null,
-        kusy: Object.keys(r.kusy) };
+        kusy: Object.keys(r.kusy), vlastni: vlastni.indexOf(k) !== -1 };
     }).filter(function (r) { return r.candy > 0 || r.xl > 0; })
       .sort(function (a, b) { return (b.candy + b.xl * 20) - (a.candy + a.xl * 20); })
       .slice(0, 12);
+    /* Vlastní cíle jdou první a drží se, i když si je plán nevyžádal —
+       to je celý jejich smysl: appka o nich neví. */
+    var jePlanu = {};
+    zPlanu.forEach(function (r) { jePlanu[r.klic] = true; });
+    var rucni = [];
+    vlastni.forEach(function (k) {
+      if (jePlanu[k]) return;
+      var d = dexByKey(k);
+      if (!d) return;
+      rucni.push({ klic: k, jmeno: d.name || k, typy: d.types || [],
+        kde: biomProDruh(d.types), candy: 0, xl: 0,
+        km: (POKEDEX.buddyKm || {})[k] || null, kusy: [], vlastni: true });
+    });
+    return rucni.concat(zPlanu);
   }
 
   function coChytat(base, computed) {
@@ -22413,16 +22489,28 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         var proc = [];
         if (r.candy) proc.push("<b>" + r.candy + "</b> bonbónů");
         if (r.xl) proc.push("<b>" + r.xl + "</b> XL");
-        h += '<div class="ch-item">' + spriteProDruh(r.klic)
+        h += '<div class="ch-item' + (r.vlastni ? " ch-chci" : "") + '">'
+          + spriteProDruh(r.klic)
           + '<div class="ch-text"><b>' + escHtml(r.jmeno) + "</b>"
-          + '<span class="ch-why">' + proc.join(" + ")
-          + " na " + escHtml(r.kusy.slice(0, 2).join(", "))
-          + (r.kusy.length > 2 ? " +" + (r.kusy.length - 2) : "") + "</span>"
+          + '<button type="button" class="ch-chci-btn" data-chci="' + escHtml(r.klic)
+          + '" title="' + (r.vlastni ? "Smazat z vlastních cílů"
+              : "Přidat mezi vlastní cíle — zůstane tu, i když si ho plán nevyžádá")
+          + '">' + (r.vlastni ? "✓ chci" : "+ chci") + "</button>"
+          + '<span class="ch-why">'
+          + (proc.length
+              ? proc.join(" + ") + " na " + escHtml(r.kusy.slice(0, 2).join(", "))
+                + (r.kusy.length > 2 ? " +" + (r.kusy.length - 2) : "")
+              : "vlastní cíl — rozpočet si ho nevyžádal")
+          + "</span>"
           + '<span class="ch-kde">' + escHtml(r.kde)
           + (r.km ? " · " + String(r.km).replace(".", ",") + " km/bonbón" : "")
           + "</span></div></div>";
       });
       h += "</div>";
+      h += '<div class="ch-pridat"><input type="text" id="chciBonbonyNovy"'
+        + ' placeholder="Přidat druh (třeba Larvitar)"'
+        + ' aria-label="Přidat vlastní bonbónový cíl" />'
+        + '<button type="button" id="chciBonbonyPridat">Přidat</button></div>';
     }
 
     if (!h) {
@@ -22455,6 +22543,29 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (!box) return;
     box.innerHTML = coChytatHtml(coChytat(lastBase || [], analyze()));
     vystreditVse(box);
+    /* Vlastní cíle: přepínání u karet a přidání druhu, který v plánu
+       vůbec není. */
+    Array.prototype.forEach.call(box.querySelectorAll("[data-chci]"), function (btn) {
+      btn.addEventListener("click", function () {
+        chciBonbonyPrepni(btn.getAttribute("data-chci"));
+        renderCoChytat();
+      });
+    });
+    var pole = box.querySelector("#chciBonbonyNovy");
+    var pridat = box.querySelector("#chciBonbonyPridat");
+    var pridejCil = function () {
+      var jm = (pole.value || "").trim();
+      if (!jm) return;
+      if (!chciBonbonyPridejJmeno(jm)) {
+        appHlaska("Druh „" + jm + "“ appka nezná — zkontroluj překlep.");
+        return;
+      }
+      renderCoChytat();
+    };
+    if (pridat) pridat.addEventListener("click", pridejCil);
+    if (pole) pole.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); pridejCil(); }
+    });
     // Odpočet se přepisuje sám. Bez toho by po pár hodinách otevřené appky
     // ukazoval hodnotu z doby, kdy se karta naposledy překreslila.
     if (nestTiker) { clearInterval(nestTiker); nestTiker = null; }
@@ -27987,6 +28098,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /* Do herního vyhledávání se vejde víc, než se zprvu zdálo — ověřeno
      vložením celého filtru. Čím delší, tím míň filtrů na projití. */
   var HLEDANI_DELKA = 700;
+  /* Kolik kusů má dávka na jeden den. Sto je rozumná porce: víc se za
+     večer stejně neproklikáš. */
+  var HLEDANI_DAVKA = 100;
   // Rozsah CP, který ve hře nemůže mít nikdo (nejvyšší CP ve hře je kolem
   // 5600). Používá ho ověřovací filtr: když se čárka vyhodnotí dřív,
   // nenajde se nic; když &, vyskočí celý první druh.
@@ -29860,8 +29974,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        nepustí vůbec, legendární a Ultra Beasty až po zapnutí Expanded
        Group Transfer, mytické ani po jednom. Míchat je do jednoho filtru
        znamená zaseknout se u hromadného výběru pokaždé znovu. */
+    /* Dávka na jeden den: pět set kusů nikdo najednou neposílá. Bere se
+       prvních sto od nejvyššího CP — ve hře se podle CP orientuje oko a
+       velké kusy zabírají nejvíc místa. */
+    var davka = nastaveniHodnota("hledaniDavka") === "1";
+    var vsechny = z.kusy || [];
+    var kusyOkna = davka ? hledaniPodleCp(vsechny).slice(0, HLEDANI_DAVKA) : vsechny;
     var podle = { trade: [], hromadne: [], pojednom: [], nelze: [] };
-    (z.kusy || []).forEach(function (r) { podle[hledaciZpusob(r)].push(r); });
+    kusyOkna.forEach(function (r) { podle[hledaciZpusob(r)].push(r); });
     var rT = podle.trade.length ? hledaciFiltry(podle.trade) : null;
     var rH = podle.hromadne.length ? hledaciFiltry(podle.hromadne) : null;
     var rP = podle.pojednom.length ? hledaciFiltry(podle.pojednom) : null;
@@ -29892,8 +30012,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         + " proti celému rosteru; co by našlo i jiný kus, vůbec nenabídne."
         + " Zná ale jen roster — co jsi chytil po posledním skenu, o tom neví."
         + '">' + sklonuj(kusu, "kus", "kusy", "kusů") + " k puštění (" + odkud
+        + (davka && vsechny.length > kusyOkna.length
+            ? ", dávka na dnešek z " + vsechny.length : "")
         + "). Zkopíruj filtr, ve hře vlož a označ. <b>Nic jiného na něj"
-        + " nevyskočí.</b></span>";
+        + " nevyskočí.</b></span>"
+        + '<div class="hled-davka"><label><input type="checkbox" id="hledDavka"'
+        + (davka ? " checked" : "") + "> Jen dávka na dnešek ("
+        + HLEDANI_DAVKA + " kusů od nejvyššího CP)</label></div>";
 
       var overeni = "";
       var r0 = rH || rP || rT;
@@ -30015,6 +30140,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         hledaniPredponyUloz(list);
         vykresliHledani();
       });
+    });
+    var davkaEl = box.querySelector("#hledDavka");
+    if (davkaEl) davkaEl.addEventListener("change", function () {
+      var el = document.getElementById("hledaniDavka");
+      if (el) el.value = davkaEl.checked ? "1" : "";
+      persist(true);
+      vykresliHledani();
     });
     var pridat = box.querySelector(".hled-pred-pridat");
     var novePole = box.querySelector(".hled-pred-nove");
@@ -30544,6 +30676,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var d = dexEntry(jmeno);
       return d ? druhHtml(dexKey(jmeno), d) : "";
     },
+    /* Vlastní bonbónové cíle — testy i vrstva. */
+    chciBonbony: function () { return chciBonbonyList(); },
+    chciBonbonyPrepni: function (klic) { return chciBonbonyPrepni(klic); },
+    chciBonbonyPridej: function (jmeno) { return chciBonbonyPridejJmeno(jmeno); },
     /* Rozpis GBL: co běží a co přijde (pro pruh v kalendáři). */
     ligyRozpis: function () { return ligyRozpis(); },
     /* Omezené cupy: co appka vyčetla z rozpisu a co o druhu ví. */

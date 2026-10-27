@@ -20350,6 +20350,70 @@ try {
     s314.cupu === 0 || (s314.zlyRank.length === 0 && /Cup/.test(s314.tabulka)
       && /#\d/.test(s314.radek)), JSON.stringify(s314));
 
+  /* 315) Dávka na dnešek a vlastní bonbónové cíle.
+
+     Pět set kusů se za večer neposílá, takže Transfer umí nabídnout jen
+     prvních sto od nejvyššího CP. A „Co chytat" počítalo jen to, co si
+     vyžádal rozpočet — na druh, který si člověk schovává na výměnu nebo
+     na budoucí vývin, appka nevidí. Oboje se musí držet i po zavření. */
+  console.log("\n315) Davka na dnesek a vlastni bonbonove cile");
+  await page.goto(URL);
+  await nacteno(page);
+  const s315 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const dex = P.pokedex().species;
+    const klice = Object.keys(dex).filter((k) => k.indexOf("-") === -1).slice(0, 150);
+    let x = 5150;
+    const nah = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const rows = [];
+    klice.forEach((k) => { const n = dex[k][1];
+      for (let i = 0; i < 3; i++) rows.push({ pokemon: n,
+        cp: String(200 + Math.floor(nah() * 2600)), level: 10 + Math.floor(nah() * 30),
+        ivAtk: Math.floor(nah() * 16), ivDef: Math.floor(nah() * 16),
+        ivSta: Math.floor(nah() * 16) }); });
+    P.setRows(rows);
+    await cekej(8000);
+    P.setDiscarded([]);
+    await cekej(300);
+    const out = {};
+    document.getElementById("hledaniBtn").click();
+    await cekej(1200);
+    const okno = () => document.getElementById("hledaniOkno");
+    const pocetVOkne = () => [...okno().querySelectorAll("[data-hled-kusy]")]
+      .reduce((a, b) => a + (parseInt(b.textContent, 10) || 0), 0);
+    out.beDavky = pocetVOkne();
+    const prep = okno().querySelector("#hledDavka");
+    out.maPrepinac = !!prep;
+    if (prep) { prep.click(); await cekej(1800); out.sDavkou = pocetVOkne(); }
+    // dávka nesmí být větší než sto a nesmí přibýt kusy, které tam nebyly
+    const zbyle = okno().querySelector(".hled-krizek");
+    if (zbyle) zbyle.click();
+    await cekej(300);
+
+    // --- vlastní bonbónové cíle ---
+    out.cilePredtim = P.coChytat().bonbony.filter((r) => r.vlastni).length;
+    out.pridan = P.chciBonbonyPridej("Larvitar");
+    await cekej(200);
+    const po = P.coChytat().bonbony;
+    out.prvni = po.length ? { jmeno: po[0].jmeno, vlastni: !!po[0].vlastni,
+      candy: po[0].candy } : null;
+    out.vSeznamu = P.chciBonbony();
+    P.chciBonbonyPrepni("larvitar");
+    await cekej(200);
+    out.poOdebrani = P.chciBonbony().length;
+    out.neznamy = P.chciBonbonyPridej("Neexistuje");
+    return out;
+  });
+  check("dávka na dnešek omezí Transfer na sto kusů",
+    s315.maPrepinac && s315.beDavky > 100 && s315.sDavkou > 0
+      && s315.sDavkou <= 100, JSON.stringify(s315));
+  check("…a vlastní bonbónový cíl se drží, i když si ho plán nevyžádal",
+    s315.pridan === "larvitar" && s315.prvni && s315.prvni.vlastni === true
+      && s315.prvni.candy === 0 && s315.vSeznamu.length === 1
+      && s315.poOdebrani === 0 && s315.neznamy === null,
+    JSON.stringify(s315));
+
   await page.goto(URL);
   await nacteno(page);
 
