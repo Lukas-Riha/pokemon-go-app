@@ -3543,8 +3543,12 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-utok-sada.jen-ikony{gap:2px}
 .atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-chip{font-size:0;padding:0;gap:0;
   background:none;border:0}
-.atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-typ{font-size:9px;padding:2px;
-  width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center}
+/* Kolečko i kresba musí mít TUTÉŽ velikost: svg je širší než kolečko a
+   glyf pak sedí u levého okraje. Velikost je stejná jako v bublině, ať
+   se ikona pozná i bez názvu. */
+.atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-typ{font-size:0;padding:0;
+  width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}
+.atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-typ svg{width:20px;height:20px}
 /* Spojky „+" a „/" nesou význam jen u názvů; mezi holými ikonami jsou
    jen šum a berou místo, kvůli kterému by se ikony nevešly. */
 .atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-spoj{display:none}

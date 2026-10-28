@@ -11877,8 +11877,17 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         powerup: powerup, powerupTone: powerupTone, powerupSub: powerupSub,
         jenZnamka: jenZnamka,
         cost: b.cost,
-        costText: b.cost ? (formatDust(b.cost.dust) + " prachu + " + b.cost.candy + " bonbónů do L40"
-          + (b.cost.xl ? " (+" + b.cost.xl + " XL)" : "")) : "",
+        /* Bublina říká totéž co kartička, jen celou větou: do čtyřicítky
+           prach a bonbóny, nad ní prach a XL. */
+        costText: b.costDo40
+          ? ("Do L40: " + formatDust(b.costDo40.dust) + " prachu + "
+             + b.costDo40.candy + " bonbónů."
+             + ((b.costNad40 && b.costNad40.dust)
+                 ? " L41–50: " + formatDust(b.costNad40.dust) + " prachu"
+                   + (b.costNad40.xl ? " + " + b.costNad40.xl + " XL bonbónů" : "")
+                   + " navíc."
+                 : ""))
+          : "",
         /* Krátká verze do kartičky „Vylepšit", na dva řádky: první je
            cesta na čtyřicítku (prach a bonbóny), druhý zbytek nad ní
            (prach a XL). Druhý řádek chybí, když kus na L40 nebo výš už je
