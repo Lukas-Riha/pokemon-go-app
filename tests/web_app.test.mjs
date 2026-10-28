@@ -20594,6 +20594,58 @@ try {
   check("…ale čištění staré tři dny se k dnešnímu nepřilepí",
     s318.obDny.kusu === 1, JSON.stringify(s318));
 
+  /* 319) Hotovou dávku jde v Transferu odškrtnout.
+
+     Dávka smazaných se nabízela, dokud nezestárla — i když ji člověk ve
+     hře dávno pustil. Tlačítko ji odškrtne, ale záznamy v paměti
+     smazaných musí zůstat: ty hlídají, aby se kus při dalším skenu
+     nevrátil do rosteru. */
+  console.log("\n319) Odskrtnuti hotove davky v Transferu");
+  await page.goto(URL);
+  await nacteno(page);
+  const s319 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([{ pokemon: "Snorlax", cp: "1800", level: 25, ivAtk: 5, ivDef: 5, ivSta: 5 }]);
+    await cekej(2000);
+    const ted = Date.now(), smazane = [];
+    for (let i = 0; i < 12; i++) {
+      smazane.push({ k: "rattata|" + i, del: ted - 3600 * 1000,
+        r: { pokemon: "Rattata", cp: String(100 + i), level: 10,
+          ivAtk: 1, ivDef: 2, ivSta: 3 } });
+    }
+    P.setDiscarded(smazane);
+    await cekej(700);
+    const kusyVOkne = () => [...document.querySelectorAll("#hledaniOkno [data-hled-kusy]")]
+      .reduce((a, b) => a + (parseInt(b.textContent, 10) || 0), 0);
+    const out = {};
+    document.getElementById("hledaniBtn").click();
+    await cekej(1300);
+    out.pred = kusyVOkne();
+    out.maTlacitko = !!document.querySelector("#hledHotovo");
+    if (out.maTlacitko) {
+      document.querySelector("#hledHotovo").click();
+      await cekej(500);
+      const ok = document.getElementById("appOknoOk");
+      out.ptaSe = !document.getElementById("appOkno").hidden;
+      if (ok) ok.click();
+      await cekej(1500);
+      const o2 = document.getElementById("appOknoOk");
+      if (o2 && !document.getElementById("appOkno").hidden) o2.click();
+      await cekej(500);
+    }
+    out.po = document.getElementById("hledaniOkno") ? kusyVOkne() : 0;
+    out.vPameti = P.pametSmazanychInfo().celkem;
+    document.querySelector("#hledaniOkno .hled-krizek")?.click();
+    P.setDiscarded([]);
+    return out;
+  });
+  check("hotovou dávku jde odškrtnout a Transfer ji přestane nabízet",
+    s319.pred === 12 && s319.maTlacitko === true && s319.ptaSe === true
+      && s319.po === 0, JSON.stringify(s319));
+  check("…ale paměť smazaných zůstane celá",
+    s319.vPameti === 12, JSON.stringify(s319));
+
   await page.goto(URL);
   await nacteno(page);
 

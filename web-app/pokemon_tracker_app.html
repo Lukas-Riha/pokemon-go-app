@@ -1545,6 +1545,9 @@
   /* Blok s druhy na výměnu: hotový filtr v něm má vlastní řádek. */
   .hled-vymena .hled-radek { margin-top: 8px; }
   .hled-vymena .hint:last-child { margin: 6px 0 0; display: block; }
+  .hled-hotovo { display: flex; align-items: baseline; gap: 8px;
+    flex-wrap: wrap; margin: 2px 0 8px; }
+  .hled-hotovo .hint { margin: 0; flex: 1 1 260px; }
   .hled-davka { margin: 2px 0 10px; font-size: 12px; }
   .hled-davka label { display: inline-flex; align-items: center; gap: 6px;
     color: var(--text-secondary); cursor: pointer; }
@@ -30008,7 +30011,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var DEN = 24 * 3600 * 1000, ted = Date.now();
     var DAVKA = DEN, NEJSTARSI = 7 * DEN;
     var smazane = (discarded || []).filter(function (d) {
-      return d && d.r && d.r.pokemon && d.del && (ted - d.del) < NEJSTARSI;
+      // `hotovo` = tuhle dávku jsi ve hře už pustil a odškrtl ji.
+      // Záznam zůstává (brání návratu kusu při dalším skenu), jen se
+      // v Transferu nenabízí.
+      return d && d.r && d.r.pokemon && d.del && !d.hotovo
+        && (ted - d.del) < NEJSTARSI;
     });
     if (smazane.length) {
       var posledni = smazane.reduce(function (a, d) {
@@ -30031,6 +30038,25 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       return v && !v.keepGood;
     });
     return { kusy: pousti, zdroj: "tabulka" };
+  }
+
+  /**
+   * Odškrtne dávku smazaných kusů: ve hře jsou pryč, Transfer je přestane
+   * nabízet. Záznamy v paměti smazaných zůstávají — jsou tam proto, aby se
+   * kus při dalším skenu nevrátil do rosteru, a to platí dál.
+   */
+  function hledaniDavkaHotova() {
+    var DEN = 24 * 3600 * 1000, ted = Date.now();
+    var kandidati = (discarded || []).filter(function (d) {
+      return d && d.r && d.r.pokemon && d.del && !d.hotovo
+        && (ted - d.del) < 7 * DEN;
+    });
+    if (!kandidati.length) return 0;
+    var posledni = kandidati.reduce(function (a, d) { return Math.max(a, d.del); }, 0);
+    var davka = kandidati.filter(function (d) { return d.del >= posledni - DEN; });
+    davka.forEach(function (d) { d.hotovo = 1; });
+    persist(true);
+    return davka.length;
   }
 
   function zavriHledani() {
@@ -30233,6 +30259,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
             ? ", dávka na dnešek z " + vsechny.length : "")
         + "). Zkopíruj filtr, ve hře vlož a označ. <b>Nic jiného na něj"
         + " nevyskočí.</b></span>"
+        + (z.zdroj === "smazane"
+            ? '<div class="hled-hotovo"><button type="button" id="hledHotovo">'
+              + "Tyhle jsem už ve hře pustil</button>"
+              + '<span class="hint">Odškrtne tuhle dávku, takže ji Transfer'
+              + " přestane nabízet. Z paměti smazaných kusů nic nezmizí —"
+              + " ta hlídá, aby se ti smazaný kus nevrátil při dalším skenu."
+              + "</span></div>"
+            : "")
         + '<div class="hled-davka"><label><input type="checkbox" id="hledDavka"'
         + (davka ? " checked" : "") + "> Jen dávka na dnešek ("
         + HLEDANI_DAVKA + " kusů od nejvyššího CP)</label></div>";
@@ -30378,6 +30412,17 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var vymPridat = box.querySelector(".hled-vymena-pridat");
     if (vymPridat) vymPridat.addEventListener("click", function () {
       vymenaOknoUprav(function () { vykresliHledani(); });
+    });
+    var hotovoBtn = box.querySelector("#hledHotovo");
+    if (hotovoBtn) hotovoBtn.addEventListener("click", function () {
+      appPotvrdit("Opravdu jsi ve hře pustil všechny kusy z téhle dávky?"
+        + " Transfer je přestane nabízet.", function () {
+          var kolik = hledaniDavkaHotova();
+          vykresliHledani();
+          if (kolik) {
+            appHlaska("Odškrtnuto " + sklonuj(kolik, "kus", "kusy", "kusů") + ".");
+          }
+        }, "Ano, jsou pryč");
     });
     var davkaEl = box.querySelector("#hledDavka");
     if (davkaEl) davkaEl.addEventListener("change", function () {
