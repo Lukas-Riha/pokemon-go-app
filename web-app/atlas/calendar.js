@@ -179,11 +179,19 @@
     tak at je na Prehledu videt, co se prave hraje a co prijde — bez nej se
     to muselo hledat v akcich mezi vsim ostatnim. */
  const LIGA_NAZEV={LC:'Little Cup',GL:'Great League',UL:'Ultra League',ML:'Master League'};
+ /* Jména z rozpisu jsou dlouhá („Mega Halloween Cup: Great League Edition")
+    a pruh se kvůli nim lámal na dva řádky. Dovětek o základní lize nic
+    neříká — CP limit je vidět v cupu samém; „: Mega Edition" se zkrátí. */
+ const zkratkaFormatu=n=>String(n||'').split('|')[0].trim()
+  .replace(/:\s*Mega Edition$/i,' (Mega)')
+  .replace(/:\s*(Great|Ultra|Master|Little)\s*(League|Cup)\s*Edition$/i,'')
+  .trim();
  const denMesic=d=>d.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric'});
  function ligyPruh(){
   const rozpis=P.ligyRozpis?P.ligyRozpis():[];
   if(!rozpis.length)return '';
-  const popis=x=>[...x.ligy.map(z=>LIGA_NAZEV[z]||z),...x.formaty.map(f=>f.nazev)];
+  const popis=x=>[...x.ligy.map(z=>LIGA_NAZEV[z]||z),
+   ...x.formaty.map(f=>zkratkaFormatu(f.nazev))];
   const bezi=rozpis.filter(x=>x.bezi),pak=rozpis.filter(x=>!x.bezi).slice(0,1);
   const radek=(x,ted)=>`<div class="ac-ligy-radek"><b>${ted?'Teď':'Pak'}</b>`
    +popis(x).map(n=>`<span class="ac-liga-chip">${esc(n)}</span>`).join('')

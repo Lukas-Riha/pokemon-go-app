@@ -11881,15 +11881,22 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         cost: b.cost,
         /* Bublina říká totéž co kartička, jen celou větou: do čtyřicítky
            prach a bonbóny, nad ní prach a XL. */
-        costText: b.costDo40
-          ? ("Do L40: " + formatDust(b.costDo40.dust) + " prachu + "
-             + b.costDo40.candy + " bonbónů."
-             + ((b.costNad40 && b.costNad40.dust)
-                 ? " L41–50: " + formatDust(b.costNad40.dust) + " prachu"
-                   + (b.costNad40.xl ? " + " + b.costNad40.xl + " XL bonbónů" : "")
-                   + " navíc."
-                 : ""))
-          : "",
+        /* Bublina se skládá z toho, co kusu ještě zbývá. Kus, který je
+           na L40, nemá první část — dřív mu kvůli tomu zmizela celá
+           bublina, i když druhý řádek v kartičce stál. */
+        costText: (function () {
+          var casti = [];
+          if (b.costDo40) {
+            casti.push("Do L40: " + formatDust(b.costDo40.dust) + " prachu + "
+              + b.costDo40.candy + " bonbónů.");
+          }
+          if (b.costNad40 && b.costNad40.dust) {
+            casti.push("L41–50: " + formatDust(b.costNad40.dust) + " prachu"
+              + (b.costNad40.xl ? " + " + b.costNad40.xl + " XL bonbónů" : "")
+              + (casti.length ? " navíc." : "."));
+          }
+          return casti.join(" ");
+        })(),
         /* Krátká verze do kartičky „Vylepšit", na dva řádky: první je
            cesta na čtyřicítku (prach a bonbóny), druhý zbytek nad ní
            (prach a XL). Druhý řádek chybí, když kus na L40 nebo výš už je
