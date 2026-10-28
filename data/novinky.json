@@ -290,7 +290,8 @@
       "**Transfer: méně filtrů, vlastní předfiltry a narovnané okno.** Do jednoho filtru se teď vešle 700 znaků místo 400, takže filtrů je zhruba o třetinu méně (dá se změnit v nastavení). Nad filtry přibyla **vlastní zaškrtávátka**: napíšeš si třeba `!trade` a appka to přilepí před každý filtr, takže kusy, které máš ve hře označkované, z výběru vypadnou. Náhled kusů se teď opravdu sbalí (dřív šel jen rozbalit) a tlačítka Kopírovat stojí pod sebou.",
       "**Ligy na Přehledu.** Pod kartami akcí je řádek s tím, co se v GO Battle League hraje teď a co přijde — včetně omezených formátů a cupů, i s datem.",
       "**Dávka na dnešek.** V Transferu je nahoře zaškrtávátko „Jen dávka na dnešek“: appka pak složí filtry jen na **prvních sto kusů od nejvyššího CP**. Pět set kusů za večer stejně neproklikáš — zítra se okno otevře znovu a nabídne další stovku.",
-      "**Vlastní bonbónové cíle.** V „Co chytat“ si u každé bonbónové karty přepneš „+ chci“ a pod mřížkou přidáš i druh, který si rozpočet vůbec nevyžádal — třeba ten, co si schováváš na výměnu nebo na budoucí vývin. Vlastní cíle stojí nahoře, mají zelený rámeček a drží se i po zavření appky."
+      "**Vlastní bonbónové cíle.** V „Co chytat“ si u každé bonbónové karty přepneš „+ chci“ a pod mřížkou přidáš i druh, který si rozpočet vůbec nevyžádal — třeba ten, co si schováváš na výměnu nebo na budoucí vývin. Vlastní cíle stojí nahoře, mají zelený rámeček a drží se i po zavření appky.",
+      "**Značka „na výměnu“.** V detailu kusu (a v čištění boxu) přibyl přepínač vedle CUTE: označíš kus, který si schováváš na výměnu, a appka ho **nikdy nenabídne k puštění** — zmizí i z Transferu. Prach do něj radit nebude: je to známka, ne role, a po výměně se IV stejně přeháží. Všechny takové kusy vypíše filtr **„Jen schované na výměnu“**. Nepleti si to se sloupcem „Tradovat“ — ten pořád říká, jestli se výměna vyplatí; tohle je tvoje rozhodnutí."
     ]
   }
 }
