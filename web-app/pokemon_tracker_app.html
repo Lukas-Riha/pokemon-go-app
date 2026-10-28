@@ -1637,9 +1637,7 @@
   .hra-vyber-kus i { font-size: 10.5px; font-style: normal; color: var(--text-muted); }
   .d-evo-kus.evo-klikaci { cursor: pointer; }
   .d-evo-kus.evo-klikaci:hover { outline: 2px solid var(--status-good); }
-  .rarity-chip.r-TR { background: var(--series-3, #7a5af5); color: #fff; }
   .dmax-prepinac, .cute-prepinac, .shiny-prepinac, .shadow-prepinac,
-  .vymena-prepinac,
   .mega-prepinac,
   .duplikat-prepinac { cursor: pointer; font: inherit;
     border: 1px solid transparent; }
@@ -1647,13 +1645,11 @@
   .rarity-chip.r-DUP { background: var(--status-warning); color: #1a1205; }
   .dmax-prepinac.vypnuto, .cute-prepinac.vypnuto, .shiny-prepinac.vypnuto,
   .duplikat-prepinac.vypnuto, .mega-prepinac.vypnuto,
-  .vymena-prepinac.vypnuto,
   .shadow-prepinac.vypnuto {
     background: transparent; box-shadow: none;
     color: var(--text-muted); opacity: .75;
     border: 1px dashed var(--border-subtle, rgba(128,128,128,.45)); }
   .dmax-prepinac.vypnuto:hover, .cute-prepinac.vypnuto:hover,
-  .vymena-prepinac.vypnuto:hover,
   .duplikat-prepinac.vypnuto:hover, .mega-prepinac.vypnuto:hover,
   .shiny-prepinac.vypnuto:hover { opacity: 1; color: var(--text-secondary); }
 
@@ -3738,7 +3734,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         <option value="mega">Jen mega kandidáti</option>
         <option value="dupes">Jen duplicity k zahození</option>
         <option value="trade">Jen na trade</option>
-        <option value="naVymenu">Jen schované na výměnu</option>
         <option value="rescan">Jen doskenovat s Appraisal</option>
         <option value="retrain">Jen přeučit útoky</option>
         <option value="purify">Jen purifikovat</option>
@@ -5956,10 +5951,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     // věc, kvůli které má smysl vyměňovat kus, co oba znáte.
     { key: "dynamax", label: "Dynamax", type: "select", options: ["Ano", "Ne"], w: 96 },
     { key: "cute", label: "CUTE", type: "select", options: ["Ano", "Ne"], w: 88 },
-    /* Ruční „tenhle si schovávám na výměnu". Ze skenu se to poznat nedá
-       a od automatického štítku `trade` se to liší: ten říká, jestli se
-       výměna vyplatí, tohle je tvoje rozhodnutí. */
-    { key: "naVymenu", label: "NA VÝMĚNU", type: "select", options: ["Ano", "Ne"], w: 108 },
     { key: "shiny", label: "SHINY", type: "select", options: ["Ano", "Ne"], w: 92 },
     /* „Tenhle kus mám vymegovaný." Ze skenu se to nepozná a appka si
        jinak vybírá sama — viz výběr držitele megy níž. Klíč není `mega`:
@@ -6006,9 +5997,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   ];
   // V režimu „Rozhodnutí" se schovají sloupce, které se jen vyplňují ze skenu —
   // 33 sloupců se nedá číst, verdikt se ztrácí mezi vstupy.
-  var DETAIL_ONLY = ["dynamax", "megaKus", "cute", "naVymenu", "shiny", "finalEvo", "level", "lcRank", "ivAtk", "ivDef", "ivSta", "fastMove", "charged1", "charged2",
+  var DETAIL_ONLY = ["dynamax", "megaKus", "cute", "shiny", "finalEvo", "level", "lcRank", "ivAtk", "ivDef", "ivSta", "fastMove", "charged1", "charged2",
     "glRank", "ulRank", "mlRank", "buddy", "note", "raid", "gym", "pvpPot", "summary"];
-  var LEFT_SIDE = ["pokemon", "dynamax", "megaKus", "cute", "naVymenu", "shiny", "finalEvo", "cp", "level", "ivAtk", "ivDef", "ivSta", "ivPct",
+  var LEFT_SIDE = ["pokemon", "dynamax", "megaKus", "cute", "shiny", "finalEvo", "cp", "level", "ivAtk", "ivDef", "ivSta", "ivPct",
     "types", "cpMax", "strong", "fastMove", "charged1", "charged2", "lcRank", "glRank", "ulRank", "mlRank", "buddy", "note"];
   // Zaškrtávací filtr nad sloupcem PvP. Prázdná množina = neomezovat.
   // Ligy a stavy se kombinují jako AND: „Great League" + „hotoví" = jen kusy,
@@ -6265,8 +6256,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     // Horší kopie mají vlastní dlaždici, takže se sem nepletou dvakrát.
     discard: function (c) { return !c.keepGood && !c.worseCopy; },
     dupes: function (c) { return !!c.worseCopy; },
-    // Seznam kusů, které si schováváš na výměnu — ruční značka, ne výpočet.
-    naVymenu: function (c, r) { return !!(r && r.naVymenu === "Ano"); },
     star: function (c, r) { return !!(r && r.star); },
     nostar: function (c, r) { return !(r && r.star); },
     powerup: function (c) { return c.powerupTone === "good"; },
@@ -9878,7 +9867,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         // Ryze osobní značka: „tenhle se mi líbí". Do žádného výpočtu
         // nevstupuje, jen na konci zabrání tomu, aby ho appka poslala pryč.
         cute: r.cute === "Ano",
-        naVymenu: r.naVymenu === "Ano",
         // Ruční značka „tenhle mám vymegovaný". Do rozpočtu nevstupuje,
         // jen říká, KTERÁ kopie druhu megu drží.
         megaKus: r.megaKus === "Ano",
@@ -11249,20 +11237,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + " druhu.";
       }
 
-      /* Značka „na výměnu": tvoje rozhodnutí, ne role. Kus se nepouští,
-         ale prach do něj netéct nemá — vyměníš ho a přijdeš o něj. */
-      var naVymenuZachranil = false;
-      if (b.naVymenu && !keepGood) {
-        naVymenuZachranil = true;
-        keepGood = true;
-        keepLabel = "Ponechat";
-        keepTone = "good";
-        keepSubLate = "na výměnu";
-        keepTitle = "Označil jsi ho jako kus na výměnu — appka ho nikdy"
-          + " nenabídne k vyhození. Prach do něj nesypej: po výměně se"
-          + " IV přehází a kus už nebude tvůj.";
-      }
-
       var cuteZachranil = false;
       if (b.cute && !keepGood) {
         cuteZachranil = true;
@@ -11630,16 +11604,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // Kus, který drží jen značka (CUTE) nebo dokonalé IV, žádnou roli
       // nezastává. Do prachového plánu proto nepatří: sype se do role,
       // a tenhle žádnou nemá.
-      var jenZnamka = cuteZachranil || stoZachranil || pvpStoZachranil || pvpPojistka
-        || naVymenuZachranil;
+      var jenZnamka = cuteZachranil || stoZachranil || pvpStoZachranil || pvpPojistka;
       // …a proto se do něj ani nesype prach. Dokonalé IV samo o sobě
       // roli nedělá, což appka píše všude jinde — jen sloupec Vylepšit
       // na to zapomínal a u 100% Rattaty svítilo „Zvážit".
       if (jenZnamka) {
         powerup = "Ne";
         powerupTone = "muted";
-        powerupSub = (cuteZachranil || naVymenuZachranil)
-          ? "drží ho značka, ne role"
+        powerupSub = cuteZachranil ? "drží ho značka, ne role"
           : "drží ho dokonalé IV, ne role";
       }
       // Rezerva ligy a paměť pořadí: nechat, ale prach až se vrátí do šestky.
@@ -13998,12 +13970,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (cuteBtn && radek) {
       cuteBtn.addEventListener("click", sZmenou(function () {
         radek.cute = radek.cute === "Ano" ? "Ne" : "Ano";
-      }));
-    }
-    var vymenaBtn = kontejner.querySelector(".vymena-prepinac");
-    if (vymenaBtn && radek) {
-      vymenaBtn.addEventListener("click", sZmenou(function () {
-        radek.naVymenu = radek.naVymenu === "Ano" ? "Ne" : "Ano";
       }));
     }
     var shadowBtn = kontejner.querySelector(".shadow-prepinac");
@@ -16532,16 +16498,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           ? "Označený jako CUTE — appka ho nikdy nenabídne k vyhození. Klikni a zruš to."
           : "Označit jako CUTE. Takový kus appka nikdy nenabídne k vyhození.")
       + '">CUTE</button>';
-    /* „Na výměnu" stojí hned za CUTE: obojí je ruční značka, podle které
-       se kus nepouští. */
-    chips += '<button type="button" class="rarity-chip r-TR vymena-prepinac'
-      + (c.naVymenu ? "" : " vypnuto") + '" title="'
-      + (c.naVymenu
-          ? "Schovaný na výměnu — appka ho nenabídne k vyhození a prach"
-            + " do něj radit nebude. Klikni a zruš to."
-          : "Schovat na výměnu. Appka ho pak nenabídne k vyhození ani do"
-            + " něj nebude radit prach — po výměně se IV stejně přehází.")
-      + '">NA VÝMĚNU</button>';
     chips += '<button type="button" class="rarity-chip r-S shiny-prepinac'
       + (c.shiny ? "" : " vypnuto") + '" title="'
       + (c.shiny
