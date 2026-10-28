@@ -1538,6 +1538,9 @@
     margin: 2px 0; align-self: flex-start; }
   .ch-pridat { display: flex; gap: 6px; margin: 8px 0 2px; }
   .ch-pridat input { flex: 0 1 220px; font-size: 12px; padding: 5px 8px; }
+  /* Blok s druhy na výměnu: hotový filtr v něm má vlastní řádek. */
+  .hled-vymena .hled-radek { margin-top: 8px; }
+  .hled-vymena .hint:last-child { margin: 6px 0 0; display: block; }
   .hled-davka { margin: 2px 0 10px; font-size: 12px; }
   .hled-davka label { display: inline-flex; align-items: center; gap: 6px;
     color: var(--text-secondary); cursor: pointer; }
@@ -3336,9 +3339,12 @@
         <input type="hidden" id="hledaniDavka" value="" />
         <!-- Vlastní bonbónové cíle (klíče evolučních řad) jako JSON. -->
         <input type="hidden" id="chciBonbony" value="" />
+        <!-- Druhy, za které chceš bonbóny z výměny. Klíče druhů (s formou)
+             jako JSON; edituje se v Transferu a před čištěním. -->
+        <input type="hidden" id="vymenaDruhy" value="" />
         <span class="hint">Tlačítko <b>Hledání do hry</b> vyrobí z pouštěných
           kusů filtry, které ve hře vložíš do vyhledávání. Kolik znaků pole
-          ve hře unese, se nikde nepíše — čtyři stovky jsou bezpečný začátek.
+          ve hře unese, se nikde nepíše — sedm set je ověřený začátek.
           Když ti ve hře projde delší, číslo zvedni a filtrů bude míň;
           když se text ve hře ořízne, uber.</span>
       </div>
@@ -6425,7 +6431,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "hledaniDavka", "chciBonbony", "pvpStovka", "pvpPojistka", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "boxCountRoster", "gymCountRoster", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "hledaniDavka", "chciBonbony", "vymenaDruhy", "pvpStovka", "pvpPojistka", "roleThresh", "dmaxKeep", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -8278,8 +8284,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var vstup = document.getElementById("appOknoVstup");
     vstupBox.hidden = volby.vstup === undefined || volby.vstup === null;
     if (!vstupBox.hidden) vstup.value = volby.vstup;
+    /* Předvybrané štítky: dialog, který edituje už existující seznam,
+       ho musí ukázat jako štítky, ne jako text v poli — jinak ho stačí
+       omylem přepsat a seznam je pryč. */
     appOknoCipyStav = vstupBox.hidden || !volby.cipy ? null
-      : { moznosti: volby.cipy.moznosti || [], vybrane: [], nabidka: [], aktivni: 0 };
+      : { moznosti: volby.cipy.moznosti || [],
+          vybrane: (volby.cipy.vybrane || []).slice(),
+          nabidka: [], aktivni: 0 };
+    if (appOknoCipyStav && appOknoCipyStav.vybrane.length) vstup.value = "";
     vstup.placeholder = (volby.cipy && volby.cipy.placeholder) || "";
     appOknoCipyVykreslit();
     appOknoNapovedaVykreslit();
@@ -11727,6 +11739,18 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
          Vzhledová vrstva si verdikt bere z rozboru, takže dokud to stálo jen
          v čištění, ukazovala u takového kusu dál „Zahodit". Platí to jen
          po dobu toho jednoho čištění. */
+      /* Druh ze seznamu na výměnu: kus z boxu odejde, ale k profesorovi
+         ne. Zůstává proto červený (není to ponechání), jen s jiným slovem
+         a bez nabídky k puštění. */
+      if (vymenaJeNaSeznamu(r) && String(keepLabel).indexOf("Zahodit") === 0) {
+        keepTitle = "Tenhle druh máš v seznamu na výměnu — chceš za něj"
+          + " bonbóny. Appka ho proto nenabídne k puštění. Původní verdikt: "
+          + keepLabel + ". " + (keepTitle || "");
+        keepLabel = "Trade";
+        keepTone = "critical";
+        keepSub = "na výměnu";
+        keepSubLate = "";
+      }
       if (bmTrade && bmTrade[dexKey(r.pokemon)] && String(keepLabel).indexOf("Zahodit") === 0) {
         keepTitle = "Nechal sis tenhle druh na výměnu — platí jen pro tohle"
           + " čištění, pak zase rozhoduje rozpočet. Původní verdikt: "
@@ -22273,6 +22297,81 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return koren;
   }
 
+  /* ================================================================
+     DRUHY NA VÝMĚNU
+
+     Trvalý seznam: „z tohohle druhu chci bonbóny za výměnu". Kus takového
+     druhu, který by jinak šel pryč, se nepouští — jde na výměnu. Klíč je
+     s formou, takže Graveler Alolan jde označit zvlášť od Gravelera.
+     ================================================================ */
+  function vymenaDruhyList() {
+    var txt = nastaveniHodnota("vymenaDruhy") || "";
+    var out = [];
+    try {
+      (JSON.parse(txt) || []).forEach(function (k) {
+        if (k && out.indexOf(String(k)) === -1) out.push(String(k));
+      });
+    } catch (e) { /* prázdné nebo pokažené = žádné druhy */ }
+    return out;
+  }
+
+  function vymenaDruhyUloz(list) {
+    var el = document.getElementById("vymenaDruhy");
+    if (!el) return;
+    el.value = JSON.stringify(list || []);
+    persist(true);
+  }
+
+  /** Jména druhů ze seznamu, jak je zná pokédex (pro výpis a pro okno). */
+  function vymenaDruhyJmena() {
+    return vymenaDruhyList().map(function (k) {
+      // `dexByKey` vrátí u klíče s formou základní jméno („Graveler"),
+      // takže by ze seznamu nebylo poznat, že jde o alolskou variantu.
+      return jmenoFormy(k) || k;
+    });
+  }
+
+  /** Přidá druh podle napsaného jména. Vrací klíč, nebo null u neznámého. */
+  function vymenaDruhPridej(jmeno) {
+    var d = dexEntry(jmeno);
+    if (!d) return null;
+    /* Forma se nesmí ztratit: `dexEntry` vrátí u „Graveler Alolan" základní
+       záznam, takže klíč se bere z toho, co člověk napsal — jen se ověří,
+       že takový druh pokédex zná. */
+    var klic = dexKey(jmeno);
+    if (!dexByKey(klic)) klic = dexKey(d.name);
+    var list = vymenaDruhyList();
+    if (list.indexOf(klic) === -1) {
+      list.push(klic);
+      vymenaDruhyUloz(list);
+    }
+    return klic;
+  }
+
+  function vymenaDruhOdeber(klic) {
+    var list = vymenaDruhyList();
+    var i = list.indexOf(klic);
+    if (i === -1) return false;
+    list.splice(i, 1);
+    vymenaDruhyUloz(list);
+    return true;
+  }
+
+  /** Je tenhle kus z druhu, který si necháváš na výměnu? */
+  function vymenaJeNaSeznamu(r) {
+    if (!r || !r.pokemon) return false;
+    return vymenaDruhyList().indexOf(dexKey(r.pokemon)) !== -1;
+  }
+
+  /** Druhy, které se po výměně vyvinou zdarma — celá hra, ne jen roster.
+   *  Řetězec do herního vyhledávání je pořád stejný, tak ať je hotový. */
+  function tradeEvoDruhy() {
+    return Object.keys(TRADE_BY).map(function (k) {
+      var d = dexByKey(k);
+      return d ? d.name : k;
+    }).sort();
+  }
+
   function bonbonoveCile(base, computed) {
     var rodiny = {};
     prachovyPlan(base, computed).forEach(function (e) {
@@ -28158,6 +28257,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var comp = analyze();
     var v = comp[r.id];
     if (v && v.tradeEvoVolny) return "trade";
+    // Druh ze seznamu na výměnu: taky se nepouští, jde na výměnu.
+    if (vymenaJeNaSeznamu(r)) return "trade";
     var duvod = proNejdeHromadne({ row: r, dex: dexEntry(r.pokemon),
       shiny: r.shiny === "Ano" });
     if (!duvod) return "hromadne";
@@ -29028,18 +29129,22 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var text = x.sekce + ". sekce — " + nazev + " · " + kusu(kolik)
       + "\n\n" + (BM_SEKCE_POPIS[x.sekce] || "");
     if (!prvni) { appHlaska(text); return; }
-    /* Na začátku čištění se ptáme na výměny: kusy, které chce člověk
-       vytradovat, by jinak padly do hromadného puštění. Platí to jen pro
-       tohle čištění — nikam se to neukládá. */
-    appOknoOtevri(text + "\n\nChceš si něco nechat na výměnu? Začni psát jméno"
-      + " a vyber z nabídky — nabízí se jen druhy, které doopravdy máš."
-      + " Takové kusy se v tomhle čištění nepustí; pro příští čištění to"
-      + " platit nebude.",
-      { potvrdit: true, vstup: "", okText: "Začít čistit", zrusitText: "Bez výměn",
-        cipy: { moznosti: appOknoMojeDruhy(), placeholder: "Např. Pidgey" },
+    /* Na začátku čištění se ptáme na výměny — ale je to editor TRVALÉHO
+       seznamu, ne jednorázová výjimka. Pole je předvyplněné tím, co už
+       v seznamu je; co se tu změní, platí i příště a je to vidět i
+       v Transferu. */
+    appOknoOtevri(text + "\n\nDruhy, za které chceš bonbóny z výměny."
+      + " Jejich kusy se nepouštějí — dostanou verdikt Trade. Seznam platí"
+      + " trvale, tohle je jen místo, kde se dá upravit.",
+      { potvrdit: true, vstup: "",
+        okText: "Začít čistit", zrusitText: "Nechat beze změn",
+        cipy: { moznosti: appOknoMojeDruhy(), placeholder: "Např. Eevee",
+          vybrane: vymenaDruhyJmena() },
         ok: function (hodnota) {
           var vyber = bmTradeZeSeznamu(hodnota);
-          bmTrade = vyber.druhy;
+          // Co se v okně napsalo, je od téhle chvíle celý seznam.
+          vymenaDruhyUloz(Object.keys(vyber.druhy));
+          bmTrade = {};
           if (!Object.keys(bmTrade).length && !vyber.nezname.length) return;
           // Verdikt na výměnu je součást rozboru — bez přepočtu by zůstal starý.
           refreshComputed();
@@ -29931,6 +30036,38 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + (iv === null ? "" : " · " + Math.round(iv * 100) + " %") + "</span></div>";
   }
 
+  /** Druhy, za které chceš bonbóny z výměny, a hotový filtr na všechno,
+   *  co se po výměně vyvine zdarma. */
+  function hledaniVymenaHtml() {
+    var jmena = vymenaDruhyJmena();
+    var evo = tradeEvoDruhy();
+    return '<div class="hled-pred hled-vymena"><span class="hint">Druhy, za'
+      + " které chceš <b>bonbóny z výměny</b> — jejich kusy appka nenabídne"
+      + " k puštění, dostanou verdikt <b>Trade</b>. Platí trvale, dokud je"
+      + " nesmažeš.</span>"
+      + '<div class="hled-pred-sez">'
+      + jmena.map(function (jm, i) {
+          return '<span class="hled-pred-kus">' + escHtml(jm)
+            + '<button type="button" data-vymena-pryc="' + i
+            + '" title="Smazat ze seznamu">\u2715</button></span>';
+        }).join("")
+      + '<input type="text" class="hled-pred-nove" id="hledVymenaNovy"'
+      + ' placeholder="Např. Eevee" aria-label="Přidat druh na výměnu" />'
+      + '<button type="button" class="hled-vymena-pridat">Přidat</button>'
+      + "</div>"
+      + '<div class="hled-radek hled-evo-radek"><span class="hled-cislo"></span>'
+      + '<textarea class="hled-text" readonly rows="2">'
+      + escHtml(evo.map(function (x) { return x.toLowerCase(); }).join(","))
+      + "</textarea>"
+      + '<button class="primary hled-kopie">Kopírovat</button>'
+      + '<span class="hled-pocet">' + evo.length + " druhů</span></div>"
+      + '<span class="hint">Nahoře je hotový filtr na <b>všechno, co se po'
+      + " výměně vyvine zdarma</b> — platí pro celou hru, ne jen pro tvůj"
+      + " roster. Pozor, tenhle jeden <b>není na pouštění</b>: najde"
+      + " i kusy, které si necháváš.</span>"
+      + "</div>";
+  }
+
   /** Blok se zaškrtávátky nad filtry. */
   function hledaniPredponyHtml() {
     var list = hledaniPredpony();
@@ -30093,7 +30230,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + ".</span>"
         : "";
 
-      telo = uvod + hledaniPredponyHtml() + overeni
+      telo = uvod + hledaniVymenaHtml() + hledaniPredponyHtml() + overeni
         + hledaniSekce("Nejdřív vyměnit",
             "Po výměně se vyvinou za nula bonbónů — tyhle profesorovi"
             + " neposílej, dokud je nevyměníš.", rT, "t")
@@ -30168,6 +30305,34 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         hledaniPredponyUloz(list);
         vykresliHledani();
       });
+    });
+    /* Seznam druhů na výměnu: smazání a přidání. Po změně se okno
+       překreslí — kusy těch druhů se přesunou mezi výměny. */
+    box.querySelectorAll("[data-vymena-pryc]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var list = vymenaDruhyList();
+        var i = +btn.getAttribute("data-vymena-pryc");
+        if (list[i] === undefined) return;
+        vymenaDruhOdeber(list[i]);
+        refreshComputed();
+        vykresliHledani();
+      });
+    });
+    var vymPole = box.querySelector("#hledVymenaNovy");
+    var vymPridat = box.querySelector(".hled-vymena-pridat");
+    var pridejDruh = function () {
+      var jm = (vymPole.value || "").trim();
+      if (!jm) return;
+      if (!vymenaDruhPridej(jm)) {
+        appHlaska("Druh „" + jm + "“ appka nezná — zkontroluj překlep.");
+        return;
+      }
+      refreshComputed();
+      vykresliHledani();
+    };
+    if (vymPridat) vymPridat.addEventListener("click", pridejDruh);
+    if (vymPole) vymPole.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); pridejDruh(); }
     });
     var davkaEl = box.querySelector("#hledDavka");
     if (davkaEl) davkaEl.addEventListener("change", function () {
@@ -30704,6 +30869,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var d = dexEntry(jmeno);
       return d ? druhHtml(dexKey(jmeno), d) : "";
     },
+    /* Druhy na výměnu: trvalý seznam (klíče s formou). */
+    vymenaDruhy: function () { return vymenaDruhyList(); },
+    vymenaDruhPridej: function (jm) { return vymenaDruhPridej(jm); },
+    vymenaDruhOdeber: function (k) { return vymenaDruhOdeber(k); },
+    tradeEvoDruhy: function () { return tradeEvoDruhy(); },
     /* Vlastní bonbónové cíle — testy i vrstva. */
     chciBonbony: function () { return chciBonbonyList(); },
     chciBonbonyPrepni: function (klic) { return chciBonbonyPrepni(klic); },

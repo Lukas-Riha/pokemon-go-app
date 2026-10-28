@@ -20460,6 +20460,87 @@ try {
     s316.ponechat > 0 && s316.nesmysl === 0 && s316.prazdne === s316.kusu,
     JSON.stringify(s316));
 
+  /* 317) Trvalý seznam druhů na výměnu.
+
+     Dosud se appka ptala na začátku každého čištění a výběr zahodila,
+     jakmile se čištění zavřelo. Teď je to seznam, který platí dál: kus
+     takového druhu, který by jinak šel pryč, dostane verdikt „Trade"
+     (pořád odchází, jen k někomu jinému než k profesorovi) a v Transferu
+     spadne mezi výměny, ne mezi pouštění. Formy se rozlišují — Graveler
+     Alolan není totéž co Graveler. */
+  console.log("\n317) Trvaly seznam druhu na vymenu");
+  await page.goto(URL);
+  await nacteno(page);
+  const s317 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rows = [];
+    for (let i = 0; i < 5; i++) {
+      rows.push({ pokemon: "Eevee", cp: String(400 - i * 20), level: 15 - i,
+        ivAtk: i % 3, ivDef: (i + 1) % 3, ivSta: i % 2 });
+    }
+    for (let i = 0; i < 3; i++) {
+      rows.push({ pokemon: "Graveler Alolan", cp: String(900 - i * 50),
+        level: 18 - i, ivAtk: i % 2, ivDef: i % 3, ivSta: (i + 1) % 2 });
+    }
+    rows.push({ pokemon: "Graveler", cp: "1100", level: 21, ivAtk: 1, ivDef: 1, ivSta: 2 });
+    rows.push({ pokemon: "Rattata", cp: "120", level: 8, ivAtk: 3, ivDef: 4, ivSta: 5 });
+    P.setRows(rows);
+    await cekej(3500);
+    P.setDiscarded([]);
+    await cekej(300);
+    const out = { kusu: P.getRows().length };
+    const verdikty = () => {
+      const comp = P.getComputed();
+      return P.getRows().map((r) => ({ jm: r.pokemon, keep: (comp[r.id] || {}).keep,
+        good: !!(comp[r.id] || {}).keepGood }));
+    };
+    out.tradePred = verdikty().filter((x) => x.keep === "Trade").length;
+    // seznam: Eevee a Graveler Alolan (ne obyčejný Graveler)
+    out.klicEevee = P.vymenaDruhPridej("Eevee");
+    out.klicGraveler = P.vymenaDruhPridej("Graveler Alolan");
+    await cekej(1200);
+    const po = verdikty();
+    out.seznam = P.vymenaDruhy();
+    out.trade = po.filter((x) => x.keep === "Trade");
+    out.tradeJmena = [...new Set(out.trade.map((x) => x.jm))].sort();
+    // „Trade" není ponechání: kus pořád odchází
+    out.tradeZelene = out.trade.filter((x) => x.good).length;
+    // obyčejný Graveler se na seznam nechytil
+    out.obycejnyGraveler = po.filter((x) => x.jm === "Graveler").map((x) => x.keep);
+    // v Transferu patří mezi výměny, ne mezi pouštění
+    document.getElementById("hledaniBtn").click();
+    await cekej(1300);
+    const okno = document.getElementById("hledaniOkno");
+    out.sekce = [...okno.querySelectorAll(".hled-sekce h4")]
+      .map((h) => h.textContent.replace(/\s+/g, " ").trim());
+    const evoPole = okno.querySelector(".hled-evo-radek .hled-text");
+    out.evoFiltr = evoPole ? evoPole.value : "";
+    out.evoDruhu = P.tradeEvoDruhy().length;
+    okno.querySelector(".hled-krizek").click();
+    await cekej(300);
+    // odebrání vrátí původní verdikt
+    P.vymenaDruhOdeber(out.klicEevee);
+    await cekej(1000);
+    out.tradePoOdebrani = [...new Set(verdikty().filter((x) => x.keep === "Trade")
+      .map((x) => x.jm))];
+    return out;
+  });
+  check("druhy ze seznamu dostanou verdikt Trade, ne ponechání",
+    s317.tradePred === 0 && s317.trade.length > 0 && s317.tradeZelene === 0
+      && s317.tradeJmena.join(",") === "Eevee,Graveler Alolan",
+    JSON.stringify(s317).slice(0, 400));
+  check("…formy se rozlišují a seznam jde zase zrušit",
+    s317.seznam.indexOf("graveler-alola") !== -1
+      && s317.seznam.indexOf("graveler") === -1
+      && s317.obycejnyGraveler.every((v) => v !== "Trade")
+      && s317.tradePoOdebrani.join(",") === "Graveler Alolan",
+    JSON.stringify(s317).slice(0, 400));
+  check("…v Transferu jsou mezi výměnami a filtr na evoluce zdarma sedí",
+    /vym[ěe]nit/i.test(s317.sekce.join(" ")) && s317.evoDruhu > 0
+      && s317.evoFiltr.split(",").length === s317.evoDruhu,
+    JSON.stringify([s317.sekce, s317.evoFiltr, s317.evoDruhu]));
+
   await page.goto(URL);
   await nacteno(page);
 
