@@ -6130,16 +6130,18 @@ for (const sirka of [1100, 1280, 1600]) {
     const sestavy = [...document.querySelectorAll(".d-lg-sestava")];
     return { sestav: sestavy.length,
       orez: sestavy.map((el) => Math.max(0, el.scrollWidth - el.clientWidth)),
-      // co se nevejde, musí být přiznané chipem „+N"
+      // co se nevejde, se přepne na samé ikony — „+N" se už nepoužívá
       vic: sestavy.map((el) => (el.querySelector("[data-vic]") || {}).textContent || ""),
-      // a celé znění zůstává v bublině
-      tituly: sestavy.map((el) => (el.title || "").length),
+      jenIkony: sestavy.filter((el) => el.querySelector(".jen-ikony")).length,
+      // a celé znění i s ikonami zůstává v bublině
+      tituly: sestavy.map((el) => (el.dataset.tip || el.title || "").length),
       vLigach: !!document.querySelector(".d-ligy-tab .d-lg-sestava") };
   });
   await p84.close();
   check("sestava u ligy se při " + sirka + " px neořízne",
     !d84.chyba && d84.sestav > 0 && d84.orez.every((x) => x === 0)
-      && d84.tituly.every((x) => x > 5),
+      && d84.tituly.every((x) => x > 5)
+      && d84.vic.every((x) => !x),
     JSON.stringify(d84));
 }
 

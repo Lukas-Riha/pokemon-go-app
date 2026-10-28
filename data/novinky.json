@@ -298,7 +298,11 @@
       "**Seznam druhů na výměnu se všude upravuje stejně.** Tlačítko v Transferu otevře to samé okno jako před čištěním — štítky se sprity, našeptávání a počet kusů, které z toho druhu máš. Druhy s **evolucí zdarma po výměně** mají vlastní rámeček: appka je zná z herních dat a s tvým seznamem nemají nic společného.",
       "**Transfer už nepřijde o seznam smazaných.** Dávka se počítala šest hodin zpátky od posledního smazání, takže stačilo po čištění smazat o pár hodin později jediný další kus a devadesát procent seznamu zmizelo — Transfer pak nabídl jeden filtr na ten poslední kus. Teď drží dávka pohromadě **celý den**, takže se dá čistit ráno a pouštět ve hře večer. Dvě čištění ob den se pořád nespojí.",
       "**„Tyhle jsem už ve hře pustil.“** Nahoře v Transferu přibylo tlačítko, kterým dávku odkliknete, jakmile je ve hře opravdu pustíte — filtry na ni appka přestane nabízet. Z **paměti smazaných kusů** se přitom nic nemaze: ta hlídá, aby se smazaný kus nevrátil při dalším skenu, a platí dál.",
-      "**Verdikt Trade má vlastní štítek.** Dosud se počítal jako „Zahodit“, takže se podle něj nedalo filtrovat ani ho našeptat v hledání. Napiš **tra** a pole nabídne štítek **TRADE** i s počtem kusů; ve filtru značek je nová položka Trade."
+      "**Verdikt Trade má vlastní štítek.** Dosud se počítal jako „Zahodit“, takže se podle něj nedalo filtrovat ani ho našeptat v hledání. Napiš **tra** a pole nabídne štítek **TRADE** i s počtem kusů; ve filtru značek je nová položka Trade.",
+      "**Méně textu v Transferu.** Okno vysvětlovalo každou drobnost celou větou; vysvětlení se přesunula do bublin a zbyly nadpisy. Zůstalo jen varování u filtru na evoluce zdarma, že to **není filtr na pouštění**.",
+      "**Sestava útoků u ligy je vidět celá.** Když se do buňky nevejdou názvy, schovají se a zbydou **barevné ikony typů** — žádné „+2“, takže je pořád vidět, kolik útoků sestava má a jaké jsou. Po najectí na ně ukáže bublina celé znění i s ikonami. V buňce taky zbyla jedna bublina místo tří: pořadí, posun, procento, IV i ceny vysvětluje jeden souhrn.",
+      "**Cena vylepšení na dva řádky.** Dřív stolo v kartě „L40 · 424 tis. + 202 candy + 296 XL“, což svádělo k tomu, že XL potřebuješ na čtyřicítku. Teď je to **do L40** (prach a bonbóny) a pod tím **L41–50** (prach a XL).",
+      "**Oprava: „strop“ v hlavičce není na L40.** Číslo se počítalo správně na nejvyšším levelu (L50), ale popisek pod ním tvrdil „na levelu 40“."
     ]
   }
 }

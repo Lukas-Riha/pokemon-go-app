@@ -1390,14 +1390,14 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
         if(!/^Po evoluci/.test(h)&&row.fastMove&&row.charged1)return;
         // U větvené řady (Eevee) „po evo" neřeklo, o kterou formu jde.
         const cil=/^Po evoluci na\s+(.+?)\s*$/.exec(h);
-        pridej(/^Po evoluci/.test(h)?(cil?cil[1]:'po evo'):(row.pokemon||'teď'),v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava.'));
+        pridej(/^Po evoluci/.test(h)?(cil?cil[1]:'po evo'):(row.pokemon||'teď'),v.split(' + '),(h?h+' — ':'')+(pop||'Nejlepší sestava do raidu.'));
       });
     }
     if(!box.querySelector('.d-move')&&moves){
       // Kus bez útoků a bez ligové sestavy: engine nabízí nejlepší možnou
       // sestavu jedním chipem („Force Palm + Aura Sphere (Elite TM)").
       const text=[...moves.querySelectorAll('.d-move-jm')].map(e=>e.textContent).find(x=>/\s\+\s/.test(x));
-      if(text)pridej(row.pokemon||'teď',text.split(' + '),'Nejlepší možná sestava tohohle druhu — útoky kusu zatím nemáš vyplněné.');
+      if(text)pridej(row.pokemon||'teď',text.split(' + '),'Nejlepší možná sestava tohohle druhu do raidu — útoky kusu zatím nemáš vyplněné.');
       else box.append(moves);
     }
     /* Sestava u ligy v ligove tabulce: engine ji da jako text, vrstva
@@ -1407,38 +1407,49 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
      if(!text||el.dataset.chipy)return;
      el.dataset.chipy='1';
      el.dataset.cela=text;
-     if(window.AtlasUtokySestava)el.innerHTML=window.AtlasUtokySestava(text);
-     if(!el.title)el.title=text;
+     if(window.AtlasUtokySestava){
+       el.innerHTML=window.AtlasUtokySestava(text);
+       /* Bublina u sestavy ukazuje tytéž chipy s ikonami jako řádek —
+          jen vždycky celé, i když se do buňky vejdou jen ikony. */
+       el.dataset.tip=window.AtlasUtokySestava(text);
+       el.removeAttribute('title');
+     } else if(!el.title)el.title=text;
     });
-    /* Co se do řádku nevejde, se složí do „+N": ořezaný chip v půlce slova
-       je horší než přiznané „ještě jeden". Celé znění drží title, takže se
-       nic neztratí, a výška řádku zůstává stejná. Měří se až po vykreslení,
-       protože šířka buňky závisí na okně i na tom, má-li kus sloupec po
-       evoluci. */
+    /* Co se do řádku nevejde, se dřív schovalo do „+N" — jenže pak nebylo
+       vidět, které útoky to jsou. Místo toho se u celé sestavy schovají
+       NÁZVY a zůstanou barevné ikony typů: ty se vejdou vždycky a útok se
+       podle barvy a ikony pozná. Celé znění drží bublina. Měří se až po
+       vykreslení, protože šířka buňky závisí na okně i na tom, má-li kus
+       sloupec po evoluci. */
     const srovnejSestavy=()=>{
       document.querySelectorAll('.d-lg-sestava').forEach(el=>{
         const sada=el.querySelector('.atlas-utok-sada');
         if(!sada)return;
         sada.querySelectorAll('[data-vic]').forEach(x=>x.remove());
-        const deti=[...sada.children];
-        deti.forEach(x=>{x.style.display=''});
+        sada.classList.remove('jen-ikony');
+        const bunka=el.closest('td');
+        bunka?.classList.remove('uzko');
         if(el.scrollWidth<=el.clientWidth+1)return;
-        const vic=document.createElement('span');
-        vic.dataset.vic='1';vic.className='atlas-utok-chip d-lg-vic';
-        sada.append(vic);
-        let skryto=0;
-        for(let i=deti.length-1;i>=0&&el.scrollWidth>el.clientWidth+1;i--){
-          // `hidden` tu nestačí: třída chipu má vlastní display, který ho přebije.
-          deti[i].style.display='none';
-          if(!deti[i].classList.contains('atlas-utok-spoj')){
-            skryto++;vic.textContent='+'+skryto;
-          }
-        }
-        if(!skryto)vic.remove();
+        sada.classList.add('jen-ikony');
+        /* Ani ikony se nevejdou (úzké okno): uvolní se místo po odznáčku
+           s pořadím kombinace IV — to číslo je i v bublině, kdežto útoky
+           jinde v řádku nejsou. */
+        if(bunka&&el.scrollWidth>el.clientWidth+1)bunka.classList.add('uzko');
       });
     };
     window.__atlasSrovnejSestavy=srovnejSestavy;
-    requestAnimationFrame(srovnejSestavy);
+    /* Měřit se musí AŽ po dopadu rozvržení. Detail se otevírá s animací,
+       takže hned po vykreslení je buňka široká pár desítek pixelů a
+       sestava vypadala jako přetékající pokaždé — i v širokém okně.
+       Proto dvě snímky dopředu, krátký odstup a pak ještě hlídač
+       velikosti buňky. */
+    requestAnimationFrame(()=>requestAnimationFrame(srovnejSestavy));
+    setTimeout(srovnejSestavy,220);
+    setTimeout(srovnejSestavy,700);
+    if(window.ResizeObserver){
+      const sleduj=new ResizeObserver(()=>srovnejSestavy());
+      container.querySelectorAll('.d-lg-sestava').forEach(el=>sleduj.observe(el));
+    }
     if(!window.__atlasSestavyResize){
       window.__atlasSestavyResize=true;
       window.addEventListener('resize',()=>requestAnimationFrame(()=>{

@@ -236,7 +236,7 @@ try {
         P.ligovaCesta(jmeno, 15, 15, 15, 20, gl);
         P.raidRolesFor(jmeno);
         P.gymRoleFor(jmeno);
-        P.cpAtL40(jmeno, 15, 15, 15);
+        P.cpNaStropu(jmeno, 15, 15, 15);
       } catch (e) {
         spadlo.push(jmeno + ": " + e.message);
       }

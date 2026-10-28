@@ -3536,3 +3536,18 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test #atlasDetailContent .atlas-detail-columns>*{min-width:0}
 .atlas-test #atlasDetailContent .atlas-evolution-column .d-evo-kus{min-width:0}
 #atlasDetailContent .atlas-detail-column>.detail-main{flex:0 0 auto}
+
+/* Claude (125): když se sestava do buňky nevejde, schovají se názvy útoků
+   a zůstanou barevné ikony typů. Dřív se přebytek skládal do „+N", takže
+   nebylo vidět, které útoky chybí. */
+.atlas-test .atlas-utok-sada.jen-ikony{gap:2px}
+.atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-chip{font-size:0;padding:0;gap:0;
+  background:none;border:0}
+.atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-typ{font-size:9px;padding:2px;
+  width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center}
+/* Spojky „+" a „/" nesou význam jen u názvů; mezi holými ikonami jsou
+   jen šum a berou místo, kvůli kterému by se ikony nevešly. */
+.atlas-test .atlas-utok-sada.jen-ikony .atlas-utok-spoj{display:none}
+/* Úzké okno: odznáček „IV #N" ustoupí útokům. Pořadí kombinace je
+   v bublině, sestava nikde jinde v řádku není. */
+.atlas-test .d-ligy-tab td.uzko .d-lg-iv{display:none}

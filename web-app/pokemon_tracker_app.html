@@ -1388,6 +1388,9 @@
   .d-role.critical, .d-role.muted { border-left-color: var(--status-critical);
     --role-podklad: color-mix(in srgb, var(--status-critical) 7%, var(--surface-1));
     background: var(--role-podklad); }
+  /* Cena vylepšení má dva řádky (do L40 a nad ni) a musí se vejít do
+     kartičky beze změny její výšky — proto menší písmo a těsné řádkování. */
+  .d-cena-radek { display: block; line-height: 1.3; }
   .d-role-h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
     color: var(--text-primary); }
   .d-role-v { font-size: 15px; font-weight: 700; margin: 3px 0 4px; color: var(--status-good); }
@@ -4946,7 +4949,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return max;
   })();
 
-  var CPM_40 = (function () {
+  /* Násobek pro NEJVYŠŠÍ level v tabulce (dnes L50), ne pro čtyřicítku —
+     jméno `CPM_40` lhalo a v detailu se kvůli němu psalo „na levelu 40"
+     u čísla, které je ve skutečnosti strop na L50. */
+  var CPM_NA_STROPU = (function () {
     for (var i = 0; i < CPM_LEVELS.length; i++) {
       if (CPM_LEVELS[i][0] === CPM_STROP) return CPM_LEVELS[i][1];
     }
@@ -5016,15 +5022,15 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Kolik CP by kus měl na levelu 40 — jeho strop bez XL bonbónů.
    *  U nevyvinutých počítá i strop po evoluci (IV se evolucí nemění),
    *  protože jinak vypadá 100% Bagon jako slaboch. */
-  function cpAtL40(name, iva, ivd, ivs) {
+  function cpNaStropu(name, iva, ivd, ivs) {
     var dex = dexEntry(name);
     if (!dex || iva === null || ivd === null || ivs === null) return null;
-    var out = { cp: cpAt(dex, iva, ivd, ivs, CPM_40), evolved: null, evolvedName: "" };
+    var out = { cp: cpAt(dex, iva, ivd, ivs, CPM_NA_STROPU), evolved: null, evolvedName: "" };
     if (dex.canEvolve && dex.finalKey) {
       var fin = POKEDEX.species[dex.finalKey];
       if (fin) {
         var finDex = { a: fin[3], d: fin[4], s: fin[5] };
-        out.evolved = cpAt(finDex, iva, ivd, ivs, CPM_40);
+        out.evolved = cpAt(finDex, iva, ivd, ivs, CPM_NA_STROPU);
         out.evolvedName = fin[1];
       }
     }
@@ -9963,8 +9969,15 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
             shadow: shadowMult
           };
         })(),
-        cpMax: cpAtL40(r.pokemon, atk, def, sta),
+        cpMax: cpNaStropu(r.pokemon, atk, def, sta),
         cost: upgradeCost(r.level, CPM_STROP, r.forma, r.pokemon),
+        /* Dvě části téhož účtu: do L40 se platí prachem a běžnými bonbóny,
+           od L41 výš prachem a XL. V jednom řádku to vypadalo, že XL
+           potřebuješ na čtyřicítku. */
+        costDo40: upgradeCost(r.level, 40, r.forma, r.pokemon),
+        costNad40: CPM_STROP > 40
+          ? upgradeCost(Math.max(num(r.level) || 0, 40), CPM_STROP, r.forma, r.pokemon)
+          : null,
         moveRating: moveRating,
         pvpMoves: pvpMoveRating,
         strongTypes: moveTypes(moveRating) ? strongFromTypes(moveTypes(moveRating)) : strongAgainst(dex),
@@ -11866,10 +11879,18 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         cost: b.cost,
         costText: b.cost ? (formatDust(b.cost.dust) + " prachu + " + b.cost.candy + " bonbónů do L40"
           + (b.cost.xl ? " (+" + b.cost.xl + " XL)" : "")) : "",
-        // Krátká verze do kartičky „Vylepšit": musí se vejít na jeden řádek,
-        // jinak kartička roste a detail při listování skáče.
-        costKratce: b.cost ? ("L40 · " + formatDust(b.cost.dust) + " + " + b.cost.candy + " candy"
-          + (b.cost.xl ? " + " + b.cost.xl + " XL" : "")) : "",
+        /* Krátká verze do kartičky „Vylepšit", na dva řádky: první je
+           cesta na čtyřicítku (prach a bonbóny), druhý zbytek nad ní
+           (prach a XL). Druhý řádek chybí, když kus na L40 nebo výš už je
+           nebo když se dotahuje jen do L40. */
+        costKratce: b.costDo40
+          ? ("do L40 · " + formatDust(b.costDo40.dust) + " + "
+             + b.costDo40.candy + " candy")
+          : "",
+        costKratce2: (b.costNad40 && b.costNad40.dust)
+          ? ("L41–50 · " + formatDust(b.costNad40.dust)
+             + (b.costNad40.xl ? " + " + b.costNad40.xl + " XL" : ""))
+          : "",
         evolve: evolve, evolveTone: evolveTone, evolveTitle: evolveTitle, evolveSub: evolveSub,
         gymTitle: gymTitle, raidTitle: raidTitle, copiesTitle: copiesTitle, megaTitle: megaTitle, finalEvoAuto: b.finalEvoAuto,
         mega: mega, megaTone: megaTone, megaSub: megaSub, isMega: !!b.megaEntry,
@@ -14502,16 +14523,16 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     LEAGUES.forEach(function (l) { if (l.meta === ligaKlic) liga = l; });
     var nej = liga ? nejKombinaceVLize(jmeno, liga.cap) : null;
     var moje = [num(r.ivAtk), num(r.ivDef), num(r.ivSta)].join("/");
-    /* Dva krátké řádky, ne odstavec: číslo kombinace a nejlepší možná.
-       Procento samo o sobě mate (v Great League má i poslední kombinace
-       přes 90 %), takže je u něj v závorce škála toho druhu. */
-    var cisla = '<div class="tip-iv"><b>' + escHtml(moje) + "</b> · #" + iv.rank
+    /* Jeden řádek, ne odstavec: kombinace kusu a za pomlčkou nejlepší
+       možná. Procento samo o sobě mate (v Great League má i poslední
+       kombinace přes 90 %), takže je u něj v závorce škála toho druhu. */
+    return '<div class="tip-iv"><b>' + escHtml(moje) + "</b> · #" + iv.rank
       + " / " + iv.z + " · " + String(iv.pct).replace(".", ",") + " %"
       + (iv.odKud ? " <span>(škála " + String(iv.odKud).replace(".", ",")
-          + "–100 %)</span>" : "") + "</div>";
-    return cisla + (nej ? '<div class="tip-iv"><span>nejlepší</span> <b>'
-      + escHtml(nej.iv) + "</b> · L" + String(nej.level).replace(".", ",")
-      + " · " + nej.cp + " CP</div>" : "");
+          + "–100 %)</span>" : "")
+      + (nej ? ' <span>— nejlepší</span> <b>' + escHtml(nej.iv) + "</b> · L"
+          + String(nej.level).replace(".", ",") + " · " + nej.cp + " CP" : "")
+      + "</div>";
   }
 
   function bublinaLigy(zkratka, druhKlic, uvod, kusId) {
@@ -15755,8 +15776,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       megaE ? "Mega evoluci má — po ní se počítá jako jiný pokémon."
         : megaPoEvo ? "Sám mega formu nemá, ale po evoluci na " + megaPoEvo + " ano."
         : "Mega evoluci tenhle druh nemá."));
-    // cpAtL40 vrací objekt {cp, evolved, evolvedName} — ne číslo.
-    var strop40 = cpAtL40(d.name, 15, 15, 15);
+    // cpNaStropu vrací objekt {cp, evolved, evolvedName} — ne číslo.
+    var strop40 = cpNaStropu(d.name, 15, 15, 15);
     var stropText = strop40 && strop40.cp ? String(strop40.cp) : "–";
     role.push(roleCardHtml("Strop CP", stropText, "muted",
       strop40 && strop40.cp
@@ -16643,8 +16664,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     h += '<div class="d-box"><div class="d-box-h">Strop</div>'
       + '<div class="d-big">' + (c.cpMax ? (c.cpMax.evolved || c.cpMax.cp) : "?") + " CP</div>"
       + '<div class="d-note">' + (c.cpMax && c.cpMax.evolved
-        ? "na levelu 40 po evo"
-        : "na levelu 40") + "</div>"
+        ? "na levelu " + CPM_STROP + " po evo"
+        : "na levelu " + CPM_STROP) + "</div>"
       + '<div class="d-note">'
       + (function () {
           var tip = bublinaKopii(b);
@@ -16799,9 +16820,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           return '<td class="' + trida + '" data-tip="' + escHtml(tipHtml) + '">'
             + '<div class="d-lg-in">'
             + '<div class="d-lg-hlava"><b>#' + v.rank + "</b>"
+            /* Bez vlastní bubliny: posun, IV pořadí i ceny vysvětluje
+               jedna souhrnná bublina celé buňky. Tři bubliny nad sebou
+               říkaly totéž. */
             + (posun ? '<span class="d-lg-posun ' + (posun.rozdil > 0 ? "nahoru" : "dolu")
-                + '" title="' + escHtml("Od " + posun.odKdy + ": #" + posun.drive
-                  + " → #" + posun.ted) + '">'
+                + '">'
                 + (posun.rozdil > 0 ? "▲" : "▼") + Math.abs(posun.rozdil) + "</span>" : "")
             + '<span class="d-lg-pct">' + (Math.round(v.pct * 1000) / 10) + " %</span>"
             /* Pořadí TÉHLE kombinace IV mezi 4096 u téhož druhu — číslo,
@@ -16810,10 +16833,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
             + (function () {
                 var iv = ivRankVLize(v.jmeno || r.pokemon, r.ivAtk, r.ivDef,
                   r.ivSta, ligaKlic);
-                return iv ? '<span class="d-lg-iv" title="'
-                  + escHtml("Pořadí téhle kombinace IV mezi 4096 možnými u toho"
-                    + " druhu v téhle lize (" + iv.pct + " % nejlepší).")
-                  + '">IV #' + iv.rank + "</span>" : "";
+                return iv ? '<span class="d-lg-iv">IV #' + iv.rank
+                  + "</span>" : "";
               })()
             /* Proužek říká totéž co procento vedle něj. Když je v řádku
                i sestava útoků, je jeho místo užitečnější pro ni — jinak se
@@ -16823,9 +16844,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
             /* Sestava do téhle ligy hned za pořadím, v témže řádku —
                pod názvem ligy roztahovala výšku řádku. Vrstva z textu
                udělá chipy s typem, jako je má Vyhledávání. */
-            + (sestavaLigy(v) ? '<span class="d-lg-sestava" title="Sestava,'
-                + ' kterou se tahle liga podle PvPoke hraje. Barvy u útoků'
-                + ' v hlavičce měří raidové DPS — to je jiné měřítko.">'
+            + (sestavaLigy(v) ? '<span class="d-lg-sestava">'
                 + escHtml(sestavaLigy(v)) + "</span>" : "")
             + "</div>"
             + '<span class="d-lg-cena' + (v.cena ? "" : " d-lg-hotovo") + '">' + cena + "</span>"
@@ -16908,8 +16927,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
     // --- akce ---
     var akce = [];
-    if (c.powerup !== "Ne") akce.push(roleCardHtml("Vylepšit", c.powerup,
-      c.powerupTone, c.costKratce || c.powerupSub || "", null, c.costText || ""));
+    if (c.powerup !== "Ne") {
+      var cenaRadky = [c.costKratce, c.costKratce2].filter(Boolean)
+        .map(function (t) { return '<span class="d-cena-radek">' + escHtml(t) + "</span>"; })
+        .join("");
+      akce.push(roleCardHtml("Vylepšit", c.powerup, c.powerupTone,
+        cenaRadky || escHtml(c.powerupSub || ""), null, c.costText || ""));
+    }
     // Jen výsledek; na co, za kolik a proč je v bublině.
     if (c.evolve === "Ano") akce.push(roleCardHtml("Evolvovat", "Ano",
       c.evolveTone, "", null, (c.evolveSub ? c.evolveSub + ". " : "") + (c.evolveTitle || "")));
@@ -30117,10 +30141,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var klice = vymenaDruhyList();
     var jmena = vymenaDruhyJmena();
     var evo = tradeEvoDruhy();
-    return '<div class="hled-pred hled-vymena"><span class="hint">Druhy, za'
-      + " které chceš <b>bonbóny z výměny</b> — jejich kusy appka nenabídne"
-      + " k puštění, dostanou verdikt <b>Trade</b>. Platí trvale, dokud je"
-      + " nesmažeš.</span>"
+    return '<div class="hled-pred hled-vymena"><span class="hint"'
+      + ' title="Kusy těchhle druhů appka nenabídne k puštění — dostanou'
+      + ' verdikt Trade. Platí trvale, dokud je nesmažeš.">Druhy, za které'
+      + " chceš <b>bonbóny z výměny</b></span>"
       + '<div class="hled-pred-sez">'
       + (jmena.length
           ? jmena.map(function (jm, i) {
@@ -30140,11 +30164,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       /* Evoluce zdarma je něco jiného než „chci bonbóny": tohle appka ví
          sama z herních dat a nemá to nic společného s tvým seznamem.
          Proto vlastní rámeček. */
-      + '<div class="hled-pred hled-evo"><span class="hint">Druhy, které se'
-      + " <b>po výměně vyvinou zdarma</b> — appka je zná z herních dat,"
-      + " nic se tu nenastavuje. Platí pro celou hru, ne jen pro tvůj"
-      + " roster, takže je filtr pořád stejný. Pozor, tenhle <b>není na"
-      + " pouštění</b>: najde i kusy, které si necháváš.</span>"
+      + '<div class="hled-pred hled-evo"><span class="hint"'
+      + ' title="Appka je zná z herních dat, platí pro celou hru — filtr'
+      + ' je proto pořád stejný.">Druhy, které se <b>po výměně vyvinou'
+      + " zdarma</b>. Pozor, tenhle <b>není na pouštění</b>: najde i kusy,"
+      + " které si necháváš.</span>"
       + '<div class="hled-radek hled-evo-radek"><span class="hled-cislo"></span>'
       + '<textarea class="hled-text" readonly rows="2">'
       + escHtml(evo.map(function (x) { return x.toLowerCase(); }).join(","))
@@ -30157,9 +30181,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Blok se zaškrtávátky nad filtry. */
   function hledaniPredponyHtml() {
     var list = hledaniPredpony();
-    return '<div class="hled-pred"><span class="hint">Vlastní předfiltry —'
-      + " co máš ve hře označkované a nechceš pustit. Zaškrtnuté se přidají"
-      + " před každý filtr (platí na celý výběr).</span>"
+    return '<div class="hled-pred"><span class="hint"'
+      + ' title="Co máš ve hře označkované a nechceš pustit. Zaškrtnuté se'
+      + ' přilepí před každý filtr, takže platí na celý výběr.">Vlastní'
+      + " předfiltry — zaškrtnuté se přidají před každý filtr.</span>"
       + '<div class="hled-pred-sez">'
       + list.map(function (x, i) {
           return '<label class="hled-pred-kus"><input type="checkbox"'
@@ -30279,25 +30304,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var uvod = '<span class="hint" title="Appka si každý filtr po sobě zkouší'
         + " proti celému rosteru; co by našlo i jiný kus, vůbec nenabídne."
         + " Zná ale jen roster — co jsi chytil po posledním skenu, o tom neví."
-        + '">' + sklonuj(kusu, "kus", "kusy", "kusů") + " k puštění (" + odkud
+        + '">' + sklonuj(kusu, "kus", "kusy", "kusů") + " k puštění"
         + (davka && vsechny.length > kusyOkna.length
-            ? ", dávka na dnešek z " + vsechny.length : "")
-        + "). Zkopíruj filtr, ve hře vlož a označ. <b>Nic jiného na něj"
-        + " nevyskočí.</b></span>"
+            ? " (dávka z " + vsechny.length + ")" : "")
+        + ". Zkopíruj filtr, ve hře vlož a označ.</span>"
         + (z.zdroj === "smazane"
             ? '<div class="hled-hotovo"><button type="button" id="hledHotovo">'
-              + "Tyhle jsem už ve hře pustil</button>"
-              + '<span class="hint">Odškrtne tuhle dávku, takže ji Transfer'
-              + " přestane nabízet. Z paměti smazaných kusů nic nezmizí —"
-              + " ta hlídá, aby se ti smazaný kus nevrátil při dalším skenu."
-              + "</span></div>"
+              + "Tyhle jsem už ve hře pustil</button></div>"
             : "")
-        + '<div class="hled-davka"><label><input type="checkbox" id="hledDavka"'
+        + '<div class="hled-davka"><label title="Hra povolí sto výměn denně;'
+        + ' transferů k profesorovi kolik chceš. Do dávky proto jdou první'
+        + ' kusy na výměnu, zbytek se doplní od nejvyššího CP.">'
+        + '<input type="checkbox" id="hledDavka"'
         + (davka ? " checked" : "") + "> Jen dávka na dnešek ("
-        + HLEDANI_DAVKA + " kusů, nejdřív výměny)</label>"
-        + '<span class="hint">Hra povolí <b>sto výměn denně</b>; transferů'
-        + " k profesorovi kolik chceš. Do dávky proto jdou první kusy na"
-        + " výměnu a zbytek se doplní od nejvyššího CP.</span></div>";
+        + HLEDANI_DAVKA + " kusů)</label></div>";
 
       var overeni = "";
       var r0 = rH || rP || rT;
@@ -30316,9 +30336,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + '<button class="hled-odpoved" data-rezim="and">Vyskočili všichni '
           + escHtml(r0.test.druh) + " (" + r0.test.kusu + ")</button></div></div>";
       } else {
-        overeni = '<div class="hled-stav"><span class="hint">Filtry sedí na to,'
-          + ' jak hra čte vyhledávání.</span>'
-          + '<button class="hled-znovu">Ověřit znovu</button></div>';
+        overeni = '<div class="hled-stav">'
+          + '<button class="hled-znovu" title="Filtry sedí na to, jak hra'
+          + ' čte vyhledávání. Klikni, jestli to chceš ověřit znovu.">'
+          + "Ověřit znovu</button></div>";
       }
 
       var rucne = (rH ? rH.rucne : []).concat(rP ? rP.rucne : [])
@@ -30346,10 +30367,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
       telo = uvod + hledaniVymenaHtml() + hledaniPredponyHtml() + overeni
         + hledaniSekce("Nejdřív vyměnit",
-            "Po výměně se vyvinou za nula bonbónů — tyhle profesorovi"
-            + " neposílej, dokud je nevyměníš.", rT, "t")
-        + hledaniSekce("Hromadným výběrem",
-            "Označ prstem víc kusů naráz a pusť je jedním tahem.", rH, "h")
+            "Po výměně se vyvinou za nula bonbónů.", rT, "t")
+        + hledaniSekce("Hromadným výběrem", "", rH, "h")
         + hledaniSekce("Po jednom",
             "Shiny, legendární a Ultra Beast hra do hromadného výběru nepustí.",
             rP, "p")
@@ -31430,7 +31449,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     cpmLevels: function () { return CPM_LEVELS; },
     cpmAtLevel: cpmAtLevel,
     cpAt: cpAt,
-    cpAtL40: cpAtL40,
+    cpNaStropu: cpNaStropu,
     dexByKey: dexByKey,
     dexEntry: dexEntry,
     bestLevelIndex: bestLevelIndex,
