@@ -12705,9 +12705,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   function passesFilter(c, row) {
-    if (search && row) {
-      if (deaccent(String(row.pokemon || "")).toLowerCase().indexOf(search) === -1) return false;
-    }
+    if (search && row && !rosterNajde(search, row, c)) return false;
     if (typeFilter && (c.strongTypes || []).indexOf(typeFilter) === -1) return false;
     if (!pvpFiltrProjde(c)) return false;
     if (!znackaFiltrProjde(c)) return false;
@@ -12727,6 +12725,33 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       case "nostar": return !(row && row.star);
       default: return true;
     }
+  }
+
+  /**
+   * Hledá se jméno — a k tomu všechno, co u kusu stojí napsané.
+   *
+   * Verdikt („Ponechat", „Zahodit – kopie"), jeho podtitulek, poznámka
+   * a štítky důvodů: právě ty jsou v rozboru vidět jako bubliny
+   * (TRADE, GL #4, Rock 7/8), takže je čekatelné, že podle nich půjde
+   * hledat. Sloupec „Tradovat" se přidává jako slovo `trade`, protože
+   * doporučení výměny vlastní štítek nemá vždycky.
+   */
+  function rosterNajde(dotaz, r, c) {
+    var kusy = [r.pokemon, r.poznamka, r.forma,
+      c ? c.keep : "", c ? c.keepSub : ""];
+    if (c) {
+      (c.duvody || []).forEach(function (d) { kusy.push(d && d.stitek); });
+      if (c.trade === "Ano" || c.trade === "Po evoluci") kusy.push("trade");
+      if (c.cute) kusy.push("cute");
+      if (c.shiny) kusy.push("shiny");
+      if (c.dynamax) kusy.push("dmax dynamax");
+    }
+    for (var i = 0; i < kusy.length; i++) {
+      var t = kusy[i];
+      if (!t) continue;
+      if (deaccent(String(t)).toLowerCase().indexOf(dotaz) !== -1) return true;
+    }
+    return false;
   }
 
   function fillComputedCell(td, col, c) {
@@ -30683,6 +30708,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     chciBonbony: function () { return chciBonbonyList(); },
     chciBonbonyPrepni: function (klic) { return chciBonbonyPrepni(klic); },
     chciBonbonyPridej: function (jmeno) { return chciBonbonyPridejJmeno(jmeno); },
+    /* Které kusy projdou filtrem a hledáním — testy podle toho měří,
+       jestli hledání bere štítky. */
+    viditelneKusy: function () { renderBody(); return lastVisibleIds.slice(); },
     /* Rozpis GBL: co běží a co přijde (pro pruh v kalendáři). */
     ligyRozpis: function () { return ligyRozpis(); },
     /* Omezené cupy: co appka vyčetla z rozpisu a co o druhu ví. */

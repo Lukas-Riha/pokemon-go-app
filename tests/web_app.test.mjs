@@ -20414,6 +20414,52 @@ try {
       && s315.poOdebrani === 0 && s315.neznamy === null,
     JSON.stringify(s315));
 
+  /* 316) Hledání v rosteru bere i štítky, nejen jméno.
+
+     Novinka u 2.8 slibovala „napiš UL nebo Ponechat" — hledání ale
+     porovnávalo jen jméno druhu, takže štítky nenašlo nic. Hledá se
+     proto ve všem, co je u kusu vidět: verdikt, podtitulek, poznámka
+     a štítky důvodů (TRADE, GL #4, …). */
+  console.log("\n316) Hledani v rosteru bere stitky");
+  await page.goto(URL);
+  await nacteno(page);
+  const s316 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([
+      { pokemon: "Azumarill", cp: "1480", level: 29, ivAtk: 2, ivDef: 14, ivSta: 15 },
+      { pokemon: "Rattata", cp: "120", level: 8, ivAtk: 3, ivDef: 4, ivSta: 5 },
+      { pokemon: "Machop", cp: "300", level: 12, ivAtk: 1, ivDef: 2, ivSta: 3 },
+      { pokemon: "Gastly", cp: "280", level: 11, ivAtk: 0, ivDef: 1, ivSta: 2 },
+    ]);
+    await cekej(3000);
+    const comp = P.getComputed();
+    const out = { kusu: P.getRows().length,
+      naTrade: P.getRows().filter(function (r) {
+        var c = comp[r.id] || {};
+        return c.trade === "Ano" || c.trade === "Po evoluci";
+      }).length };
+    const hledej = async (text) => {
+      const el = document.getElementById("searchInput");
+      el.value = text;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      await cekej(500);
+      return P.viditelneKusy().length;
+    };
+    out.jmeno = await hledej("azu");
+    out.trade = await hledej("trade");
+    out.ponechat = await hledej("ponechat");
+    out.nesmysl = await hledej("qwertz");
+    out.prazdne = await hledej("");
+    return out;
+  });
+  check("hledání najde kusy podle štítku „trade“",
+    s316.naTrade > 0 && s316.trade === s316.naTrade && s316.jmeno === 1,
+    JSON.stringify(s316));
+  check("…a dál funguje jméno, verdikt i prázdné hledání",
+    s316.ponechat > 0 && s316.nesmysl === 0 && s316.prazdne === s316.kusu,
+    JSON.stringify(s316));
+
   await page.goto(URL);
   await nacteno(page);
 
