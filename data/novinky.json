@@ -302,7 +302,8 @@
       "**Méně textu v Transferu.** Okno vysvětlovalo každou drobnost celou větou; vysvětlení se přesunula do bublin a zbyly nadpisy. Zůstalo jen varování u filtru na evoluce zdarma, že to **není filtr na pouštění**.",
       "**Sestava útoků u ligy je vidět celá.** Když se do buňky nevejdou názvy, schovají se a zbydou **barevné ikony typů** — žádné „+2“, takže je pořád vidět, kolik útoků sestava má a jaké jsou. Po najectí na ně ukáže bublina celé znění i s ikonami. V buňce taky zbyla jedna bublina místo tří: pořadí, posun, procento, IV i ceny vysvětluje jeden souhrn.",
       "**Cena vylepšení na dva řádky.** Dřív stolo v kartě „L40 · 424 tis. + 202 candy + 296 XL“, což svádělo k tomu, že XL potřebuješ na čtyřicítku. Teď je to **do L40** (prach a bonbóny) a pod tím **L41–50** (prach a XL).",
-      "**Oprava: „strop“ v hlavičce není na L40.** Číslo se počítalo správně na nejvyšším levelu (L50), ale popisek pod ním tvrdil „na levelu 40“."
+      "**Oprava: „strop“ v hlavičce není na L40.** Číslo se počítalo správně na nejvyšším levelu (L50), ale popisek pod ním tvrdil „na levelu 40“.",
+      "**Žebříčky mají i cupy.** V seznamu PvP žebříčků stojí za čtyřmi ligami i cupy, které jsou zrovna v rozpisu GO Battle League — u každého je napíno, jestli právě běží, nebo odkdy začne. Seznam se obměňuje s rozpisem, nic se nenastavuje. A **pruh s ligami** je teď i v Kalendáři, nejen na Přehledu."
     ]
   }
 }

@@ -2839,6 +2839,8 @@
   /* Místo si blok drží i prázdný: jinak by se všechno pod ním posouvalo
      podle toho, jestli zrovna nějaký cup běží a jestli ho ten druh hraje.
      Když neběží nic, nekreslí se text — jen zůstane volné místo. */
+  /* Termín u cupu v seznamu žebříčků: patří k nadpisu, ne do tabulky. */
+  .cs-cup { font-size: 11px; color: var(--text-muted); font-weight: 400; }
   .d-cupy { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 2px;
     min-height: 31px; }
   .d-cup-radek { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
@@ -4028,10 +4030,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         <table id="refGymTable"></table>
       </div>
       <div>
-        <h2 style="margin-top:12px;">PvP žebříčky — top 100 v každé lize</h2>
-        <p class="muted" style="margin:2px 0 6px;">Pořadí druhů z PvPoke.
-        Rozbal si jen ligu, která tě zajímá — všechny čtyři najednou je
-        přes čtyři stovky řádků.</p>
+        <h2 style="margin-top:12px;">PvP žebříčky — ligy a cupy</h2>
+        <p class="muted" style="margin:2px 0 6px;">Pořadí druhů z PvPoke —
+        čtyři ligy a k nim cupy, které jsou zrovna v rozpisu GO Battle
+        League. Rozbal si jen to, co tě zajímá.</p>
         <div id="refPvpTables"></div>
       </div>
       <div>
@@ -23980,6 +23982,29 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           });
           hp += "</table></details>";
         });
+      /* Cupy za ligami: žebříček má každý vlastní a mění se s rozpisem
+         GBL — zapékají se jen ty, které v rozpisu jsou, takže se seznam
+         obměňuje sám. U běžícího cupu se to řekne rovnou v nadpisu. */
+      cupyZRozpisu().forEach(function (cup) {
+        var t = (META.cupy || {})[cup.klic];
+        if (!t || cup.zakladni) return;
+        var radky = Object.keys(t.tabulka || {}).map(function (k) {
+          return { klic: k, rank: t.tabulka[k][0], skore: t.tabulka[k][1],
+            jmeno: t.tabulka[k][2] || k, sestava: sestavaText(t.tabulka[k]) };
+        }).sort(function (a, z) { return a.rank - z.rank; });
+        if (!radky.length) return;
+        hp += '<details class="cs-sekce"><summary class="cs-title">'
+          + escHtml(cup.nazev) + ' <span>(' + radky.length + ")</span>"
+          + ' <span class="cs-cup">' + escHtml(cupTermin(cup)) + "</span></summary>"
+          + '<table class="ref-pvp-tab"><tr><th>#</th><th>Pokémon</th>'
+          + "<th>Síla</th><th>Sestava</th></tr>";
+        radky.forEach(function (e) {
+          hp += "<tr><td>" + e.rank + "</td><td>" + escHtml(e.jmeno)
+            + "</td><td>" + (Math.round(e.skore * 10) / 10) + "</td><td>"
+            + escHtml(e.sestava || "–") + "</td></tr>";
+        });
+        hp += "</table></details>";
+      });
       pvpBox.innerHTML = hp;
     }
 
