@@ -29998,9 +29998,15 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     /* Poslední dávka smazání = jedno čištění. Pevné „za posledních 24 h"
        znamenalo, že kdo vyčistil večer a ke hře se dostal až pozítří,
        přišel o svůj seznam. Starší než týden se nenabízí — to už je
-       dávno puštěné. */
+       dávno puštěné.
+
+       Okno dávky je den, ne šest hodin: stačilo totiž smazat po čištění
+       jediný další kus o pár hodin později a devět set kusů z dávky
+       vypadlo — Transfer pak nabídl filtr na ten jeden. Den drží jedno
+       čištění pohromadě i tehdy, když se k puštění ve hře člověk dostane
+       až večer, a dvě čištění ob den pořád oddělí. */
     var DEN = 24 * 3600 * 1000, ted = Date.now();
-    var DAVKA = 6 * 3600 * 1000, NEJSTARSI = 7 * DEN;
+    var DAVKA = DEN, NEJSTARSI = 7 * DEN;
     var smazane = (discarded || []).filter(function (d) {
       return d && d.r && d.r.pokemon && d.del && (ted - d.del) < NEJSTARSI;
     });

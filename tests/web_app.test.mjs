@@ -20541,6 +20541,59 @@ try {
       && s317.evoFiltr.split(",").length === s317.evoDruhu,
     JSON.stringify([s317.sekce, s317.evoFiltr, s317.evoDruhu]));
 
+  /* 318) Dávka smazaných kusů drží pohromadě celý den.
+
+     Stalo se to doopravdy: po čištění zmizelo z rosteru devět set kusů,
+     o osm hodin později se smazal jeden jediný další — a Transfer místo
+     čtrnácti filtrů nabídl jeden na ten poslední kus. Dávka se počítala
+     šest hodin zpátky od posledního smazání. Den ji udrží pohromadě
+     i tehdy, když se ke hře člověk dostane až večer; dvě čištění ob den
+     se pořád nespojí. */
+  console.log("\n318) Davka smazanych drzi cely den");
+  await page.goto(URL);
+  await nacteno(page);
+  const s318 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([{ pokemon: "Snorlax", cp: "1800", level: 25, ivAtk: 5, ivDef: 5, ivSta: 5 }]);
+    await cekej(2000);
+    const H = 3600 * 1000, ted = Date.now();
+    const velka = [];
+    for (let i = 0; i < 40; i++) {
+      velka.push({ k: "rattata|" + i, del: ted - 8 * H, r: { pokemon: "Rattata",
+        cp: String(100 + i), level: 10, ivAtk: 1, ivDef: 2, ivSta: 3 } });
+    }
+    const vOkne = async () => {
+      document.getElementById("hledaniBtn").click();
+      await cekej(1300);
+      const okno = document.getElementById("hledaniOkno");
+      const kusu = [...okno.querySelectorAll("[data-hled-kusy]")]
+        .reduce((a, b) => a + (parseInt(b.textContent, 10) || 0), 0);
+      const uvod = (okno.querySelector(".hint") || {}).textContent || "";
+      okno.querySelector(".hled-krizek").click();
+      await cekej(300);
+      return { kusu: kusu, uvod: uvod.slice(0, 60) };
+    };
+    const out = {};
+    // velké čištění + jeden kus smazaný o osm hodin později
+    P.setDiscarded(velka.concat([{ k: "eevee|1", del: ted - 60 * 1000,
+      r: { pokemon: "Eevee", cp: "12", level: 2, ivAtk: 0, ivDef: 0, ivSta: 0 } }]));
+    await cekej(700);
+    out.tyzDen = await vOkne();
+    // dvě čištění ob tři dny se nespojí
+    P.setDiscarded(velka.map(function (d) { return { k: d.k, del: ted - 3 * 24 * H, r: d.r }; })
+      .concat([{ k: "pidgey|1", del: ted - 30 * 60 * 1000,
+        r: { pokemon: "Pidgey", cp: "99", level: 5, ivAtk: 1, ivDef: 1, ivSta: 1 } }]));
+    await cekej(700);
+    out.obDny = await vOkne();
+    P.setDiscarded([]);
+    return out;
+  });
+  check("jedno čištění zůstane v Transferu celé, i když se pak smaže další kus",
+    s318.tyzDen.kusu === 41, JSON.stringify(s318));
+  check("…ale čištění staré tři dny se k dnešnímu nepřilepí",
+    s318.obDny.kusu === 1, JSON.stringify(s318));
+
   await page.goto(URL);
   await nacteno(page);
 
