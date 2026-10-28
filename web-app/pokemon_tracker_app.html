@@ -13650,7 +13650,18 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   var FORMA_PRIPONA = { alola: "ALOLA", galar: "GALARIAN", hisui: "HISUIAN",
     paldea: "PALDEA", armored: "A",
     // Zygarde: v klíči druhu je „tenpercent", v mirroru „TEN_PERCENT".
-    tenpercent: "TEN_PERCENT", fiftypercent: "FIFTY_PERCENT", complete: "COMPLETE" };
+    tenpercent: "TEN_PERCENT", fiftypercent: "FIFTY_PERCENT", complete: "COMPLETE",
+    /* Formy, které mají v mirroru vlastní ikonu a bez téhle tabulky
+       dostávaly obrázek základní formy — v kalendáři pak byla u raidu
+       na Giratinu Origin nakreslená Altered. Každá přípona je ověřená
+       stažením (co mirror nemá, tu není). */
+    origin: "ORIGIN", altered: "ALTERED",
+    sky: "SKY", land: "LAND",
+    attack: "ATTACK", defense: "DEFENSE", speed: "SPEED",
+    hero: "HERO", crownedsword: "CROWNED_SWORD", crownedshield: "CROWNED_SHIELD",
+    black: "BLACK", white: "WHITE",
+    blade: "BLADE", shield: "SHIELD", unbound: "UNBOUND",
+    small: "SMALL", average: "AVERAGE", large: "LARGE", super: "SUPER" };
 
   /* Formy, které NEJSOU v klíči druhu, jen v zobrazeném jméně. Shellos a
      Gastrodon mají východní a západní moře a herní ikona bez té přípony
