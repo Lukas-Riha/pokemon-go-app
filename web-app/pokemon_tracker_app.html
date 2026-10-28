@@ -8145,8 +8145,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var vse = appOknoCipyStav.vybrane.slice();
     // Nedopsany text se nezahazuje: kdyz ho appka pozna, bere se jako stitek,
     // a kdyz nepozna, projde dal a dialog o nem rekne, ze ho nezna.
-    if (zbytek && dexEntry(zbytek)) vse.push(dexEntry(zbytek).name);
-    else if (zbytek) vse.push(zbytek);
+    if (zbytek && dexEntry(zbytek)) {
+      /* Forma se nesmí ztratit: „Graveler Alolan" má v pokédexu vlastní
+         klíč, ale `dexEntry` u něj vrátí základní jméno „Graveler" —
+         a seznam na výměnu by pak platil na špatnou variantu. */
+      vse.push(dexByKey(dexKey(zbytek)) ? zbytek : dexEntry(zbytek).name);
+    } else if (zbytek) vse.push(zbytek);
     return vse.join(", ");
   }
 
@@ -22357,6 +22361,33 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return true;
   }
 
+  /**
+   * Okno na úpravu seznamu druhů na výměnu.
+   *
+   * Je to tentýž dialog, který se ptá na začátku čištění — štítky se
+   * sprity, našeptávání podle toho, co doopravdy máš, a počet kusů
+   * u každého druhu. Ať se seznam upravuje odkudkoli stejně.
+   */
+  function vymenaOknoUprav(poZmene) {
+    appOknoOtevri("Druhy, za které chceš bonbóny z výměny.\n\nJejich kusy se"
+      + " nepouštějí — dostanou verdikt Trade. Seznam platí trvale, dokud"
+      + " ho nezměníš.",
+      { potvrdit: true, vstup: "", okText: "Uložit seznam",
+        zrusitText: "Nechat beze změn",
+        cipy: { moznosti: appOknoMojeDruhy(), placeholder: "Např. Eevee",
+          vybrane: vymenaDruhyJmena() },
+        ok: function (hodnota) {
+          var vyber = bmTradeZeSeznamu(hodnota);
+          vymenaDruhyUloz(Object.keys(vyber.druhy));
+          if (vyber.nezname.length) {
+            appHlaska("Tyhle druhy appka nezná a do seznamu se nedostaly: "
+              + vyber.nezname.join(", "));
+          }
+          refreshComputed();
+          if (poZmene) poZmene();
+        } });
+  }
+
   /** Je tenhle kus z druhu, který si necháváš na výměnu? */
   function vymenaJeNaSeznamu(r) {
     if (!r || !r.pokemon) return false;
@@ -29863,11 +29894,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // Panel se vrátí na normální šířku, jinak by souhrn plaval v prázdnu.
       if (bm) bm.classList.add("siroky");
     })();
-    var rozpory = rozporyHistorie();
-    var radyText = rozpory.vety.length
-      ? '<div class="bm-historie"><b>Z tvých minulých rozhodnutí:</b><ul><li>'
-        + rozpory.vety.join("</li><li>") + "</li></ul></div>"
-      : "";
+    /* Statistika „radil jsem pustit X a tys je nechal" se v souhrnu
+       nevypisuje: je přes celý roster, takže u čištění tří Dialg mluvila
+       i o Mespritovi a Palkii. Pravidlo z ní dál platí (viz
+       `druhySeSklonemNechat`), jen se o něm nepíše. */
+    var radyText = "";
     document.getElementById("bmBody").innerHTML = '<div class="bm-souhrn">'
       + (vypadliVSouhrnu ? '<div class="bm-vraceni bm-vypadli" id="bmVypadliSouhrn"></div>' : "")
       + (vraceniVSouhrnu ? '<div class="bm-vraceni" id="bmVraceniSouhrn"></div>' : "")
@@ -30046,25 +30077,29 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + " k puštění, dostanou verdikt <b>Trade</b>. Platí trvale, dokud je"
       + " nesmažeš.</span>"
       + '<div class="hled-pred-sez">'
-      + jmena.map(function (jm, i) {
-          return '<span class="hled-pred-kus">' + escHtml(jm)
-            + '<button type="button" data-vymena-pryc="' + i
-            + '" title="Smazat ze seznamu">\u2715</button></span>';
-        }).join("")
-      + '<input type="text" class="hled-pred-nove" id="hledVymenaNovy"'
-      + ' placeholder="Např. Eevee" aria-label="Přidat druh na výměnu" />'
-      + '<button type="button" class="hled-vymena-pridat">Přidat</button>'
-      + "</div>"
+      + (jmena.length
+          ? jmena.map(function (jm, i) {
+              return '<span class="hled-pred-kus">' + escHtml(jm)
+                + '<button type="button" data-vymena-pryc="' + i
+                + '" title="Smazat ze seznamu">\u2715</button></span>';
+            }).join("")
+          : '<span class="hint">Zatím prázdný.</span>')
+      + '<button type="button" class="hled-vymena-pridat">Upravit seznam</button>'
+      + "</div></div>"
+      /* Evoluce zdarma je něco jiného než „chci bonbóny": tohle appka ví
+         sama z herních dat a nemá to nic společného s tvým seznamem.
+         Proto vlastní rámeček. */
+      + '<div class="hled-pred hled-evo"><span class="hint">Druhy, které se'
+      + " <b>po výměně vyvinou zdarma</b> — appka je zná z herních dat,"
+      + " nic se tu nenastavuje. Platí pro celou hru, ne jen pro tvůj"
+      + " roster, takže je filtr pořád stejný. Pozor, tenhle <b>není na"
+      + " pouštění</b>: najde i kusy, které si necháváš.</span>"
       + '<div class="hled-radek hled-evo-radek"><span class="hled-cislo"></span>'
       + '<textarea class="hled-text" readonly rows="2">'
       + escHtml(evo.map(function (x) { return x.toLowerCase(); }).join(","))
       + "</textarea>"
       + '<button class="primary hled-kopie">Kopírovat</button>'
       + '<span class="hled-pocet">' + evo.length + " druhů</span></div>"
-      + '<span class="hint">Nahoře je hotový filtr na <b>všechno, co se po'
-      + " výměně vyvine zdarma</b> — platí pro celou hru, ne jen pro tvůj"
-      + " roster. Pozor, tenhle jeden <b>není na pouštění</b>: najde"
-      + " i kusy, které si necháváš.</span>"
       + "</div>";
   }
 
@@ -30318,21 +30353,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         vykresliHledani();
       });
     });
-    var vymPole = box.querySelector("#hledVymenaNovy");
+    /* Upravit seznam = totéž okno, které se ptá před čištěním: štítky se
+       sprity, našeptávání a počet kusů, které z toho druhu máš. */
     var vymPridat = box.querySelector(".hled-vymena-pridat");
-    var pridejDruh = function () {
-      var jm = (vymPole.value || "").trim();
-      if (!jm) return;
-      if (!vymenaDruhPridej(jm)) {
-        appHlaska("Druh „" + jm + "“ appka nezná — zkontroluj překlep.");
-        return;
-      }
-      refreshComputed();
-      vykresliHledani();
-    };
-    if (vymPridat) vymPridat.addEventListener("click", pridejDruh);
-    if (vymPole) vymPole.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") { e.preventDefault(); pridejDruh(); }
+    if (vymPridat) vymPridat.addEventListener("click", function () {
+      vymenaOknoUprav(function () { vykresliHledani(); });
     });
     var davkaEl = box.querySelector("#hledDavka");
     if (davkaEl) davkaEl.addEventListener("change", function () {
