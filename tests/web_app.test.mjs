@@ -20646,6 +20646,90 @@ try {
   check("…ale paměť smazaných zůstane celá",
     s319.vPameti === 12, JSON.stringify(s319));
 
+  /* 320) Dávka na dnešek bere nejdřív výměny — a „Trade" má vlastní štítek.
+
+     Stovka v dávce není náhodné číslo: hra povolí sto výměn denně,
+     transferů k profesorovi kolik chceš. Limitovaná věc jsou tedy výměny
+     a ty mají jít do dávky první; pořadí podle CP je u nich jedno.
+     K tomu „Trade" přestal být odrůdou „Zahodit": má vlastní značku,
+     takže se podle něj dá filtrovat i našeptat v hledání. */
+  console.log("\n320) Davka bere nejdriv vymeny, Trade ma stitek");
+  await page.goto(URL);
+  await nacteno(page);
+  const s320 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setRows([{ pokemon: "Snorlax", cp: "1800", level: 25, ivAtk: 5, ivDef: 5, ivSta: 5 }]);
+    await cekej(2000);
+    const ted = Date.now(), smazane = [];
+    // sto dvacet kusů k puštění (vysoké CP) a třicet, které se po výměně
+    // vyvinou zdarma
+    for (let i = 0; i < 120; i++) {
+      smazane.push({ k: "rat|" + i, del: ted - 3600 * 1000,
+        r: { pokemon: "Rattata", cp: String(500 - i), level: 20,
+          ivAtk: 1, ivDef: 1, ivSta: 1 } });
+    }
+    for (let i = 0; i < 30; i++) {
+      smazane.push({ k: "mach|" + i, del: ted - 3600 * 1000,
+        r: { pokemon: "Machoke", cp: String(200 + i), level: 12,
+          ivAtk: 0, ivDef: 1, ivSta: 0 } });
+    }
+    P.setDiscarded(smazane);
+    await cekej(900);
+    const sekce = () => {
+      const okno = document.getElementById("hledaniOkno");
+      const out2 = {};
+      okno.querySelectorAll(".hled-sekce").forEach((sek) => {
+        const nazev = (sek.querySelector("h4") || {}).textContent.replace(/\s+/g, " ").trim();
+        out2[/vym[ěe]nit/i.test(nazev) ? "vymeny" : "pousteni"] =
+          [...sek.querySelectorAll("[data-hled-kusy]")]
+            .reduce((a, b) => a + (parseInt(b.textContent, 10) || 0), 0);
+      });
+      return out2;
+    };
+    const out = {};
+    document.getElementById("hledaniBtn").click();
+    await cekej(1500);
+    out.bez = sekce();
+    const prep = document.getElementById("hledDavka");
+    out.maPrepinac = !!prep;
+    if (prep) { prep.click(); await cekej(2000); }
+    out.s = sekce();
+    document.querySelector("#hledaniOkno .hled-krizek").click();
+    await cekej(300);
+    const el = document.getElementById("hledaniDavka");
+    if (el) { el.value = ""; }
+    P.setDiscarded([]);
+
+    // --- štítek TRADE ---
+    const rows = [];
+    for (let i = 0; i < 4; i++) {
+      rows.push({ pokemon: "Eevee", cp: String(400 - i * 20), level: 15 - i,
+        ivAtk: i % 3, ivDef: (i + 1) % 3, ivSta: i % 2 });
+    }
+    rows.push({ pokemon: "Rattata", cp: "120", level: 8, ivAtk: 3, ivDef: 4, ivSta: 5 });
+    P.setRows(rows);
+    await cekej(2500);
+    P.vymenaDruhPridej("Eevee");
+    await cekej(1200);
+    const st = P.atlasStitky();
+    const trade = st.znacky.filter((z) => z.stitek === "TRADE")[0] || null;
+    out.stitekTrade = trade ? trade.pocet : -1;
+    const comp = P.getComputed();
+    out.sVerdiktem = P.getRows().filter((r) => (comp[r.id] || {}).keep === "Trade").length;
+    // a „Zahodit" se o ně nepřipočítá
+    const zahodit = st.znacky.filter((z) => z.stitek === "ZAHODIT")[0] || null;
+    out.stitekZahodit = zahodit ? zahodit.pocet : -1;
+    P.vymenaDruhOdeber("eevee");
+    return out;
+  });
+  check("dávka na dnešek pustí napřed výměny a doplní se puštěním",
+    s320.maPrepinac && s320.bez.vymeny === 30 && s320.bez.pousteni === 120
+      && s320.s.vymeny === 30 && s320.s.pousteni === 70, JSON.stringify(s320));
+  check("…a verdikt Trade má vlastní štítek, ne „Zahodit“",
+    s320.stitekTrade > 0 && s320.stitekTrade === s320.sVerdiktem
+      && s320.stitekZahodit < s320.stitekTrade + 1, JSON.stringify(s320));
+
   await page.goto(URL);
   await nacteno(page);
 

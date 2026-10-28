@@ -3675,6 +3675,7 @@
     <label><input type="checkbox" data-znacka="VP" /> Ponechat</label>
     <label><input type="checkbox" data-znacka="VN" /> Nechat</label>
     <label><input type="checkbox" data-znacka="VZ" /> Zahodit</label>
+    <label><input type="checkbox" data-znacka="VT" /> Trade</label>
     <label><input type="checkbox" data-znacka="SH" /> Shadow</label>
     <label><input type="checkbox" data-znacka="PU" /> Purified</label>
     <label><input type="checkbox" data-znacka="SKEN" /> Poslední sken</label>
@@ -6178,7 +6179,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (c.shiny) z.push("S");
     if (c.lucky) z.push("K");
     if (c.keep) {
-      if (c.keepTone === "good") z.push("VP");
+      // „Trade" je vlastní rozhodnutí, ne odrůda „Zahodit" — ať se podle
+      // něj dá filtrovat i hledat.
+      if (String(c.keep).indexOf("Trade") === 0) z.push("VT");
+      else if (c.keepTone === "good") z.push("VP");
       else if (c.keepTone === "warning") z.push("VN");
       else z.push("VZ");
     }
@@ -28295,6 +28299,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var comp = analyze();
     var v = comp[r.id];
     if (v && v.tradeEvoVolny) return "trade";
+    /* U smazaného kusu rozbor neexistuje (v rosteru už není), takže se
+       evoluce zdarma pozná aspoň podle druhu — jinak by se takový kus
+       nabídl k puštění, i když se má vyměnit. */
+    if (!v && TRADE_BY[dexKey(r.pokemon)]) return "trade";
     // Druh ze seznamu na výměnu: taky se nepouští, jde na výměnu.
     if (vymenaJeNaSeznamu(r)) return "trade";
     var duvod = proNejdeHromadne({ row: r, dex: dexEntry(r.pokemon),
@@ -30184,6 +30192,22 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + (f.kusu ? '<div class="hled-kusy" data-hled-mrizka="' + id + '" hidden></div>' : "");
   }
 
+  /**
+   * Co se vejde do dávky na jeden den.
+   *
+   * Hra povolí sto výměn za den; transferů k profesorovi tolik, kolik
+   * zvládneš. Limitovaná věc jsou proto výměny — jdou do dávky první.
+   * Zbytek dávky doplní kusy k puštění od nejvyššího CP.
+   */
+  function hledaniDavkaVyber(kusy) {
+    var naVymenu = [], zbytek = [];
+    (kusy || []).forEach(function (r) {
+      if (hledaciZpusob(r) === "trade") naVymenu.push(r); else zbytek.push(r);
+    });
+    return hledaniPodleCp(naVymenu).concat(hledaniPodleCp(zbytek))
+      .slice(0, HLEDANI_DAVKA);
+  }
+
   /** Kusy i filtry od nejvyššího CP — podle CP se ve hře orientuje oko. */
   function hledaniPodleCp(kusy) {
     return (kusy || []).slice().sort(function (a, b) {
@@ -30217,12 +30241,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        nepustí vůbec, legendární a Ultra Beasty až po zapnutí Expanded
        Group Transfer, mytické ani po jednom. Míchat je do jednoho filtru
        znamená zaseknout se u hromadného výběru pokaždé znovu. */
-    /* Dávka na jeden den: pět set kusů nikdo najednou neposílá. Bere se
-       prvních sto od nejvyššího CP — ve hře se podle CP orientuje oko a
-       velké kusy zabírají nejvíc místa. */
+    /* Dávka na jeden den. Stovka není náhodné číslo: hra povolí sto výměn
+       denně (transferů k profesorovi kolik chceš). Proto se do dávky berou
+       NEJDŘÍV kusy na výměnu — těch se za den stejně víc nestihne — a
+       teprve zbytek se doplní od nejvyššího CP. */
     var davka = nastaveniHodnota("hledaniDavka") === "1";
     var vsechny = z.kusy || [];
-    var kusyOkna = davka ? hledaniPodleCp(vsechny).slice(0, HLEDANI_DAVKA) : vsechny;
+    var kusyOkna = davka ? hledaniDavkaVyber(vsechny) : vsechny;
     var podle = { trade: [], hromadne: [], pojednom: [], nelze: [] };
     kusyOkna.forEach(function (r) { podle[hledaciZpusob(r)].push(r); });
     var rT = podle.trade.length ? hledaciFiltry(podle.trade) : null;
@@ -30269,7 +30294,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
             : "")
         + '<div class="hled-davka"><label><input type="checkbox" id="hledDavka"'
         + (davka ? " checked" : "") + "> Jen dávka na dnešek ("
-        + HLEDANI_DAVKA + " kusů od nejvyššího CP)</label></div>";
+        + HLEDANI_DAVKA + " kusů, nejdřív výměny)</label>"
+        + '<span class="hint">Hra povolí <b>sto výměn denně</b>; transferů'
+        + " k profesorovi kolik chceš. Do dávky proto jdou první kusy na"
+        + " výměnu a zbytek se doplní od nejvyššího CP.</span></div>";
 
       var overeni = "";
       var r0 = rH || rP || rT;
@@ -31468,6 +31496,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         VP: { trida: "rarity-chip r-verdikt r-VP", stitek: "PONECHAT" },
         VN: { trida: "rarity-chip r-verdikt r-VN", stitek: "NECHAT" },
         VZ: { trida: "rarity-chip r-verdikt r-VZ", stitek: "ZAHODIT" },
+        VT: { trida: "rarity-chip r-verdikt r-VZ", stitek: "TRADE" },
         SH: { trida: "rarity-chip r-SH", stitek: "SHADOW" },
         PU: { trida: "rarity-chip r-PU", stitek: "PURIFIED" },
         SKEN: { trida: "rarity-chip r-SKEN", stitek: "POSLEDNÍ SKEN" }
