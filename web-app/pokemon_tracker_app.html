@@ -1538,6 +1538,10 @@
     margin: 2px 0; align-self: flex-start; }
   .ch-pridat { display: flex; gap: 6px; margin: 8px 0 2px; }
   .ch-pridat input { flex: 0 1 220px; font-size: 12px; padding: 5px 8px; }
+  /* Štítek druhu nese sprite, ať je to vidět stejně jako v okně úprav. */
+  .hled-pred-druh { padding-left: 4px; gap: 5px; }
+  .hled-pred-druh img { width: 22px; height: 22px; object-fit: contain;
+    vertical-align: middle; }
   /* Blok s druhy na výměnu: hotový filtr v něm má vlastní řádek. */
   .hled-vymena .hled-radek { margin-top: 8px; }
   .hled-vymena .hint:last-child { margin: 6px 0 0; display: block; }
@@ -30070,6 +30074,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Druhy, za které chceš bonbóny z výměny, a hotový filtr na všechno,
    *  co se po výměně vyvine zdarma. */
   function hledaniVymenaHtml() {
+    var klice = vymenaDruhyList();
     var jmena = vymenaDruhyJmena();
     var evo = tradeEvoDruhy();
     return '<div class="hled-pred hled-vymena"><span class="hint">Druhy, za'
@@ -30079,7 +30084,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + '<div class="hled-pred-sez">'
       + (jmena.length
           ? jmena.map(function (jm, i) {
-              return '<span class="hled-pred-kus">' + escHtml(jm)
+              /* Se spritem se druh pozn\u00e1 na prvn\u00ed pohled \u2014 stejn\u011b jako
+                 ve \u0161t\u00edtc\u00edch v okn\u011b, kde se seznam upravuje. */
+              /* Obrázek se staví stejně jako ve štítcích dialogu: bez
+                 třídy, ať nedostane velikost z jiného seznamu. */
+              var dd = dexByKey(klice[i]);
+              return '<span class="hled-pred-kus hled-pred-druh">'
+                + (dd ? obrazekHtml(jm, dd, "") : "") + escHtml(jm)
                 + '<button type="button" data-vymena-pryc="' + i
                 + '" title="Smazat ze seznamu">\u2715</button></span>';
             }).join("")
@@ -30293,6 +30304,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       if (document.getElementById("hledaniOkno")) zavriHledani();
     });
     hledaniKopirovat(box);
+    /* Sprity mají každý vlastní měřítko a bez tohohle sedí v rámečku
+       nakřivo a o třetinu menší — stejně jako v kartách rosteru. */
+    vystreditVse(box);
 
     /* Náhled kusů ve filtru. Karty se staví až při prvním rozbalení —
        u velkého rosteru by jinak okno stavělo stovky obrázků pro nic. */
