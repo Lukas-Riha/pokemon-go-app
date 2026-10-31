@@ -3559,3 +3559,32 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 /* Úzké okno: odznáček „IV #N" ustoupí útokům. Pořadí kombinace je
    v bublině, sestava nikde jinde v řádku není. */
 .atlas-test .d-ligy-tab td.uzko .d-lg-iv{display:none}
+
+/* Claude (126): hlavička detailu měla pevných 226 px, aby detail při
+   listování neposkakoval. V užším okně se do ní ale blok útoků nevešel,
+   zalomil se na druhý řádek a vylezl z ní ven — přes verdikt pod sebou.
+   Výška je proto minimální, ne pevná: dokud se obsah vejde, nic se
+   nemění; když se zalomí, hlavička povyroste. */
+.atlas-test .atlas-detail-identity,
+.atlas-test .atlas-drawer .atlas-detail-identity{height:auto;min-height:226px;
+  align-items:center}
+/* A ať se zalomí čistě: útoky si v užším okně vezmou celý řádek. */
+@media(max-width:1400px){
+  .atlas-test #atlasDetailContent .atlas-detail-identity{flex-wrap:wrap}
+  .atlas-test #atlasDetailContent .atlas-detail-identity .atlas-ident-utoky{
+    flex:1 1 100%;margin-left:0;height:auto}
+}
+
+/* Claude (127): ve Vyhledávání stojí ligy pod sebou v jedné tabulce,
+   oddělené řádkem s názvem ligy. */
+/* Caru nad i pod nadpisem uz kresli delici cary radku (Claude 78), takze
+   nadpis vlastni `border` nepotrebuje — byla by dvojita. */
+/* `td:last-child` v teto tabulce zarovnava doprava (je to sloupec s
+   prikazem) — nadpis ligy je jedina bunka radku, takze by se chytil taky. */
+.atlas-test .atlas-vysledek-tab tr.atlas-vysledek-liga td{padding:13px 10px 7px;
+  font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  color:var(--text-secondary);text-align:left;width:auto}
+.atlas-test .atlas-vysledek-tab tr.atlas-vysledek-liga:first-child td{padding-top:4px}
+.atlas-test .atlas-vysledek-nejiv small{color:var(--text-muted);white-space:nowrap}
+.atlas-test .atlas-vysledek-nejiv .atlas-vysledek-tvuj{display:block;margin-top:3px;
+  color:var(--text-secondary)}

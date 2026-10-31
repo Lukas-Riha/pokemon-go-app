@@ -3178,6 +3178,18 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   return `<td>${casti.join('<br>')}</td>`;
  }
 
+ /* V kusovem rezimu se k nejlepsi mozne kombinaci pripise, jak proti ni
+    stoji tvuj kus. Driv to byl samostatny sloupec pro jednu vybranou ligu;
+    kdyz ligy stoji pod sebou, vi kazda sekce svou vlastni. */
+ function kusRadek(r,vstupKlic,ligaKlic){
+  const k=window.__pgoProhlidkaKus&&window.__pgoProhlidkaKus();
+  if(!k||r.klic!==vstupKlic||!ligaKlic||!k.iv||!P.atlasIvRank)return '';
+  const rank=P.atlasIvRank(k.jmeno,k.iv.a,k.iv.d,k.iv.s,ligaKlic);
+  if(!rank)return '';
+  return `<small class="atlas-vysledek-tvuj">tvůj kus: IV <b>#${rank.rank}</b>`
+   +` z ${rank.z}${k.ivPct!=null?` · ${k.ivPct} % IV`:''}</small>`;
+ }
+
  /* Kombinace dvou typu jako JEDEN stitek pulenky prebarveny: vlevo prvni
     typ, vpravo druhy. Dva samostatne ovaly vedle sebe by vypadaly jako dva
     ruzni protivnici, ne jako jedna dvojice. */
@@ -3242,7 +3254,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`${P.typIkona?P.typIkona(r.typ):''}${esc(r.typ)}</span>`;
  }
 
- function radekHtml(r,vstupKlic){
+ function radekHtml(r,vstupKlic,ligaKlic){
   const poradi=r.rank==null
    ?`<span class="atlas-vysledek-nezname">${role==='pvp'
      ?'v téhle lize nemá pořadí':'v tomhle žebříčku není'}</span>`
@@ -3277,7 +3289,16 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
        takze vlastni typy druhu by byly podruhe — u Centiskorche vysel
        "Bug Fire Bug". Jinde se typy hodi: rikaji, proti cemu se druh postavi. */
     +`<span class="atlas-vysledek-typy">${role==='raid'||role==='max'?'':typyHtml(r.klic)}</span></span></td>`
-   +`<td>${poradi}</td><td>${utoky}</td>${kusovy?kusBunka(r,vstupKlic):''}`
+   +`<td>${poradi}</td><td>${utoky}</td>`
+   /* U lig stoji misto sloupce o tvem kuse nejlepsi mozna kombinace IV —
+      ten druh zpravidla jeste nemas a tohle rika, po cem se divat. */
+   +(role==='pvp'
+     ?`<td class="atlas-vysledek-nejiv">${r.nejIv
+       ?`<b>${esc(r.nejIv.iv)}</b> <small>L${String(r.nejIv.level).replace('.',',')}`
+        +` · ${r.nejIv.cp} CP</small>`
+       :'<span class="atlas-vysledek-nezname">—</span>'}`
+      +`${kusovy?kusRadek(r,vstupKlic,ligaKlic):''}</td>`
+     :(kusovy?kusBunka(r,vstupKlic):''))
    /* Misto holé sipky pojmenovany prikaz: samotna sipka nerikala, co udela,
       a zvyrazneni radku uz umi klepnuti na jmeno. U hledaneho druhu nic —
       hledat to, co uz je v poli, nema smysl. */
@@ -3309,7 +3330,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    /* Prazdna je i tabulka, ve ktere sice radky jsou, ale nikdo v ni nema
       poradi — od te doby, co se ukazuje cela evolucni rada, takovy pripad
       existuje ("v tehle lize nema poradi" u vsech clanku). */
-   const prazdna=k=>{const g=k==='pvp'?m.role.pvp[liga]:m.role[k];
+   /* U PvP se ukazují všechny ligy naráz, takže „prázdná" znamená, že
+      pořadí nemá ani jedna z nich. */
+   const prazdna=k=>{
+    if(k==='pvp')return !m.poradiLig.some(l=>{const g=m.role.pvp[l];
+     return g&&g.radky&&g.radky.some(r=>r.rank!=null)});
+    const g=m.role[k];
     return !(g&&g.radky&&g.radky.some(r=>r.rank!=null))};
    if(prazdna(role)){
     const kandidati=[];
@@ -3330,12 +3356,22 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     }
    }
   }
-  const skupina=role==='pvp'?m.role.pvp[liga]:m.role[role];
-  const radky=(skupina&&skupina.radky)||[];
+  const skupina=role==='pvp'?null:m.role[role];
+  /* PvP: nepřepíná se mezi ligami, všechny stojí pod sebou v jedné
+     tabulce a oddělí je nadpis ligy. Liga, ve které ten druh pořadí
+     nemá vůbec, se vynechá — prázdná sekce nic neřekne. */
+  const ligoveSkupiny=role==='pvp'
+   ?m.poradiLig.map(k=>[k,m.role.pvp[k]])
+     .filter(([,g])=>g&&g.radky&&g.radky.some(r=>r.rank!=null))
+   :[];
+  const radky=role==='pvp'
+   ?ligoveSkupiny.reduce((a,[,g])=>a.concat(g.radky),[])
+   :((skupina&&skupina.radky)||[]);
   /* Nadpis rika, CO se pocita — ne ze to druh "hraje". Jestli ho hrat,
      plyne z poradi v tabulce, ne z nadpisu. */
   // Nadpis bere cely nazev role z modelu ("Max Battle"), ne zkratku ze zalozky.
-  const nadpis=`Výsledky pro ${skupina&&skupina.nazev?skupina.nazev:ROLE_POPIS[role]}`;
+  const nadpis=role==='pvp'?'Výsledky pro PvP ligy'
+   :`Výsledky pro ${skupina&&skupina.nazev?skupina.nazev:ROLE_POPIS[role]}`;
   const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
   /* Zalozky roli a vyber ligy stoji v jednom radku: kdyz byly pod sebou,
      prepnuti z PvP na Raidy ten radek zrusilo a cela tabulka poskocila. */
@@ -3343,15 +3379,16 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`<div class="atlas-vysledek-ovladani" role="tablist" aria-label="Role">`
    +Object.keys(ROLE_POPIS).map(k=>`<button type="button" role="tab" data-role="${k}" aria-selected="${role===k}" aria-pressed="${role===k}">${ikona(k)}<span>${ROLE_POPIS[k]}</span></button>`).join('')
    +`</div>`
-   +(role==='pvp'?`<div class="atlas-vysledek-ligy" role="group" aria-label="Liga">`
-     +m.poradiLig.map(k=>`<button type="button" data-liga="${k}" aria-pressed="${liga===k}">${esc(m.role.pvp[k].nazev)}</button>`).join('')
-     +`</div>`:'')
+   /* Tlačítka lig zmizela: ligy jsou všechny v tabulce pod sebou. */
    +`</div>`
    +`<h4 class="atlas-vysledek-nadpis">${esc(nadpis)}</h4>`
    +`<div class="atlas-vysledek-telo">`
    +(radky.length
-     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${kusovy?'<th>Tvůj kus</th>':''}<th></th></tr></thead><tbody>`
-      +radky.map(r=>radekHtml(r,m.klic)).join('')+`</tbody></table>`
+     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${role==='pvp'?'<th>Nejlepší IV</th>':(kusovy?'<th>Tvůj kus</th>':'')}<th></th></tr></thead><tbody>`
+      +(role==='pvp'
+        ?ligoveSkupiny.map(([k,g])=>`<tr class="atlas-vysledek-liga"><td colspan="5">`
+          +`${esc(g.nazev)}</td></tr>`+g.radky.map(r=>radekHtml(r,m.klic,k)).join('')).join('')
+        :radky.map(r=>radekHtml(r,m.klic)).join(''))+`</tbody></table>`
      :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`)
    +(presunZprava?`<p class="atlas-vysledek-presun">${esc(presunZprava)}</p>`:'')
    /* U shadow formy musi byt jasne, ktera cisla se tim zmenila a ktera ne. */

@@ -2907,11 +2907,14 @@ function naKus() {
   await cekej(1200);
   out.kus = { hlavicka: [...document.querySelectorAll(".atlas-vysledek-tab thead th")]
       .map((t) => t.textContent),
-    radek: (document.querySelector(".atlas-vysledek-tab tr.je-vstup") || {}).textContent || "" };
+    radek: (document.querySelector(".atlas-vysledek-tab tr.je-vstup") || {}).textContent || "",
+    tvuj: [...document.querySelectorAll(".atlas-vysledek-tvuj")]
+      .map((e) => e.textContent.replace(/\s+/g, " ").trim()) };
   rezim("druh");
   await cekej(900);
-  // Ctvrty sloupec je sipka bez nadpisu; "Tvuj kus" je ten paty.
-  out.druh = { sloupcu: document.querySelectorAll(".atlas-vysledek-tab thead th").length };
+  // Posledni sloupec je prikaz bez nadpisu; "Nejlepsi IV" je ten ctvrty.
+  out.druh = { sloupcu: document.querySelectorAll(".atlas-vysledek-tab thead th").length,
+    tvuj: document.querySelectorAll(".atlas-vysledek-tvuj").length };
   return out;
 });
 await pVysl29.close();
@@ -2932,16 +2935,22 @@ check("…a po výběru je vidět podmínka právě té cesty",
   dVysl29.evo.podminkyPo.length === 1 && /v noci/.test(dVysl29.evo.podminkyPo[0]),
   JSON.stringify(dVysl29.evo.podminkyPo));
 const pojmenovane = (h) => h.filter((x) => x.trim().length > 0);
-check("kusový režim přidá sloupec o konkrétním kusu",
+check("u lig stojí místo tvého kusu nejlepší možná kombinace IV",
   pojmenovane(dVysl29.kus.hlavicka).length === 4
-    && /Tvůj kus/.test(dVysl29.kus.hlavicka.join(" ")),
+    && /Nejlepší IV/.test(dVysl29.kus.hlavicka.join(" "))
+    && !/Tvůj kus/.test(dVysl29.kus.hlavicka.join(" ")),
   JSON.stringify(dVysl29.kus.hlavicka));
-check("…a řekne o něm jen to, co jde spočítat",
-  /% IV|IV #|nedá se spočítat/.test(dVysl29.kus.radek), dVysl29.kus.radek.slice(0, 80));
-check("…v režimu druhu ten sloupec zase zmizí", dVysl29.druh.sloupcu === 4,
-  String(dVysl29.druh.sloupcu));
+// Poradi kusu uz nestoji ve vlastnim sloupci pro jednu vybranou ligu —
+// pripise se k nejlepsi kombinaci v kazde lize zvlast.
+check("…a v kusovém režimu se k ní připíše pořadí tvého kusu",
+  dVysl29.kus.tvuj.length >= 1 && /IV #\d/.test(dVysl29.kus.tvuj.join(" "))
+    && /tvůj kus/.test(dVysl29.kus.radek),
+  JSON.stringify(dVysl29.kus.tvuj.slice(0, 2)));
+check("…v režimu druhu sloupec zůstane, tvůj kus z něj zmizí",
+  dVysl29.druh.sloupcu === 5 && dVysl29.druh.tvuj === 0,
+  JSON.stringify(dVysl29.druh));
 
-console.log("\n30) Vlastní kus: formulář přijede do pohledu a IV rank nese ligu");
+console.log("\n30) Vlastní kus: formulář přijede do pohledu, IV rank po ligách");
 const pKus30 = await otevri(1440, [
   { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
 ]);
@@ -2983,10 +2992,19 @@ function naKus() {
   }
   const bunka = () => (document.querySelector(".atlas-vysledek-tab tr.je-vstup td:nth-child(4)") || {})
     .textContent || "";
-  out.great = bunka();
-  const ul = document.querySelector('[data-liga="ultra"]');
-  if (ul) { ul.click(); await cekej(600); }
-  out.ultra = bunka();
+  /* Ligy uz nejsou prepinace: kazda ma v tabulce svou sekci, takze se
+     poradi kusu bere z kazde z nich. */
+  out.ligy = [...document.querySelectorAll("tr.atlas-vysledek-liga")].map((t) => {
+    let n = t.nextElementSibling, kus = "";
+    while (n && !n.classList.contains("atlas-vysledek-liga")) {
+      if (n.classList.contains("je-vstup")) {
+        const td = n.querySelector("td:nth-child(4)");
+        kus = td ? td.textContent.replace(/\s+/g, " ").trim() : "";
+      }
+      n = n.nextElementSibling;
+    }
+    return { liga: t.textContent.trim(), kus };
+  });
   const raid = document.querySelector('[data-role="raid"]');
   if (raid) { raid.click(); await cekej(600); }
   out.raid = bunka();
@@ -3008,10 +3026,11 @@ check("přepnutí na vlastní kus otevře jeho záložku a formulář je vidět"
   dKus30.poPrepnuti.otevrene === true && dKus30.poPrepnuti.zalozka === "true"
     && dKus30.poPrepnuti.cpVidet === true, JSON.stringify(dKus30.poPrepnuti));
 check("…a fokus sedne na CP", dKus30.poPrepnuti.fokus === "prohCp", dKus30.poPrepnuti.fokus);
-check("IV rank v tabulce nese jméno vybrané ligy",
-  /Great League/.test(dKus30.great) && /Ultra League/.test(dKus30.ultra)
-    && dKus30.great !== dKus30.ultra,
-  JSON.stringify([dKus30.great, dKus30.ultra]));
+check("pořadí tvého kusu se počítá v každé lize zvlášť",
+  dKus30.ligy.length >= 2
+    && dKus30.ligy.every((x) => /tvůj kus: IV #\d/.test(x.kus))
+    && new Set(dKus30.ligy.map((x) => x.kus)).size === dKus30.ligy.length,
+  JSON.stringify(dKus30.ligy));
 check("…a v roli bez ligového limitu se nepočítá",
   !/IV #/.test(dKus30.raid), dKus30.raid);
 check("z formuláře vede cesta zpátky na výsledky",
@@ -3712,7 +3731,7 @@ check("staty druhu jsou tři pruhy s hodnotami z pokédexu",
 check("druh bez shiny přepínač nenabízí",
   dSh40.bezShiny.tlacitko === false, JSON.stringify(dSh40.bezShiny));
 
-console.log("\n41) Vyhledávání: prázdná tabulka se nahradí rolí, kde pořadí je");
+console.log("\n41) Vyhledávání: ligy v jedné tabulce, prázdná role se nahradí");
 const pLiga41 = await otevri(1440, []);
 const dLiga41 = await pLiga41.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -3722,40 +3741,48 @@ const dLiga41 = await pLiga41.evaluate(async () => {
   const pole = document.getElementById("prohName");
   const napis = async (jm) => { pole.value = jm;
     pole.dispatchEvent(new Event("input", { bubbles: true })); await cekej(1600); };
-  const stav = () => ({
-    liga: (document.querySelector(".atlas-vysledek-ligy [aria-pressed=true]") || {}).textContent || "",
-    radku: document.querySelectorAll(".atlas-vysledek-tab tbody tr").length,
-    presun: (document.querySelector(".atlas-vysledek-presun") || {}).textContent || "",
-    prazdno: !!document.querySelector(".atlas-vysledek-prazdno")
-  });
-  await napis("Magby");
-  const lc = document.querySelector('[data-liga="little"]');
-  if (lc) { lc.click(); await cekej(700); }
-  const out = { volba: stav() };
-  // Tinkaton v Little Cupu poradi nema — misto prazdna se ukaze liga, kde ho ma.
+  const stav = () => {
+    const tab = document.querySelector(".atlas-vysledek-tab");
+    const nadpisy = [...document.querySelectorAll("tr.atlas-vysledek-liga")];
+    /* Sekce ligy musi mit pod sebou aspon jeden radek s poradim. Liga, kde
+       ho nema nikdo z rady, by byla jen nadpis a pod nim same "nema". */
+    const prazdnaSekce = nadpisy.some((t) => {
+      let n = t.nextElementSibling, poradi = 0;
+      while (n && !n.classList.contains("atlas-vysledek-liga")) {
+        if (!/nemá pořadí/.test(n.textContent)) poradi++;
+        n = n.nextElementSibling;
+      }
+      return poradi === 0;
+    });
+    return { sekce: nadpisy.map((t) => t.textContent.trim()), prazdnaSekce,
+      tlacitka: document.querySelectorAll(".atlas-vysledek-ligy button").length,
+      radku: tab ? tab.querySelectorAll("tbody tr").length : 0,
+      role: (document.querySelector(".atlas-vysledek-ovladani [aria-pressed=true]") || {}).textContent || "",
+      presun: (document.querySelector(".atlas-vysledek-presun") || {}).textContent || "",
+      prazdno: !!document.querySelector(".atlas-vysledek-prazdno") };
+  };
   await napis("Tinkaton");
+  const out = { ligy: stav() };
+  // Rucni volba role se respektuje...
+  const raid = document.querySelector('[data-role="raid"]');
+  if (raid) { raid.click(); await cekej(700); }
+  out.raid = stav();
+  // ...ale u druhu, ktery v te roli poradi nema, se appka vrati k ligam.
+  await napis("Azumarill");
   out.jiny = stav();
-  // Rucni volba se respektuje: kliknuti na Little Cup ji nechá prazdnou i s hlaskou.
-  const lc2 = document.querySelector('[data-liga="little"]');
-  if (lc2) { lc2.click(); await cekej(700); }
-  out.rucne = stav();
   return out;
 });
 await pLiga41.close();
-check("vybraná liga zůstane, dokud v ní pořadí je",
-  /Little Cup/.test(dLiga41.volba.liga) && dLiga41.volba.radku > 0
-    && dLiga41.volba.presun === "", JSON.stringify(dLiga41.volba));
-check("…u druhu, který v ní pořadí nemá, se ukáže ta, kde ho má",
-  !/Little Cup/.test(dLiga41.jiny.liga) && dLiga41.jiny.radku > 0
-    && dLiga41.jiny.prazdno === false
+check("ligy stojí pod sebou v jedné tabulce, bez přepínačů",
+  dLiga41.ligy.tlacitka === 0 && dLiga41.ligy.sekce.length >= 2
+    && dLiga41.ligy.prazdnaSekce === false,
+  JSON.stringify(dLiga41.ligy));
+check("…ruční volba role se respektuje", /raid/i.test(dLiga41.raid.role),
+  JSON.stringify(dLiga41.raid));
+check("…u druhu, který v té roli pořadí nemá, se ukážou ligy a řekne se proč",
+  dLiga41.jiny.sekce.length >= 1 && dLiga41.jiny.prazdno === false
     && /pořadí nemá/.test(dLiga41.jiny.presun),
   JSON.stringify(dLiga41.jiny));
-check("…ruční volba se nepřepisuje: appka v ní zůstane a neříká, že přepnula",
-  // Od té doby, co se ukáže celá evoluční řada, není tabulka prázdná ani
-  // tam, kde nikdo pořadí nemá — řádky stojí s „v téhle lize nemá pořadí“.
-  // Podstatné je, že ruční volbu appka nepřepsala.
-  /Little Cup/.test(dLiga41.rucne.liga) && dLiga41.rucne.presun === "",
-  JSON.stringify(dLiga41.rucne));
 
 console.log("\n42) Lucky kus, který drží roli, je zelený — ne oranžový");
 const pLuck42 = await otevri(1440, [
@@ -4002,7 +4029,10 @@ const dHled48 = await pHled48.evaluate(async () => {
     && !!ident.querySelector(".atlas-shiny-prepinac");
   /* V tabulce roli stoji cela evolucni rada a u kazdeho clanku krome
      hledaneho je pojmenovany prikaz "Vyhledat <druh>". */
-  out.radky = [...document.querySelectorAll(".atlas-vysledek-tab tbody tr")]
+  /* Nadpis ligy je taky radek tabulky, ale druh to neni — do vyctu rady
+     nepatri. Hledany druh stoji v kazde lige jednou. */
+  out.sekci = document.querySelectorAll("tr.atlas-vysledek-liga").length;
+  out.radky = [...document.querySelectorAll(".atlas-vysledek-tab tbody tr:not(.atlas-vysledek-liga)")]
     .map((t) => t.children[0].textContent.replace(/\s+/g, " ").trim());
   out.akce = [...document.querySelectorAll(".atlas-vysledek-hledat")].map((x) => x.textContent.trim());
   const zal = () => [...document.querySelectorAll(".atlas-sekce-zalozky button")];
@@ -4035,6 +4065,7 @@ const dHled48 = await pHled48.evaluate(async () => {
   // Radky tabulky maji delici cary a vybrany radek prouzek vlevo.
   {
     const radky = [...document.querySelectorAll(".atlas-vysledek-tab tbody tr")];
+    // Cary se kresli i nad nadpisem ligy a pod nim — ty radky se neprehlizeji.
     // Delici cara se kresli stinem, ne `border-top`: pri `border-collapse`
     // se u prvniho sloupce objevila jen pod obsahem a radek mel diry.
     out.linky = radky.slice(1).every((t) => /inset/.test(getComputedStyle(t.children[0]).boxShadow));
@@ -4094,11 +4125,11 @@ check("„Co chytat\" je pryč a Kalendář s Vyhledáváním stojí hned pod Po
 check("karta druhu se statusy a přepínačem shiny zůstává",
   dHled48.identita === true, JSON.stringify(dHled48.identita));
 check("v tabulce rolí stojí celá evoluční řada s příkazem Vyhledat",
-  dHled48.radky.length >= 2
-    && dHled48.radky.filter((x) => /Hledaný druh/.test(x)).length === 1
-    && dHled48.akce.length === dHled48.radky.length - 1
+  dHled48.radky.length >= 2 && dHled48.sekci >= 1
+    && dHled48.radky.filter((x) => /Hledaný druh/.test(x)).length === dHled48.sekci
+    && dHled48.akce.length === dHled48.radky.length - dHled48.sekci
     && dHled48.akce.every((x) => /^Vyhledat /.test(x)),
-  JSON.stringify([dHled48.radky, dHled48.akce]));
+  JSON.stringify([dHled48.sekci, dHled48.radky, dHled48.akce]));
 check("půlený štítek má stejný tvar i výšku jako štítek jednoho typu",
   !!dHled48.tvar && dHled48.tvar.stejnyTvar === true && dHled48.tvar.rozdilVysky <= 1,
   JSON.stringify(dHled48.tvar));
