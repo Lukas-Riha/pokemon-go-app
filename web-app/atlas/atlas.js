@@ -2717,6 +2717,11 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     (engine si o tom rekne sam), takze si to hlaseni musi pamatovat —
     jinak probliklo a zmizelo. */
  let vysledekDruh=null,presunZprava='';
+ /* Rezerva vysky vysledku (viz `drzVysku`): drzi stranku stejne dlouhou
+    pri prepnuti role, aby se scroll neorizl. `prirozena` je vyska, kterou
+    by tabulka mela sama od sebe — z rozdilu se pozna, kdy uz rezervu neni
+    treba. */
+ let rezerva=0,rezervaPrirozena=0;
  /* Prepnuty shiny obrazek. Meni se JEN obrazek — jina barva neni jiny druh,
     takze cisla, poradi ani sestavy zustavaji. Po zmene druhu se vraci na
     bezny obrazek: shiny u predchoziho druhu o tomhle nic nerika. */
@@ -2768,11 +2773,14 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   +`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${POCASI_IKONA[n]||''}"/></svg>`
   +`${esc(n)}</span>`;
 
+ /* Strop je nejvyssi level hry a to cislo zna engine. Natvrdo napsana
+    L40 se rozchazela s detailem kusu, kde uz strop pocita L50. */
+ const STROP_LVL=(P.cpmStrop&&P.cpmStrop())||50;
  const CP_BUNKY=[
   ['Výzkum · L15',15],
   ['Raid a vejce · L20',20],
   ['Raid s počasím · L25',25],
-  ['Strop · L40',40]];
+  ['Strop · L'+STROP_LVL,STROP_LVL]];
  function cpPasBlok(){
   let el=karta.querySelector('.atlas-cp-pas');
   if(!el){el=document.createElement('section');el.className='atlas-cp-pas'}
@@ -2816,12 +2824,15 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
 
     Obsah se do zalozek PRESOUVA, nekopiruje: `#prohOut` i formular kusu
     nesou posluchace enginu a kopie by prestala zit. */
+ /* Zalozka "Muj kus" tu byla pata a nepatrila sem: Vyhledavani odpovida
+    na otazku o DRUHU ("stoji za to ho shanet?"), vlastni kusy ma roster
+    i s rozborem. Formular CP a IV proto zustava skryty a appka tu pocita
+    vzdycky o druhu. */
  const SEKCE=[
   ['prehled','Přehled'],
   ['typy','Typy'],
   ['evoluce','Evoluce'],
-  ['rozbor','Rozbor'],
-  ['kus','Můj kus']];
+  ['rozbor','Rozbor']];
  let sekce='prehled';
  function sekceBlok(){
   let el=karta.querySelector('.atlas-sekce');
@@ -2834,7 +2845,13 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    el.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
     if(b.dataset.sekcePrepnout){prepniSekci(b.dataset.sekcePrepnout);return}
-    if(b.dataset.role){role=b.dataset.role;presunZprava='';
+    if(b.dataset.role){
+     /* Drzi se jen tehdy, kdyz uz je stranka posunuta: nahore neni co
+        oriznout, takze ani neni co drzet. */
+     const telo=document.querySelector('.atlas-vysledek-telo');
+     if(telo&&window.scrollY>0)
+      rezerva=Math.max(rezerva,telo.getBoundingClientRect().height);
+     role=b.dataset.role;presunZprava='';
      vykresliVysledek();return}
     if(b.dataset.liga){liga=b.dataset.liga;ligaKlicVModelu=b.dataset.liga;
      presunZprava='';vykresliVysledek();return}
@@ -2866,7 +2883,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      jmeno.dispatchEvent(new Event('change',{bubbles:true}));
      return;
     }
-    if(b.hasAttribute('data-zpet-vysledky')){prepniSekci('prehled');return}
     /* Counter mod pracuje s TVYM rosterem — appka zadny vlastni seznam
        protihracu nevymysli. Prazdny roster to rekne na miste. */
     if(b.hasAttribute('data-counter-rezim')){
@@ -2891,12 +2907,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  function prepniSekci(k,tise){
   if(!SEKCE.some(([x])=>x===k))return;
   sekce=k;
-  /* Zalozka "Muj kus" rezim ZAPINA, a to jen pri skutecnem kliknuti:
-     `tise` znamena prekresleni, a to by rezim porad vracelo zpatky, i kdyz
-     uz je formular prazdny. Vypina ho vymazani CP a IV, ne odchod ze
-     zalozky — jinak by clovek o svuj kus prisel tim, ze se jde podivat
-     do vysledku. */
-  if(!tise&&k==='kus'&&rezim()!=='kus')prepni('kus');
   const el=sekceBlok();
   el.querySelectorAll('.atlas-sekce-panel').forEach(x=>{x.hidden=x.dataset.sekce!==k});
   el.querySelectorAll('[data-sekce-prepnout]').forEach(b=>{
@@ -2915,17 +2925,16 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    .forEach(x=>x.remove());
  }
  function presunDoSekci(){
-  const rozbor=panel('rozbor'),kus=panel('kus');
+  const rozbor=panel('rozbor');
   if(rozbor&&vysledek.parentElement!==rozbor)rozbor.append(vysledek);
   /* Typove zasahy maji vlastni zalozku, takze v rozboru uz nestoji —
      ale musi se odsud dat dojit, jinak by to vypadalo, ze zmizely. */
   /* Odkaz na zalozku Typy tu byl, dokud zalozky nebyly videt. Ted stoji
      nad obsahem, takze veta jen opakovala, co je na obrazovce. */
   rozbor&&rozbor.querySelectorAll('.atlas-rozbor-pozn').forEach(x=>x.remove());
-  if(kus&&udaje.parentElement!==kus){kus.append(udaje);udaje.open=true}
-  /* V zalozce uz neni co schovavat: obsah zalozky se otevira zalozkou,
-     druhe rozbalovatko nad nim bylo navic. */
-  if(kus){udaje.open=true;udaje.classList.add('atlas-hledani-udaje-vzdy')}
+  /* Formular kusu uz nema zalozku. V DOM zustava (visi na nem vypocet
+     enginu), ale je schovany — tady se o kusech nepocita. */
+  udaje.hidden=true;udaje.open=false;
   uklidRozbor();
  }
  function vykresliKotvy(je){
@@ -3056,17 +3065,11 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   /* Po zmene druhu nesmi zustat vybrana evoluce predchoziho — ukazovala
      by cenu cesty, ktera s tímhle druhem nesouvisi. */
   if(evoDruh!==strom.klic){evoDruh=strom.klic;evoCil=null;evoMega=null}
-  const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
-  const kus=window.__pgoProhlidkaKus&&window.__pgoProhlidkaKus();
-  /* Kusovy rezim pocita od skutecneho levelu zadaneho kusu; druhovy je
-     schvalne jen UKAZKA od L1 — appka netusi, co mas v inventari, a
-     tvarit se, ze zna „tvoji cenu", by bylo vymysleni. */
-  const odKlic=kusovy&&kus&&kus.klic?kus.klic:strom.klic;
-  /* Level kusu se dopocitava z CP a IV — a kdyz spolu nesedi, nevyjde.
-     Pak se pocita od L1 jako ukazka a rekne se to; tvarit se, ze L1 je
-     level toho kusu, by byla lez. */
-  const kusLevel=kusovy&&kus&&Number(kus.level)?Number(kus.level):null;
-  const odLevel=kusLevel||1;
+  /* Cena je schvalne UKAZKA od L1: appka netusi, co mas v inventari, a
+     tvarit se, ze zna „tvoji cenu", by bylo vymysleni. Od levelu kusu se
+     pocita v rosteru, kde ten kus opravdu je. */
+  const odKlic=strom.klic;
+  const odLevel=1;
   /* Jine formy tehoz druhu (Zygarde 10 % / 50 % / Complete, Giratina,
      Deoxys). Nejsou to evoluce — meni se ve hre jinak a appka o tom, jak,
      nic nevi. Stoji proto bokem a jen odkazuji na svou stranku, kde ma
@@ -3125,10 +3128,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     const naUzel=strom.stupne.reduce((a,p2)=>a||p2.filter(u=>u.klic===evoCil)[0],null);
     detail=`<h5>${esc((odUzel?odUzel.popis:odKlic)+' L'+odLevel)} → `
      +`${esc((naUzel?naUzel.popis:evoCil)+' L'+evoLevel)}</h5>`
-     +(kusLevel?''
-       :`<p class="atlas-evo-pozn">${kusovy
-         ?'Level kusu se z CP a IV spočítat nedá, tak je to ukázka od L1.'
-         :'Ukázkový model od L1 — o tom, co máš v inventáři, appka nic neví.'}</p>`)
+     +`<p class="atlas-evo-pozn">Ukázkový model od L1 — o tom, co máš`
+      +` v inventáři, appka nic neví.</p>`
      +`<h6 class="atlas-evo-nadpis">Co to vyžaduje</h6>`
      +`<div class="atlas-evo-kroky">`
      +c.kroky.map(k=>`<div class="atlas-evo-krok">`
@@ -3161,35 +3162,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  /* Co appka spocitala o zadanem kusu. Patri jen k radku hledaneho druhu:
     o evolucich zadny kus zadany neni. IV rank je poradi te kombinace IV
     mezi 4096 moznymi — ne poradi druhu v lize a ne pripravenost. */
- function kusBunka(r,vstupKlic){
-  const k=window.__pgoProhlidkaKus&&window.__pgoProhlidkaKus();
-  if(!k||r.klic!==vstupKlic)return '<td class="atlas-vysledek-nezname">—</td>';
-  const casti=[];
-  /* IV rank je vzdycky o JEDNE lize — o te, kterou ma clovek vybranou.
-     Bez jejiho jmena by to bylo cislo, ktere tvrdi neco jineho, nez se
-     zda. V rolich bez ligoveho limitu (Master, raidy, gym) se nepocita
-     a nic se za nej nedosazuje. */
-  const liga=role==='pvp'?ligaKlicVModelu:null;
-  const rank=(liga&&k.iv&&P.atlasIvRank)
-   ?P.atlasIvRank(k.jmeno,k.iv.a,k.iv.d,k.iv.s,liga):null;
-  if(rank)casti.push(`IV <b>#${rank.rank}</b> z ${rank.z} · ${esc(rank.liga)}`);
-  if(k.ivPct!=null)casti.push(`${k.ivPct} % IV`);
-  if(!casti.length)return '<td class="atlas-vysledek-nezname">nedá se spočítat</td>';
-  return `<td>${casti.join('<br>')}</td>`;
- }
-
- /* V kusovem rezimu se k nejlepsi mozne kombinaci pripise, jak proti ni
-    stoji tvuj kus. Driv to byl samostatny sloupec pro jednu vybranou ligu;
-    kdyz ligy stoji pod sebou, vi kazda sekce svou vlastni. */
- function kusRadek(r,vstupKlic,ligaKlic){
-  const k=window.__pgoProhlidkaKus&&window.__pgoProhlidkaKus();
-  if(!k||r.klic!==vstupKlic||!ligaKlic||!k.iv||!P.atlasIvRank)return '';
-  const rank=P.atlasIvRank(k.jmeno,k.iv.a,k.iv.d,k.iv.s,ligaKlic);
-  if(!rank)return '';
-  return `<small class="atlas-vysledek-tvuj">tvůj kus: IV <b>#${rank.rank}</b>`
-   +` z ${rank.z}${k.ivPct!=null?` · ${k.ivPct} % IV`:''}</small>`;
- }
-
  /* Kombinace dvou typu jako JEDEN stitek pulenky prebarveny: vlevo prvni
     typ, vpravo druhy. Dva samostatne ovaly vedle sebe by vypadaly jako dva
     ruzni protivnici, ne jako jedna dvojice. */
@@ -3275,7 +3247,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const znacka=(r.vztah==='vstup'?' <span class="atlas-vysledek-znacka">Hledaný druh</span>'
    :(r.vztah==='forma'?' <small>jiná forma</small>'
      :(r.vztah==='drive'?' <small>dřívější stupeň</small>':' <small>až po evoluci</small>')))+maxForma;
-  const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
   /* Klepnuti na jmeno otevre ten druh v hledani. Driv jen zvyraznilo radek,
      coz nikam nevedlo — a oznaceni, ktere nic nedela, jen plete. */
   const jmenoHtml=r.vztah==='vstup'
@@ -3289,16 +3260,17 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
        takze vlastni typy druhu by byly podruhe — u Centiskorche vysel
        "Bug Fire Bug". Jinde se typy hodi: rikaji, proti cemu se druh postavi. */
     +`<span class="atlas-vysledek-typy">${role==='raid'||role==='max'?'':typyHtml(r.klic)}</span></span></td>`
-   +`<td>${poradi}</td><td>${utoky}</td>`
-   /* U lig stoji misto sloupce o tvem kuse nejlepsi mozna kombinace IV —
-      ten druh zpravidla jeste nemas a tohle rika, po cem se divat. */
+   +`<td>${poradi}</td>`
+   /* Nejlepsi mozna kombinace IV stoji hned za poradim: obe cisla rikaji,
+      jak dobry ten druh v lize je. Driv tu byl sloupec o tvem kuse — ten
+      druh clovek zpravidla jeste nema a roster o nem vi vic. */
    +(role==='pvp'
      ?`<td class="atlas-vysledek-nejiv">${r.nejIv
        ?`<b>${esc(r.nejIv.iv)}</b> <small>L${String(r.nejIv.level).replace('.',',')}`
         +` · ${r.nejIv.cp} CP</small>`
-       :'<span class="atlas-vysledek-nezname">—</span>'}`
-      +`${kusovy?kusRadek(r,vstupKlic,ligaKlic):''}</td>`
-     :(kusovy?kusBunka(r,vstupKlic):''))
+       :'<span class="atlas-vysledek-nezname">—</span>'}</td>`
+     :'')
+   +`<td>${utoky}</td>`
    /* Misto holé sipky pojmenovany prikaz: samotna sipka nerikala, co udela,
       a zvyrazneni radku uz umi klepnuti na jmeno. U hledaneho druhu nic —
       hledat to, co uz je v poli, nema smysl. */
@@ -3306,6 +3278,29 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      :`<button type="button" class="atlas-vysledek-hledat" data-evo-hledat="${esc(r.jmeno)}">`
       +`Vyhledat ${esc(r.jmeno)}</button>`}</td></tr>`;
  }
+
+ /* Vyska tabulky se po prepnuti role drzi na tom, co tu bylo — jinak se
+    kratsi role zkrati stranku a prohlizec scroll orizne na nove maximum.
+    Pouziva se jen tehdy, kdyz uz je clovek zascrollovany pod zalozkami
+    roli; nahore neni co drzet a prazdne misto by jen prekazelo. */
+ function pouzijRezervu(){
+  const telo=document.querySelector('.atlas-vysledek-telo');
+  if(!telo)return;
+  telo.style.minHeight=rezerva?rezerva+'px':'';
+ }
+ function zrusRezervu(){
+  if(!rezerva)return;
+  rezerva=0;rezervaPrirozena=0;pouzijRezervu();
+ }
+ /* Rezerva se pusti, az kdyz se da pustit bez skoku: stranka bez ni musi
+    byt porad dost dlouha na to, kde clovek prave stoji. */
+ window.addEventListener('scroll',()=>{
+  if(!rezerva)return;
+  const navic=Math.max(0,rezerva-rezervaPrirozena);
+  if(!navic){zrusRezervu();return}
+  const max=document.documentElement.scrollHeight-navic-window.innerHeight;
+  if(window.scrollY<=max)zrusRezervu();
+ },{passive:true});
 
  function vykresliVysledek(){
   const el=vysledekBlok(),hodnota=jmeno.value.trim();
@@ -3326,7 +3321,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      tabulky se prepne tam, kde poradi opravdu je. Rucni volbu to nepresune
      — prepina se jen pri zmene druhu a rekne se, proc. */
   if(vysledekDruh!==m.klic){
-   vysledekDruh=m.klic;presunZprava='';
+   vysledekDruh=m.klic;presunZprava='';zrusRezervu();
    /* Prazdna je i tabulka, ve ktere sice radky jsou, ale nikdo v ni nema
       poradi — od te doby, co se ukazuje cela evolucni rada, takovy pripad
       existuje ("v tehle lize nema poradi" u vsech clanku). */
@@ -3372,7 +3367,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   // Nadpis bere cely nazev role z modelu ("Max Battle"), ne zkratku ze zalozky.
   const nadpis=role==='pvp'?'Výsledky pro PvP ligy'
    :`Výsledky pro ${skupina&&skupina.nazev?skupina.nazev:ROLE_POPIS[role]}`;
-  const kusovy=window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim()==='kus';
   /* Zalozky roli a vyber ligy stoji v jednom radku: kdyz byly pod sebou,
      prepnuti z PvP na Raidy ten radek zrusilo a cela tabulka poskocila. */
   el.innerHTML=`<section class="atlas-vysledek"><div class="atlas-vysledek-hlava">`
@@ -3384,7 +3378,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`<h4 class="atlas-vysledek-nadpis">${esc(nadpis)}</h4>`
    +`<div class="atlas-vysledek-telo">`
    +(radky.length
-     ?`<table class="atlas-vysledek-tab"><thead><tr><th>Druh</th><th>Pořadí druhu</th><th>Doporučené útoky</th>${role==='pvp'?'<th>Nejlepší IV</th>':(kusovy?'<th>Tvůj kus</th>':'')}<th></th></tr></thead><tbody>`
+     ?`<table class="atlas-vysledek-tab${role==='pvp'?' ma-iv':''}"><thead><tr><th>Druh</th><th>Pořadí druhu</th>${role==='pvp'?'<th>Nejlepší IV</th>':''}<th>Doporučené útoky</th><th></th></tr></thead><tbody>`
       +(role==='pvp'
         ?ligoveSkupiny.map(([k,g])=>`<tr class="atlas-vysledek-liga"><td colspan="5">`
           +`${esc(g.nazev)}</td></tr>`+g.radky.map(r=>radekHtml(r,m.klic,k)).join('')).join('')
@@ -3407,6 +3401,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   if(evoPanel){evoPanel.innerHTML=evoluceHtml(m);if(P.vystreditSprity)P.vystreditSprity(evoPanel)}
   if(P.vystreditSprity)P.vystreditSprity(el);
   if(klicFokusu){const znovu=el.querySelector(klicFokusu);if(znovu)znovu.focus({preventScroll:true})}
+  {const telo=el.querySelector('.atlas-vysledek-telo');
+   if(telo){rezervaPrirozena=telo.getBoundingClientRect().height;pouzijRezervu()}}
   vykresliKotvy(true);
  }
 
@@ -3438,60 +3434,18 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  // Tlacitko Vymazat sedi vedle mrizky, ne v ni — patri k udajum kusu,
  // takze jde do rozbalovatka s nimi.
  const akce=karta.querySelector('.actions');if(akce)udaje.append(akce);
- /* Cesta zpatky nahoru: formular stoji pod vysledky a evolucemi. */
- {const zpet=document.createElement('button');zpet.type='button';
-  zpet.className='atlas-hledani-zpet';zpet.dataset.zpetVysledky='1';
-  zpet.textContent='↑ Zpět na výsledky';udaje.append(zpet);}
 
  // --- identita druhu ----------------------------------------------------
  const identita=document.createElement('section');identita.className='atlas-hledani-identita';identita.hidden=true;
  udaje.before(identita);
 
- /* Rezim uz nema vlastni prepinac — rika ho zalozka: "Muj kus" znamena
-    pocitat s udaji kusu, cokoli jineho znamena mluvit o druhu. */
- let rezimStav='druh';
- const rezim=()=>rezimStav;
- function prepni(k){
-  rezimStav=k;
-  udaje.open=k==='kus';
-  karta.dataset.atlasRezim=k;
-  /* Rezim rozhoduje o vypoctu, ne jen o nadpisu: v "Prozkoumat druh" se
-     udaje kusu do vysledku neberou. Pocita to engine — vrstva mu jen
-     rekne, co se ptame. V polich udaje zustanou pro navrat. */
-  window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim(k);
-  vykresli();
-  /* Prepnuti na vlastni kus rovnou otevre zalozku s formularem a zameri
-     CP — jinak se zmeni rezim, ale na obrazovce se nic nestane. */
-  if(k==='kus'){
-   udaje.open=true;
-   if(sekce!=='kus')prepniSekci('kus',true);
-   const cp=document.getElementById('prohCp');
-   if(cp)setTimeout(()=>cp.focus({preventScroll:true}),60);
-  }
- }
- /* "Zpet na vysledky" z formulare kusu: bez nej se clovek musel
-    prorolovat pres celou stranku zpatky nahoru. */
- function zpetNaVysledky(){
-  const cil=karta.querySelector('.atlas-vysledky')||identita;
-  const plynule=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  cil.scrollIntoView({block:'start',behavior:plynule?'smooth':'auto'});
- }
- udaje.addEventListener('click',e=>{
-  if(e.target.closest('[data-zpet-vysledky]'))zpetNaVysledky();
- });
- /* O rezimu rozhoduji VYPLNENE UDAJE, ne to, na ktere zalozce clovek stoji.
-    Zalozka ho zapne (otevre formular), ale kdyz se CP a IV vymazou, neni uz
-    s cim pocitat a appka se vrati k druhu — jinak by sloupec "Tvuj kus"
-    zustal viset prazdny. */
- const kusMaUdaje=()=>['prohCp','prohA','prohD','prohS']
-  .some(id=>String((document.getElementById(id)||{}).value||'').trim()!=='');
- udaje.addEventListener('input',()=>{
-  const chce=kusMaUdaje()?'kus':'druh';
-  if(rezim()!==chce)prepni(chce);
- });
+ /* Vyhledavani pocita vzdycky o DRUHU. Kusovy rezim tu byl kvuli zalozce
+    "Muj kus"; ta je pryc, takze se enginu rekne jednou provzdy, na co se
+    ptame, a formular CP a IV zustava schovany. */
+ karta.dataset.atlasRezim='druh';
+ window.__pgoProhlidkaRezim&&window.__pgoProhlidkaRezim('druh');
 
  hlava.addEventListener('click',e=>{
-  const b=e.target.closest('[data-rezim]');if(b){prepni(b.dataset.rezim);return}
   if(e.target.closest('[data-hledani-zrus]')){
    jmeno.value='';jmeno.dispatchEvent(new Event('input',{bubbles:true}));
    jmeno.dispatchEvent(new Event('change',{bubbles:true}));jmeno.focus();
@@ -3531,7 +3485,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const cp25=P.atlasCP?P.atlasCP(d.name,25):null;
   const pocasi=[...new Set(typy.map(t=>P.atlasPocasi?P.atlasPocasi(t):'').filter(Boolean))]
    .map(x=>POCASI_CZ[x]||x);
-  const kusovy=rezim()==='kus';
   /* Shiny má tři stavy, ne dva: "ve hře zatím není" tvrdí něco o hře,
      "nevíme" o datech. A obecné shiny ANO neříká nic o tom, jestli shiny
      padá z raidu — u raidového úlovku se proto ptáme zvlášť. */
@@ -3606,7 +3559,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     </div>
    </div>
    <div class="atlas-hledani-kde">
-    <span class="atlas-hledani-rezim-znacka">${kusovy?'Výpočet konkrétního kusu':'Hodnocení druhu'}</span>
+    <span class="atlas-hledani-rezim-znacka">Hodnocení druhu</span>
     <b>${kdeStoji?esc(kdeStoji):'žádnou roli nezastane'}</b>
    </div>
    <dl class="atlas-hledani-fakta">
@@ -3657,7 +3610,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  });
  // Engine si výsledek překresluje sám; identita se veze s ním.
  new MutationObserver(vykresli).observe(vysledek,{childList:true});
- prepni('druh');
+ vykresli();
 })();
 
 /* Hledání v rosteru: štítky se skládají do pole za sebe.

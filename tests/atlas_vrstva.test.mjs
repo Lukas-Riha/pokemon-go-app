@@ -2261,17 +2261,12 @@ const dH = await pH.evaluate(async () => {
   out.duplicitniNadpis = [...document.querySelectorAll("#prohOut .detail-title")]
     .filter((el) => el.getClientRects().length).length;
 
-  // Prepnuti na vlastni kus otevre udaje a prepise znacku rezimu.
-/** Zalozka "Muj kus" JE prepinac rezimu — vlastni tlacitka uz nejsou. */
-function naKus() {
-  const b = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
-    .filter((x) => /Můj kus/.test(x.textContent))[0];
-  if (b) b.click();
-}
-  naKus();
-  await cekej(500);
-  out.poPrepnutiOtevrene = document.querySelector(".atlas-hledani-udaje").open;
-  out.znackaRezimu = (document.querySelector(".atlas-hledani-rezim-znacka") || {}).textContent;
+  /* Formular CP a IV tu uz nema zalozku ani misto: Vyhledavani odpovida
+     na otazku o DRUHU, vlastni kusy jsou v rosteru. */
+  out.zalozky = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
+    .map((b) => b.textContent.trim());
+  out.formularVidet = (() => { const u = document.querySelector(".atlas-hledani-udaje");
+    return !!(u && !u.hidden && u.getClientRects().length); })();
 
   // Krizek vycisti pole i identitu.
   document.querySelector("[data-hledani-zrus]").click();
@@ -2297,9 +2292,9 @@ check("…a raidová čísla v ní nejsou, ta patří pod Raidy",
   !/Raidový úlovek/.test(dH.identita), dH.identita);
 check("…a engine už jméno s typy nekreslí podruhé",
   dH.duplicitniNadpis === 0, String(dH.duplicitniNadpis));
-check("přepnutí na vlastní kus otevře údaje a změní značku",
-  dH.poPrepnutiOtevrene === true && /kusu/.test(String(dH.znackaRezimu)),
-  JSON.stringify({ otevrene: dH.poPrepnutiOtevrene, znacka: dH.znackaRezimu }));
+check("formulář vlastního kusu tu není — Vyhledávání je o druhu",
+  !dH.zalozky.some((x) => /Můj kus/.test(x)) && dH.formularVidet === false,
+  JSON.stringify(dH.zalozky));
 check("křížek vyčistí pole i identitu",
   dH.poVymazani.hodnota === "" && dH.poVymazani.identitaSkryta === true,
   JSON.stringify(dH.poVymazani));
@@ -2876,45 +2871,12 @@ const dVysl29 = await pVysl29.evaluate(async () => {
       .map((d) => d.textContent.trim()) : [];
     if (b) { b.click(); await cekej(300); }
   }
-  // Kusovy rezim prida sloupec o kusu, rezim druhu ho zase sebere.
-/** Zalozka "Muj kus" JE prepinac rezimu — vlastni tlacitka uz nejsou. */
-function naKus() {
-  const b = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
-    .filter((x) => /Můj kus/.test(x.textContent))[0];
-  if (b) b.click();
-}
-  /* Zalozka "Muj kus" rezim ZAPINA; zpatky na druh se jde vymazanim udaju,
-     aby clovek o svuj kus neprisel jen tim, ze se podiva do vysledku. */
-  const rezim = (k) => {
-    if (k === "kus") {
-      const b = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
-        .filter((x) => /Můj kus/.test(x.textContent))[0];
-      if (b) b.click();
-      return;
-    }
-    // Vymazani CP a IV: appka pozna, ze uz neni s cim pocitat. `prohClear`
-    // by smazal i jmeno druhu a zmizel by cely vysledek.
-    ["prohCp", "prohA", "prohD", "prohS"].forEach((id) => {
-      const e = document.getElementById(id);
-      if (e) { e.value = ""; e.dispatchEvent(new Event("input", { bubbles: true })); }
-    });
-  };
-  rezim("kus");
-  await cekej(400);
-  const nastav = (id, v) => { const e = document.getElementById(id); e.value = v;
-    e.dispatchEvent(new Event("input", { bubbles: true })); };
-  nastav("prohCp", "500"); nastav("prohA", "15"); nastav("prohD", "15"); nastav("prohS", "15");
-  await cekej(1200);
-  out.kus = { hlavicka: [...document.querySelectorAll(".atlas-vysledek-tab thead th")]
-      .map((t) => t.textContent),
-    radek: (document.querySelector(".atlas-vysledek-tab tr.je-vstup") || {}).textContent || "",
-    tvuj: [...document.querySelectorAll(".atlas-vysledek-tvuj")]
-      .map((e) => e.textContent.replace(/\s+/g, " ").trim()) };
-  rezim("druh");
-  await cekej(900);
-  // Posledni sloupec je prikaz bez nadpisu; "Nejlepsi IV" je ten ctvrty.
-  out.druh = { sloupcu: document.querySelectorAll(".atlas-vysledek-tab thead th").length,
-    tvuj: document.querySelectorAll(".atlas-vysledek-tvuj").length };
+  /* Sloupce ligove tabulky: poradi a hned za nim nejlepsi mozna
+     kombinace IV. Sloupec o vlastnim kuse uz neexistuje. */
+  out.hlavicky = [...document.querySelectorAll(".atlas-vysledek-tab thead th")]
+    .map((t) => t.textContent.trim());
+  out.zalozky = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
+    .map((b) => b.textContent.trim());
   return out;
 });
 await pVysl29.close();
@@ -2935,107 +2897,14 @@ check("…a po výběru je vidět podmínka právě té cesty",
   dVysl29.evo.podminkyPo.length === 1 && /v noci/.test(dVysl29.evo.podminkyPo[0]),
   JSON.stringify(dVysl29.evo.podminkyPo));
 const pojmenovane = (h) => h.filter((x) => x.trim().length > 0);
-check("u lig stojí místo tvého kusu nejlepší možná kombinace IV",
-  pojmenovane(dVysl29.kus.hlavicka).length === 4
-    && /Nejlepší IV/.test(dVysl29.kus.hlavicka.join(" "))
-    && !/Tvůj kus/.test(dVysl29.kus.hlavicka.join(" ")),
-  JSON.stringify(dVysl29.kus.hlavicka));
-// Poradi kusu uz nestoji ve vlastnim sloupci pro jednu vybranou ligu —
-// pripise se k nejlepsi kombinaci v kazde lize zvlast.
-check("…a v kusovém režimu se k ní připíše pořadí tvého kusu",
-  dVysl29.kus.tvuj.length >= 1 && /IV #\d/.test(dVysl29.kus.tvuj.join(" "))
-    && /tvůj kus/.test(dVysl29.kus.radek),
-  JSON.stringify(dVysl29.kus.tvuj.slice(0, 2)));
-check("…v režimu druhu sloupec zůstane, tvůj kus z něj zmizí",
-  dVysl29.druh.sloupcu === 5 && dVysl29.druh.tvuj === 0,
-  JSON.stringify(dVysl29.druh));
-
-console.log("\n30) Vlastní kus: formulář přijede do pohledu, IV rank po ligách");
-const pKus30 = await otevri(1440, [
-  { pokemon: "Machamp", level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 }
-]);
-const dKus30 = await pKus30.evaluate(async () => {
-  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-  window.__pgoZalozka("prohlidkaCard");
-  await cekej(1200);
-  const pole = document.getElementById("prohName");
-  pole.value = "Azumarill";
-  pole.dispatchEvent(new Event("input", { bubbles: true }));
-  await cekej(1300);
-  const out = { pred: { scroll: Math.round(window.scrollY) } };
-/** Zalozka "Muj kus" JE prepinac rezimu — vlastni tlacitka uz nejsou. */
-function naKus() {
-  const b = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
-    .filter((x) => /Můj kus/.test(x.textContent))[0];
-  if (b) b.click();
-}
-  naKus();
-  await cekej(1200);
-  const cp = document.getElementById("prohCp");
-  out.poPrepnuti = {
-    fokus: document.activeElement ? document.activeElement.id : "",
-    otevrene: !!document.querySelector(".atlas-hledani-udaje[open]"),
-    // Přepnutí režimu otevře záložku s formulářem — musí být vidět.
-    zalozka: (document.querySelector('[data-sekce-prepnout="kus"]') || {})
-      .getAttribute ? document.querySelector('[data-sekce-prepnout="kus"]')
-        .getAttribute("aria-selected") : "",
-    cpVidet: (() => { const r = cp.getBoundingClientRect();
-      return r.top >= 0 && r.bottom <= window.innerHeight; })()
-  };
-  const nastav = (id, v) => { const e = document.getElementById(id); e.value = v;
-    e.dispatchEvent(new Event("input", { bubbles: true })); };
-  nastav("prohCp", "1400"); nastav("prohA", "0"); nastav("prohD", "15"); nastav("prohS", "15");
-  await cekej(1400);
-  {
-    const zal = document.querySelector('[data-sekce-prepnout="prehled"]');
-    if (zal) { zal.click(); await cekej(500); }
-  }
-  const bunka = () => (document.querySelector(".atlas-vysledek-tab tr.je-vstup td:nth-child(4)") || {})
-    .textContent || "";
-  /* Ligy uz nejsou prepinace: kazda ma v tabulce svou sekci, takze se
-     poradi kusu bere z kazde z nich. */
-  out.ligy = [...document.querySelectorAll("tr.atlas-vysledek-liga")].map((t) => {
-    let n = t.nextElementSibling, kus = "";
-    while (n && !n.classList.contains("atlas-vysledek-liga")) {
-      if (n.classList.contains("je-vstup")) {
-        const td = n.querySelector("td:nth-child(4)");
-        kus = td ? td.textContent.replace(/\s+/g, " ").trim() : "";
-      }
-      n = n.nextElementSibling;
-    }
-    return { liga: t.textContent.trim(), kus };
-  });
-  const raid = document.querySelector('[data-role="raid"]');
-  if (raid) { raid.click(); await cekej(600); }
-  out.raid = bunka();
-  // Zpátky na výsledky.
-  const pvp = document.querySelector('[data-role="pvp"]');
-  if (pvp) { pvp.click(); await cekej(400); }
-  const zalKus = document.querySelector('[data-sekce-prepnout="kus"]');
-  if (zalKus) { zalKus.click(); await cekej(500); }
-  const zpet = document.querySelector("[data-zpet-vysledky]");
-  out.tlacitkoZpet = !!zpet;
-  if (zpet) { zpet.click(); await cekej(600); }
-  out.poZpet = { zalozka: (document.querySelector('[data-sekce-prepnout="prehled"]') || {})
-    .getAttribute ? document.querySelector('[data-sekce-prepnout="prehled"]')
-      .getAttribute("aria-selected") : "" };
-  return out;
-});
-await pKus30.close();
-check("přepnutí na vlastní kus otevře jeho záložku a formulář je vidět",
-  dKus30.poPrepnuti.otevrene === true && dKus30.poPrepnuti.zalozka === "true"
-    && dKus30.poPrepnuti.cpVidet === true, JSON.stringify(dKus30.poPrepnuti));
-check("…a fokus sedne na CP", dKus30.poPrepnuti.fokus === "prohCp", dKus30.poPrepnuti.fokus);
-check("pořadí tvého kusu se počítá v každé lize zvlášť",
-  dKus30.ligy.length >= 2
-    && dKus30.ligy.every((x) => /tvůj kus: IV #\d/.test(x.kus))
-    && new Set(dKus30.ligy.map((x) => x.kus)).size === dKus30.ligy.length,
-  JSON.stringify(dKus30.ligy));
-check("…a v roli bez ligového limitu se nepočítá",
-  !/IV #/.test(dKus30.raid), dKus30.raid);
-check("z formuláře vede cesta zpátky na výsledky",
-  dKus30.tlacitkoZpet === true && dKus30.poZpet.zalozka === "true",
-  JSON.stringify([dKus30.tlacitkoZpet, dKus30.poZpet.zalozka]));
+check("u lig stojí nejlepší možná kombinace IV hned za pořadím",
+  pojmenovane(dVysl29.hlavicky).join("|")
+    === "Druh|Pořadí druhu|Nejlepší IV|Doporučené útoky",
+  JSON.stringify(dVysl29.hlavicky));
+check("…a sloupec ani záložka o vlastním kuse tu už nejsou",
+  !/Tvůj kus/.test(dVysl29.hlavicky.join(" "))
+    && !dVysl29.zalozky.some((x) => /Můj kus/.test(x)),
+  JSON.stringify(dVysl29.zalozky));
 
 console.log("\n31) Pás CP při 100 % IV a kotvy na sekce");
 const pCp31 = await otevri(1440, [
@@ -3063,7 +2932,7 @@ const dCp31 = await pCp31.evaluate(async () => {
     // Čísla musí sedět s tím, co spočítá engine.
     // Levely jdou vzestupne; raid a vejce jsou tataz hodnota (L20) a stoji
     // v jedne bunce.
-    sediSEnginem: [15, 20, 25, 40].every((lvl, i) => {
+    sediSEnginem: [15, 20, 25, P.cpmStrop()].every((lvl, i) => {
       const cp = P.atlasCP("Eevee", lvl);
       return String(cp == null ? "—" : cp) === (bunky[i]
         ? (bunky[i].querySelector("b") || {}).textContent : "");
@@ -3090,7 +2959,7 @@ check("…má čtyři buňky od nejnižšího levelu po nejvyšší",
     && /Výzkum · L15/.test(dCp31.popisky[0])
     && /Raid a vejce · L20/.test(dCp31.popisky[1])
     && /L25/.test(dCp31.popisky[2])
-    && /Strop · L40/.test(dCp31.popisky[3]),
+    && /Strop · L50/.test(dCp31.popisky[3]),
   JSON.stringify(dCp31.popisky));
 check("…čísla sedí s tím, co spočítá engine", dCp31.sediSEnginem === true,
   JSON.stringify(dCp31.hodnoty));
@@ -3099,7 +2968,7 @@ check("…a pod pásem už nestojí vysvětlující věta",
 check("pod Raidy se pás CP neopakuje",
   dCp31.raidCisla === -1 && dCp31.raidBlok === "", dCp31.raidBlok.slice(0, 80));
 check("záložky sekcí stojí v pevném pořadí",
-  dCp31.kotvy.join("|") === "Přehled|Typy|Evoluce|Rozbor|Můj kus",
+  dCp31.kotvy.join("|") === "Přehled|Typy|Evoluce|Rozbor",
   JSON.stringify(dCp31.kotvy));
 
 console.log("\n31b) Záložka sekce přepne obsah a přenese fokus");
@@ -3409,7 +3278,7 @@ check("…ani hlavička a závěrečné odstavce, co jen opakují okolí",
   dRoz35.odkaz === "" && dRoz35.hlavicka === false && dRoz35.hint === false,
   JSON.stringify([dRoz35.odkaz.slice(0, 40), dRoz35.hlavicka, dRoz35.hint]));
 
-console.log("\n36) Cena evoluce u vlastního kusu: od jeho levelu, ne od vymyšleného");
+console.log("\n36) Cena evoluce je údajně ukazková — a opravdu je od L1");
 const pKus36 = await otevri(1440, []);
 const dKus36 = await pKus36.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -3436,37 +3305,14 @@ const dKus36 = await pKus36.evaluate(async () => {
   pole.dispatchEvent(new Event("input", { bubbles: true }));
   await cekej(1500);
   const out = { druh: await doEvoluce() };
-/** Zalozka "Muj kus" JE prepinac rezimu — vlastni tlacitka uz nejsou. */
-function naKus() {
-  const b = [...document.querySelectorAll(".atlas-sekce-zalozky button")]
-    .filter((x) => /Můj kus/.test(x.textContent))[0];
-  if (b) b.click();
-}
-  naKus();
-  await cekej(900);
-  nastav("prohCp", "600"); nastav("prohLv", "22");
-  nastav("prohA", "15"); nastav("prohD", "15"); nastav("prohS", "15");
-  await cekej(1500);
-  out.kus = await doEvoluce();
-  // CP a IV, ze kterych level nevyjde: appka nesmi tvrdit, ze kus je L1.
-  nastav("prohLv", ""); nastav("prohCp", "600");
-  await cekej(1500);
-  out.bezLevelu = await doEvoluce();
-  out.bezLevelu.level = (window.__pgoProhlidkaKus() || {}).level;
   return out;
 });
 await pKus36.close();
-check("druhový režim je výslovně ukázka od L1",
+// Od levelu konkretniho kusu se pocita v rosteru; tady appka netusi,
+// co clovek v inventari ma, a rika to rovnou.
+check("cena evoluce je ukázka od L1 a přizná to",
   /Magby L1 →/.test(dKus36.druh.hlavicka) && /Ukázkový model od L1/.test(dKus36.druh.text),
   dKus36.druh.hlavicka);
-check("…kusový počítá od skutečného levelu kusu",
-  /Magby L22 →/.test(dKus36.kus.hlavicka) && !/Ukázkový model/.test(dKus36.kus.text)
-    && dKus36.kus.cena["Prach"] !== dKus36.druh.cena["Prach"],
-  JSON.stringify([dKus36.kus.hlavicka, dKus36.kus.cena["Prach"], dKus36.druh.cena["Prach"]]));
-check("…a když level z CP a IV nevyjde, řekne to místo mlčení",
-  dKus36.bezLevelu.level === null
-    && /Level kusu se z CP a IV spočítat nedá/.test(dKus36.bezLevelu.text),
-  dKus36.bezLevelu.text.slice(0, 120));
 
 console.log("\n37) Čištění boxu: úprava jako okno nad ním, rámeček se vejde, shadow má Frustration");
 const pCis37 = await otevri(1440, [
@@ -4042,10 +3888,9 @@ const dHled48 = await pHled48.evaluate(async () => {
   out.rozborZbytky = ["​.d-verdict-row", ".proh-hint", ".atlas-rozbor-pozn", ".d-utoky-druh .d-note"]
     .map((sel) => sel.replace("​", ""))
     .filter((sel) => !!panelR.querySelector(sel));
-  zal().find((b2) => /Můj kus/.test(b2.textContent)).click();
-  await cekej(900);
-  const ud = document.querySelector(".atlas-hledani-udaje");
-  out.mujKus = { otevrene: ud.open, summary: ud.querySelector("summary").offsetParent !== null,
+  out.mujKus = { zalozka: zal().some((b2) => /Můj kus/.test(b2.textContent)),
+    formular: (() => { const u = document.querySelector(".atlas-hledani-udaje");
+      return !!(u && !u.hidden && u.getClientRects().length); })(),
     rezim: karta.dataset.atlasRezim };
   zal().find((b2) => /Evoluce/.test(b2.textContent)).click();
   await cekej(900);
@@ -4152,9 +3997,9 @@ check("vysvětlující věty pod pásem CP a pod hodnocením druhu jsou pryč",
   JSON.stringify([dHled48.vetaPodPasem, dHled48.vetaPodHodnocenim]));
 check("Rozbor neopakuje hlavičku ani závěrečné odstavce",
   dHled48.rozborZbytky.length === 0, JSON.stringify(dHled48.rozborZbytky));
-check("záložka Můj kus je rovnou otevřená a přepíná režim",
-  dHled48.mujKus.otevrene === true && dHled48.mujKus.summary === false
-    && dHled48.mujKus.rezim === "kus", JSON.stringify(dHled48.mujKus));
+check("záložka Můj kus je pryč a počítá se tu vždycky o druhu",
+  dHled48.mujKus.zalozka === false && dHled48.mujKus.formular === false
+    && dHled48.mujKus.rezim === "druh", JSON.stringify(dHled48.mujKus));
 check("z evoluční řady jde vyhledat jiný článek",
   /Vyhledat/.test(dHled48.hledatPopis || "") && /Macho/.test(dHled48.poHledani || "")
     && dHled48.poHledani !== "Machop",
@@ -6245,6 +6090,50 @@ check("…a nad tlačítky stojí, co to udělalo s verdiktem",
   JSON.stringify(d85));
 
 check("žádná chyba JavaScriptu", chyby.length === 0, chyby.join(" | "));
+
+console.log("\n86) Vyhledávání: přepnutí role nehne stránkou a strop je L50");
+const pRole86 = await otevri(1400, []);
+const dRole86 = await pRole86.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  document.getElementById("novinkyOkno")?.remove();
+  window.__pgoZalozka("prohlidkaCard");
+  await cekej(1200);
+  const pole = document.getElementById("prohName");
+  pole.value = "Machop";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(1800);
+  const bunka = [...document.querySelectorAll(".atlas-cp-bunka")]
+    .find((e) => /Strop/.test(e.textContent));
+  const out = { strop: bunka ? bunka.textContent.replace(/\s+/g, " ").trim() : "" };
+  /* Dolu pod záložky rolí: PvP má tři ligy pod sebou, raidová tabulka je
+     krátká — bez držené výšky by prohlížeč scroll ořízl a vypadalo by to,
+     že appka skočila nahoru. */
+  window.scrollTo(0, document.documentElement.scrollHeight);
+  await cekej(350);
+  const pas = () => Math.round(document.querySelector(".atlas-vysledek-ovladani")
+    .getBoundingClientRect().top);
+  out.pred = { scroll: Math.round(window.scrollY), pas: pas(),
+    vyska: Math.round(document.documentElement.scrollHeight) };
+  document.querySelector('[data-role="raid"]').click();
+  await cekej(600);
+  out.po = { scroll: Math.round(window.scrollY), pas: pas(),
+    vyska: Math.round(document.documentElement.scrollHeight) };
+  // Držená výška se pustí, jakmile se bez ní obejdeme.
+  window.scrollTo(0, 0);
+  await cekej(400);
+  const telo = document.querySelector(".atlas-vysledek-telo");
+  out.nahore = telo ? (telo.style.minHeight || "(pryč)") : "(není)";
+  return out;
+});
+await pRole86.close();
+check("přepnutí role nechá stránku stát na místě",
+  Math.abs(dRole86.po.pas - dRole86.pred.pas) <= 2
+    && Math.abs(dRole86.po.scroll - dRole86.pred.scroll) <= 2,
+  JSON.stringify([dRole86.pred, dRole86.po]));
+check("…a po návratu nahoru se držená výška pustí",
+  dRole86.nahore === "(pryč)", String(dRole86.nahore));
+check("strop CP počítá nejvyšší level hry, ne L40",
+  /L50/.test(dRole86.strop) && !/L40/.test(dRole86.strop), dRole86.strop);
 
 await browser.close();
 server.close();

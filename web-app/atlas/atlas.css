@@ -3588,3 +3588,40 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-vysledek-nejiv small{color:var(--text-muted);white-space:nowrap}
 .atlas-test .atlas-vysledek-nejiv .atlas-vysledek-tvuj{display:block;margin-top:3px;
   color:var(--text-secondary)}
+
+/* Claude (128): sirky sloupcu vysledkove tabulky.
+
+   Pevne rozlozeni tu bylo kvuli tomu, aby se sloupce nehybaly pri
+   prepinani lig (Claude 76) — ligy jsou dnes v jedne tabulce, takze uz
+   ho neni proc drzet. Sloupec Druh mel 38 % a zustavala za nim mezera,
+   zatimco utoky se lamaly na dva radky. Kazdy sloupec si proto bere jen
+   tolik, kolik potrebuje na jeden radek, a zbytek pripadne utokum.
+   Na telefonu stoji bunky pod sebou, takze se tohle netyka. */
+@media(min-width:651px){
+  .atlas-test .atlas-vysledek-tab{table-layout:auto}
+  .atlas-test .atlas-vysledek-tab th,
+  .atlas-test .atlas-vysledek-tab td{width:auto}
+  .atlas-test .atlas-vysledek-tab th:first-child,
+  .atlas-test .atlas-vysledek-tab td:first-child{width:max-content}
+  /* Cisla a prikaz maji sirku na jeden radek. Pri `table-layout:auto` je
+     to prani, ne prikaz: kdyz se tabulka do karty nevejde, prohlizec je
+     zuzi sam a radek se zlomi — lepsi nez nechat tabulku prerust. */
+  .atlas-test .atlas-vysledek-tab th:nth-child(2),
+  .atlas-test .atlas-vysledek-tab td:nth-child(2){width:150px}
+  .atlas-test .atlas-vysledek-tab.ma-iv th:nth-child(3),
+  .atlas-test .atlas-vysledek-tab.ma-iv td:nth-child(3){width:140px}
+  .atlas-test .atlas-vysledek-tab th:last-child,
+  .atlas-test .atlas-vysledek-tab td:last-child{width:145px}
+  /* Cisla ani prikaz se nedrzi na jednom radku nasilim: dokud je mista,
+     da jim auto rozlozeni celou sirku samo, a kdyz neni, je lepsi zlomit
+     radek nez nechat tabulku prerust kartu. */
+  .atlas-test .atlas-vysledek-hledat{white-space:normal}
+  /* Jmeno, znacka a typy se vejdou na jeden radek samy: `max-content` da
+     sloupci presne tolik, kolik nejdelsi radek potrebuje. Kdyz uz se
+     tabulka do karty nevejde, sloupec se zuzi a obsah se zalomi — proto
+     tu nic nema `nowrap` natvrdo. */
+  .atlas-test .atlas-vysledek-tab td.atlas-vysledek-druh>span>*{flex:none}
+  /* Nadpis ligy je jedina bunka radku — pravidlo pro posledni sloupec by
+     ho jinak zuzilo a zarovnalo doprava. */
+  .atlas-test .atlas-vysledek-tab tr.atlas-vysledek-liga td{width:auto}
+}

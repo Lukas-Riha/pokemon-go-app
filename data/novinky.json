@@ -248,69 +248,51 @@
     "nadpis": "Co je nového",
     "body": [
       {
-        "sekce": "Roster a rozhodování"
+        "sekce": "Ligy a rozhodování"
       },
       {
-        "text": "**Sestava do ligy je přímo v ligové tabulce.** U každé ligy, kterou ten druh hraje, stojí za jeho pořadím sestava z PvPoke — stejnými štítky s typem, jaké má Vyhledávání, a **ve sloupci „po evoluci“ taky**: podle ní se pozná, jestli útoky, které kus má dnes, budou po vývinu k něčemu. Barvy u útoků v hlavičce měří něco jiného (raidové DPS), takže se ty dva údaje už nepletou. U ligy, kterou kus přerostl, se nic neukazuje."
+        "text": "**Sestava útoků i pořadí tvé kombinace IV** stojí rovnou v ligové tabulce kusu.",
+        "obrazek": "ligy-detail"
       },
-      "**Pravidlo o přednosti útoku (CMP) je pryč.** Appka od verze 2.10 stavěla do ligy kus s vyšším útokem, když byla kvalita prakticky stejná, a nastavení na to mělo vlastní pole. Zrušeno celé: o tom, který kus druhu ligu odehraje, rozhoduje zase jen kvalita kusu (stat product). Zmizela i věta o tom v bublině ligy a nastavení „Přednost útoku při shodě“.",
-      "**U každé ligy je i pořadí té kombinace IV.** Vedle procenta kvality stojí odznáček **IV #77** — kolikátá je tvoje kombinace mezi 4096 možnými u toho druhu v té lize. V bublině je k tomu celá věta i s nejlepší možnou kombinací („nejlepší možná: 0/14/11 na L27, 1500 CP“), ať je vidět, jak daleko ten kus je. Počítá se to stejně jako na pvpivs.com — stat product na nejvyšším levelu, který se vejde pod strop CP. Master League strop nemá, tam pořadí kombinací smysl nedává a neukazuje se. Tabulka lig je kvůli tomu přes celou šířku detailu a sestava útoků se u úzkého okna skládá do „+2“ — celé znění zůstává v bublině, nic se neořezává napůl.",
-      "**Master League se měří stejně jako ostatní ligy.** Dřív byla výjimka: o místo v ní rozhodovalo IV procento (součet IV ze 45) proti prahu vysokého IV, zatímco jinde rozhoduje kvalita kusu — stat product proti nejlepší možné kombinaci. U jednoho kusu pak svítila dvě různá čísla (73 % a 94,5 %) a nedalo se poznat, podle kterého se appka rozhoduje. Teď platí v ML totéž co jinde. **Pořadí kombinace navíc sedí na pvpivs**: počítá se na L51 s best buddy, stejně jako tam (Metagross 15/10/8 → #496 ze 4096, 94,55 % — číslo na číslo).",
-      "**Dva nové důvody, proč si kus nechat — oba o PvP kvalitě.** **PvP stovka**: kombinace IV je nejlepší možná (#1 ze 4096) pro ligu, kterou ten druh hraje — taková se znovu nechytí, tak se nepouští, stejně jako 15/15/15. **Pojistka na cupy**: kombinace na 98 % a víc se drží, dokud nemáš lepší kus toho druhu; v omezených cupech se pořadí druhů přehazuje a takový kus se shání nejhůř. Obojí je pojistka, ne role — prach do nich neteče. Vypnout nebo utáhnout jde v Nastavení.",
-      "**Žebříček druhů jde o sto druhů hlouběji** (300 na ligu místo 200) a **velikostní formy Gourgeista a Pumpkaboa mají vlastní pořadí** — ve hře mají různé staty, takže Small měl dřív číslo po Large. Appka je tím o 64 KB větší; načtení zůstává pod sekundou i na pomalém telefonu.",
-      "**Evoluce zdarma po výměně už není důvod kus držet.** Appka takový kus označovala „Ponechat – trade“ a nechávala ho v rosteru kvůli ušetřeným 100 bonbónům. Teď je verdikt **pustit** a výměna je jen lepší způsob, jak ho pustit: kus dostane mezi štítky značku **TRADE** a v okně Transfer vlastní sekci **„Nejdřív vyměnit“**, aby se omylem neposlal profesorovi. Kus, který drží nějakou roli, zůstává dál — tam se výměna nevyplatí, protože přehází IV.",
-      "**Master League je konečně i v tabulce „Ligy podrobně“.** Dřív tam byly jen ligy se stropem CP, takže o ML se člověk z detailu kusu nedozvěděl nic — přitom appka ji jinak řeší (sloty i odznáček). Teď má vlastní řádek: pořadí druhu, kvalita kusu, CP na L50 a kolik stojí ho tam dotáhnout.",
-      "**U procenta je vidět i škála.** Číslo „95 %“ samo o sobě mate: stat product se mezi 4096 kombinacemi liší málo, takže v Great League má i ta úplně nejhorší kombinace kolem 90 %. Bublina proto říká, kde škála u toho druhu začíná — „celá škála jde od 89,9 % do 100 %“. Pořadí (#3000 ze 4096) a procento odpovídají na dvě různé otázky.",
-      "**Co pustit, si vyhledáš přímo ve hře.** Tlačítko **Transfer** je nahoře vedle Novinek a Importu a otevře okno přes celou appku (roster se tím nikam neposune). Po čištění boxu — nebo nad tím, co je zrovna vidět v tabulce — v něm najdeš filtr do herního vyhledávání: zkopíruješ, ve hře vložíš a v seznamu zůstanou jen kusy k puštění. Filtry jsou zvlášť na kusy, které hra pustí **hromadným výběrem**, a zvlášť na ty, co jdou jen **po jednom** (shiny, legendární, Ultra Beast) — jinak se při hromadném označování pokaždé zasekneš. U každého filtru si rozklikneš kartičky kusů od nejvyššího CP, takže ještě před mazáním vidíš, koho pustíš. Platí u toho jediné tvrdé pravidlo: **ve filtru nikdy nevyskočí kus, který se nepouští** — appka si každý filtr po sobě zkouší proti celému rosteru a kus, který od ponechaného odlišit nejde (stejný druh i CP), schválně vynechá a vypíše k ručnímu dohledání. Délka jednoho filtru je v Nastavení.",
-      "**Ruční přidání umí pohlaví.** Nešlo zadat vůbec, přitom u druhů, kde se samec a samice liší vzhledem, podle něj appka vybírá obrázek. Nahradilo pole „V gymu (h)“, které pomáhalo jen v jednom okrajovém případě.",
-      "**Řádek pod pořadím v lize má jednu barvu.** „Hotový · L25 je strop ligy → 1474 CP“ svítil napůl zeleně a napůl šedě, jako by půlka věty byla chyba. Teď je celý řádek zelený u kusu, do kterého se už nic investovat nemusí, a tlumený tam, kde ještě něco stojí.",
+      "**Master League se měří jako ostatní ligy** — pravidlo o přednosti útoku (CMP) je pryč.",
+      "**Dva nové důvody kus nechat:** PvP stovka a špičková kombinace IV i u druhu hluboko v žebříčku.",
+      "**Žebříčky sahají hlouběji** (300 druhů na ligu) **a znají cupy** podle rozpisu GO Battle League.",
+      "**Evoluce zdarma po výměně má verdikt Trade**, ne Ponechat — a jde podle něj filtrovat.",
+      "**U procenta kvality je vidět škála** — „95 %“ samo o sobě mate.",
       {
-        "sekce": "Akce a rozpis"
+        "sekce": "Vyhledávání"
       },
       {
-        "text": "**Akce se dvěma bossy nabídne oba.** „Mega Charizard X and Mega Charizard Y“ je jedna akce, ale dva různé souboje — X je Dragon, Y Flying. Appka je slévala do jednoho, takže na druhého z nich nešlo připravit tým. Teď jsou v detailu akce oba, přepneš mezi nimi a Tahák i řazení rosteru jdou na toho, kterého si vybereš."
+        "text": "**Ligy v jedné tabulce** a hned za pořadím **nejlepší možná kombinace IV** pro tu ligu.",
+        "obrazek": "ligy-tabulka"
+      },
+      "**Záložka „Můj kus“ je pryč** — Vyhledávání je o druhu, vlastní kusy jsou v rosteru.",
+      "**Strop CP počítá L50** a přepnutí role už nehne stránkou.",
+      {
+        "sekce": "Transfer a čištění"
       },
       {
-        "text": "**Tahák zná i bosse, kteří teprve přijdou.** Dřív uměl jen dnešní raidy, takže klik na „Otevřít v Taháku“ u akce, co začíná za dva dny, skončil hláškou, že takový boss dnes není. Nově stojí v Taháku i bossové z raidů do čtrnácti dnů — s datem, odkdy jsou, a s obvyklou šestkou counterů, takže se dá připravit dopředu."
+        "text": "**Transfer:** míň filtrů, vlastní předpony, **dávka na dnešek** a odškrtnutí hotového.",
+        "obrazek": "transfer-okno"
+      },
+      "**Trvalý seznam druhů na výměnu** a hotový filtr na všech deset druhů s evolucí zdarma.",
+      "**Hledání v rosteru bere štítky** — napiš `trade`, `gl` nebo `ponechat`.",
+      "**Vlastní bonbónové cíle:** u bonbónové karty přepneš „+ chci“.",
+      "**Čištění boxu:** puštěný kus uvolní slot dalšímu, vrátit ho jde zpátky a textu je míň.",
+      {
+        "sekce": "Akce a kalendář"
       },
       {
-        "text": "**Sekce Shiny neopakuje, co už hvězdičku má.** Zdroj u akce vypíše, kdo může být shiny — často přesně ty druhy, co stojí o kus výš v Soubojích a svoje ✦ už tam mají. V sekci Shiny zůstává jen to, co jinde není."
+        "text": "**Co se v GO Battle League hraje teď a co přijde** — na Přehledu i v kalendáři.",
+        "obrazek": "kalendar-ligy"
       },
-      "**Detail akce přiznává, co o sekci neví.** U každé sekce je ikona, podle které se v dlouhém detailu rychleji hledá. A hlavně: pod seznamem stojí i věty ze stránky akce, které se do seznamu nevešly — „z vajec se líhne i víc druhů, než je vypsané“, „shiny tentokrát nebude“, dokdy je potřeba vyzvednout odměny. Sekce, kde appka něco přečíst neumí, to má napsané a odkazuje na zdroj — místo aby seznam vypadal jako celý obsah.",
+      "**Akce se dvěma bossy nabídne oba**, Tahák zná i ty budoucí a formy mají svoje obrázky (Giratina Origin).",
       {
-        "sekce": "Drobnosti a opravy"
+        "sekce": "Drobnosti"
       },
-      {
-        "text": "**Než se obrázek načte, neprobliká nic.** V čištění boxu se při přechodu na dalšího pokémona obrázek staví znovu — a než dorazil, ukázal prohlížeč jeho název, u druhů jako Minior dokonce ikonu rozbitého obrázku (jejich adresa v herním mirroru neexistuje, takže se zkouší několik náhradních). Teď je do té doby prázdno. Jméno v obrázku zůstává kvůli čtečkám obrazovky."
-      },
-      "**Ruční přidání zase pozná CP, které na žádný level nesedí.** Po přepsání pole „V gymu (h)“ na pohlaví zůstal v okně kus staré logiky a okno se při takovém CP zaseklo na předchozí hlášce — a tlačítko Přidat šlo zmáčknout. Teď zase nabídne platná CP a dokud si jedno nevybereš, přidat nejde.",
-      "**Čištění boxu: hlášky, které se nikdy neukázaly, a nabídka, která mátla.** Když v čištění řekneš, že jsi kus ve hře očistil, vyvinul nebo vylepšil, stojí nad tlačítky věta o tom, co to udělalo — nové IV a jestli se verdikt pohnul, nebo zůstává. Dřív nebylo poznat, jestli to appka vůbec zaznamenala: stejným místem navíc propadala i starší hláška „Přepočítáno“, takže vysvětlení ke změně verdiktu uprostřed čištění nikdo nikdy neviděl. A pruh „Tenhle už jsi pustil, ale teď by se zase vešel“ přestal mluvit do větru: nenabízí kus, kterého jsi pustil navzdory „Ponechat“ (ten se vejde vždycky, jen co ho vrátíš), nenabízí nic po návratu k rozdělanému čištění, a když ho vyvolá tvoje úprava kusu, je u něj napsané, čí změna to byla.",
-      "**Druh hluboko v žebříčku se do ligy dostane, když je ta kombinace IV špičková.** Dosud platila tvrdá závora: za hranicí „Do kolikátého místa v lize brát druh vážně“ se kus o ligu neucházel vůbec, ať byl jakkoli dobrý. Teď stačí, aby jeho kombinace IV byla aspoň na úrovni pojistky na cupy — pak místo dostane, ale až za druhy, které ligu hrají dnes, a vždycky jen do rezervy: drží se, prach do něj neteče. Ve verdiktu stojí „Nechat – rezerva · GL #98 · špičková kombinace“ a v bublině je napůl věta proč. Na rosteru o 450 kusech to takhle zachránilo deset kusů, které by jinak šly pryč.",
-      "**Omezené cupy.** Appka teď zná žebříčky cupů, které jsou v rozpisu GO Battle League — běžících i ohlášených. V **detailu kusu** stojí pod tabulkou lig jeden řádek na cup: pořadí druhu v cupu, kvalita tvého kusu, pořadí jeho kombinace IV a dokdy cup jede. Víc než pár řádků to nikdy nebude — vypisují se jen cupy, které právě běží (a když zrovna žádný nejede, nejbližší ohlášený, ve kterém ten druh je). Ve **Vyhledávání** je pod ligami celá tabulka všech cupů i se sestavou, kterou se ten cup hraje. Cup bez vlastního žebříčku (Catch Cup) žádné pořadí netvrdí — jede na pořadí základní ligy a omezuje jen to, co smíš postavit.",
-      "**Transfer: méně filtrů, vlastní předfiltry a narovnané okno.** Do jednoho filtru se teď vešle 700 znaků místo 400, takže filtrů je zhruba o třetinu méně (dá se změnit v nastavení). Nad filtry přibyla **vlastní zaškrtávátka**: napíšeš si třeba `!trade` a appka to přilepí před každý filtr, takže kusy, které máš ve hře označkované, z výběru vypadnou. Náhled kusů se teď opravdu sbalí (dřív šel jen rozbalit) a tlačítka Kopírovat stojí pod sebou.",
-      "**Ligy na Přehledu.** Pod kartami akcí je řádek s tím, co se v GO Battle League hraje teď a co přijde — včetně omezených formátů a cupů, i s datem.",
-      "**Dávka na dnešek.** V Transferu je nahoře zaškrtávátko „Jen dávka na dnešek“: appka složí filtry jen na sto kusů. Stovka není náhodné číslo — hra povolí **sto výměn denně**, transferů k profesorovi kolik chceš. Do dávky proto jdou **nejdřív kusy na výměnu** a zbytek se doplní od nejvyššího CP.",
-      "**Vlastní bonbónové cíle.** V „Co chytat“ si u každé bonbónové karty přepneš „+ chci“ a pod mřížkou přidáš i druh, který si rozpočet vůbec nevyžádal — třeba ten, co si schováváš na výměnu nebo na budoucí vývin. Vlastní cíle stojí nahoře, mají zelený rámeček a drží se i po zavření appky.",
-      "**Hledání v rosteru konečně bere štítky.** Napíšeš `trade` a vypadnou kusy, u kterých appka výměnu doporučuje; `gl` vypíše kusy se štítkem Great League, `ponechat` ty, co si necháváš. Hledá se ve všem, co je u kusu vidět — ve jménu, verdiktu, podtitulku, poznámce i ve štítcích důvodů. Dosud se porovnávalo jen jméno druhu, takže žádný štítek nenašel nic.",
-      "**Trvalý seznam druhů na výměnu.** Okno před čištěním se už neptá pokaždé od nuly — je to editor seznamu, který platí dál. Co do něj dáš (Eevee kvůli bonbónům, Graveler Alolan kvůli evoluci zdarma), u toho druhu dostanou kusy, které by jinak šly pryč, verdikt **Trade** místo **Zahodit**: pořád odcházejí, jen k někomu jinému než k profesorovi. V Transferu spadnou do sekce „Nejdřív vyměnit“ a z pouštění zmizí. **Formy se rozlišují** — Graveler Alolan není Graveler. Seznam se dá upravit i přímo v Transferu.",
-      "**Hotový filtr na evoluce zdarma po výměně.** V Transferu stojí řetězec se všemi deseti druhy, které se po výměně vyvinou za nula bonbónů — platí pro celou hru, ne jen pro tvůj roster, takže je pořád stejný. Pozor, tenhle jeden **není na pouštění**: najde i kusy, které si necháváš.",
-      "**Souhrn čištění už nepoučuje.** Blok „Z tvých minulých rozhodnutí“ („radil jsem pustit 11 kusů a tys je nechal“) je pryč: počítal se přes celý roster, takže při čištění tří Dialg mluvil i o Mespritovi a Palkii. Pravidlo za tím platí dál, jen se o něm nepíše.",
-      "**Seznam druhů na výměnu se všude upravuje stejně.** Tlačítko v Transferu otevře to samé okno jako před čištěním — štítky se sprity, našeptávání a počet kusů, které z toho druhu máš. Druhy s **evolucí zdarma po výměně** mají vlastní rámeček: appka je zná z herních dat a s tvým seznamem nemají nic společného.",
-      "**Transfer už nepřijde o seznam smazaných.** Dávka se počítala šest hodin zpátky od posledního smazání, takže stačilo po čištění smazat o pár hodin později jediný další kus a devadesát procent seznamu zmizelo — Transfer pak nabídl jeden filtr na ten poslední kus. Teď drží dávka pohromadě **celý den**, takže se dá čistit ráno a pouštět ve hře večer. Dvě čištění ob den se pořád nespojí.",
-      "**„Tyhle jsem už ve hře pustil.“** Nahoře v Transferu přibylo tlačítko, kterým dávku odkliknete, jakmile je ve hře opravdu pustíte — filtry na ni appka přestane nabízet. Z **paměti smazaných kusů** se přitom nic nemaze: ta hlídá, aby se smazaný kus nevrátil při dalším skenu, a platí dál.",
-      "**Verdikt Trade má vlastní štítek.** Dosud se počítal jako „Zahodit“, takže se podle něj nedalo filtrovat ani ho našeptat v hledání. Napiš **tra** a pole nabídne štítek **TRADE** i s počtem kusů; ve filtru značek je nová položka Trade.",
-      "**Méně textu v Transferu.** Okno vysvětlovalo každou drobnost celou větou; vysvětlení se přesunula do bublin a zbyly nadpisy. Zůstalo jen varování u filtru na evoluce zdarma, že to **není filtr na pouštění**.",
-      "**Sestava útoků u ligy je vidět celá.** Když se do buňky nevejdou názvy, schovají se a zbydou **barevné ikony typů** — žádné „+2“, takže je pořád vidět, kolik útoků sestava má a jaké jsou. Po najectí na ně ukáže bublina celé znění i s ikonami. V buňce taky zbyla jedna bublina místo tří: pořadí, posun, procento, IV i ceny vysvětluje jeden souhrn.",
-      "**Cena vylepšení na dva řádky.** Dřív stolo v kartě „L40 · 424 tis. + 202 candy + 296 XL“, což svádělo k tomu, že XL potřebuješ na čtyřicítku. Teď je to **do L40** (prach a bonbóny) a pod tím **L41–50** (prach a XL).",
-      "**Oprava: „strop“ v hlavičce není na L40.** Číslo se počítalo správně na nejvyšším levelu (L50), ale popisek pod ním tvrdil „na levelu 40“.",
-      "**Žebříčky mají i cupy.** V seznamu PvP žebříčků stojí za čtyřmi ligami i cupy, které jsou zrovna v rozpisu GO Battle League — u každého je napíno, jestli právě běží, nebo odkdy začne. Seznam se obměňuje s rozpisem, nic se nenastavuje. A **pruh s ligami** je teď i v Kalendáři, nejen na Přehledu.",
-      "**Formy mají svoje obrázky.** U raidu na **Giratinu Origin** se v kalendáři kreslila Altered; stejně tak u Shaymina, Deoxyse, Kyurema, Zaciana, Aegislashe nebo velikostí Gourgeista se bral obrázek základní formy. Každá z těch forem má teď svou ikonu. K tomu je kresba v barevném kolečku útoku **na středu** — dřív seděla o kousek vlevo.",
-      "**Vyhledávání: všechny ligy v jedné tabulce.** Přepínače lig jsou pryč — ligy stojí pod sebou, každá pod svým nadpisem. Kde ten druh hraje líp, je vidět bez klikání, a liga, ve které pořadí nemá, se vynechá.",
-      "**Místo sloupce „Tvůj kus“ je nejlepší možná kombinace IV.** U každé ligy stojí IV, level a CP nejlepšího možného kusu toho druhu — to, po čem se dívat. Když vyplníš vlastní kus, připíše se pod to jeho pořadí, a nově pro každou ligu zvlášť (dřív jen pro jednu vybranou).",
-      "**Útoky se při užším okně schovávaly pod hlavičku.** Hlavička detailu se teď zalomí a blok útoků zůstane celý vidět.",
-      "**Šipky u akcí v kalendáři jsou pryč.** Pruh akce přes víc dní jimi nic navíc neřekl.",
-      "**Cena vylepšení se neschovává zbytečně.** Když jsou to jen dva řádky, stojí rovnou celá — bez „víc/míň“.",
-      "**V bublině ligy je „nejlepší možná“ zase na konci svého řádku.** Na jednom společném řádku se to do bubliny nevešlo."
+      "**Ruční přidání umí pohlaví** a zase pozná CP, které na žádný level nesedí.",
+      "**Cena vylepšení na dva řádky** (do L40 a L41–50), bez schovávání pod „víc“.",
+      "**Útoky se při užším okně neschovají pod hlavičku**, šipky u akcí v kalendáři jsou pryč a obrázky v čištění neproblikávají."
     ]
   }
 }

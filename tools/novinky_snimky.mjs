@@ -200,6 +200,72 @@ await snimek('hledani-evoluce', ['.atlas-evo'], 12);
 
 // 6) Pruh „je nová verze". Číslo je ilustrativní — ukazuje se verze,
 //    která zrovna vyšla; tady se nastaví ručně, aby bylo co nasnímat.
+// 6) Verze 2.12 — ligy v jedné tabulce i s nejlepším možným IV.
+await stranka.evaluate(async () => {
+  const pole = document.getElementById('prohName');
+  pole.value = 'Azumarill';
+  pole.dispatchEvent(new Event('input', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 1600));
+  pole.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  pole.blur();
+  const zalozka = [...document.querySelectorAll('.atlas-sekce-zalozky button')]
+    .find((b) => /Přehled/.test(b.textContent));
+  if (zalozka) zalozka.click();
+  await new Promise((r) => setTimeout(r, 900));
+});
+await snimek('ligy-tabulka', ['.atlas-vysledek-nadpis', '.atlas-vysledek-tab'], 12);
+
+// 7) Ligová tabulka v detailu kusu: sestava útoků i pořadí kombinace IV.
+await stranka.evaluate(async () => {
+  window.__atlasTest.go('roster');
+  await new Promise((r) => setTimeout(r, 900));
+  const kus = window.__pgo.getRows().find((r) => r.pokemon === 'Azumarill');
+  window.__atlasTest.openDetail(kus.id);
+  await new Promise((r) => setTimeout(r, 1600));
+  document.querySelector('.atlas-drawer [data-detail-section="ligy"]')
+    ?.scrollIntoView({ block: 'center' });
+  await new Promise((r) => setTimeout(r, 400));
+});
+await snimek('ligy-detail', ['.atlas-drawer [data-detail-section="ligy"]'], 10);
+
+// 8) Transfer: filtry, vlastní předfiltry a dávka na dnešek.
+await stranka.evaluate(async () => {
+  window.__atlasTest.closeDetail();
+  await new Promise((r) => setTimeout(r, 500));
+  document.getElementById('hledaniBtn').click();
+  await new Promise((r) => setTimeout(r, 1200));
+});
+{
+  /* Okno Transferu je delsi nez obrazovka. Do novinky patri jeho horni
+     cast — filtry a davka na dnesek; cely vypis prikazu by byl jen zed
+     textu a snimek by vazil pul megabajtu. */
+  const vyrez = await stranka.evaluate(() => {
+    const e = document.getElementById('hledaniOkno');
+    if (!e) return null;
+    const r = e.getBoundingClientRect();
+    return { x: Math.round(Math.max(0, r.left)), y: Math.round(Math.max(0, r.top)),
+      width: Math.round(Math.min(r.width, window.innerWidth)),
+      height: Math.min(430, Math.round(r.height)) };
+  });
+  if (vyrez) {
+    const cesta = path.join(CIL, 'transfer-okno.png');
+    await stranka.screenshot({ path: cesta, clip: vyrez });
+    console.log('transfer-okno', vyrez.width + '×' + vyrez.height,
+      Math.round(fs.statSync(cesta).size / 1024) + ' kB');
+  } else console.log('transfer-okno PŘESKOČENO — okno nenalezeno');
+}
+
+// 9) Přehled: co se hraje v GO Battle League teď a co přijde.
+await stranka.evaluate(async () => {
+  document.getElementById('hledaniBtn').click();
+  await new Promise((r) => setTimeout(r, 400));
+  window.__atlasTest.go('home');
+  await new Promise((r) => setTimeout(r, 1600));
+  document.querySelector('.ac-ligy')?.scrollIntoView({ block: 'center' });
+  await new Promise((r) => setTimeout(r, 400));
+});
+await snimek('kalendar-ligy', ['.ac-ligy'], 10);
+
 await stranka.evaluate(async () => {
   window.__atlasTest.closeDetail();
   await new Promise((r) => setTimeout(r, 500));
