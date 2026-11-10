@@ -112,7 +112,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   //  hledá v souboru prostý výskyt, viz sync_reference.py.)
   if(window.__ATLAS_TEST_BUILD)requestAnimationFrame(()=>document.querySelectorAll('[data-atlas-test-badge]').forEach(e=>{e.hidden=false}));
   const navHTML=()=>nav.map(([g,i,t])=>`<button data-atlas-nav="${g}" aria-label="${t}">${icon(i)}<span>${t}</span></button>`).join('');
-  const shell=document.createElement('div');shell.id='atlasShell';shell.innerHTML=`<aside class="atlas-side"><div class="atlas-brand"><span class="atlas-brand-mark">${icon('box')}</span><span>GO</span><span>Atlas</span></div><div class="atlas-nav-label">TVŮJ HERNÍ PLÁN</div><nav class="atlas-nav" aria-label="Hlavní navigace">${navHTML()}<button data-atlas-nav="settings">${icon('settings')}<span>Data a pravidla</span></button></nav><div class="atlas-side-foot"><span class="atlas-test-badge" data-atlas-test-badge hidden>TESTOVACÍ VERZE</span><strong id="atlasProfile"></strong><p id="atlasCount"></p><p id="atlasVerze"></p></div></aside><header class="atlas-top"><div class="atlas-crumb">GO Atlas <span id="atlasCrumbVerze" class="atlas-verze-znacka"></span> <b id="atlasCrumb">/ Přehled</b></div><div class="atlas-top-actions"><span class="atlas-test-badge atlas-status" data-atlas-test-badge hidden>LOKÁLNÍ TEST</span><button data-click="novinkyBtn" title="Co se v appce změnilo v téhle verzi">${icon('spark')} Novinky</button><button data-click="hledaniBtn" title="Filtry do herního vyhledávání z kusů, které pouštíš">${icon('transfer')} Transfer</button><button data-click="toggleImportBtn">${icon('upload')} Import CSV</button><button data-click="exportBtn">${icon('download')} Export</button><button class="atlas-icon-btn" data-atlas-action="theme" aria-label="Přepnout světlý nebo tmavý vzhled">${icon('moon')}</button><button class="atlas-icon-btn" data-atlas-nav="settings" aria-label="Nastavení">${icon('settings')}</button></div></header><nav class="atlas-bottom" aria-label="Mobilní navigace">${navHTML()}</nav><div class="atlas-modal" id="atlasModal" hidden><div class="atlas-backdrop" data-atlas-action="close"></div><section class="atlas-drawer" role="dialog" aria-modal="true" aria-labelledby="atlasDetailTitle"><div class="atlas-drawer-header"><span>KONKRÉTNÍ KUS · TVŮJ PLÁN</span><button data-atlas-action="close" aria-label="Zavřít detail">${icon('close')}</button></div><div id="atlasIdentity"></div><div class="atlas-detail-content" id="atlasDetailContent"></div><div style="padding:0 22px 28px"><button class="atlas-mini-btn" data-atlas-action="edit">Upravit údaje tohoto kusu ${icon('arrow')}</button></div></section></div>`;document.body.appendChild(shell);
+  const shell=document.createElement('div');shell.id='atlasShell';shell.innerHTML=`<aside class="atlas-side"><div class="atlas-brand"><span class="atlas-brand-mark">${icon('box')}</span><span>GO</span><span>Atlas</span></div><div class="atlas-nav-label">TVŮJ HERNÍ PLÁN</div><nav class="atlas-nav" aria-label="Hlavní navigace">${navHTML()}<button data-atlas-nav="settings">${icon('settings')}<span>Data a pravidla</span></button></nav><div class="atlas-side-foot"><span class="atlas-test-badge" data-atlas-test-badge hidden>TESTOVACÍ VERZE</span><strong id="atlasProfile"></strong><p id="atlasCount"></p><p id="atlasVerze"></p></div></aside><header class="atlas-top"><div class="atlas-crumb">GO Atlas <span id="atlasCrumbVerze" class="atlas-verze-znacka"></span> <b id="atlasCrumb">/ Přehled</b></div><div class="atlas-top-actions"><span class="atlas-test-badge atlas-status" data-atlas-test-badge hidden>LOKÁLNÍ TEST</span><button data-click="novinkyBtn" title="Co se v appce změnilo v téhle verzi">${icon('spark')} Novinky</button><button data-click="hledaniBtn" title="Filtry do herního vyhledávání z kusů, které pouštíš">${icon('transfer')} Transfer</button><button data-click="toggleImportBtn">${icon('download')} Import CSV</button><button data-click="exportBtn">${icon('upload')} Export</button><button class="atlas-icon-btn" data-atlas-action="theme" aria-label="Přepnout světlý nebo tmavý vzhled">${icon('moon')}</button><button class="atlas-icon-btn" data-atlas-nav="settings" aria-label="Nastavení">${icon('settings')}</button></div></header><nav class="atlas-bottom" aria-label="Mobilní navigace">${navHTML()}</nav><div class="atlas-modal" id="atlasModal" hidden><div class="atlas-backdrop" data-atlas-action="close"></div><section class="atlas-drawer" role="dialog" aria-modal="true" aria-labelledby="atlasDetailTitle"><div class="atlas-drawer-header"><span>KONKRÉTNÍ KUS · TVŮJ PLÁN</span><button data-atlas-action="close" aria-label="Zavřít detail">${icon('close')}</button></div><div id="atlasIdentity"></div><div class="atlas-detail-content" id="atlasDetailContent"></div><div style="padding:0 22px 28px"><button class="atlas-mini-btn" data-atlas-action="edit">Upravit údaje tohoto kusu ${icon('arrow')}</button></div></section></div>`;document.body.appendChild(shell);
   const heading=document.createElement('div');heading.id='atlasHeading';heading.className='atlas-heading';
   const subnav=document.createElement('nav');subnav.id='atlasSubnav';subnav.className='atlas-subnav';subnav.setAttribute('aria-label','Nástroje sekce');
   const home=document.createElement('section');home.id='atlasHome';
@@ -3292,6 +3292,115 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  const formaHtml=f=>f?` <span class="rarity-chip ${f==='Shadow'?'r-SH':'r-MG'}"`
   +` title="${esc(FORMA_POPIS[f]||f)}">${f==='Shadow'?'SHADOW':'MEGA'}</span>`:'';
 
+ /* --------------------------------------------------- Porovnat IV
+    Tabulka rika, jake je NEJLEPSI IV pro ligu. Druhou polovinu otazky
+    („a jak je na tom to moje?") appka umela jen u kusu, ktery uz mas
+    v rosteru — tohle ji umi i u druhu, ktery teprve shanis.
+
+    Pocitat to umi engine (`atlasIvRank`): poradi te kombinace mezi 4096
+    u TEHOZ druhu v TE lize. Neni to tataz vec jako poradi druhu v lize,
+    proto stoji na vlastnim radku a ne vedle nej. */
+ const ivp={on:false,a:0,d:0,s:0};
+
+ function ivpOvladani(){
+  const pole=[['a','\u00datok'],['d','Obrana'],['s','HP']].map(([k,t])=>
+   `<label><span>${t}</span><input type="number" min="0" max="15" step="1"`
+   +` inputmode="numeric" data-ivp="${k}" value="${ivp[k]}"></label>`).join('');
+  return `<div class="atlas-ivp">`
+   +`<div class="atlas-ivp-pole"${ivp.on?'':' hidden'}>${pole}</div>`
+   +`<button type="button" class="atlas-ivp-btn" data-ivp-prepinac`
+   +` aria-pressed="${ivp.on}" data-tip="Po\u0159ad\u00ed t\u00e9hle kombinace IV mezi 4096`
+   +` mo\u017en\u00fdmi \u2014 v ka\u017ed\u00e9 lize jin\u00e9.">Porovnat IV</button></div>`;
+ }
+
+ /* Jak vzacna ta kombinace je. NENI to znamka druhu — ta rika, jak
+    silny je druh v lize, tohle jak vzacny je kus s takovymi IV. Pocita se
+    z poradi mezi 4096, takze se cte primo z cisla vedle: #45 ze 4096 je
+    lepsi nez 98,9 % kombinaci. Chip je proto obtahovany, ne vyplneny. */
+ const IVP_ZNAMKY=[[0.01,'SS'],[0.05,'S'],[0.10,'A'],[0.25,'B'],[0.50,'C'],[0.75,'D']];
+ function ivpZnamka(rank,z){
+  if(!z||!rank)return '';
+  const podil=rank/z;
+  for(const [mez,zn] of IVP_ZNAMKY)if(podil<=mez)return zn;
+  return 'E';
+ }
+
+ function ivpRadek(klic,ligaKlic){
+  const iv=`${ivp.a}/${ivp.d}/${ivp.s}`;
+  const cislo=x=>String(x).replace('.',',');
+  const r=P.atlasIvRank&&P.atlasIvRank(klic,ivp.a,ivp.d,ivp.s,ligaKlic);
+  /* Prazdne bunky zustavaji prazdne. „Hodnoceni" je znamka DRUHU,
+     „Nejlepsi IV" nejlepsi mozna kombinace a „Doporucene utoky"
+     sestava druhu — cislo o tvem kuse by v nich lhalo. Co patri
+     k tobe, stoji v prvnim sloupci a v poradi vedle nej. */
+  const zn=r?ivpZnamka(r.rank,r.z):'';
+  const prazdne=`<td class="atlas-vysledek-znamka">`
+   +(zn?`<span class="atlas-znamka atlas-znamka-velka atlas-ivp-znamka"`
+     +` style="--ivp-barva:${ZNAMKA_BARVA[zn]||'#555'}">${zn}</span>`:'')
+   +`</td>`;
+  const konec=`<td></td><td class="atlas-vysledek-nejiv"></td><td></td>`;
+  /* Level ani CP tu nestoji: sloupec je o druhu a cislo o tvem kuse
+     uz rika poradi vedle. Co se kam vejde, patri do bubliny. */
+  const kus=`<b>${esc(iv)}</b>`;
+  const zacatek=`<tr class="atlas-ivp-radek">`
+   +`<td class="atlas-vysledek-druh atlas-ivp-druh">${kus}</td>`+prazdne;
+  if(!r)return zacatek
+   +`<td><span class="atlas-vysledek-nezname">do limitu t\u00e9hle ligy se tahle`
+   +` kombinace nevejde</span></td>`+konec+`</tr>`;
+  /* Procento je podil na NEJLEPSI kombinaci toho druhu, ne na stovce.
+     Bez druheho konce skaly je necitelne: v Great League ma i posledni
+     misto pres devadesat procent. Patri to do bubliny, ne do radku. */
+  const tip=`Po\u0159ad\u00ed t\u00e9hle kombinace IV mezi ${r.z} mo\u017en\u00fdmi`
+   +` u tohohle druhu v t\u00e9hle lize.`
+   +(r.odKud!=null?` \u0160k\u00e1la je ${cislo(r.odKud)}\u2013100 %, tak\u017ee i posledn\u00ed`
+     +` m\u00edsto b\u00fdv\u00e1 vysoko.`:'')
+   +(r.bestBuddy?` Master League limit CP nem\u00e1, tak\u017ee se po\u010d\u00edt\u00e1`
+     +` na nejvy\u0161\u0161\u00edm levelu \u2014 rozhoduje prost\u011b s\u00edla.`:'')
+   +` Na tenhle druh by ses s n\u00ed dostal na L${cislo(r.level)} a ${r.cp} CP.`
+   +` Zn\u00e1mka vedle \u0159\u00edk\u00e1, jak vz\u00e1cn\u00e1 takov\u00e1 kombinace je (SS = nejlep\u0161\u00ed`
+   +` procento, S p\u011bt, A deset, B \u010dtvrtina, C polovina) \u2014 se zn\u00e1mkou druhu`
+   +` nem\u00e1 nic spole\u010dn\u00e9ho.`;
+  return zacatek
+   +`<td data-tip="${esc(tip)}"><b>#${r.rank}</b> <small>z ${r.z}`
+   +` \u00b7 ${cislo(r.pct)} % nejlep\u0161\u00ed kombinace</small></td>`+konec+`</tr>`;
+ }
+ /* Radky se prikresluji do hotove tabulky, ne pres cely render: pri psani
+    do policka by se jinak pole prekreslilo a kurzor z nej vyskocil. */
+ function ivpVykresli(){
+  const tab=document.querySelector('.atlas-vysledek-tab.ma-iv');
+  if(!tab)return;
+  tab.querySelectorAll('tr.atlas-ivp-radek').forEach(e=>e.remove());
+  if(!ivp.on)return;
+  [...tab.querySelectorAll('tbody>tr[data-klic][data-liga]')].forEach(tr=>{
+   if(!tr.dataset.liga)return;
+   tr.insertAdjacentHTML('afterend',ivpRadek(tr.dataset.klic,tr.dataset.liga));
+  });
+ }
+
+ document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-ivp-prepinac]');if(!b)return;
+  ivp.on=!ivp.on;
+  const pole=b.closest('.atlas-ivp')?.querySelector('.atlas-ivp-pole');
+  if(pole)pole.hidden=!ivp.on;
+  b.setAttribute('aria-pressed',String(ivp.on));
+  /* Kdyz uz mas vyplnene „Udaje meho kusu", nema smysl psat IV podruhe. */
+  if(ivp.on&&!ivp.a&&!ivp.d&&!ivp.s){
+   const z=id=>{const el=document.getElementById(id);const v=Number(el&&el.value);
+    return isFinite(v)&&v>=0&&v<=15?Math.round(v):0};
+   ivp.a=z('prohA');ivp.d=z('prohD');ivp.s=z('prohS');
+   if(pole)pole.querySelectorAll('[data-ivp]').forEach(i=>{i.value=ivp[i.dataset.ivp]});
+  }
+  if(ivp.on&&pole)pole.querySelector('input')?.focus();
+  ivpVykresli();
+ });
+ document.addEventListener('input',e=>{
+  const i=e.target.closest('[data-ivp]');if(!i)return;
+  // Hodnota se orezava jen v pameti — prepisovat pole pri psani plete.
+  let v=Math.round(Number(i.value));
+  ivp[i.dataset.ivp]=isFinite(v)?Math.max(0,Math.min(15,v)):0;
+  ivpVykresli();
+ });
+
  function radekHtml(r,vstupKlic,ligaKlic){
   /* Mega poradi nema a mit nebude — v tom sloupci stalo jen „v tomhle
      zebricku neni", coz je o megach pravda u vsech a nerika nic. Misto
@@ -3354,7 +3463,8 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    ?`<b>${esc(popisek)}</b>`
    :`<button type="button" class="atlas-vysledek-jmeno" data-evo-hledat="${esc(r.jmeno)}"`
     +` title="Vyhledat ${esc(r.jmeno)}">${esc(popisek)}</button>`;
-  return `<tr data-klic="${esc(r.klic)}"${r.klic===vstupKlic?' class="je-vstup"':''}>`
+  return `<tr data-klic="${esc(r.klic)}" data-liga="${esc(ligaKlic||'')}"`
+   +`${r.klic===vstupKlic?' class="je-vstup"':''}>`
    +`<td class="atlas-vysledek-druh">${obrazekRam(r.jmeno,'atlas-vysledek-obr')}`
     +`<span>${jmenoHtml}${formaHtml(r.forma)}${znacka}${typNavic(r,role==='raid'||role==='max')}`
     /* V raidech se typ uz pise za jmenem (za ktery typ ten radek stoji),
@@ -3364,18 +3474,19 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
       :(r.megaTypy?typyBubliny(r.megaTypy):typyHtml(r.klic))}</span></span></td>`
    +`<td class="atlas-vysledek-znamka">${znamkaBunka}</td>`
    +`<td>${poradi}</td>`
-   /* Nejlepsi mozna kombinace IV stoji hned za poradim: obe cisla rikaji,
-      jak dobry ten druh v lize je. Driv tu byl sloupec o tvem kuse — ten
-      druh clovek zpravidla jeste nema a roster o nem vi vic. */
+   +`<td>${utoky}</td>`
+   /* Nejlepsi mozna kombinace IV je to, co ma PvP navic — proto az za
+      sloupci, ktere ma kazda role stejne. Driv tu byl sloupec o tvem kuse:
+      ten druh clovek zpravidla jeste nema a roster o nem vi vic. */
    +(role==='pvp'
      ?`<td class="atlas-vysledek-nejiv">${r.nejIv
        ?`<b>${esc(r.nejIv.iv)}</b> <small>L${String(r.nejIv.level).replace('.',',')}`
         +` · ${r.nejIv.cp} CP</small>`
        :'<span class="atlas-vysledek-nezname">—</span>'}</td>`
      :'')
-   +`<td>${utoky}</td>`
    /* Cena megy jede s mega řádkem — je to jediný další tvrdý údaj,
       který o mege appka má, a po zrušení záložky Mega by jinak zmizel. */
+   +`<td></td>`
    +(role==='raid'
      ?`<td class="atlas-vysledek-cena">${r.megaForma?megaCena:''}</td>`
      :'')
@@ -3476,7 +3587,10 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`<div class="atlas-vysledek-ovladani" role="tablist" aria-label="Role">`
    +Object.keys(ROLE_POPIS).map(k=>`<button type="button" role="tab" data-role="${k}" aria-selected="${role===k}" aria-pressed="${role===k}">${ikona(k)}<span>${ROLE_POPIS[k]}</span></button>`).join('')
    +`</div>`
-   /* Tlačítka lig zmizela: ligy jsou všechny v tabulce pod sebou. */
+   /* Tlačítka lig zmizela: ligy jsou všechny v tabulce pod sebou.
+      Napravo stoji „Porovnat IV" — patri k ligove tabulce, protoze
+      poradi kombinace je u kazde ligy jine. */
+   +(role==='pvp'?ivpOvladani():'')
    +`</div>`
    +`<h4 class="atlas-vysledek-nadpis">${esc(nadpis)}</h4>`
    +`<div class="atlas-vysledek-telo">`
@@ -3491,22 +3605,31 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
         Platit začnou až nad 1100 px (`atlas.css`), na užším okně by
         na útoky zbyl proužek — tam si šířky rozdělí prohlížeč. */
      ?`<table class="atlas-vysledek-tab${role==='pvp'?' ma-iv':''}">`
+      /* Ctyri sloupce ma kazda role stejne a na temze miste: Druh,
+         Hodnoceni, Poradi, Doporucene utoky. Co ma navic (PvP Nejlepsi IV,
+         raidy Cenu megy), stoji az za nimi. Utoky berou zbytek sirky,
+         takze posledni sloupec nikdy nekonci u praveho okraje sam. */
       +`<colgroup><col style="width:24%"><col style="width:86px">`
-      +`<col style="width:16%">`
-      +(role==='pvp'?'<col style="width:14%">':'')
-      +`<col>${role==='raid'?'<col style="width:13%">':''}`
-      +`</colgroup><thead><tr>`
+      +`<col style="width:150px"><col style="width:420px">`
+      +(role==='pvp'||role==='raid'?'<col style="width:150px">':'')
+      /* Zbylou sirku bere prazdny sloupec na konci. Bez nej by si ji
+         rozdelily sloupce pred nim a „Nejlepsi IV" nebo „Cena megy" by
+         skoncily u praveho okraje, daleko od utoku. Utoky maji 420 px:
+         nejsirsi sestava tri chipu (Melmetal) potrebuje 403, takze se
+         vejde na jeden radek. */
+      +`<col></colgroup><thead><tr>`
       +`<th>Druh</th><th>Hodnocení</th>`
       +`<th>${role==='raid'?'Pořadí v typu':'Pořadí druhu'}</th>`
-      +(role==='pvp'?'<th>Nejlepší IV</th>':'')
       +`<th>Doporučené útoky</th>`
+      +(role==='pvp'?'<th>Nejlepší IV</th>':'')
       +(role==='raid'?'<th>Cena megy</th>':'')
+      +`<th></th>`
       +`</tr></thead><tbody>`
       +(role==='pvp'
         /* Pruh s názvem ligy musí překrýt VŠECHNY sloupce. Dokud tu stála
            přibitá pětka, zůstal po přibytí sloupce Hodnocení poslední
            sloupec bez podbarvení a pruh končil v půlce. */
-        ?ligoveSkupiny.map(([k,g])=>`<tr class="atlas-vysledek-liga"><td colspan="5">`
+        ?ligoveSkupiny.map(([k,g])=>`<tr class="atlas-vysledek-liga"><td colspan="6">`
           +`${esc(g.nazev)}</td></tr>`+g.radky.map(r=>radekHtml(r,m.klic,k)).join('')).join('')
         :radky.map(r=>radekHtml(r,m.klic)).join(''))+`</tbody></table>`
      /* Žebříček Hubu je úplný — jsou v něm i druhy se známkou F. Kdo
@@ -3527,6 +3650,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const evoPanel=panel('evoluce');
   if(evoPanel){evoPanel.innerHTML=evoluceHtml(m);if(P.vystreditSprity)P.vystreditSprity(evoPanel)}
   if(P.vystreditSprity)P.vystreditSprity(el);
+  ivpVykresli();
   if(klicFokusu){const znovu=el.querySelector(klicFokusu);if(znovu)znovu.focus({preventScroll:true})}
   vykresliKotvy(true);
  }
@@ -3838,9 +3962,21 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  pole.setAttribute('placeholder','Hledat pokémona');
  pole.setAttribute('autocomplete','off');
 
+ /* Je mezi kostickami stitek Mega? Pozna se podle toho, co je na nem
+    videt — klic ma kazda mega forma vlastni ("mega:gyarados"). */
+ function megaVybrana(){
+  return vybrane.some(x=>x.kat==='mega'||String(x.klic||'').indexOf('mega')===0
+   ||holy(x.stitek||x.popis||'')==='mega');
+ }
  function pouzij(){
   const znacky=vybrane.filter(x=>x.skupina==='znacka').map(x=>x.klic);
   const duvody=vybrane.filter(x=>x.skupina==='duvod').map(x=>x.klic);
+  /* Typovy stitek ma vlastni filtr v enginu (zaskrtavatka v hlavicce
+     klasicke tabulky), ne textove hledani — jinak by „steel" hledal
+     slovo ve jmene. Drzi se jeden: „ted" a „po meze" jsou dve ruzne
+     otazky a dohromady nedavaji smysl. */
+  const typy=vybrane.filter(x=>x.skupina==='typ');
+  if(P.atlasTypFiltr)P.atlasTypFiltr(typy.map(x=>x.klic),typy.some(x=>x.poMege));
   /* Stitek ligy nebo typu si nese vlastni poradi ("UL #1", "Fire 2/6"),
      takze uz sam rika, co je nahore. Razeni to potrebuje vedet: role by
      to prebila necim jinym a vypadalo by to, ze kliknuti nic nedela. */
@@ -3865,9 +4001,26 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  }
 
  /** Štítky, které se hodí na napsaný text a ještě nejsou v poli. */
- function najdi(text){
-  const n=P.atlasStitky(),h=holy(text);
+ /* Typ k mege. Dvojtecka napred znamena „az po vymegovani" — bez ni
+    se pta na to, cim ten kus je dneska. Nabizi se jen tehdy, kdyz uz
+    stitek Mega v poli stoji; jinak by „steel" prekryval hledani jmen. */
+ function najdiTypy(text){
+  if(!megaVybrana()||!P.atlasTypyHry)return [];
+  if(vybrane.some(x=>x.skupina==='typ'))return [];
+  const m=/^(:?)\s*(.*)$/.exec(String(text||''));
+  const poMege=m[1]===':',h=holy(m[2]);
   if(!h)return [];
+  return P.atlasTypyHry().filter(t=>holy(t).indexOf(h)===0).slice(0,4).map(t=>({
+   skupina:'typ',klic:t,poMege:poMege,
+   stitek:poMege?t+' po meze':t,
+   popis:poMege?('po vymegov\u00e1n\u00ed bude '+t):('te\u010f je '+t),
+   trida:'dv-chip dv-role',pocet:null}));
+ }
+
+ function najdi(text){
+  const typy=najdiTypy(text);
+  const n=P.atlasStitky(),h=holy(text);
+  if(!h)return typy;
   const mam=new Set(vybrane.map(x=>x.skupina+':'+x.klic));
   const ven=[];
   n.znacky.forEach(z=>{
@@ -3889,7 +4042,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   // Poradi je proste podle abecedy. Podle poctu to skakalo a neslo
   // odhadnout, kde co bude; A az Z je predvidatelne.
   ven.sort((a,b)=>String(a.stitek||a.popis).localeCompare(String(b.stitek||b.popis),'cs'));
-  return ven.slice(0,8);
+  return typy.concat(ven).slice(0,8);
  }
 
  function zavri(){navrhy.hidden=true;zvyrazneny=-1;pole.setAttribute('aria-expanded','false')}
@@ -3898,7 +4051,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const seznam=najdi(pole.value);
   if(!seznam.length){zavri();return}
   navrhy.innerHTML=seznam.map((x,i)=>`<button type="button" role="option" data-navrh="${i}" aria-selected="${i===zvyrazneny}">
-    ${stitekHtml(x)}<span class="atlas-navrh-pocet">${x.pocet}</span></button>`).join('');
+    ${stitekHtml(x)}<span class="atlas-navrh-pocet">${x.pocet===null?esc(x.popis):x.pocet}</span></button>`).join('');
   navrhy.__seznam=seznam;
   umisti();
   navrhy.hidden=false;pole.setAttribute('aria-expanded','true');

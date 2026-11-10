@@ -2063,7 +2063,6 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 /* Obrazek druhu v radku ma ramecek jako v navrhu, at radky drzi rytmus. */
 .atlas-test .atlas-vysledek-obr{background:var(--input-bg);border-radius:9px;padding:2px;
   width:38px;height:38px}
-.atlas-test .atlas-vysledek-tab td:last-child{width:34px;text-align:right}
 .atlas-test .atlas-vysledek-sip{background:none;border:0;color:var(--text-muted);
   font-size:17px;line-height:1;padding:4px 6px;cursor:pointer}
 .atlas-test .atlas-vysledek-tab tr:hover .atlas-vysledek-sip{color:var(--series-1)}
@@ -2605,8 +2604,6 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-vysledek-tab{table-layout:fixed}
 .atlas-test .atlas-vysledek-tab th:first-child,
 .atlas-test .atlas-vysledek-tab td:first-child{width:38%}
-.atlas-test .atlas-vysledek-tab th:last-child,
-.atlas-test .atlas-vysledek-tab td:last-child{width:170px;text-align:right}
 
 /* Claude (77): puleny stitek ma stejny tvar jako jednoduchy — zaobleni
    drzi obal, pulky se orezou podle nej. */
@@ -3578,15 +3575,10 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test .atlas-vysledek-tab td{width:auto}
   .atlas-test .atlas-vysledek-tab th:first-child,
   .atlas-test .atlas-vysledek-tab td:first-child{width:max-content}
-  /* Cisla a prikaz maji sirku na jeden radek. Pri `table-layout:auto` je
-     to prani, ne prikaz: kdyz se tabulka do karty nevejde, prohlizec je
-     zuzi sam a radek se zlomi — lepsi nez nechat tabulku prerust. */
-  .atlas-test .atlas-vysledek-tab th:nth-child(2),
-  .atlas-test .atlas-vysledek-tab td:nth-child(2){width:150px}
-  .atlas-test .atlas-vysledek-tab.ma-iv th:nth-child(3),
-  .atlas-test .atlas-vysledek-tab.ma-iv td:nth-child(3){width:140px}
-  .atlas-test .atlas-vysledek-tab th:last-child,
-  .atlas-test .atlas-vysledek-tab td:last-child{width:145px}
+  /* Sirky jednotlivych sloupcu uz rika <colgroup> v atlas.js. Kdyz
+     stejne sloupce dostaly sirku i tady, odporovalo si to: v PvP se
+     Hodnoceni roztahlo na 217 px, v Raidech melo 86 a pri prepnuti
+     zalozky se cela tabulka posunula. */
   /* Cisla ani prikaz se nedrzi na jednom radku nasilim: dokud je mista,
      da jim auto rozlozeni celou sirku samo, a kdyz neni, je lepsi zlomit
      radek nez nechat tabulku prerust kartu. */
@@ -4119,4 +4111,49 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 @media(max-width:650px){
   .atlas-test .atlas-vysledek-znamka .atlas-znamka-velka{font-size:13px;
     padding:1px 5px;border-radius:4px}
+}
+
+/* Claude (141): prikaz „Porovnat IV“ vedle zalozek roli.
+
+   Tabulka rika, jake je NEJLEPSI IV pro ligu. Tohle je druha polovina
+   otazky — jak je na tom to moje. Pole stoji VLEVO od prikazu, aby
+   se radek zalozek neposouval, kdyz se otevrou; prikaz zustava na
+   svem miste u praveho okraje.
+
+   Radek porovnani je zeleny a ma vlastni prouzek vlevo: musi byt na
+   prvni pohled jasne, ze nepatri do zebricku druhu. Popisek nepotrebuje
+   — barva i prouzek to rikaji samy (Lukas 10. 11.). */
+/* Blok nesmi byt vyssi nez zalozky roli: stoji jen v PvP a kdyby radek
+   zvysil, pri prepnuti na Raidy by cela tabulka poskocila nahoru. Proto
+   popisky VEDLE policek, ne nad nimi, a mensi vyska vsech tri prvku. */
+.atlas-test .atlas-ivp{margin-left:auto;display:flex;align-items:center;gap:8px;
+  max-height:34px}
+.atlas-test .atlas-ivp-pole{display:flex;align-items:center;gap:7px}
+.atlas-test .atlas-ivp-pole label{display:flex;align-items:center;gap:5px;
+  font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-muted)}
+.atlas-test .atlas-ivp-pole input{width:46px;padding:4px 5px;text-align:center;
+  font:600 13px/1 inherit;color:var(--text);background:var(--surface-1);
+  border:1px solid var(--border);border-radius:7px}
+.atlas-test .atlas-ivp-btn{padding:6px 12px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--text);
+  font:600 12.5px/1 inherit;cursor:pointer;white-space:nowrap}
+.atlas-test .atlas-ivp-btn[aria-pressed="true"]{
+  border-color:var(--atlas-good);background:var(--atlas-good-bg)}
+/* Podbarveni patri CELEMU radku, vsem bunkam stejne. */
+.atlas-test .atlas-vysledek-tab .atlas-ivp-radek>td{
+  background:color-mix(in srgb, var(--atlas-good) 11%, transparent);
+  border-bottom:1px solid color-mix(in srgb, var(--atlas-good) 42%, transparent)}
+/* `display:flex` by bunku vyradil z rozlozeni tabulky — zuzila by se
+   na obsah a sloupce za ni by se posunuly. Zustava table-cell. */
+.atlas-test .atlas-ivp-druh>small{margin-left:8px}
+/* Znamka u kombinace neni znamka druhu: obtah misto vyplne, at je na
+   prvni pohled videt, ze je to jina skala (jak vzacna kombinace to je). */
+.atlas-test .atlas-ivp-znamka{background:transparent!important;
+  color:var(--ivp-barva);border:2px solid var(--ivp-barva);
+  padding:0 5px;line-height:1.05}
+/* Na telefonu se pole vejdou pod prikaz, ne vedle nej. */
+@media(max-width:700px){
+  .atlas-test .atlas-ivp{margin-left:0;width:100%;flex-wrap:wrap}
+  .atlas-test .atlas-ivp-pole input{width:46px}
 }

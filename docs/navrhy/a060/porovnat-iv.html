@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Porovnat IV</title>
+<style>
+  :root{
+    --bg:#0b1522; --karta:#101e31; --karta2:#0e1a2b; --cara:#1d3351;
+    --text:#e6edf6; --tlum:#8ea4c0; --tlum2:#6b82a0;
+    --modra:#2f6fed; --modra2:#4ea1ff; --zelena:#2fa84f; --zluta:#b8903a;
+    --tvoje:#1b3a2a; --tvojeCara:#2f8f55;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 20px 60px;background:var(--bg);color:var(--text);
+    font:14px/1.5 "Segoe UI",system-ui,sans-serif}
+  .obal{max-width:1180px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--tlum);margin:0 0 26px;max-width:72ch}
+  h2{font-size:15px;margin:34px 0 10px;color:var(--modra2);
+    text-transform:uppercase;letter-spacing:.08em}
+  .pozn{color:var(--tlum);margin:0 0 14px;max-width:78ch}
+  .karta{background:var(--karta);border:1px solid var(--cara);border-radius:12px;
+    padding:14px 16px 6px}
+
+  /* --- pruh „Moje IV" ------------------------------------------------ */
+  .ivpruh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:10px 12px;margin:0 0 12px;background:var(--karta2);
+    border:1px solid var(--cara);border-radius:10px}
+  .ivpruh b{font-weight:600;font-size:13px}
+  .ivpole{display:flex;align-items:center;gap:6px}
+  .ivpole input{width:48px;padding:5px 6px;text-align:center;font:600 14px/1 inherit;
+    color:var(--text);background:#0a1626;
+    border:1px solid var(--cara);border-radius:7px}
+  .ivpole span{color:var(--tlum2);font-size:12px}
+  .ivpruh .male{color:var(--tlum);font-size:12.5px}
+  .btn{padding:6px 12px;border-radius:8px;border:1px solid var(--cara);
+    background:#15263d;color:var(--text);font:600 12.5px/1 inherit;cursor:pointer}
+  .btn.hlavni{background:var(--modra);border-color:var(--modra)}
+
+  /* --- tabulka lig ---------------------------------------------------- */
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--tlum2);font-weight:600;text-align:left;padding:8px 10px;
+    border-bottom:1px solid var(--cara)}
+  thead th.vpravo{text-align:right}
+  td{padding:9px 10px;border-bottom:1px solid rgba(29,51,81,.6);vertical-align:middle}
+  tr.liga td{background:#15304f;border-left:3px solid var(--modra);
+    font:600 11px/1 inherit;letter-spacing:.1em;text-transform:uppercase;
+    color:#cfe0f7;padding:7px 10px}
+  .druh{display:flex;align-items:center;gap:9px}
+  .koule{width:26px;height:26px;border-radius:50%;background:#1d3351;flex:none}
+  .jm{font-weight:600}
+  .mini{color:var(--tlum2);font-size:11.5px;font-weight:400}
+  .typ{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:11px;
+    background:#1f3b5e;font-size:11px;font-weight:600;color:#cfe0f7}
+  .znamka{display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;
+    border-radius:7px;font-weight:700;font-size:13px;color:#06240f}
+  .z-S{background:#35b35a}.z-A{background:#5fb85f;color:#062410}
+  .z-B{background:#c8b43a;color:#241e06}.z-F{background:#cf4a4a;color:#2a0808}
+  .cp{color:var(--tlum);font-size:12.5px}
+  .utok{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;
+    background:#1b2d47;font-size:11.5px;margin-left:4px}
+
+  /* --- NOVY radek ----------------------------------------------------- */
+  tr.tvoje td{background:linear-gradient(90deg,rgba(47,143,85,.16),rgba(47,143,85,.05));
+    border-bottom:1px solid rgba(47,143,85,.35)}
+  tr.tvoje td:first-child{border-left:3px solid var(--tvojeCara)}
+  .stitek{display:inline-block;padding:2px 8px;border-radius:11px;font-size:10.5px;
+    font-weight:700;letter-spacing:.06em;background:var(--tvojeCara);color:#04170c}
+  .velke{font-weight:700;font-size:15px}
+  .zisk{color:#7fe0a3;font-size:12px}
+  .ztrata{color:#e3a3a3;font-size:12px}
+  .prazdno{color:var(--tlum2);font-style:italic}
+
+  .legenda{margin:10px 0 0;padding:0;list-style:none;color:var(--tlum);font-size:12.5px}
+  .legenda li{margin:4px 0;padding-left:16px;position:relative}
+  .legenda li::before{content:"";position:absolute;left:0;top:7px;width:7px;height:7px;
+    border-radius:2px;background:var(--tvojeCara)}
+  .varianta{margin-top:40px}
+</style>
+</head>
+<body>
+<div class="obal">
+
+<h1>Porovnat svoje IV s nejlepší kombinací</h1>
+<p class="lead">Návrh pro Vyhledávání. Modré a šedé řádky jsou to, co appka ukazuje
+dnes. <b>Zelený řádek je nové</b> — přibude pod „Nejlepší IV“ každé ligy, jakmile
+nahoře vyplníš svoje IV. Žádná nová záložka, žádné překlikávání.</p>
+
+<h2>1. Pruh nad tabulkou</h2>
+<p class="pozn">Tři políčka. Dokud jsou prázdná, tabulka vypadá přesně jako dnes.</p>
+<div class="ivpruh">
+  <b>Moje IV</b>
+  <span class="ivpole"><input value="" placeholder="–" /><span>útok</span></span>
+  <span class="ivpole"><input value="" placeholder="–" /><span>obrana</span></span>
+  <span class="ivpole"><input value="" placeholder="–" /><span>HP</span></span>
+  <button class="btn hlavni">Porovnat</button>
+  <span class="male">Pořadí mezi 4096 kombinacemi — v každé lize jiné.</span>
+</div>
+
+<h2>2. Tabulka, když je pruh vyplněný</h2>
+<p class="pozn">Meltan 14 / 12 / 15. Zelený řádek drží stejné sloupce jako řádky nad
+ním, takže se čísla čtou pod sebou.</p>
+
+<div class="karta">
+<table>
+  <thead>
+    <tr>
+      <th style="width:26%">Druh</th>
+      <th style="width:9%">Hodnocení</th>
+      <th style="width:19%">Pořadí druhu</th>
+      <th style="width:22%">Nejlepší IV</th>
+      <th class="vpravo">Doporučené útoky</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="liga"><td colspan="5">Great League</td></tr>
+    <tr>
+      <td><span class="druh"><span class="koule"></span><span>
+        <span class="jm">Melmetal</span> <span class="mini">až po evoluci</span><br>
+        <span class="typ">Steel</span></span></span></td>
+      <td><span class="znamka z-S">S</span></td>
+      <td><b>#1</b> <span class="mini">100 % nejlepšího</span></td>
+      <td><b>1/15/14</b> <span class="mini">L15,5 · 1499 CP</span></td>
+      <td style="text-align:right"><span class="utok">Thunder Shock</span><span class="utok">Double Iron Bash</span></td>
+    </tr>
+    <tr class="tvoje">
+      <td><span class="stitek">TVOJE IV</span> <b>14/12/15</b></td>
+      <td><span class="znamka z-A">A</span></td>
+      <td><b class="velke">#312</b> <span class="mini">z 4096</span><br><span class="zisk">92,4 % nejlepší kombinace</span></td>
+      <td><b>L15 · 1486 CP</b> <span class="mini">pod limit se vejde</span></td>
+      <td style="text-align:right"><span class="zisk">o 13 CP níž než nejlepší IV</span></td>
+    </tr>
+    <tr>
+      <td><span class="druh"><span class="koule"></span><span>
+        <span class="jm">Meltan</span><br><span class="typ">Steel</span></span></span></td>
+      <td><span class="znamka z-F">F</span></td>
+      <td><b>#1142</b> <span class="mini">40,9 % nejlepšího</span></td>
+      <td><b>15/15/14</b> <span class="mini">L50 · 1203 CP</span></td>
+      <td style="text-align:right"><span class="mini">mimo metu — sestavu appka nemá</span></td>
+    </tr>
+    <tr class="tvoje">
+      <td><span class="stitek">TVOJE IV</span> <b>14/12/15</b></td>
+      <td><span class="znamka z-B">B</span></td>
+      <td><b class="velke">#889</b> <span class="mini">z 4096</span><br><span class="zisk">78,3 % nejlepší kombinace</span></td>
+      <td><b>L50 · 1198 CP</b></td>
+      <td style="text-align:right"><span class="mini">druh je mimo metu, pořadí IV platí dál</span></td>
+    </tr>
+
+    <tr class="liga"><td colspan="5">Ultra League</td></tr>
+    <tr>
+      <td><span class="druh"><span class="koule"></span><span>
+        <span class="jm">Melmetal</span> <span class="mini">až po evoluci</span><br>
+        <span class="typ">Steel</span></span></span></td>
+      <td><span class="znamka z-A">A+</span></td>
+      <td><b>#12</b> <span class="mini">97,2 % nejlepšího</span></td>
+      <td><b>0/13/15</b> <span class="mini">L26 · 2495 CP</span></td>
+      <td style="text-align:right"><span class="utok">Thunder Shock</span><span class="utok">Double Iron Bash</span></td>
+    </tr>
+    <tr class="tvoje">
+      <td><span class="stitek">TVOJE IV</span> <b>14/12/15</b></td>
+      <td><span class="znamka z-B">B</span></td>
+      <td><b class="velke">#2 740</b> <span class="mini">z 4096</span><br><span class="ztrata">86,1 % nejlepší kombinace</span></td>
+      <td><b>L25 · 2478 CP</b></td>
+      <td style="text-align:right"><span class="ztrata">vysoký útok tu škodí — sráží level</span></td>
+    </tr>
+
+    <tr class="liga"><td colspan="5">Master League</td></tr>
+    <tr>
+      <td><span class="druh"><span class="koule"></span><span>
+        <span class="jm">Melmetal</span> <span class="mini">až po evoluci</span><br>
+        <span class="typ">Steel</span></span></span></td>
+      <td><span class="znamka z-B">B</span></td>
+      <td><b>#29</b> <span class="mini">89,6 % nejlepšího</span></td>
+      <td><span class="mini">—</span></td>
+      <td style="text-align:right"><span class="utok">Thunder Shock</span><span class="utok">Double Iron Bash</span></td>
+    </tr>
+    <tr class="tvoje">
+      <td><span class="stitek">TVOJE IV</span> <b>14/12/15</b></td>
+      <td><span class="mini">—</span></td>
+      <td><b class="velke">#41</b> <span class="mini">z 4096</span></td>
+      <td><b>L50 · 4 178 CP</b></td>
+      <td style="text-align:right"><span class="mini">bez limitu CP rozhoduje jen síla — čím víc IV, tím líp</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<ul class="legenda">
+  <li><b>Pořadí druhu</b> (šedý řádek) = jak dobrý je ten DRUH v lize. <b>Tvoje IV</b> = jak dobrá je zrovna tahle kombinace mezi 4096 u téhož druhu. Jsou to dvě různá čísla a teď stojí pod sebou.</li>
+  <li><b>Hodnocení</b> u tvého řádku je stejná stupnice jako u druhu, jen počítaná z podílu tvé kombinace.</li>
+  <li><b>Master League limit nemá</b>, takže se pořadí počítá na nejvyšším levelu — appka to řekne místo toho, aby si vymýšlela.</li>
+  <li>Vyplněné IV si appka pamatuje, dokud okno nezavřeš — projdeš tak víc druhů za sebou se stejným kusem.</li>
+</ul>
+
+<div class="varianta">
+<h2>3. Prázdný stav</h2>
+<p class="pozn">Když pruh nevyplníš, tabulka je přesně jako dnes — žádný prázdný
+zelený řádek, který by zabíral místo.</p>
+<div class="karta">
+<table>
+  <thead>
+    <tr>
+      <th style="width:26%">Druh</th>
+      <th style="width:9%">Hodnocení</th>
+      <th style="width:19%">Pořadí druhu</th>
+      <th style="width:22%">Nejlepší IV</th>
+      <th class="vpravo">Doporučené útoky</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="liga"><td colspan="5">Great League</td></tr>
+    <tr>
+      <td><span class="druh"><span class="koule"></span><span>
+        <span class="jm">Melmetal</span> <span class="mini">až po evoluci</span><br>
+        <span class="typ">Steel</span></span></span></td>
+      <td><span class="znamka z-S">S</span></td>
+      <td><b>#1</b> <span class="mini">100 % nejlepšího</span></td>
+      <td><b>1/15/14</b> <span class="mini">L15,5 · 1499 CP</span></td>
+      <td style="text-align:right"><span class="utok">Thunder Shock</span><span class="utok">Double Iron Bash</span></td>
+    </tr>
+    <tr>
+      <td><span class="druh"><span class="koule"></span><span>
+        <span class="jm">Meltan</span><br><span class="typ">Steel</span></span></span></td>
+      <td><span class="znamka z-F">F</span></td>
+      <td><b>#1142</b> <span class="mini">40,9 % nejlepšího</span></td>
+      <td><b>15/15/14</b> <span class="mini">L50 · 1203 CP</span></td>
+      <td style="text-align:right"><span class="mini">mimo metu — sestavu appka nemá</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+</body>
+</html>

@@ -3743,8 +3743,7 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
 z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">Transfer</button>
       <input type="search" id="searchInput" placeholder="Hledat pokémona…" autocomplete="off"
         title="Hledá jméno, verdikt, poznámku i štítky důvodů (GL #4, Rock 7/8, trade, shiny).
-Napsat „mega:steel“ vypíše kusy, které po vymegování budou Steel — jen ty,
-které tu megu drží, ne celé evoluční řady." />
+Štítek Mega a za ním „:steel“ vypíše kusy, které po vymegování budou Steel — jen držitele té megy, ne celé evoluční řady." />
       <button id="zrusitFiltry" title="Zruší hledání, filtry ve sloupcích i řazení">
         Zrušit filtry</button>
       <!-- Sem se vykreslí filtry do herního vyhledávání. Prázdné, dokud
@@ -4870,13 +4869,19 @@ které tu megu drží, ne celé evoluční řady." />
       mrizka.sort(function (x, y) { return y - x; });
       spMrizkaCache[klic] = mrizka;
     }
-    var muj;
+    var muj, mujLevel = null, mujCp = null;
     if (cpmBezStropu) {
       muj = statProduct(dex, cisla[0], cisla[1], cisla[2], cpmBezStropu);
+      /* Bez stropu se počítá na nejvyšším levelu, jaký jde mít — tedy
+         best buddy. CP z něj je to, co kus v Master League opravdu ukáže. */
+      mujLevel = CPM_LEVELS[CPM_LEVELS.length - 1][0];
+      mujCp = cpAt(dex, cisla[0], cisla[1], cisla[2], cpmBezStropu);
     } else {
       var mujIdx = bestLevelIndex(dex, cisla[0], cisla[1], cisla[2], strop);
       if (mujIdx < 0) return null;    // do limitu se ten kus nevejde vůbec
       muj = statProduct(dex, cisla[0], cisla[1], cisla[2], CPM_LEVELS[mujIdx][1]);
+      mujLevel = CPM_LEVELS[mujIdx][0];
+      mujCp = cpAt(dex, cisla[0], cisla[1], cisla[2], CPM_LEVELS[mujIdx][1]);
     }
     var lepsich = 0;
     for (var q = 0; q < mrizka.length; q++) {
@@ -4891,6 +4896,9 @@ které tu megu drží, ne celé evoluční řady." />
       // V Great League bývá škála jen 90-100 %, takže i poslední místo
       // má přes devadesát.
       odKud: nej ? Math.round((nejhorsi / nej) * 1000) / 10 : null,
+      /* Level, na který se ta kombinace pod limit ligy ještě vejde,
+         a CP, které na něm má. Bez stropu je to rovnou nejvyšší level. */
+      level: mujLevel, cp: mujCp,
       bestBuddy: !!cpmBezStropu, liga: liga.nazev };
   }
 
@@ -16406,6 +16414,11 @@ které tu megu drží, ne celé evoluční řady." />
         zdrojHub: !!h,
         znamka: h ? h.znamka : (z ? z.znamka : ""),
         utoky: (z && z.set) || (zaloha && zaloha.moveset) || "" };
+      /* Když appka vlastní (čistou) sestavu nemá, ukáže aspoň tu nejlepší
+         smíšenou — lepší nejlepší možná než žádná. Že je jeden z útoků
+         jiného typu, se nepíše: je to pořád to nejlepší, co ten druh
+         proti tomuhle typu má (Lukáš 10. 11.). */
+      if (!r.utoky) r.utoky = smisenaSestava(x.klic, typ) || "";
       /* Záložka Mega už není — co v ní stálo, jede s mega řádkem tady:
          cena proměny, typy po vymegování a to, jestli tu formu zná jen
          herní soubor. */
@@ -19588,6 +19601,40 @@ které tu megu drží, ne celé evoluční řady." />
    *  i typy jsou pro žebříček tentýž pokémon a smí se počítat jen jednou. */
   function bytostKlic(e) {
     return e[1] + "|" + e[3] + "/" + e[4] + "/" + e[5] + "|" + (e[2] || []).join(",");
+  }
+
+  var smisenaCache = {};
+  /**
+   * Nejlepší sestava druhu PROTI cílům daného typu, i když je smíšená.
+   *
+   * `typeRanking` počítá skóre jen ze sestav, kde jsou oba útoky toho
+   * typu — to je základ žebříčku a nemění se. Tahle funkce je jen na
+   * VYPSÁNÍ: vezme nejlepší dvojici, kde je toho typu aspoň jeden útok.
+   * Pokémon GO Hub počítá stejně široce, takže u jeho řádků je co ukázat
+   * i tam, kde appka vlastní sestavu nemá.
+   *
+   * Vrací jméno sestavy („Fast + Charged“), nebo null.
+   */
+  function smisenaSestava(klic, typ) {
+    var ck = klic + "|" + typ;
+    if (smisenaCache[ck] !== undefined) return smisenaCache[ck];
+    var e = POKEDEX.species[klic];
+    var l = e && learnset(klic);
+    if (!l || !l.fast.length || !l.charged.length) return (smisenaCache[ck] = null);
+    var dex = { types: e[2], a: e[3], d: e[4], s: e[5] };
+    var best = 0, out = null;
+    l.fast.forEach(function (fi) {
+      var f = fastMove(fi);
+      if (!f) return;
+      l.charged.forEach(function (ci) {
+        var c = chargedMove(ci);
+        if (!c) return;
+        if (f.type !== typ && c.type !== typ) return;
+        var sc = raidScore(cycleDps(dex.types, f, c), dex);
+        if (sc > best) { best = sc; out = f.name + " + " + c.name; }
+      });
+    });
+    return (smisenaCache[ck] = out);
   }
 
   function typeRanking(type) {
@@ -33345,6 +33392,26 @@ které tu megu drží, ne celé evoluční řady." />
      * Nastaví filtr podle značek a štítků. `vse` zapne průnik — kus musí
      * mít všechny vybrané, ne jen některou.
      */
+    /**
+     * Filtr na VLASTNÍ typy kusu — z hledání ve vzhledové vrstvě.
+     *
+     * Zaškrtávatka v hlavičce klasické tabulky tohle umí odjakživa,
+     * jenže hlavička v Atlasu není. `poMege` přepíná otázku: `false`
+     * = jakého je typu TEĎ, `true` = jakého bude po vymegování (a kus
+     * bez mega formy pak vypadne úplně). Prázdné pole filtr zruší.
+     */
+    atlasTypFiltr: function (typy, poMege) {
+      typFiltr.typy = {};
+      (typy || []).forEach(function (t) { if (t) typFiltr.typy[t] = true; });
+      typFiltr.oba = false;
+      typFiltr.poMege = !!poMege;
+      renderBody();
+      return { typy: Object.keys(typFiltr.typy), poMege: !!typFiltr.poMege,
+        kusu: lastVisibleIds.length };
+    },
+
+    /** Jména všech herních typů, jak je appka píše („Steel“, „Water“). */
+    atlasTypyHry: function () { return ALL_TYPES.slice(); },
     atlasStitkyFiltr: function (znacky, duvody, vse) {
       znackaFiltr.znacky = {};
       (znacky || []).forEach(function (k) { znackaFiltr.znacky[k] = true; });

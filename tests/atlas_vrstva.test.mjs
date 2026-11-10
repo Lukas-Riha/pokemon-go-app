@@ -2893,9 +2893,13 @@ check("…a po výběru je vidět podmínka právě té cesty",
   dVysl29.evo.podminkyPo.length === 1 && /v noci/.test(dVysl29.evo.podminkyPo[0]),
   JSON.stringify(dVysl29.evo.podminkyPo));
 const pojmenovane = (h) => h.filter((x) => x.trim().length > 0);
-check("u lig stojí nejlepší možná kombinace IV hned za pořadím",
+/* Ctyri sloupce ma kazda role stejne a na temze miste: Druh, Hodnoceni,
+   Poradi, Doporucene utoky. Co ma role navic (PvP Nejlepsi IV, raidy
+   Cenu megy), stoji az za nimi — jinak se pri prepnuti zalozky posune
+   cely radek (Lukas 10. 11.). */
+check("u lig stojí to, co má PvP navíc, až za společnými sloupci",
   pojmenovane(dVysl29.hlavicky).join("|")
-    === "Druh|Hodnocení|Pořadí druhu|Nejlepší IV|Doporučené útoky",
+    === "Druh|Hodnocení|Pořadí druhu|Doporučené útoky|Nejlepší IV",
   JSON.stringify(dVysl29.hlavicky));
 check("…a sloupec ani záložka o vlastním kuse tu už nejsou",
   !/Tvůj kus/.test(dVysl29.hlavicky.join(" "))
@@ -7391,6 +7395,137 @@ check("napoveda jmen nema posuvnik ani u jedineho vysledku",
     && !!d110c["shadow be"] && d110c["shadow be"].posuvnik === false,
   JSON.stringify(d110c));
 await p110.close();
+
+
+// --------------------------------- 111) Porovnat IV a srovnane sloupce
+console.log("\n111) Porovnat IV, sloupce ve vsech rolich stejne");
+const p111 = await otevri(1700, [
+  { pokemon: "Melmetal", cp: 3000, level: 32, ivAtk: 10, ivDef: 10, ivSta: 10 }
+]);
+const d111 = await p111.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const zal = [...document.querySelectorAll(".atlas-nav button")]
+    .find((b) => /Vyhled\u00e1v\u00e1n\u00ed/.test(b.textContent));
+  zal.click();
+  await cekej(900);
+  const pole = document.getElementById("prohName");
+  pole.value = "Melmetal";
+  pole.dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(2200);
+  const out = { role: {} };
+  /* Sirka sloupce na jeden radek: klon s `nowrap` rekne, kolik by obsah
+     potreboval, kdyby se nelamal. */
+  const klon = document.createElement("div");
+  klon.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;left:-9999px";
+  document.body.append(klon);
+  const telo = () => Math.round(
+    document.querySelector(".atlas-vysledek-telo").getBoundingClientRect().top);
+  out.teloPred = telo();
+  for (const r of ["pvp", "raid", "max", "gym"]) {
+    const b = document.querySelector(`[data-role="${r}"]`);
+    if (!b) continue;
+    b.click();
+    await cekej(900);
+    const hl = [...document.querySelectorAll(".atlas-vysledek-tab thead th")];
+    const utoky = [...document.querySelectorAll(".atlas-vysledek-tab tbody tr")]
+      .map((tr) => tr.children[3]).filter(Boolean);
+    let potreba = 0, sirka = 0;
+    utoky.forEach((td) => {
+      sirka = Math.round(td.getBoundingClientRect().width);
+      klon.innerHTML = td.innerHTML;
+      potreba = Math.max(potreba, Math.ceil(klon.getBoundingClientRect().width));
+    });
+    out.role[r] = {
+      hlavicky: hl.map((th) => th.textContent.trim()),
+      x: hl.map((th) => Math.round(th.getBoundingClientRect().left)),
+      sirka, potreba,
+      // Smisena sestava: Melmetal nema Steel rychly utok, presto je co ukazat.
+      utoky: utoky.map((td) => td.textContent.replace(/\s+/g, " ").trim())
+    };
+    out["telo_" + r] = telo();
+  }
+  klon.remove();
+  // Porovnat IV: prikaz je jen v PvP, radky az po vyplneni.
+  document.querySelector('[data-role="pvp"]').click();
+  await cekej(900);
+  out.prikaz = !!document.querySelector("[data-ivp-prepinac]");
+  out.radkuPred = document.querySelectorAll("tr.atlas-ivp-radek").length;
+  out.druhuRadku = document.querySelectorAll(".atlas-vysledek-tab tbody tr[data-klic]").length;
+  document.querySelector("[data-ivp-prepinac]").click();
+  await cekej(350);
+  out.teloOtevreno = telo();
+  const pol = [...document.querySelectorAll("[data-ivp]")];
+  out.poli = pol.length;
+  out.vychozi = pol.map((i) => i.value);
+  pol[0].value = 0; pol[0].dispatchEvent(new Event("input", { bubbles: true }));
+  pol[1].value = 15; pol[1].dispatchEvent(new Event("input", { bubbles: true }));
+  pol[2].value = 15; pol[2].dispatchEvent(new Event("input", { bubbles: true }));
+  await cekej(600);
+  const radky = [...document.querySelectorAll("tr.atlas-ivp-radek")];
+  out.radkuPo = radky.length;
+  out.bunky = radky.slice(0, 1).map((tr) => [...tr.children]
+    .map((td) => td.textContent.replace(/\s+/g, " ").trim()));
+  out.podbarveni = radky.length
+    ? [...new Set([...radky[0].children].map((td) => getComputedStyle(td).backgroundColor))]
+    : [];
+  // Prepnuti na raidy: prikaz ani radky tam nejsou a tabulka nepodskoci.
+  document.querySelector('[data-role="raid"]').click();
+  await cekej(900);
+  out.raidPrikaz = !!document.querySelector("[data-ivp-prepinac]");
+  out.raidRadku = document.querySelectorAll("tr.atlas-ivp-radek").length;
+  out.teloRaid = telo();
+  return out;
+});
+await p111.close();
+
+const r111 = d111.role;
+/* Ctyri sloupce ma kazda role stejne a na temze miste \u2014 pri prepnuti
+   zalozky se nesmi nic posunout do strany ani nahoru. */
+check("sloupce Druh, Hodnoceni, Poradi a Utoky stoji ve vsech rolich stejne",
+  Object.keys(r111).length >= 2
+    && Object.values(r111).every((x) =>
+      JSON.stringify(x.x.slice(0, 4)) === JSON.stringify(r111.pvp.x.slice(0, 4))),
+  JSON.stringify(Object.entries(r111).map(([k, x]) => k + ":" + x.x.join(","))));
+check("\u2026a Doporucene utoky jsou ctvrte, ne posledni",
+  Object.values(r111).every((x) => x.hlavicky[3] === "Doporu\u010den\u00e9 \u00fatoky"),
+  JSON.stringify(Object.values(r111).map((x) => x.hlavicky.join("|"))));
+check("co ma role navic, stoji hned za utoky",
+  r111.pvp.hlavicky[4] === "Nejlep\u0161\u00ed IV" && r111.raid.hlavicky[4] === "Cena megy",
+  JSON.stringify([r111.pvp.hlavicky, r111.raid.hlavicky]));
+/* Sestava utoku se nesmi lamat na dva radky: sloupec ma byt sirsi nez
+   nejsirsi sestava, jakou kterykoliv radek potrebuje. */
+check("sestava utoku se vejde na jeden radek",
+  Object.values(r111).every((x) => !x.potreba || x.potreba <= x.sirka),
+  JSON.stringify(Object.entries(r111).map(([k, x]) => k + ":" + x.potreba + "/" + x.sirka)));
+/* Melmetal nema Steel ani Rock rychly utok, takze cista sestava pro ty
+   typy neexistuje \u2014 presto se ukaze ta nejlepsi, jakou ma. */
+check("i bez ciste sestavy je u raidu co ukazat",
+  !!r111.raid && r111.raid.utoky.length > 0
+    && r111.raid.utoky.every((t) => !/sestavu appka nem\u00e1/.test(t))
+    && !r111.raid.utoky.some((t) => /sm\u00ed\u0161en\u00e1/.test(t)),
+  JSON.stringify(r111.raid ? r111.raid.utoky : null));
+
+check("prikaz Porovnat IV je jen v PvP", d111.prikaz === true && d111.raidPrikaz === false,
+  JSON.stringify([d111.prikaz, d111.raidPrikaz]));
+check("\u2026a nezvysi radek zalozek, takze tabulka nepodskoci",
+  d111.teloPred === d111.teloOtevreno && d111.teloPred === d111.teloRaid,
+  JSON.stringify([d111.teloPred, d111.teloOtevreno, d111.teloRaid]));
+check("tri policka s nulou a bez nich zadne radky navic",
+  d111.poli === 3 && d111.vychozi.join(",") === "0,0,0" && d111.radkuPred === 0,
+  JSON.stringify([d111.poli, d111.vychozi, d111.radkuPred]));
+check("po vyplneni pribude radek pod kazdym druhem",
+  d111.radkuPo > 0 && d111.radkuPo === d111.druhuRadku,
+  JSON.stringify([d111.radkuPo, d111.druhuRadku]));
+check("radek porovnani nese IV, znamku a poradi \u2014 nic jineho",
+  d111.bunky.length === 1 && /^\d+\/\d+\/\d+$/.test(d111.bunky[0][0])
+    && /^(SS|S|A|B|C|D|E)$/.test(d111.bunky[0][1])
+    && /^#\d+ z \d+/.test(d111.bunky[0][2])
+    && d111.bunky[0].slice(3).every((x) => x === ""),
+  JSON.stringify(d111.bunky));
+check("\u2026a podbarveni ma cely radek stejne",
+  d111.podbarveni.length === 1, JSON.stringify(d111.podbarveni));
+check("po prepnuti na raidy radky porovnani zmizi",
+  d111.raidRadku === 0, String(d111.raidRadku));
 
 await browser.close();
 server.close();

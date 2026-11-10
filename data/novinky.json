@@ -404,7 +404,23 @@
   "2.14": {
     "nadpis": "Co je nového",
     "body": [
-      "**Zatím nic.** Verze 2.14 se teď staví — co do ní přijde, se tady objeví průběžně."
+      {
+        "sekce": "Vyhledávání"
+      },
+      "**Porovnat IV.** Vpravo u záložek rolí přibyl příkaz **Porovnat IV**. Po kliknutí vyjedou tři políčka (útok, obrana, HP) a pod každý řádek ligové tabulky se dopíše, **kolikátá je tvoje kombinace mezi 4096** možnými — včetně levelu a CP, na které se ještě pod limit ligy vejde. Čísla se mění rovnou při psaní. Dokud příkaz nepoužiješ, tabulka vypadá jako dosud. Je to jiná otázka než „pořadí druhu“: to říká, jak dobrý je DRUH, tohle, jak dobrá je zrovna tahle kombinace IV u téhož druhu.",
+      "**U tvé kombinace je i známka — ale na vlastní škále.** Říká, jak **vzácná** taková kombinace je: SS je nejlepší procento ze 4096, S pět procent, A deset, B čtvrtina, C polovina. Se známkou druhu nemá nic společného — ta říká, jak silný je druh v lize — a proto je chip jen obtažený, ne vyplněný.",
+      "**U Master League se pořadí počítá na nejvyšším levelu** — liga limit nemá, takže tam prostě vyhrává síla. Appka to napíše místo toho, aby si něco domýšlela.",
+      "**U útoků se ukáže i smíšená sestava.** Dokud měl druh v daném typu jen jeden útok, stálo u řádku „sestavu appka nemá“ — třeba u Melmetala ve Steelu, který Steel rychlý útok nemá. Teď se vypíše nejlepší sestava, jakou proti tomu typu má, a je u ní poznámka **smíšená**: jeden útok nedostává bonus za shodu. Pokémon GO Hub počítá stejně široce, proto takový druh ve svém žebříčku vede. Vlastní výpočet appky se tím nemění — skóre pořád stojí jen na čistých sestavách, aby se nepohnul rozpočet rolí v rosteru.",
+      "**Sloupce stojí ve všech záložkách na témže místě.** Druh, Hodnocení, Pořadí a Doporučené útoky začínají v PvP, Raidech, Maxu i Gymu stejně, takže se při přepnutí nic neposune. Co má role navíc (Nejlepší IV, Cena megy), stojí hned za útoky. Poslední sloupec už se taky nelepí k pravému okraji — to byl zbytek po zrušeném sloupci s příkazem.",
+      {
+        "sekce": "Hledání v rosteru"
+      },
+      "**Ke štítku Mega jde připsat typ.** „Mega“ a za ním „:steel“ vypíše kusy, které po vymegování Steel teprve **budou**; „Mega“ a „steel“ bez dvojtečky ty, které Steel **už jsou**. Typ se v poli objeví jako vlastní kostička, takže je vždycky vidět, na co se appka ptá.",
+      "**Bublina u hledání se už neláme uprostřed věty.**",
+      {
+        "sekce": "Drobnosti"
+      },
+      "**Šipky u Import CSV a Export jsou prohozené.** Teď jdou podle směru dat: import míří dovnitř, export ven."
     ]
   }
 }
