@@ -139,7 +139,12 @@ def main():
         kroky = [("akce a raid bossové", [sys.executable, "tools/build_events.py", "--refresh"]),
                  ("ligové žebříčky z PvPoke", [sys.executable, "tools/build_meta.py", "--refresh"]),
                  ("Dynamax žebříček z Pokémon GO Hubu",
-                  [sys.executable, "tools/build_dmax.py", "--refresh"])]
+                  [sys.executable, "tools/build_dmax.py", "--refresh"]),
+                 # Raidoví útočníci a obránci gymů od Hubu. Stárnou stejně
+                 # rychle jako Max — Dialga spadla ve Steelu z #2 na #3
+                 # ze dne na den, protože Hub přidal Gigantamax Melmetal.
+                 ("raidy a gymy z Pokémon GO Hubu",
+                  [sys.executable, "tools/build_hub.py", "--refresh"])]
         if OBNOVIT_VSE:
             kroky = [("pokédex", [sys.executable, "tools/build_pokedex.py", "--refresh"])] + kroky \
                 + [("útoky", [sys.executable, "tools/build_moves.py"])]

@@ -29,7 +29,8 @@ GM_URL = "https://raw.githubusercontent.com/PokeMiners/game_masters/master/lates
 GM_CACHE = "game_master_extract"
 FILES = ["pokemon_names", "pokemon_stats", "pokemon_evolutions", "pokemon_types",
          "mega_pokemon", "cp_multiplier", "pokemon_powerup_requirements",
-         "pokemon_rarity", "pokemon_candy_to_evolve", "shiny_pokemon"]
+         "pokemon_rarity", "pokemon_candy_to_evolve", "shiny_pokemon",
+         "shadow_pokemon"]
 
 # Odkud u druhu může padnout shiny. Ukládá se jako součet příznaků,
 # protože jde o deset řádků dat na devět set druhů — jedno číslo stačí.
@@ -169,6 +170,19 @@ def fetch_gm(refresh, ponechat):
         if q:
             quests[q.get("questTemplateId")] = q
     out, nezname, buddy, megy = {}, set(), {}, {}
+    # Gigantamax se v herních datech jmenuje „sourdough" (kvásek) a seznam
+    # druhů, které Gmax formu vůbec mají, stojí na jednom místě. Žebříček
+    # Dynamax útočníků je proti tomu jen top 10 na typ — ten na otázku
+    # „má ten druh Gmax?" odpovědět neumí.
+    gmax = []
+    for e in gm:
+        bs = (e.get("data") or {}).get("breadSettings")
+        if not bs:
+            continue
+        for sd in bs.get("allowedSourdoughPokemon") or []:
+            k = norm(sd.get("pokemonId"))
+            if k and k not in gmax:
+                gmax.append(k)
     # Cena proměny leží u druhu, ne u přepisu formy.
     cena = {}
     for e in gm:
@@ -226,7 +240,8 @@ def fetch_gm(refresh, ponechat):
     for klic, formy in megy.items():
         for f in formy:
             f["energie"], f["energiePoprve"] = cena.get((klic, f.get("id")), (None, None))
-    vysledek = {"ukoly": out, "buddyKm": buddy, "mega": megy}
+    vysledek = {"ukoly": out, "buddyKm": buddy, "mega": megy,
+                "gmax": sorted(gmax)}
     path.write_text(json.dumps(vysledek, ensure_ascii=False, indent=1), encoding="utf-8")
     return vysledek
 
@@ -512,6 +527,14 @@ def main():
     # Kam až zdroj dosáhl. Co je za tím, o tom nic netvrdí.
     shiny_nejvyssi_id = max(shiny_podle_id) if shiny_podle_id else 0
 
+    # Shadow je ve zdroji taky pod číslem z pokédexu. Je to seznam druhů,
+    # které Raketa nasazuje — appka podle něj pozná, kdy má smysl shadow
+    # formu vůbec počítat (sloučený raidový žebříček).
+    shadow_ids = sorted({
+        z["id"] for z in (raw.get("shadow_pokemon") or {}).values()
+        if isinstance(z, dict) and z.get("id")
+    })
+
     species = {}
     for s in raw["pokemon_stats"]:
         if not wanted(s["pokemon_name"], s["form"]):
@@ -756,6 +779,10 @@ def main():
             "zdroj_evoPozadavky_ukol": "herní GAME_MASTER (PokeMiners) — pogoapi"
                                        " úkoly před evolucí nemá",
             "schema_buddyKm": "klíč -> kolik km ujdeš na jeden bonbón",
+            "schema_gmax": "klíče druhů, které mají Gigantamax formu"
+                           " (herní GAME_MASTER, seznam „sourdough“)",
+            "schema_shadow": "čísla z pokédexu, která mají shadow formu"
+                             " (platí pro celý druh včetně forem, stejně jako shiny)",
             "schema_evoluce": "klíč -> [klíče forem, na které se přímo vyvíjí]",
             "pocty": {},
         },
@@ -765,6 +792,12 @@ def main():
         "mega": mega,
         "evoPozadavky": pozadavky,
         "buddyKm": buddy_km,
+        # Druhy se shadow formou — čísla z pokédexu, ne klíče: Raketa nasazuje
+        # druh, ne konkrétní formu.
+        "shadow": shadow_ids,
+        # Druhy s Gigantamax formou. Je to vlastnost druhu, ne kusu —
+        # appka podle toho pozná, kdy má smysl značku GMAX vůbec nabídnout.
+        "gmax": [k for k in (gm.get("gmax") or []) if k in species],
         # Celý evoluční graf, ne jen koncová forma. Appka z něj umí složit
         # linii oběma směry — dopředu i dozadu — což z „finální evoluce"
         # nešlo: ta neřekne, z čeho kus vznikl, ani kudy vede cesta.
@@ -777,6 +810,8 @@ def main():
                              "evoPozadavky": len(pozadavky),
                              "evoPozadavky_s_podminkou": s_podminkou,
                              "buddyKm": len(buddy_km),
+                             "gmax": len(out["gmax"]),
+                             "shadow": len(shadow_ids),
                              "cpm": len(cpm),
                              "evolucnich_kroku": len(out["evoluce"]),
                              "finalnich_evoluci": sum(1 for v in species.values() if v[6] == 0),

@@ -15,7 +15,10 @@ import { createRequire } from "node:module";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const WEB_DIR = path.join(ROOT, "web-app");
-const PORT = 8778;
+/* Appka si port 8778 drzí i mimo testy (přihlášení k OneDrivu musí
+   chodit na adresu, která je v registraci), takže sada umí i jiný:
+   PGO_PORT=8779 node tests/web_app.test.mjs */
+const PORT = Number(process.env.PGO_PORT) || 8778;
 
 const PLAYWRIGHT_CANDIDATES = [
   path.resolve(ROOT, "node_modules/playwright"),
@@ -408,7 +411,7 @@ try {
       "Metagross 15/14/13 93%,3100",
       "Azumarill 0/15/15 89%,1489",
       "Blissey 10-15-15,2800",
-      "Pidgey 2/1/0 6%,289",
+      "Rattata 2/1/0 6%,289",
     ].join("\n");
     window.__pgo.importText(text);
     window.__pgo.finishImport(true);
@@ -426,7 +429,9 @@ try {
   eq("funguje i zápis pomlčkami", nickRes[2].iv, "10/15/15");
   // bez ranku z Poké Genie se verdikt bere ze stat productu spočítaného z IV
   check("Azumarill 0/15/15 z přezdívky je PvP pick", nickRes[1].pvp === "Ano – GL", nickRes[1].pvp);
-  eq("slabý Pidgey z přezdívky jde rovnou pryč", nickRes[3].keep, "Zahodit");
+  /* Druh schválně bez mega formy. Pidgey už odpad není: od každé megy
+     si appka nechá jeden kus a Mega Pidgeot jiného kandidáta nemá. */
+  eq("slabá Rattata z přezdívky jde rovnou pryč", nickRes[3].keep, "Zahodit");
 
   const manual = await page.evaluate(() => {
     window.__pgo.setRows([{ pokemon: "Galarian Stunfisk 15/15/14 98%" }]);
@@ -586,13 +591,13 @@ try {
     rescanCases.ruzneKusy.some((r) => r.keep === "Zahodit – kopie"),
     rescanCases.ruzneKusy.map((r) => r.iv + ":" + r.keep).join(" / "));
   eq("stejná IV při jiném CP se neslučují naslepo", rescanCases.poVylepseni.length, 2);
-  check("…ale appka varuje místo doporučení zahodit",
-    // Duplikát už nepřepisuje verdikt — je to štítek navíc a pojistka
-    // „Nechat – ověř duplikát“, aby se kus nepustil nedopatřením.
-    rescanCases.poVylepseni.some((r) => /ověř duplikát/.test(r.keep || "")),
-    rescanCases.poVylepseni.map((r) => r.cp + ":" + r.keep).join(" / "));
-  check("…a nikomu neradí zahodit",
-    !rescanCases.poVylepseni.some((r) => r.keep === "Zahodit – kopie"),
+  /* Dva skeny jednoho kusu se nespojí, ale ani se kvůli tomu nic
+     nevymýšlí: od 5. 11. 2026 se každý posuzuje jako každý jiný kus.
+     Dřív tu byla pojistka „Nechat – ověř duplikát“ — štítek, který nic
+     neřekl a nikdo podle něj nic neudělal. */
+  check("…a oba se posoudí jako každý jiný kus",
+    rescanCases.poVylepseni.every((r) => r.keep
+      && !/duplik/i.test(r.keep) && !/ověř/i.test(r.keep)),
     rescanCases.poVylepseni.map((r) => r.cp + ":" + r.keep).join(" / "));
 
 
@@ -800,6 +805,7 @@ try {
 
   const replaceRes = await page.evaluate(() => {
     const gy = window.__pgo.getRows().filter((r) => r.pokemon === "Gyarados")[0];
+    const sidPred = gy.sid;
     gy.forma = "Shadow";
     window.__pgo.importText([
       "Name,CP,Level,ØATT IV,ØDEF IV,ØHP IV",
@@ -807,10 +813,15 @@ try {
     ].join("\n"));
     window.__pgo.finishImport("replace");
     const rows = window.__pgo.getRows();
-    return { pocet: rows.length, forma: rows[0].forma };
+    return { pocet: rows.length, forma: rows[0].forma, sidPred, sidPo: rows[0].sid };
   });
   eq("nahrazení zahodí zbytek rosteru", replaceRes.pocet, 1);
   check("…a ruční úpravy s ním", !replaceRes.forma, "forma=" + replaceRes.forma);
+  /* Stálé číslo kusu nahrazení přežije: sken našel tutéž Gyaradosu, takže
+     druhé zařízení se nemá co dozvídat o smazání a založení nového kusu. */
+  check("…ale stálé číslo kusu, který sken našel znovu, zůstává",
+    !!replaceRes.sidPo && replaceRes.sidPo === replaceRes.sidPred,
+    JSON.stringify([replaceRes.sidPred, replaceRes.sidPo]));
 
 
   console.log("\n19) CP jako měřítko (strop po vylepšení a evoluci)");
@@ -986,9 +997,14 @@ try {
     };
   });
   eq("smazání ubere řádek", discard.poSmazani, 1);
-  eq("smazaný kus se dalším importem nevrátí", discard.poImportu.join(","), "Azumarill");
-  eq("…protože si ho appka pamatuje", discard.pamet, 1);
-  check("…a nabídne, že to může zapomenout", discard.tlacitko);
+  /* Od 8. 11. 2026 import NIC nepřeskakuje (Lukášovo zadání): sken je pravda
+     o tom, co v boxu máš, takže kus, který se v něm zase objeví, se vrátí
+     a ze seznamu puštěných zmizí. Hroby zůstávají už jen pro synchronizaci
+     mezi zařízeními. */
+  eq("kus, který se ve skenu zase objeví, se vrátí",
+    discard.poImportu.slice().sort().join(","), "Azumarill,Rattata");
+  eq("…a ze seznamu puštěných zmizí", discard.pamet, 0);
+  check("…takže není co zapomínat", !discard.tlacitko);
 
 
   console.log("\n22) datum skenu: úklid boxu bez ručního mazání");
@@ -1036,7 +1052,8 @@ try {
     window.__pgo.finishImport("merge");
     return { poStarem, poNovem: window.__pgo.getRows().length };
   });
-  eq("starý sken vyhozeného kusu se nevrátí", recatch.poStarem, 0);
+  // Sken je pravda o boxu, takže i starší sken puštěný kus vrátí.
+  eq("i starý sken vyhozený kus vrátí", recatch.poStarem, 1);
   eq("později chycený identický kus ale projde", recatch.poNovem, 1);
 
 
@@ -1126,7 +1143,13 @@ try {
     }));
   });
   check("u kusu na vylepšení je rovnou cena v prachu",
-    /→ L\d+/.test(cost[0].powerupSub) && cost[0].powerupSub.indexOf("tis.") > -1,
+    /→ L\d+/.test(cost[1].powerupSub) && cost[1].powerupSub.indexOf("tis.") > -1,
+    cost[1].powerupSub);
+  /* Druhý Machamp má tytéž IV a je o patnáct levelů níž — prach do něj
+     nepatří. Dřív tu svítila cena i jemu: dvojici se stejnými přesnými IV
+     chránil příznak duplikátu, a ten je od 5. 11. 2026 pryč. */
+  check("…zatímco horší kopii appka pošle k té lepší",
+    /lepší kopii/.test(cost[0].powerupSub) || cost[0].powerupSub === "pouštíš ho",
     cost[0].powerupSub);
   check("cena se počítá z aktuálního levelu — z L35 je to levnější než z L20",
     cost[1].dust < cost[0].dust, cost[0].dust + " vs " + cost[1].dust);
@@ -1473,8 +1496,9 @@ try {
       keepRes.cat[k].some((x) => x.indexOf("Larvitar") === 0)),
     JSON.stringify(keepRes.cat));
   check("horší kopie jde pryč", keepRes.transfer.indexOf("Machamp") > -1, keepRes.transfer.join(","));
-  check("odpad jde pryč", keepRes.transfer.indexOf("Rattata") > -1 && keepRes.transfer.indexOf("Pidgey") > -1,
-    keepRes.transfer.join(","));
+  // Pidgey sem už nepatří — drží Mega Pidgeot (jeden kus na megu).
+  check("odpad jde pryč", keepRes.transfer.indexOf("Rattata") > -1
+    && keepRes.transfer.indexOf("Sunkern") > -1, keepRes.transfer.join(","));
 
 
   console.log("\n33) Shadow a Purified z reálného exportu");
@@ -1653,8 +1677,13 @@ try {
     /\d\/\d/.test(rarity.rows["Mewtwo"].sub), rarity.rows["Mewtwo"].sub);
   check("…a vzácnost je pořád vidět", rarity.rows["Mewtwo"].rarity === "L",
     String(rarity.rows["Mewtwo"].rarity));
-  check("u mytického appka řekne, že transfer nejde vůbec",
-    rarity.rows["Mew"].sub.indexOf("nejde transferovat") > -1, rarity.rows["Mew"].sub);
+  /* Pustit jde i mytický — Meltana má člověk z Mystery Boxu desítky.
+     Appka u něj proto nic nezamyká, jen připomene nevratnost. */
+  check("u mytického appka nic nezamyká, podtitulek říká důvod",
+    rarity.rows["Mew"].sub.length > 0
+      && rarity.rows["Mew"].sub.indexOf("nejde transferovat") === -1
+      && !/nedají vůbec/.test(rarity.rows["Mew"].title || ""),
+    rarity.rows["Mew"].sub);
   check("Ultra Beast se pozná taky", rarity.rows["Kartana"].rarity === "U",
     String(rarity.rows["Kartana"].rarity));
   eq("běžný odpad jde pryč dál", rarity.rows["Rattata"].keep, "Zahodit");
@@ -1857,7 +1886,9 @@ try {
   eq("sloupec Dynamax se napojil sám", dmax.mapDyn, "Dynamax");
   eq("a Favorite ze hry se napojil na hvězdičku", dmax.mapStar, "Favorite");
   eq("D se přečte jako Dynamax", dmax.po["Sobble"].dyn, "Ano");
-  eq("G (Gigantamax) taky", dmax.po["Wooloo"].dyn, "Ano");
+  // "G" už není obyčejný Dynamax: Gigantamax má vlastní stav, protože se
+  // shání hůř a v rozpočtu druhu stojí před Dmaxem.
+  eq("G se přečte jako Gigantamax", dmax.po["Wooloo"].dyn, "Gmax");
   eq("pomlčka znamená obyčejný kus", dmax.po["Magikarp"].dyn, "");
   eq("otazník se bere jako obyčejný", dmax.po["Rattata"].dyn, "");
   eq("slabý Dynamax kus se přesto nechává", dmax.po["Sobble"].keep, "Ponechat");
@@ -1875,7 +1906,8 @@ try {
   check("oblíbený ze hry dorazil jako hvězdička", dmax.po["Rattata"].star === true);
   check("filtr „jen Dynamax“ ukáže dva",
     dmax.filtr.length === 2 && dmax.filtr.join(",").indexOf("Sobble") > -1, dmax.filtr.join(","));
-  eq("…a mají v tabulce štítek", dmax.chipText, "DMAX");
+  check("…a mají v tabulce štítek",
+    dmax.chipText === "DMAX" || dmax.chipText === "GMAX", dmax.chipText);
   eq("bez role se Dynamax kus do „nechat“ sám nedostane", dmax.kategorie, "");
 
   console.log("\n44) prázdný filtr řekne proč, a Dynamax filtr funguje i v zobrazení Vše");
@@ -2225,7 +2257,11 @@ try {
      do 300 druhů na ligu místo 200, což je +64 KB dat. Změřeno na tom
      větším souboru: appka je hotová za 185 ms, při 4× zpomaleném CPU
      (zhruba průměrný telefon) za 988 ms, a po síti jde 668 KB gzipem. */
-  check("appka se drží pod 2,45 MB", velikostSouboru < 2450000, String(velikostSouboru));
+  /* 2,55 MB: začlenění žebříčků Pokémon GO Hubu (raidy i gymy mají vlastní
+     čtení a překlad klíčů), hledatelné shadow a mega formy s vlastní hlavičkou,
+     hvězdička u elitních útoků a seznam přání na celou evoluční řadu —
+     +92 kB kódu (data se zapékají až při buildu, tohle je samý kód). */
+  check("appka se drží pod 2,55 MB", velikostSouboru < 2550000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {
@@ -3410,7 +3446,7 @@ try {
   check("a režim se zavřel", boxPotvrzeni.zavreno);
 
   const boxNavrat = await page.evaluate(() => {
-    // pustěný kus se při dalším importu nesmí vrátit
+    // pustěný kus se při dalším importu vrátí — sken je pravda o boxu
     window.__pgo.importText([
       "Name,CP,Level,ØATT IV,ØDEF IV,ØHP IV,Scan date",
       "Rattata,200,15,4,3,5,8/24/26 10:00:00",
@@ -3418,7 +3454,7 @@ try {
     window.__pgo.finishImport("merge");
     return window.__pgo.getRows().filter((r) => r.pokemon === "Rattata").length;
   });
-  eq("pustěný kus se importem nevrátí", boxNavrat, 0);
+  eq("pustěný kus se dalším skenem vrátí", boxNavrat, 1);
 
   console.log("\n73) karta „odkud se to bere a jak se to počítá“");
   const doku = await page.evaluate(() => {
@@ -5478,19 +5514,22 @@ try {
     kopie.lunala.filter((x) => x.poradi <= 2).every((x) => x.keep.indexOf("Zahodit") !== 0),
     kopie.lunala.map((x) => x.poradi + ":" + x.keep).join(", "));
 
-  // --- mytičtí: skutečný zámek, ten zůstává ---
-  check("mytické se drží všechny, i ta nejhorší",
-    kopie.mew.every((x) => x.keep.indexOf("Zahodit") !== 0),
-    kopie.mew.map((x) => x.poradi + ":" + x.keep).join(", "));
-  check("…a důvod je ten správný: poslat je nejde vůbec",
-    kopie.mew.every((x) => /nedají vůbec/.test(x.duvod)),
-    kopie.mew[0] ? kopie.mew[0].duvod.slice(0, 120) : "");
-  check("…a nepočítají se mezi duplicity k zahození",
-    kopie.mew.every((x) => !x.worseCopy), JSON.stringify(kopie.mew.map((x) => x.worseCopy)));
+  // --- mytičtí: žádný zámek, hra je poslat nechá ---
+  check("u mytického už appka netvrdí, že poslat nejde",
+    kopie.mew.every((x) => !/nedají vůbec/.test(x.duvod)
+      && x.sub.indexOf("nejde transferovat") === -1),
+    JSON.stringify(kopie.mew.map((x) => [x.poradi, x.keep, x.sub])));
   const mewTreti = kopie.mew.filter((x) => x.poradi === 3)[0];
-  check("u mytického nad stropem se řekne, že je nad stropem",
-    !!mewTreti && /kopie a strop máš 2/.test(mewTreti.duvod),
-    mewTreti ? mewTreti.duvod.slice(0, 180) : "není");
+  /* „Klasicky dle pořadí": třetí kopie buď spadne pod strop kopií, nebo
+     drží roli — nic jiného ji držet nesmí. Konkrétní verdikt se tu
+     nejmenuje: pořadí z PvPoke driftuje a Mew umí skoro všechno. */
+  check("…a třetí kopie se posuzuje jako u kteréhokoliv druhu",
+    !!mewTreti && (mewTreti.worseCopy || /\d\/\d/.test(mewTreti.sub)),
+    JSON.stringify(mewTreti));
+  check("…a když jde pryč, je u toho, že transfer je nevratný",
+    !!mewTreti && (mewTreti.keep.indexOf("Zahodit") !== 0
+      || /nevratný/.test(mewTreti.duvod)),
+    mewTreti ? mewTreti.keep + " | " + mewTreti.duvod.slice(-160) : "nnení");
 
   // --- a ať se nezruší to, co fungovat má ---
   const rozpor = [].concat(kopie.lunala, kopie.mew, kopie.rattata)
@@ -5620,10 +5659,10 @@ try {
       par[1] + " | " + preset.text.slice(0, 140));
   });
 
-  console.log("\n113) Zygarde má vlastní výjimku, i když je legendární");
-  // Zygarde se skládá z buněk na trasách a hra ho nepustí do transferu, tradu
-  // ani do Pokémon HOME. Není mytický, takže samotné "rarity === M" na něj
-  // nestačí — a zamčené jsou VŠECHNY formy, s evolucí to nesouvisí.
+  console.log("\n113) Zygarde: pustit jde, vyměnit ne");
+  // Zygarde se skládá z buněk na trasách a hra ho nepustí do tradu ani do
+  // Pokémon HOME. PUSTIT ho ale jde — proto u něj od 10. 11. 2026 není
+  // žádná výjimka v rozpočtu a rozhoduje pořadí kopií jako u kohokoliv.
   const zyg = await page.evaluate(() => {
     const P = window.__pgo;
     P.setDiscarded([]);
@@ -5634,6 +5673,7 @@ try {
       const b = P.base().filter((x) => x.row.cp === cp)[0];
       const c = P.getComputed()[b.row.id];
       return { keep: c.keep, sub: c.keepSub || "", duvod: c.keepTitle || "",
+        trade: c.trade || "", tradeTitle: c.tradeTitle || "",
         rarity: b.dex ? b.dex.rarity : "" };
     };
     return {
@@ -5653,13 +5693,19 @@ try {
     };
   });
   eq("Zygarde je v datech legendární, ne mytický", zyg.desetProcent.rarity, "L");
-  check("…horší Zygarde 10 % se přesto nezahodí",
-    zyg.desetProcent.keep.indexOf("Zahodit") !== 0, zyg.desetProcent.keep);
-  check("…a je řečeno, že to je výjimka toho druhu",
-    /vlastní výjimku|Pokémon HOME/.test(zyg.desetProcent.duvod),
+  check("…a appka u něj netvrdí, že pustit nejde",
+    !/vlastní výjimku/.test(zyg.desetProcent.duvod)
+      && !/vlastní výjimku/.test(zyg.plny.duvod),
     zyg.desetProcent.duvod.slice(0, 140));
-  check("…zamčená je i plná forma, nejen desetiprocentní",
-    zyg.plny.keep.indexOf("Zahodit") !== 0, zyg.plny.keep);
+  /* O ponechání rozhoduje strop kopií a role. Verdikt se tu nejmenuje:
+     Zygarde Complete je v Master League a pořadí z PvPoke driftuje. */
+  check("…horší kopii drží už jen role, nebo jde pryč",
+    [zyg.desetProcent, zyg.plny].every((x) =>
+      x.keep.indexOf("Zahodit") === 0 || x.sub.length > 0),
+    JSON.stringify([zyg.desetProcent, zyg.plny].map((x) => x.keep + " | " + x.sub)));
+  check("…ale vyměnit ho pořád nejde, a už je to i řečeno",
+    zyg.plny.trade === "Nejde" && /výměny nepustí/.test(zyg.plny.tradeTitle),
+    zyg.plny.trade + " | " + zyg.plny.tradeTitle.slice(0, 140));
   // A pojistka: legendárky se tím nesmí zamknout všechny zpátky.
   check("horší Lunala se pořád smí pustit",
     zyg.lunala.keep.indexOf("Zahodit") === 0, zyg.lunala.keep);
@@ -9697,7 +9743,7 @@ try {
       magi.querySelector(".del-btn").click();
     };
     const vysledek = {};
-    // 1) bez zaškrtnutí celého boxu se smazaný kus přeskočí
+    // 1) smazaný kus se vrátí i bez zaškrtnutého celého boxu
     smazMagikarpa();
     vysledek.smazanychNaZacatku = P.getDiscarded().length;
     document.getElementById("celyBox").checked = false;
@@ -9720,8 +9766,10 @@ try {
   });
   check("kus se do seznamu smazaných opravdu dostal",
     celyBox.smazanychNaZacatku === 1, JSON.stringify(celyBox));
-  check("bez zaškrtnutí celého boxu se dřív smazaný kus neimportuje",
-    celyBox.bezCelehoBoxu.indexOf("Magikarp") === -1, JSON.stringify(celyBox));
+  /* „Sken je celý box" už řeší jen opačný směr: co ve skenu NENÍ, z rosteru
+     zmizí. Co ve skenu je, se naimportuje vždycky. */
+  check("dřív smazaný kus se vrátí i bez zaškrtnutého celého boxu",
+    celyBox.bezCelehoBoxu.indexOf("Magikarp") > -1, JSON.stringify(celyBox));
   check("…se zaškrtnutým celým boxem se vrátí",
     celyBox.sCelymBoxem.indexOf("Magikarp") > -1, JSON.stringify(celyBox));
   check("…a zmizí ze seznamu smazaných", celyBox.smazanychPotom === 0,
@@ -11868,26 +11916,32 @@ try {
   console.log("\n202) tlačítko cloudu nikdy nemlčí");
   await page.goto(URL);
   await nacteno(page);
-  const mlceni = await page.evaluate(async () => {
-    let hlaska = "";
-    window.alert = (t) => { hlaska = String(t); };
-    localStorage.removeItem("pgo_cloud_client_id");
-    document.getElementById("cloudClientId").value = "";
+  // Odchod na přihlašovací stránku se zachytí, aby test neodešel z appky.
+  let vyzva202 = "";
+  await page.route("**://login.microsoftonline.com/**", (route) => {
+    vyzva202 = route.request().url();
+    route.abort();
+  });
+  const mlceni = await page.evaluate(() => {
     const btn = document.getElementById("cloudLogin");
     // Vypnuté tlačítko na klik nereaguje vůbec — a to je horší než chyba.
-    const vypnuty = btn.disabled;
-    btn.click();
-    await new Promise((r) => setTimeout(r, 400));
-    return { vypnuty, hlaska,
-      stav: document.getElementById("cloudStav").textContent,
-      rozbaleno: document.getElementById("cloudNastaveni").open,
+    return { vypnuty: btn.disabled,
       procVidet: getComputedStyle(document.getElementById("cloudProc")).display };
   });
+  // Klik odesílá prohlížeč pryč; než to stihne zachycení zrušit, zmizí
+  // kontext, ve kterém evaluate běží — proto se jeho pád ignoruje.
+  await page.evaluate(() => document.getElementById("cloudLogin").click())
+    .catch(() => { /* odchod na přihlášení */ });
+  await page.waitForTimeout(1500);
+  await page.unroute("**://login.microsoftonline.com/**");
   check("tlačítko není vypnuté", mlceni.vypnuty === false, String(mlceni.vypnuty));
-  check("…a bez ID řekne, co chybí", /ID aplikace/.test(mlceni.stav), mlceni.stav);
-  check("…a rovnou otevře, kde se to vyplňuje", mlceni.rozbaleno);
-  check("karta vysvětluje, proč se něco registruje",
+  check("…a klik opravdu vede na přihlášení k Microsoftu",
+    /login\.microsoftonline\.com/.test(vyzva202), String(vyzva202));
+  check("karta říká, co přihlášení zapne",
     mlceni.procVidet !== "none", mlceni.procVidet);
+  // Zrušený odchod nechá v okně chybovou stránku místo appky.
+  await page.goto(URL);
+  await nacteno(page);
 
   console.log("\n203) kalendář veze i novinky a útoky akce");
   const osaSekce = await page.evaluate(() => {
@@ -12564,11 +12618,8 @@ try {
         if (okno) okno.remove();
         return je;
       })(),
-      maPocitadloVRosteru: !!(document.getElementById("boxCheck")
-        && document.getElementById("boxCheck").closest(".card.roster")),
-      // …ale počítadlo nezmizelo, jen se přestěhovalo do nastavení
-      pocitadloVNastaveni: !!(document.getElementById("boxCheck")
-        && document.getElementById("boxCheck").closest(".settings-card")),
+      // Počítadlo kusů z boxu v appce není (3. 11. odebrané celé).
+      maPocitadlo: !!document.getElementById("boxCheck"),
       maDalsi: !!document.querySelector(".tb-vic"),
       maProfilBtn: !!document.getElementById("profilBtn"),
       // --- sloupec Forma pryč, Shadow je značka ---
@@ -12598,9 +12649,8 @@ try {
   check("…a „Hledání do hry“ je naopak zpátky, i s panelem",
     refaktor.maHledaniVeHre === true && refaktor.maHledaniPanel === true,
     JSON.stringify([refaktor.maHledaniVeHre, refaktor.maHledaniPanel]));
-  check("počítadlo boxu není v rosteru", refaktor.maPocitadloVRosteru === false);
+  check("počítadlo boxu v appce není", refaktor.maPocitadlo === false);
   // Nezmizelo — jen se přestěhovalo tam, kam patří.
-  check("…ale je v nastavení", refaktor.pocitadloVNastaveni);
   check("„Další…“ v liště není", refaktor.maDalsi === false);
   check("…a profil má vlastní tlačítko", refaktor.maProfilBtn);
   check("sloupec Forma je pryč", refaktor.maSloupecForma === false);
@@ -14569,8 +14619,9 @@ try {
     doplnit.jmena.indexOf("Metagross") === -1, doplnit.jmena.join(", "));
   // Odpadu je v rosteru trikrat tolik nez drzenych kusu; doplnovat u nej
   // utoky je prace, ktera se druhy den zahodi s kusem.
+  // Rattata, ne Pidgey: Pidgey si appka nechává kvůli Mega Pidgeot.
   check("odpad se nenabizi, i kdyz utoky nema",
-    doplnit.jmena.indexOf("Pidgey") === -1,
+    doplnit.jmena.indexOf("Rattata") === -1,
     doplnit.jmena.join(", ") + " | verdikty: " + doplnit.verdikty.join(", "));
 
   const prubeh = await page.evaluate(async () => {
@@ -14906,7 +14957,7 @@ try {
   const resetVolby = await page.evaluate(async () => {
     const P = window.__pgo;
     const IDS = ["ivThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays",
-      "boxCountRoster", "gymCountRoster", "rankLimit", "roleThresh",
+      "rankLimit", "roleThresh",
       "dmaxKeep", "dmaxSlotu", "krokyPlan", "keepRare", "bezXL", "prahSleva",
       "prachZaBod", "cilLevel", "ligaVaha"];
     const vychozi = (e) => {
@@ -14939,7 +14990,8 @@ try {
     const zaskrtavatka = prvky.filter((e) => e.type === "checkbox").length;
     return { kontrolovano: prvky.length, zaskrtavatka, rozhozenych, nesedi, nerozhozene };
   });
-  check("kontroluje se cela sada nastaveni", resetVolby.kontrolovano >= 18,
+  // Dva prvky (pocitadlo kusu z boxu) z appky 3. 11. zmizely, proto 16.
+  check("kontroluje se cela sada nastaveni", resetVolby.kontrolovano >= 16,
     String(resetVolby.kontrolovano));
   check("…a jsou mezi nimi i zaskrtavatka", resetVolby.zaskrtavatka >= 3,
     String(resetVolby.zaskrtavatka));
@@ -16706,7 +16758,7 @@ try {
     JSON.stringify(s256.g1Sila));
   check("…a bublina ukáže pořadí ve všech typech i jako tank",
     !!s256.g1Dmax && /Max Dragon 1\/3/.test(s256.g1Dmax.tip) && /Max Ground \d\/3/.test(s256.g1Dmax.tip)
-      && /Max tank \d\/3/.test(s256.g1Dmax.tip) && /tenhle kus/.test(s256.g1Dmax.tip) && /Dmax kus druhu 1\/2/.test(s256.g1Dmax.tip),
+      && /Max tank \d\/3/.test(s256.g1Dmax.tip) && /tenhle kus/.test(s256.g1Dmax.tip) && /Dmax kus řady 1\/2/.test(s256.g1Dmax.tip),
     s256.g1Dmax ? s256.g1Dmax.tip.replace(/<[^>]+>/g, " ").slice(0, 300) : "bez štítku");
   check("pouštěný kus (3. Garchomp) má štítky pod čarou: ML, kvalita, raid, gym, Dynamax",
     /^Zahodit/.test(s256.g3Keep) && ["pvp:ML", "kvalita:ML", "raid:Ground", "gym:Gym", "dmax:Dynamax"].every((k) => s256.g3Pod.indexOf(k) > -1),
@@ -18505,7 +18557,7 @@ try {
     s284.otevreno === true && s284.pozice === s284pred.pozice,
     JSON.stringify([s284pred.pozice, s284.pozice]));
 
-  console.log("\n285) Strop ligy a prepinaci stitek Duplikat");
+  console.log("\n285) Strop ligy");
   await page.goto(URL);
   await nacteno(page);
   const s285 = await page.evaluate(async () => {
@@ -18518,30 +18570,8 @@ try {
     const neznamy = P.atlasStropLigy("Neexistuje", 1500, 15, 15, 15);
     // Forma ma vlastni staty, takze i vlastni strop.
     const gl50 = P.atlasStropLigy("Zygarde (50 %)", 1500, 11, 13, 15);
-    // Dva skeny jednoho kusu: stejna presna IV, jine CP.
-    P.setRows([
-      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
-      { pokemon: "Rattata", cp: 240, level: 15, ivAtk: 3, ivDef: 3, ivSta: 3 },
-      { pokemon: "Rattata", cp: 310, level: 20, ivAtk: 4, ivDef: 5, ivSta: 6 },
-      { pokemon: "Rattata", cp: 320, level: 21, ivAtk: 7, ivDef: 5, ivSta: 6 }
-    ]);
-    await cekej(1400);
-    const comp = () => P.getComputed();
-    const id = Object.keys(comp()).filter((k) => comp()[k].duplikatPodezreni)[0];
-    const stitky = (cc) => (cc.duvody || []).map((d) => d.stitek);
-    const out = { gl: gl, ul: ul, nad: nad, neznamy: neznamy, gl50: gl50, id: id };
-    out.pred = { keep: comp()[id].keep, over: !!comp()[id].duplikatOver,
-      stitky: stitky(comp()[id]) };
-    P.atlasDuplikatPrepni(id);
-    await cekej(600);
-    out.po = { keep: comp()[id].keep, over: !!comp()[id].duplikatOver,
-      stitky: stitky(comp()[id]),
-      // Podezreni se drzi u kusu dal — jen uz neplati a ve verdiktu neni.
-      podezreni: !!comp()[id].duplikatPodezreni };
-    P.atlasDuplikatPrepni(id);
-    await cekej(600);
-    out.zpatky = { keep: comp()[id].keep, over: !!comp()[id].duplikatOver };
-    return out;
+    await cekej(100);
+    return { gl: gl, ul: ul, nad: nad, neznamy: neznamy, gl50: gl50 };
   });
   check("strop ligy je nejvyssi pullevel pod limitem",
     s285.gl && s285.gl.cp <= 1500 && s285.ul && s285.ul.cp <= 2500
@@ -18552,20 +18582,6 @@ try {
   check("nesplnitelny limit i neznamy druh vraci null",
     s285.nad === null && s285.neznamy === null,
     JSON.stringify([s285.nad, s285.neznamy]));
-  check("stitek Duplikat? je posledni v rade",
-    s285.pred.stitky.length > 0
-      && s285.pred.stitky[s285.pred.stitky.length - 1] === "Duplikát?",
-    JSON.stringify(s285.pred.stitky));
-  check("odbaveni duplikatu vrati verdikt k rozpoctu",
-    /ověř duplikát/.test(s285.pred.keep) && s285.pred.over === false
-      && s285.po.over === true && !/duplikát/.test(s285.po.keep),
-    JSON.stringify([s285.pred.keep, s285.po.keep]));
-  check("...a stitek z verdiktu zmizi, podezreni ale zustane u kusu",
-    s285.po.stitky.indexOf("Duplikát?") === -1 && s285.po.podezreni === true,
-    JSON.stringify(s285.po));
-  check("druhe prepnuti podezreni vrati",
-    s285.zpatky.over === false && /ověř duplikát/.test(s285.zpatky.keep),
-    JSON.stringify(s285.zpatky));
 
   console.log("\n286) Pole vymen pred cistenim naseptava jen moje druhy");
   await page.goto(URL);
@@ -18651,14 +18667,19 @@ try {
   check("prazdne pole nabidku neotvira",
     s286.prazdne === true && s286.maVstup === true,
     JSON.stringify([s286.prazdne, s286.maVstup, (s286.dialog || "").slice(0, 60)]));
-  check("psani nabidne jen druhy, ktere clovek ma, s poctem kusu",
-    s286.filtr.length === 1 && s286.filtr[0].jm === "Rattata"
-      && /2 kusy/.test(s286.filtr[0].pocet)
-      && !s286.filtr.some((x) => /Bulbasaur|Pikachu/.test(x.jm)),
-    JSON.stringify(s286.filtr));
+  /* Nabidka je z CELEHO pokedexu — na vymenu si clovek dava i druh,
+     ktery jeste nema (Ivysaura kvuli bonbonum). Moje ale patri napred
+     a nesou pocet kusu; ostatni maji „nemas". */
+  check("psani nabidne napred moje druhy, s poctem kusu",
+    s286.filtr.length > 0 && s286.filtr[0].jm === "Rattata"
+      && /2 kusy/.test(s286.filtr[0].pocet),
+    JSON.stringify(s286.filtr.slice(0, 3)));
+  check("...a za nimi i druhy, ktere clovek nema",
+    s286.filtr.length > 1 && s286.filtr.slice(1).every((x) => /nemáš/.test(x.pocet)),
+    JSON.stringify(s286.filtr.slice(0, 4)));
   check("...a vedle jmena stoji obrazek a typy druhu",
-    s286.filtr.length === 1 && s286.filtr[0].obrazek === true
-      && /Normal/.test(s286.filtr[0].typy), JSON.stringify(s286.filtr));
+    s286.filtr[0].obrazek === true && /Normal/.test(s286.filtr[0].typy),
+    JSON.stringify(s286.filtr[0]));
   check("vyber prida stitek, Enter dalsi a dialog nezavre",
     s286.cipy.join(",") === "Rattata" && s286.cipy2.join(",") === "Rattata,Pidgey"
       && s286.oknoOtevrene === true, JSON.stringify([s286.cipy, s286.cipy2]));
@@ -18986,6 +19007,13 @@ try {
      Vedle appky proto lezi `events.json`. Nikdy to ale kalendar nesmi
      vyprazdnit: starsi nebo rozbity soubor se ignoruje. */
   {
+    /* Zapecenou kopii je potreba merit BEZ site. Jinak ji stihne prebit
+       cerstvy events.json vedle appky a „kalendar zustane jak byl" se
+       porovnava proti necemu jinemu, nez co appka po ignorovani stareho
+       souboru doopravdy ukaze. */
+    await page.route("**/events.json", (r) => r.abort());
+    await page.goto(URL);
+    await nacteno(page);
     const zapecene = await page.evaluate(() => {
       const d = window.__pgo.eventsData() || {};
       return { stazeno: (d._meta || {}).stazeno || "", pocet: (d.events || []).length };
@@ -19000,6 +19028,7 @@ try {
         body: JSON.stringify(d) });
     };
     const zapeceneData = await page.evaluate(() => window.__pgo.eventsData());
+    await page.unroute("**/events.json");
 
     // 1) novejsi soubor se prevezme
     await page.route("**/events.json", podvrh("2099-01-01", "ZKOUSKA NOVA"));
@@ -19346,6 +19375,12 @@ try {
       { pokemon: "Snorlax", cp: 1800, level: 25, ivAtk: 14, ivDef: 14, ivSta: 14 }
     ]);
     await cekej(900);
+    /* Seznam druhu na vymenu prezije i presmerovani stranky a okno z nej
+       predvyplni stitky — uz pridany druh se pak v nabidce neukaze. Blok
+       o kousek vys si Pidgeye do seznamu dava, takze bez tohohle uklidu
+       se tu testuje neco jineho, nez co je napsane v nazvu. */
+    const vd = document.getElementById("vymenaDruhy");
+    if (vd) { vd.value = "[]"; }
     P.boxOtevrit();
     await cekej(400);
     const vstup = document.getElementById("appOknoVstup");
@@ -19360,6 +19395,11 @@ try {
       jmeno: polozka ? (polozka.querySelector(".dn-jmeno") || {}).textContent : "",
       typy: polozka ? (polozka.querySelector(".dn-typy") || {}).textContent : "",
       pocet: polozka ? (polozka.querySelector(".pocet") || {}).textContent : "",
+      // Moje druhy jsou v nabidce i s poctem, at stoji kdekoli.
+      moje: [...nab.querySelectorAll(".druh-polozka")]
+        .map((x) => ({ jm: (x.querySelector(".dn-jmeno") || {}).textContent || "",
+          pocet: (x.querySelector(".pocet") || {}).textContent || "" }))
+        .filter((x) => !/nemáš/.test(x.pocet)),
       zmerene: [...nab.querySelectorAll("img")].map((im) => im.dataset.vystredeno || "")
     };
     if (polozka) polozka.click();
@@ -19372,10 +19412,11 @@ try {
     return out;
   });
   check("nabidka ma obrazek, jmeno a typy jako u pridani kusu",
-    s293.polozek === 1 && s293.obrazek === true && s293.jmeno === "Pidgey"
+    s293.polozek > 0 && s293.obrazek === true && /Pidge/.test(s293.jmeno)
       && /Normal/.test(s293.typy), JSON.stringify(s293));
-  check("…a porad rika, kolik kusu toho druhu clovek ma",
-    /2 kusy/.test(s293.pocet), JSON.stringify(s293.pocet));
+  check("…a u mého druhu porad rika, kolik kusu ho mam",
+    s293.moje.length > 0 && s293.moje[0].jm === "Pidgey"
+      && /2 kusy/.test(s293.moje[0].pocet), JSON.stringify(s293.moje));
   check("obrazky v nabidce si appka vystredi",
     s293.zmerene.length > 0 && s293.zmerene.every((x) => x === "1"),
     JSON.stringify(s293.zmerene));
@@ -19595,8 +19636,10 @@ try {
       && !s288.po.some((x) => /Xerneas.*Zahodit/.test(x))
       && s288.po.filter((x) => /Nechat na výměnu/.test(x)).length >= 1,
     JSON.stringify(s288.po));
+  // Caterpie, ne Pidgey: Pidgey si appka nechává kvůli Mega Pidgeot
+  // a tahle kontrola je o tom, že volba v čištění platí jen na Xerneas.
   check("...a ostatnich druhu se to netyka",
-    s288.po.some((x) => /Pidgey.*Zahodit/.test(x)), JSON.stringify(s288.po));
+    s288.po.some((x) => /Caterpie.*Zahodit/.test(x)), JSON.stringify(s288.po));
   check("po skonceni cisteni volba konci",
     JSON.stringify(s288.potom) === JSON.stringify(s288.pred),
     JSON.stringify(s288.potom));
@@ -20730,8 +20773,1514 @@ try {
     s320.stitekTrade > 0 && s320.stitekTrade === s320.sVerdiktem
       && s320.stitekZahodit < s320.stitekTrade + 1, JSON.stringify(s320));
 
+  /* 321) Zdroj Transferu si vybírá člověk, ne appka.
+
+     Okno dřív bralo kusy samo: dávka z čištění, jinak co bylo vidět
+     v tabulce — a nikde to nenapsalo. Kdo si v rosteru něco vyhledal,
+     dostal filtry jen na tu hrstku; kdo chtěl projít celý box, neměl
+     jak si to říct. Zdroje jsou proto na přepínači:
+
+       * poslední import — jen kusy z posledního skenu (nové i přepsané),
+       * celý roster — všechno, co appka pouští, bez ohledu na filtr
+         v tabulce.
+
+     Pouštěcí verdikt platí v obou: zdroj nikdy nesmí nabídnout kus,
+     který si appka nechává. */
+  console.log("\n321) Zdroj Transferu (posledni import vs. cely roster)");
   await page.goto(URL);
   await nacteno(page);
+  const s321 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const out = {};
+    // Starší roster: slabé Rattaty (appka je pouští) a jedna stoprocentní,
+    // která se nepouští nikdy — ta nesmí být ani v jednom zdroji.
+    const stare = [];
+    for (let i = 0; i < 8; i++) {
+      stare.push({ pokemon: "Rattata", cp: String(100 + i * 7), level: 10 + i,
+        ivAtk: 1 + (i % 3), ivDef: 2 + (i % 4), ivSta: 3 + (i % 2) });
+    }
+    stare.push({ pokemon: "Rattata", cp: "640", level: 25, ivAtk: 15, ivDef: 15, ivSta: 15 });
+    P.setRows(stare);
+    await cekej(3000);
+    out.zdrojeBezImportu = P.hledaciZdroje().map((z) => z.zdroj);
+
+    // Nový sken: tři slabí Pidgey a jeden stoprocentní.
+    P.importText([
+      "Pokemon,CP,Level,Atk IV,Def IV,Sta IV,Scan date",
+      "Pidgey,120,10,1,1,1,10/31/26 20:00:00",
+      "Pidgey,131,11,2,1,1,10/31/26 20:00:10",
+      "Pidgey,142,12,1,2,1,10/31/26 20:00:20",
+      "Pidgey,610,24,15,15,15,10/31/26 20:00:30"].join("\n"));
+    await cekej(800);
+    P.finishImport("merge");
+    await cekej(3500);
+    out.kusuVRosteru = P.getRows().length;
+
+    const comp = P.getComputed();
+    const zdroje = P.hledaciZdroje();
+    out.zdroje = zdroje.map((z) => z.zdroj);
+    const dle = {};
+    zdroje.forEach((z) => { dle[z.zdroj] = z; });
+    out.importJmena = dle.import
+      ? [...new Set(dle.import.jmena)].sort() : null;
+    out.rosterJmena = dle.roster
+      ? [...new Set(dle.roster.jmena)].sort() : null;
+    out.importMensi = !!dle.import && !!dle.roster
+      && dle.import.ids.length < dle.roster.ids.length;
+    out.podmnozina = !!dle.import && !!dle.roster
+      && dle.import.ids.every((id) => dle.roster.ids.indexOf(id) !== -1);
+    // Žádný zdroj nesmí obsahovat kus, který si appka nechává.
+    out.sKeep = zdroje.reduce((a, z) => a
+      + z.ids.filter((id) => comp[id] && comp[id].keepGood).length, 0);
+    // Stoprocentní kusy (ty se nepouštějí nikdy) ani jeden zdroj nezná.
+    const stovky = P.getRows().filter((r) => +r.ivAtk === 15 && +r.ivDef === 15
+      && +r.ivSta === 15).map((r) => String(r.id));
+    out.stovek = stovky.length;
+    out.stovkyVeZdroji = zdroje.reduce((a, z) => a
+      + z.ids.filter((id) => stovky.indexOf(id) !== -1).length, 0);
+
+    // Celý roster nesmí záležet na tom, co je vidět v tabulce.
+    const hledej = async (text) => {
+      const el = document.getElementById("searchInput");
+      el.value = text;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      await cekej(600);
+    };
+    await hledej("qwertz");
+    out.viditelnych = P.viditelneKusy().length;
+    const prif = P.hledaciZdroje().filter((z) => z.zdroj === "roster")[0];
+    out.rosterPresFiltr = prif ? prif.ids.length : -1;
+    await hledej("");
+
+    // --- okno: přepínač, přepočet, zapamatování ---
+    const okno = () => document.getElementById("hledaniOkno");
+    const prepinace = () => [...okno().querySelectorAll('input[name="hledZdroj"]')]
+      .map((el) => ({ v: el.value, checked: el.checked }));
+    const vOkne = () => [...okno().querySelectorAll("[data-hled-kusy]")]
+      .reduce((a, b) => a + (parseInt(b.textContent, 10) || 0), 0);
+    document.getElementById("hledaniBtn").click();
+    await cekej(1600);
+    out.prepinaceVOkne = prepinace();
+    out.vychoziZdroj = (prepinace().filter((p) => p.checked)[0] || {}).v;
+    out.kusuVychozi = vOkne();
+    const naRoster = [...okno().querySelectorAll('input[name="hledZdroj"]')]
+      .filter((el) => el.value === "roster")[0];
+    out.maRosterPrepinac = !!naRoster;
+    if (naRoster) {
+      naRoster.click();
+      await cekej(2200);
+      out.kusuRoster = vOkne();
+      out.poPrepnuti = (prepinace().filter((p) => p.checked)[0] || {}).v;
+      out.ulozeno = document.getElementById("hledaniZdroj").value;
+    }
+    okno().querySelector(".hled-krizek").click();
+    await cekej(400);
+    document.getElementById("hledaniBtn").click();
+    await cekej(1600);
+    out.poZnovuotevreni = (prepinace().filter((p) => p.checked)[0] || {}).v;
+    okno().querySelector(".hled-krizek").click();
+    out.importIds = (P.hledaciZdroje().filter((z) => z.zdroj === "import")[0] || {})
+      .ids.join(",");
+    return out;
+  });
+  check("Transfer nabídne poslední import i celý roster a vyjde z importu",
+    s321.zdrojeBezImportu.join(",") === "roster"
+      && s321.zdroje.join(",") === "import,roster"
+      && s321.vychoziZdroj === "import"
+      && s321.importJmena.join(",") === "Pidgey"
+      && s321.importMensi && s321.podmnozina, JSON.stringify(s321));
+  check("…přepnutí na celý roster přepočítá okno a volba se drží",
+    s321.maRosterPrepinac && s321.kusuRoster > s321.kusuVychozi
+      && s321.poPrepnuti === "roster" && s321.ulozeno === "roster"
+      && s321.poZnovuotevreni === "roster", JSON.stringify(s321));
+  check("…celý roster nezávisí na filtru v tabulce",
+    s321.viditelnych === 0 && s321.rosterPresFiltr > 0,
+    JSON.stringify(s321));
+  check("…a ani jeden zdroj nenabídne kus, který si appka nechává",
+    s321.sKeep === 0 && s321.stovek === 2 && s321.stovkyVeZdroji === 0,
+    JSON.stringify(s321));
+
+  /* Dávka z importu se drží na ID řádků, takže musí přežít F5: kdyby se
+     řádky při načtení uloženého stavu přečíslovaly, zdroj „poslední
+     import" by se po restartu tiše vyprázdnil. */
+  await page.reload();
+  await nacteno(page);
+  const s321b = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    await cekej(3000);
+    const zdroje = P.hledaciZdroje();
+    const imp = zdroje.filter((z) => z.zdroj === "import")[0];
+    const out = { zdroje: zdroje.map((z) => z.zdroj), kusu: P.getRows().length,
+      importIds: imp ? imp.ids.join(",") : "",
+      volba: document.getElementById("hledaniZdroj").value };
+    // Volba i roster se drží dál, takže je další blok nesmí podědit.
+    document.getElementById("hledaniZdroj").value = "";
+    P.setRows([{ pokemon: "Snorlax", cp: "1800", level: 25, ivAtk: 5, ivDef: 5, ivSta: 5 }]);
+    await cekej(600);
+    return out;
+  });
+  check("…a poslední import i vybraný zdroj přežijí F5",
+    s321b.volba === "roster" && s321b.importIds !== ""
+      && s321b.importIds === s321.importIds, JSON.stringify(s321b));
+
+  /* 322) Čtyři nálezy z čištění boxu: forma, značka, pojistka, křížek.
+     a) Jméno formy není klíč. „Qwilfish (Hisuian)" se jmenuje „Qwilfish",
+        takže kdo si klíč dopočítával ze jména, ukázal u hisuianského kusu
+        sestavu i pořadí IV běžného Qwilfishe — a v Ultra League, kde běžný
+        Qwilfish v metě není, nezůstalo v řádku nic.
+     b) Značka nesmí zhoršit verdikt. Shiny dává oranžové „Nechat zatím",
+        jenže běželo PŘED zelenými pojistkami, takže ze stoprocentního kusu
+        (nebo z pojistky na cupy) udělalo slabší verdikt.
+     c) Pojistka na cupy musí říct, které ligy se to procento týká, a má dno:
+        druh o stovky míst pod metou cupy nahoru nevytáhnou.
+     d) Křížek u ligy, kterou PvPoke ten druh zná, musí vysvětlit proč —
+        karta druhu u Venusaura ukazuje Master League #268 a tabulka lig
+        u téhož kusu křížek. */
+  console.log("\n322) Formy, značky a pojistka na cupy");
+  const s322 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const nastav = (id, v) => {
+      const el = document.getElementById(id);
+      if (el.type === "checkbox") el.checked = v; else el.value = v;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const out = {};
+
+    /* Buňky tabulky lig ve sloupci „teď", podle zkratky ligy. */
+    const ligy = (jmeno) => {
+      const r = P.getRows().filter((x) => x.pokemon === jmeno)[0];
+      const host = document.createElement("div");
+      document.body.append(host);
+      P.atlasDetail(r.id, host);
+      const mapa = {};
+      [...host.querySelectorAll(".d-ligy-tab tr")].slice(1).forEach((tr) => {
+        const nazev = (tr.querySelector(".d-lg-nazev") || {}).textContent || "";
+        const bunky = [...tr.querySelectorAll("td")];
+        const td = bunky[0], po = bunky[bunky.length - 1];
+        mapa[nazev] = {
+          text: (td ? td.textContent : "").replace(/\s+/g, " ").trim(),
+          sestava: ((td && td.querySelector(".d-lg-sestava")) || {}).textContent || "",
+          tip: (td && td.getAttribute("title")) || "",
+          // Co kus umí až po evoluci, stojí v posledním sloupci — u Bulbasaura
+          // je Master League otázka na Venusaura, ne na Bulbasaura.
+          tipPo: (po && po.getAttribute("title")) || "",
+          textPo: (po ? po.textContent : "").replace(/\s+/g, " ").trim(),
+        };
+      });
+      host.remove();
+      return mapa;
+    };
+
+    // --- a) hisuianská forma proti běžné ------------------------------
+    P.setRows([
+      { pokemon: "Qwilfish Hisui", cp: "890", level: "15", ivAtk: 10, ivDef: 15, ivSta: 14 },
+      { pokemon: "Qwilfish", cp: "890", level: "15", ivAtk: 10, ivDef: 15, ivSta: 14 },
+    ]);
+    await cekej(2500);
+    const hisui = ligy("Qwilfish Hisui"), bezny = ligy("Qwilfish");
+    out.sestavaHisuiGL = (hisui["Great League"] || {}).sestava;
+    out.sestavaBeznyGL = (bezny["Great League"] || {}).sestava;
+    out.sestavaHisuiUL = (hisui["Ultra League"] || {}).sestava;
+    // Pořadí IV se počítá ze statů formy, takže se musí shodovat s tím,
+    // co pro klíč formy vrací engine — a lišit se od běžné formy.
+    const ivHisui = P.ivRank("qwilfish-hisui", 10, 15, 14, "ultra");
+    const ivBezny = P.ivRank("qwilfish", 10, 15, 14, "ultra");
+    out.ivHisui = ivHisui ? ivHisui.rank : null;
+    out.ivBezny = ivBezny ? ivBezny.rank : null;
+    out.ivVBunce = out.ivHisui !== null
+      && (hisui["Ultra League"] || {}).text.indexOf("IV #" + out.ivHisui) !== -1;
+
+    // --- b) značka shiny nesmí zhoršit zelený verdikt -----------------
+    P.setRows([
+      { pokemon: "Rattata", cp: "200", level: "15", ivAtk: 15, ivDef: 15, ivSta: 15 },
+      { pokemon: "Rattata", cp: "201", level: "15", ivAtk: 15, ivDef: 15, ivSta: 15,
+        shiny: "Ano" },
+      { pokemon: "Zubat", cp: "120", level: "10", ivAtk: 1, ivDef: 1, ivSta: 1,
+        shiny: "Ano" },
+    ]);
+    await cekej(2500);
+    const rows2 = P.getRows(), comp2 = P.getComputed();
+    const verd = (i) => {
+      const c = comp2[rows2[i].id] || {};
+      return { keep: c.keep, tone: c.keepTone, sub: c.keepSub || "" };
+    };
+    out.stovka = verd(0);
+    out.stovkaShiny = verd(1);
+    out.odpadShiny = verd(2);
+
+    // --- c) pojistka na cupy: liga ve verdiktu a dno podle pořadí -----
+    nastav("rankLimit", 50);
+    nastav("ligaRezerva", 0);
+    nastav("pametPoradi", false);
+    const vespiquen = P.ligovePoradi("vespiquen", "great");
+    out.vespiquenRank = vespiquen ? vespiquen.rank : null;
+    /* Sloty v Great i Ultra League obsadí kusy, které ty ligy opravdu
+       hrají — jinak by Combee dostal místo v rozpočtu a na pojistku by
+       vůbec nedošlo. */
+    const konkurence = ["Tinkaton", "Corviknight", "Virizion", "Florges",
+      "Empoleon", "Feraligatr", "Giratina Altered", "Talonflame", "Cresselia",
+      "Swampert", "Trevenant", "Walrein"]
+      .map((jm) => ({ pokemon: jm, cp: "2300", level: "25", ivAtk: 1, ivDef: 15, ivSta: 15 }))
+      .concat(["Melmetal", "Altaria", "Cramorant", "Corsola Galarian", "Lanturn",
+        "Jellicent", "Skarmory", "Umbreon", "Sableye", "Stunfisk Galarian"]
+        .map((jm) => ({ pokemon: jm, cp: "1450", level: "20", ivAtk: 0, ivDef: 15, ivSta: 15 })));
+    const combee = { pokemon: "Combee", cp: "300", level: "13", ivAtk: 1, ivDef: 15,
+      ivSta: 8, pohlavi: "♀" };
+    const verdiktCombee = async () => {
+      P.setRows([combee].concat(konkurence));
+      await cekej(2500);
+      const r = P.getRows().filter((x) => x.pokemon === "Combee")[0];
+      const c = P.getComputed()[r.id] || {};
+      return { keep: c.keep, tone: c.keepTone, sub: c.keepSub || "", good: !!c.keepGood };
+    };
+    /* Práh se odvíjí od skutečného pořadí druhu, ne od čísla v testu:
+       PvPoke přehazuje žebříčky každý týden. */
+    nastav("pvpPojistkaRank", Math.max(1, (out.vespiquenRank || 300) - 1));
+    out.podPrahem = await verdiktCombee();
+    nastav("pvpPojistkaRank", (out.vespiquenRank || 300) + 1);
+    out.nadPrahem = await verdiktCombee();
+    nastav("pvpPojistkaRank", 0);
+    out.bezPrahu = await verdiktCombee();
+
+    // --- d) křížek u ligy, kterou PvPoke zná --------------------------
+    nastav("pvpPojistkaRank", 200);
+    nastav("rankLimit", 50);
+    nastav("ligaRezerva", 6);
+    nastav("pametPoradi", true);
+    P.setRows([{ pokemon: "Bulbasaur", cp: "477", level: "15", ivAtk: 15, ivDef: 15,
+      ivSta: 15 }]);
+    await cekej(2500);
+    const venusaur = P.ligovePoradi("venusaur", "master");
+    out.venusaurRank = venusaur ? venusaur.rank : null;
+    out.venusaurSila = venusaur ? String(venusaur.pct).replace(".", ",") : "";
+    const bulba = ligy("Bulbasaur");
+    out.mlTip = (bulba["Master League"] || {}).tipPo || "";
+    out.mlKrizek = ((bulba["Master League"] || {}).textPo || "").indexOf("✕") !== -1;
+    return out;
+  });
+  check("hisuianská forma si bere sestavu i pořadí IV podle sebe, ne podle běžné",
+    s322.sestavaHisuiUL !== "" && s322.sestavaHisuiGL !== s322.sestavaBeznyGL
+      && s322.ivHisui !== s322.ivBezny && s322.ivVBunce,
+    JSON.stringify(s322));
+  check("značka shiny nezhorší zelený verdikt, slabý kus pořád podrží",
+    s322.stovka.tone === "good" && s322.stovkaShiny.tone === "good"
+      && s322.stovkaShiny.keep === s322.stovka.keep
+      && s322.odpadShiny.keep === "Nechat zatím",
+    JSON.stringify([s322.stovka, s322.stovkaShiny, s322.odpadShiny]));
+  check("pojistka na cupy řekne ligu a druh hluboko pod metou už nedrží",
+    s322.bezPrahu.good && /pojistka na cupy/.test(s322.bezPrahu.sub)
+      && /GL/.test(s322.bezPrahu.sub)
+      && s322.nadPrahem.good && !s322.podPrahem.good,
+    JSON.stringify([s322.vespiquenRank, s322.podPrahem, s322.nadPrahem, s322.bezPrahu]));
+  check("křížek u ligy, kterou PvPoke zná, vysvětlí sílu druhu",
+    s322.mlKrizek && s322.mlTip.indexOf("#" + s322.venusaurRank) !== -1
+      && s322.mlTip.indexOf(s322.venusaurSila) !== -1,
+    JSON.stringify([s322.venusaurRank, s322.venusaurSila, s322.mlTip]));
+
+  await page.goto(URL);
+  await nacteno(page);
+
+  /* 323) Stálé číslo kusu, razítko změny a hrob po smazaném.
+     Bez těch tří se roster ze dvou zařízení sloučit nedá: `id` je pořadové
+     číslo v rámci jednoho prohlížeče, takže „r42“ znamená v telefonu jiný
+     kus než v počítači. Razítko říká, která strana je u TOHO kusu novější
+     (ne u celého rosteru), a hrob zabrání tomu, aby se kus puštěný tady
+     vrátil při prvním sloučení z druhého zařízení. */
+  console.log("\n323) Stálá čísla kusů a razítka změn");
+  const s323 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const ulozene = () => {
+      // Testovací build ukládá pod vlastní předponou, ať si s ostrou
+      // verzí nepřepíšou data.
+      const klic = Object.keys(localStorage).filter((k) => /tracker_v2$/.test(k))[0];
+      const st = JSON.parse(localStorage.getItem(klic) || "{}");
+      return (st.profiles || {})[st.active] || {};
+    };
+    P.setRows([
+      { pokemon: "Machamp", cp: "2900", level: "38", ivAtk: 14, ivDef: 12, ivSta: 12 },
+      { pokemon: "Azumarill", cp: "1480", level: "30", ivAtk: 0, ivDef: 15, ivSta: 15 },
+      { pokemon: "Blissey", cp: "2781", level: "42", ivAtk: 13, ivDef: 14, ivSta: 15 },
+    ]);
+    await cekej(2200);
+    const prvni = ulozene();
+    const sidy = prvni.rows.map((x) => x.sid);
+    const zm1 = prvni.rows.map((x) => x.zm);
+
+    // Úprava jednoho kusu: razítko smí skočit jen jemu.
+    const kopie = P.getRows().map((x) => Object.assign({}, x));
+    kopie[1].cp = "1495";
+    P.setRows(kopie);
+    await cekej(2200);
+    const druhy = ulozene();
+
+    /* Hroby se měří přírůstkem: v úložišti jich po předchozích blocích
+       leží stovky a smazat se musí poznat i tak. */
+    const hrobyPred = Object.keys(druhy.smazane || {});
+    P.setRows(P.getRows().slice(1).map((x) => Object.assign({}, x)));
+    await cekej(2200);
+    const treti = ulozene();
+    const hrobyPo = Object.keys(treti.smazane || {});
+    const zpatky = treti.rows.map((x) => Object.assign({}, x));
+    zpatky.unshift(Object.assign({}, prvni.rows[0]));
+    P.setRows(zpatky);
+    await cekej(2200);
+    const ctvrty = ulozene();
+
+    return {
+      prvniSid: sidy[0],
+      sidu: sidy.length,
+      jedinecnych: new Set(sidy).size,
+      vsechnyMajiSid: sidy.every((x) => typeof x === "string" && x.length >= 16),
+      razitka: zm1.every((x) => typeof x === "number" && x > 0),
+      sidyPrezily: druhy.rows.map((x) => x.sid).join() === sidy.join(),
+      zmenenoJen: druhy.rows.map((x, k) => x.zm !== zm1[k]),
+      pribylHrob: hrobyPo.filter((x) => hrobyPred.indexOf(x) === -1),
+      hrobPoVraceni: Object.keys(ctvrty.smazane || {}).indexOf(sidy[0]) !== -1,
+      hrobuPoVraceni: Object.keys(ctvrty.smazane || {}).length - hrobyPred.length,
+      radkuPoVraceni: (ctvrty.rows || []).length,
+    };
+  });
+  check("každý kus má vlastní stálé číslo, které přežije úpravu",
+    s323.sidu === 3 && s323.jedinecnych === 3 && s323.vsechnyMajiSid === true
+      && s323.sidyPrezily === true,
+    JSON.stringify([s323.sidu, s323.jedinecnych, s323.vsechnyMajiSid, s323.sidyPrezily]));
+  check("razítko změny skočí jen tomu kusu, který se opravdu změnil",
+    s323.razitka === true && JSON.stringify(s323.zmenenoJen) ===
+      JSON.stringify([false, true, false]),
+    JSON.stringify([s323.razitka, s323.zmenenoJen]));
+  check("smazaný kus nechá hrob, aby se z druhého zařízení nevrátil",
+    s323.pribylHrob.length === 1 && s323.pribylHrob[0] === s323.prvniSid,
+    JSON.stringify([s323.pribylHrob, s323.prvniSid]));
+  check("vrácený kus hrob zase odklidí",
+    s323.hrobPoVraceni === false && s323.hrobuPoVraceni === 0
+      && s323.radkuPoVraceni === 3,
+    JSON.stringify([s323.hrobPoVraceni, s323.hrobuPoVraceni, s323.radkuPoVraceni]));
+
+  await page.goto(URL);
+  await nacteno(page);
+
+  /* 324) Sloučení dvou snímků. Tohle je to, kvůli čemu kusy dostaly stálá
+     čísla: dokud se posílal celý snímek, musela se při rozporu vybrat
+     jedna strana celá — kdo odpoledne skenoval v telefonu a večer doma
+     pustil deset kusů, o jednu z těch prací přišel.
+
+     Hlídá se pět pravidel: cizí kus přibude, cizí změna se převezme,
+     moje změna zůstane, kus, na který sáhly obě strany, se NEROZHODUJE
+     (jde do konfliktů a zatím platí moje verze), a hrob kus smaže — ale
+     jen když je pozdější než poslední změna toho kusu. */
+  console.log("\n324) Sloučení dvou snímků profilu");
+  const s324 = await page.evaluate(() => {
+    const P = window.__pgo;
+    const SLOUCENO = 1000;          // poslední sloučení s druhou stranou
+    const STARE = 500, NOVE = 2000; // razítka před ním a po něm
+    const kus = (sid, jm, cp, zm, navic) => Object.assign(
+      { sid, pokemon: jm, cp: String(cp), level: "20", ivAtk: 1, ivDef: 2,
+        ivSta: 3, zm }, navic || {});
+
+    const a = { v: 2, ulozenoMs: 3000, rows: [
+      kus("s1", "Machamp", 2900, STARE),                      // nikdo nesáhl
+      kus("s2", "Blissey", 2781, NOVE, { poznamka: "moje" }), // změnil jsem já
+      kus("s3", "Azumarill", 1480, STARE),                    // změnili oni
+      kus("s5", "Gyarados", 1719, NOVE, { poznamka: "moje" }), // změnili oba
+    ], smazane: {}, discarded: [], historie: [{ t: 10, k: "x", volba: "pustit" }],
+      rucniUtoky: {}, settings: { rankLimit: "50" } };
+
+    const b = { v: 2, ulozenoMs: 4000, rows: [
+      kus("s1", "Machamp", 2900, STARE),
+      kus("s2", "Blissey", 2781, STARE),
+      kus("s3", "Azumarill", 1500, NOVE, { poznamka: "jejich" }),
+      kus("s4", "Metagross", 3200, NOVE),                     // mají navíc
+      kus("s5", "Gyarados", 1719, NOVE, { poznamka: "jejich" }),
+    ], smazane: {}, discarded: [], historie: [{ t: 20, k: "y", volba: "nechat" }],
+      rucniUtoky: {}, settings: { rankLimit: "80" } };
+
+    const zaklad = P.slucSnimky(a, b, SLOUCENO);
+    const podle = (vys, sid) => vys.snimek.rows.filter((x) => x.sid === sid)[0] || null;
+
+    // Hrob: kus s1 pustili na druhém zařízení po posledním sloučení.
+    const bHrob = JSON.parse(JSON.stringify(b));
+    bHrob.rows = bHrob.rows.filter((x) => x.sid !== "s1");
+    bHrob.smazane = { s1: NOVE };
+    const sHrobem = P.slucSnimky(a, bHrob, SLOUCENO);
+
+    // Týž hrob, ale kus jsem mezitím znovu naskenoval — to hrob přebíjí.
+    const aZnovu = JSON.parse(JSON.stringify(a));
+    aZnovu.rows[0].zm = NOVE + 500;
+    const prebito = P.slucSnimky(aZnovu, bHrob, SLOUCENO);
+
+    return {
+      pocet: zaklad.snimek.rows.length,
+      pridano: zaklad.pridano,
+      aktualizovano: zaklad.aktualizovano,
+      mojeZmenaDrzi: (podle(zaklad, "s2") || {}).poznamka === "moje",
+      jejichZmenaPrisla: (podle(zaklad, "s3") || {}).cp === "1500",
+      novyKusPrisel: !!podle(zaklad, "s4"),
+      konflikty: zaklad.konflikty.map((k) => k.sid),
+      konfliktDrziMoje: (podle(zaklad, "s5") || {}).poznamka === "moje",
+      historie: zaklad.snimek.historie.map((h) => h.t),
+      nastaveni: zaklad.snimek.settings.rankLimit,
+      hrobSmazal: !podle(sHrobem, "s1") && sHrobem.smazano === 1,
+      hrobNeprebijeNovejsi: !!podle(prebito, "s1"),
+    };
+  });
+  check("sloučení přidá cizí kus a převezme cizí změnu",
+    s324.pocet === 5 && s324.pridano === 1 && s324.aktualizovano === 1
+      && s324.novyKusPrisel === true && s324.jejichZmenaPrisla === true,
+    JSON.stringify([s324.pocet, s324.pridano, s324.aktualizovano,
+      s324.novyKusPrisel, s324.jejichZmenaPrisla]));
+  check("…a moje změna zůstane, protože na ten kus druhá strana nesáhla",
+    s324.mojeZmenaDrzi === true, JSON.stringify(s324.mojeZmenaDrzi));
+  check("kus, na který sáhly obě strany, appka nerozhoduje",
+    s324.konflikty.join() === "s5" && s324.konfliktDrziMoje === true,
+    JSON.stringify([s324.konflikty, s324.konfliktDrziMoje]));
+  check("hrob kus smaže, ale novější změnu nepřebije",
+    s324.hrobSmazal === true && s324.hrobNeprebijeNovejsi === true,
+    JSON.stringify([s324.hrobSmazal, s324.hrobNeprebijeNovejsi]));
+  check("zápisník i nastavení se spojí, ne přepíšou",
+    s324.historie.join() === "10,20" && s324.nastaveni === "80",
+    JSON.stringify([s324.historie, s324.nastaveni]));
+
+  /* 325) Cloud po startu: když je tam novější roster, appka ho SLOUČÍ,
+     ne přepíše. Tlačítko „Stáhnout z cloudu“ zůstává záchrana (nahradí),
+     protože se mačká ve chvíli, kdy člověk chce zpátky to, co je v cloudu
+     — sloučení by po vymazání rosteru potvrdilo prázdno. */
+  console.log("\n325) Cloud po startu slučuje, ne přepisuje");
+  await page.evaluate(async () => {
+    document.getElementById("novinkyOkno")?.remove();
+    window.__pgo.setRows([
+      { pokemon: "Machamp", cp: 2800, level: 30, ivAtk: 15, ivDef: 14, ivSta: 14 },
+      { pokemon: "Gyarados", cp: 2900, level: 33, ivAtk: 15, ivDef: 15, ivSta: 15 },
+    ]);
+    await new Promise((r) => setTimeout(r, 2200));
+  });
+  const mujSnimek = await page.evaluate(() => window.__pgo.snimek());
+  /* Druhé zařízení: tentýž roster a k tomu kus navíc. Posílá se celý
+     snímek jako dnes, rozdíl je v tom, co s ním appka udělá. */
+  const vCloudu = {
+    pgoCloud: 1, verze: "test", profil: "Můj roster",
+    ulozeno: new Date(Date.now() + 60000).toISOString(),
+    zarizeni: "Telefon",
+    snapshot: Object.assign({}, mujSnimek, {
+      ulozenoMs: Date.now() + 60000,
+      rows: mujSnimek.rows.concat([{ sid: "cizi1", pokemon: "Blissey",
+        cp: "2781", level: "42", ivAtk: 13, ivDef: 14, ivSta: 15,
+        zm: Date.now() + 60000 }]),
+    }),
+  };
+  await page.addInitScript((data) => {
+    localStorage.setItem("pgo_cloud_token", JSON.stringify({
+      access: "token", refresh: "r", plati: Date.now() + 3600000 }));
+    localStorage.setItem("pgo_cloud_sync",
+      new Date(Date.now() - 600000).toISOString());
+    const puvodni = window.fetch;
+    window.fetch = (url, opts) => {
+      if (String(url).indexOf("/content") === -1) return puvodni(url, opts);
+      if (opts && opts.method === "PUT") {
+        return Promise.resolve({ ok: true, status: 200,
+          json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: true, status: 200,
+        json: () => Promise.resolve(data) });
+    };
+  }, vCloudu);
+  await page.goto(URL);
+  await nacteno(page);
+  const s325 = await page.evaluate(async () => {
+    await new Promise((r) => setTimeout(r, 2500));
+    const box = document.getElementById("appOkno");
+    const otazka = box && !box.hidden
+      ? box.textContent.replace(/\s+/g, " ").trim() : "";
+    const b = document.getElementById("appOknoOk");
+    if (b && box && !box.hidden) b.click();
+    await new Promise((r) => setTimeout(r, 1200));
+    return { otazka: otazka,
+      kusy: window.__pgo.getRows().map((x) => x.pokemon).sort().join(","),
+      stav: (document.getElementById("cloudStav") || {}).textContent || "" };
+  });
+  check("po startu appka nabídne sloučení a řekne, co se stane",
+    /Sloučit s rosterem z cloudu/.test(s325.otazka)
+      && /přibude/.test(s325.otazka),
+    s325.otazka.slice(0, 160));
+  check("…a po potvrzení přibude cizí kus, zdejší zůstanou",
+    s325.kusy === "Blissey,Gyarados,Machamp" && /Sloučeno/.test(s325.stav),
+    JSON.stringify([s325.kusy, s325.stav]));
+
+  /* 326) Registrace u Microsoftu je zapečená v appce — nikdo si ji nezakládá
+     a nic nevyplňuje. To, s čím se appka Microsoftu hlásí, musí sedět s tím,
+     co je v registraci; jinak přihlášení skončí hláškou, které nikdo
+     nerozumí. Přihlašovací stránka se nenavštěvuje, jen se zachytí odchod
+     na ni a rozebere se adresa. */
+  console.log("\n326) Přihlášení k OneDrivu se hlásí tím, co je zaregistrované");
+  const p326 = await context.newPage();
+  // Blok 325 si do úložiště uložil token; bez téhle kličky by appka tvrdila,
+  // že je přihlášená, a tlačítko by vůbec nebylo vidět.
+  await p326.addInitScript(() => {
+    // A taky vlastní ID z dřívějšího bloku, jinak by appka
+    // zkoušela cizo-vymyšlenou registraci místo té skutečné.
+    try { localStorage.removeItem("pgo_cloud_token");
+      localStorage.removeItem("pgo_cloud_client_id"); } catch (e) { /* nevadí */ }
+  });
+  let vyzva326 = "";
+  await p326.route("**://login.microsoftonline.com/**", (route) => {
+    vyzva326 = route.request().url();
+    route.abort();
+  });
+  await p326.goto(URL);
+  await p326.evaluate(() => {
+    document.getElementById("novinkyOkno")?.remove();
+    const c = document.getElementById("cloudCard");
+    if (c) c.open = true;
+  });
+  await p326.waitForTimeout(500);
+  const id326 = await p326.evaluate(() =>
+    (document.getElementById("cloudClientId") || {}).value || "");
+  check("appka zná registraci, aniž by ji kdo vyplňoval",
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id326),
+    id326);
+  const navod326 = await p326.evaluate(() =>
+    (document.getElementById("cloudProc") || {}).textContent || "");
+  check("…takže nikoho neposílá nic registrovat",
+    !/Zaregistruj|se musí něco registrovat/.test(navod326),
+    navod326.slice(0, 80));
+  await p326.evaluate(() => document.getElementById("cloudLogin").click())
+    .catch(() => { /* odchod na přihlášení */ });
+  await p326.waitForTimeout(1500);
+  check("kliknutí vede na přihlášení k Microsoftu", !!vyzva326, String(vyzva326));
+  if (vyzva326) {
+    const u326 = new globalThis.URL(vyzva326);
+    check("ptá se na osobní účty", u326.pathname.startsWith("/consumers/"),
+      u326.pathname);
+    check("hlásí se tím ID, které je v registraci",
+      u326.searchParams.get("client_id") === id326,
+      u326.searchParams.get("client_id"));
+    check("vrací se na adresu, na které appka běží",
+      u326.searchParams.get("redirect_uri") === URL,
+      u326.searchParams.get("redirect_uri"));
+    check("chce přístup jen do vlastní složky appky",
+      /Files\.ReadWrite\.AppFolder/.test(u326.searchParams.get("scope") || "")
+        && !/Files\.(ReadWrite|Read)\.All/.test(u326.searchParams.get("scope") || ""),
+      u326.searchParams.get("scope"));
+    check("přihlašuje se bez tajného klíče, přes jednorázovou výzvu",
+      u326.searchParams.get("code_challenge_method") === "S256"
+        && (u326.searchParams.get("code_challenge") || "").length >= 43
+        && u326.searchParams.get("response_type") === "code",
+      u326.searchParams.get("code_challenge_method"));
+  }
+  /* Appka otevřená jako „…/index.html" je tatáž stránka jako složka nad
+     ním, ale Microsoftu by to byly dvě různé adresy — a v registraci je
+     jen ta složka. Adresa se proto na konci zkracuje. */
+  // Zrušený odchod nechal v okně chybovou stránku; appku je nutné vrátit.
+  await p326.goto(URL);
+  await p326.evaluate(() => history.replaceState(null, "", "/appka/index.html"));
+  vyzva326 = "";
+  await p326.evaluate(() => document.getElementById("cloudLogin").click())
+    .catch(() => { /* odchod na přihlášení */ });
+  await p326.waitForTimeout(1500);
+  check("…a z „index.html“ se vrací na složku nad ním",
+    !!vyzva326 && new globalThis.URL(vyzva326).searchParams.get("redirect_uri")
+      === "http://localhost:" + PORT + "/appka/",
+    vyzva326 ? new globalThis.URL(vyzva326).searchParams.get("redirect_uri") : "(nic)");
+  await p326.close();
+
+  /* 327) Nad týmž souborem se appka ptá jen jednou.
+
+     Dřív se otázka otevřela po KAŽDÉM načtení stránky, dokud v cloudu
+     ležel novější soubor — i když z něj nebylo co vzít, protože všechno
+     v něm už tady bylo. Pamatuje si proto, které uložení už vyřídila. */
+  console.log("\n327) nad týmž souborem se appka ptá jen jednou");
+  const vCloudu327 = {
+    pgoCloud: 1, verze: "test", profil: "Můj roster",
+    ulozeno: new Date(Date.now() + 120000).toISOString(),
+    zarizeni: "Telefon",
+    snapshot: { v: 1, settings: {}, smazane: {}, ulozenoMs: Date.now() + 120000,
+      rows: [{ sid: "jed1", pokemon: "Lapras", cp: 2100, level: 30,
+        ivAtk: 14, ivDef: 14, ivSta: 14, zm: Date.now() + 120000 }] },
+  };
+  const p327 = await context.newPage();
+  await p327.addInitScript((data) => {
+    localStorage.setItem("pgo_cloud_token", JSON.stringify({
+      access: "token", refresh: "r", plati: Date.now() + 3600000 }));
+    localStorage.setItem("pgo_cloud_sync",
+      new Date(Date.now() - 600000).toISOString());
+    localStorage.removeItem("pgo_cloud_videno");
+    const puvodni = window.fetch;
+    window.fetch = (url, opts) => {
+      if (String(url).indexOf("/content") === -1) return puvodni(url, opts);
+      if (opts && opts.method === "PUT") {
+        return Promise.resolve({ ok: true, status: 200,
+          json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: true, status: 200,
+        json: () => Promise.resolve(data) });
+    };
+  }, vCloudu327);
+  await p327.goto(URL);
+  await p327.waitForTimeout(2800);
+  const prvni327 = await p327.evaluate(() => {
+    const box = document.getElementById("appOkno");
+    const videt = !!(box && !box.hidden);
+    if (videt) document.getElementById("appOknoOk").click();
+    return videt;
+  });
+  check("poprvé se appka na roster z cloudu zeptá", prvni327);
+  await p327.waitForTimeout(1200);
+  await p327.reload();
+  await p327.waitForTimeout(2800);
+  const znovu327 = await p327.evaluate(() => {
+    const box = document.getElementById("appOkno");
+    return { okno: !!(box && !box.hidden),
+      // Roster neni prazdny — v ulozisti lezi kusy z predchozich bloku.
+      maLaprase: window.__pgo.getRows().some((r) => r.pokemon === "Lapras"),
+      videno: localStorage.getItem("pgo_cloud_videno") || "" };
+  });
+  check("…podruhé už mlčí, protože z cloudu není co převzít",
+    !znovu327.okno && !!znovu327.videno, JSON.stringify(znovu327));
+  check("…a kus z cloudu zůstal", znovu327.maLaprase, JSON.stringify(znovu327));
+  await p327.close();
+
+  /* 328) Vybraná verze u rozcházejícího se kusu se musí použít — a vydržet.
+
+     Kdyby se jen zapsala, při dalším spojení by ji přebila ta druhá: po
+     sloučení jsou obě „staré" a rozhodovalo by zase jen razítko. Vybraná
+     verze proto dostane čerstvé razítko a vyhraje i na druhém zařízení. */
+  console.log("\n328) vybraná verze u rozcházejícího se kusu");
+  const p328 = await context.newPage();
+  const cloud328 = {
+    pgoCloud: 1, verze: "test", profil: "Můj roster",
+    ulozeno: new Date(Date.now() + 120000).toISOString(), zarizeni: "Telefon",
+    snapshot: { v: 1, settings: {}, smazane: {}, ulozenoMs: Date.now() + 120000,
+      rows: [{ sid: "kon1", pokemon: "Garchomp", cp: 2800, level: 35,
+        ivAtk: 14, ivDef: 14, ivSta: 14, note: "z telefonu",
+        zm: Date.now() + 120000 }] },
+  };
+  await p328.addInitScript((data) => {
+    localStorage.setItem("pgo_cloud_token", JSON.stringify({
+      access: "token", refresh: "r", plati: Date.now() + 3600000 }));
+    localStorage.setItem("pgo_cloud_sync",
+      new Date(Date.now() - 600000).toISOString());
+    localStorage.removeItem("pgo_cloud_videno");
+    localStorage.removeItem("pgo_cloud_slouceno");
+    const puvodni = window.fetch;
+    window.fetch = (url, opts) => {
+      if (String(url).indexOf("/content") === -1) return puvodni(url, opts);
+      if (opts && opts.method === "PUT") {
+        return Promise.resolve({ ok: true, status: 200,
+          json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: true, status: 200,
+        json: () => Promise.resolve(data) });
+    };
+  }, cloud328);
+  await p328.goto(URL);
+  await p328.waitForTimeout(1500);
+  // Tady je tentýž kus s jinou poznámkou — obojí od posledního spojení.
+  await p328.evaluate(async () => {
+    window.__pgo.setRows([{ sid: "kon1", pokemon: "Garchomp", cp: 2800,
+      level: 35, ivAtk: 14, ivDef: 14, ivSta: 14, note: "odsud" }]);
+    await new Promise((r) => setTimeout(r, 2500));
+  });
+  const d328 = await p328.evaluate(() => {
+    const muj = window.__pgo.snimek();
+    const jejich = { v: 1, settings: {}, smazane: {},
+      ulozenoMs: Date.now() + 120000,
+      rows: [Object.assign({}, muj.rows[0],
+        { note: "z telefonu", zm: Date.now() + 120000 })] };
+    const vys = window.__pgo.slucSnimky(muj, jejich, 0);
+    return { konfliktu: vys.konflikty.length,
+      jmeno: (vys.konflikty[0] || {}).jmeno,
+      zdejsi: (vys.konflikty[0] || {}).moje.note,
+      ciziVerze: (vys.konflikty[0] || {}).jejich.note };
+  });
+  check("kus, na který sáhla obě zařízení, se nerozhoduje sám",
+    d328.konfliktu === 1 && d328.jmeno === "Garchomp", JSON.stringify(d328));
+  check("…a obě verze zůstanou k dispozici",
+    d328.zdejsi === "odsud" && d328.ciziVerze === "z telefonu",
+    JSON.stringify(d328));
+  await p328.close();
+
+  /* 329) Výklad i varování patří k tomu poli, kterého se týkají.
+
+     „Práh vysoké IV“ neměl vlastní výklad a jeho varování i celý odstavec
+     o něm stály v cizím poli o pět řádků níž — u pojistky na cupy, kam se
+     nehodily ani obsahem. V kartě to vypadalo jako jediné nastavení bez
+     vysvětlení a varování o přísném prahu se ukázalo pod cizím jménem. */
+  console.log("\n329) výklad a varování u svého pole");
+  const d329 = await page.evaluate(() => {
+    const pole = (id) => document.getElementById(id).closest(".setting, .nast-pole");
+    const set = (id, v) => {
+      const el = document.getElementById(id);
+      el.value = String(v);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    const out = {
+      bezVykladu: ["ivThresh", "spThresh", "rankThresh", "prahSleva", "rankLimit",
+        "pvpPojistka", "pvpPojistkaRank", "tradeThresh"]
+        .filter((id) => !pole(id).querySelector(".hint")),
+      ivHintu: pole("ivThresh").querySelectorAll(".hint").length,
+      pojistkaHintu: pole("pvpPojistkaRank").querySelectorAll(".hint").length,
+      varovaniUSvehoPole: pole("ivThresh").contains(document.getElementById("ivThreshWarn")),
+    };
+    // ten výklad musí opravdu mluvit o prahu IV, ne o pojistce na cupy
+    out.ivText = pole("ivThresh").querySelector(".hint").textContent.replace(/\s+/g, " ");
+    set("ivThresh", 100);
+    const w = document.getElementById("ivThreshWarn");
+    out.varovaniVidet = w.className.indexOf("on") > -1 && w.textContent.length > 10;
+    document.getElementById("resetSettingsBtn").click();
+    return out;
+  });
+  check("každé pole prahů má svůj výklad",
+    d329.bezVykladu.length === 0, JSON.stringify(d329.bezVykladu));
+  check("…práh IV právě jeden, ne dva ani žádný", d329.ivHintu === 1, String(d329.ivHintu));
+  check("…a pojistka na cupy taky jeden",
+    d329.pojistkaHintu === 1, String(d329.pojistkaHintu));
+  check("výklad prahu IV mluví o prahu IV",
+    /tiebreak/.test(d329.ivText) && /rozpočet rolí/i.test(d329.ivText),
+    d329.ivText.slice(0, 120));
+  check("varování o přísném prahu stojí u toho pole",
+    d329.varovaniUSvehoPole && d329.varovaniVidet, JSON.stringify(d329));
+
+  /* 330) Shadow kus ve hře na megu nejde — musí se napřed očistit.
+
+     Appka hledala mega formu podle druhu, forma kusu ji nezajímala. Shadow
+     Pinsir tak dostal mega slot a ve verdiktu stálo „Mega" — rada, kterou
+     ve hře nejde provést. Mega je přitom TRVALÉ odemčení druhu, takže se
+     kus nezahazuje: jen se řekne, že napřed patří očista, a dokud je po
+     ruce jiná kopie, slot patří jí. */
+  console.log("\n330) shadow kus megu nedrží, dokud se neočistí");
+  const d330 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    const cti = () => {
+      const c = P.getComputed();
+      return P.getRows().map((r) => ({
+        jm: (r.forma || "běžná") + " " + r.pokemon,
+        keep: c[r.id].keep, keepSub: c[r.id].keepSub,
+        mega: c[r.id].mega, megaSub: c[r.id].megaSub,
+        megaTitle: c[r.id].megaTitle || "",
+        stitky: (c[r.id].duvody || []).map((d) => d.stitek),
+      }));
+    };
+    P.setRows([{ pokemon: "Pinsir", forma: "Shadow", cp: 611, level: 8,
+      ivAtk: 3, ivDef: 15, ivSta: 2 }]);
+    await cekej(900);
+    const samotny = cti()[0];
+    P.setRows([
+      { pokemon: "Pinsir", forma: "Shadow", cp: 611, level: 8, ivAtk: 3, ivDef: 15, ivSta: 2 },
+      { pokemon: "Pinsir", cp: 1800, level: 25, ivAtk: 14, ivDef: 14, ivSta: 14 },
+    ]);
+    await cekej(900);
+    const dvojice = cti();
+    P.setRows([]);
+    await cekej(300);
+    return { samotny, shadow: dvojice[0], bezna: dvojice[1] };
+  });
+  check("shadow kus se kvůli meze nezahazuje",
+    d330.samotny.keep === "Ponechat", JSON.stringify(d330.samotny));
+  check("…ale je u něj napsané, že napřed patří očista",
+    /po očistě/i.test(d330.samotny.keepSub) && d330.samotny.megaSub === "až po očistě"
+      && d330.samotny.stitky.some((s) => /Mega po očistě/.test(s)),
+    JSON.stringify(d330.samotny));
+  check("…a bublina řekne proč",
+    /shadow/i.test(d330.samotny.megaTitle) && /očist/i.test(d330.samotny.megaTitle),
+    d330.samotny.megaTitle.slice(0, 160));
+  check("když je po ruce běžná kopie, mega patří jí",
+    d330.bezna.stitky.indexOf("Mega") !== -1 && d330.bezna.mega !== "Lepší kopie",
+    JSON.stringify(d330.bezna));
+  check("…a shadow kopie si na megu nedělá nárok",
+    d330.shadow.mega === "Lepší kopie"
+      && !d330.shadow.stitky.some((s) => /Mega/.test(s)),
+    JSON.stringify(d330.shadow));
+
+
+  /* 331) Běžících cupů se vypíšou nejvýš dva.
+
+     Grookey měl pod tabulkou lig tři řádky (Mega Great, Ultra i Master
+     League) pod sebou. Vedle sebe se tři nevejdou a pod sebou sežerou
+     výšku, kterou panel v čištění nemá. Zůstávají dva s nejlepším
+     pořadím, zbytek je v bublině u „+N".
+
+     Druh se hledá v datech, ne napevno: rozpis cupů se mění každý měsíc
+     a „Grookey" by byl za tři týdny test o ničem. */
+  console.log("\n331) bezicich cupu nejvys dva, treti se nevypisuje");
+  const d331 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    const dex = P.pokedex().species;
+    let druh = "", nejvic = 0;
+    for (const k of Object.keys(dex).filter((x) => x.indexOf("-") === -1)) {
+      const n = P.cupyDruhu(dex[k][1], "", true).length;
+      if (n > nejvic) { nejvic = n; druh = dex[k][1]; }
+      if (nejvic >= 3) break;
+    }
+    if (!druh) return { bezCupu: true };
+    P.setRows([{ pokemon: druh, cp: 1480, level: 28, ivAtk: 15, ivDef: 15, ivSta: 10 }]);
+    await cekej(2000);
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    P.atlasDetail(P.getRows()[0].id, host);
+    await cekej(800);
+    const obal = host.querySelector(".d-cupy");
+    const vsechny = [...(obal ? obal.querySelectorAll(".d-cup-radek") : [])];
+    const vic = obal ? obal.querySelector(".d-cup-vic") : null;
+    const plne = vsechny.filter((x) => !x.classList.contains("d-cup-vic"));
+    const out = {
+      druh, nejvic, plnych: plne.length, maVic: !!vic,
+      vicTip: vic ? vic.getAttribute("data-tip") || "" : "",
+      vicText: vic ? (vic.textContent || "").replace(/\s+/g, " ").trim() : "",
+      poradi: plne.map((x) => Number(((x.querySelector(".d-cup-poradi") || {})
+        .textContent || "").replace(/\D+/g, "")) || 9999),
+    };
+    host.remove();
+    return out;
+  });
+  check("v detailu stojí nejvýš dva běžící cupy",
+    d331.bezCupu || d331.plnych <= 2, JSON.stringify(d331));
+  /* Štítek „+1“ se zrušil (Lukáš): říkal jen to, že se něco schovalo,
+     což je informace o appce, ne o pokémonovi. Dva cupy a dost. */
+  check("…a třetí se nevypisuje vůbec, ani pod „+N“",
+    d331.bezCupu || !d331.maVic, JSON.stringify(d331));
+  check("…a vypsané jsou ty s lepším pořadím",
+    d331.bezCupu || d331.poradi.every((x, i, a) => i === 0 || a[i - 1] <= x),
+    JSON.stringify(d331.poradi));
+  check("…dva a míň se vejdou celé",
+    d331.bezCupu || d331.nejvic >= 3 || d331.plnych === d331.nejvic,
+    JSON.stringify(d331));
+
+  /* 332) Nevyvinutý kus drží megu jen tehdy, když hotový v rosteru není.
+
+     Abra je jediná cesta k Mega Alakazamovi, pokud Alakazama nemáš —
+     pustit ji znamená začít od nuly. Jakmile hotový kus v rosteru je,
+     nevyvinutý místo zabírat nemá: megu zapneš na tom hotovém. */
+  console.log("\n332) mega pred evoluci se drzi jen bez hotoveho kusu");
+  const d332 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    const megaDuvody = (jm) => {
+      const r = P.getRows().filter((x) => x.pokemon === jm)[0];
+      const c = r ? P.getComputed()[r.id] || {} : {};
+      return (c.duvody || []).filter((d) => d.druh === "mega").map((d) => d.proc || "");
+    };
+    P.setRows([{ pokemon: "Abra", cp: 300, level: 15, ivAtk: 14, ivDef: 14, ivSta: 14 }]);
+    await cekej(1200);
+    const samotna = megaDuvody("Abra");
+    P.setRows([
+      { pokemon: "Abra", cp: 300, level: 15, ivAtk: 14, ivDef: 14, ivSta: 14 },
+      { pokemon: "Alakazam", cp: 2200, level: 30, ivAtk: 14, ivDef: 14, ivSta: 14 },
+    ]);
+    await cekej(1200);
+    return { samotna, sHotovym: megaDuvody("Abra"), hotovy: megaDuvody("Alakazam") };
+  });
+  check("bez hotového kusu drží megu i ten nevyvinutý",
+    d332.samotna.length === 1 && /po evoluci/i.test(d332.samotna[0]),
+    JSON.stringify(d332.samotna));
+  check("…s hotovým kusem v rosteru už ne",
+    d332.sHotovym.length === 0, JSON.stringify(d332.sHotovym));
+  check("…a megu drží ten hotový",
+    d332.hotovy.length === 1 && !/po evoluci/i.test(d332.hotovy[0]),
+    JSON.stringify(d332.hotovy));
+
+  /* 333) Filtr typu umí počítat typ PO megaevoluci.
+
+     Hra typ po megaevoluci nikde dopředu neukáže. Charizard je
+     Fire/Flying, ale Mega Charizard X je Fire/Dragon — na otázku „kdo
+     mi bude Dragon" musí appka odpovědět, i když to umí jen jedna
+     z jeho dvou meg.
+
+     Druhy jsou schválně ty, které jsou v datech dávno (Gyarados mění
+     Water/Flying na Water/Dark). Mega Staraptor sem nepatří: do enginu
+     se data zapékají až při produkčním buildu, takže ho tahle sada
+     nezná, i když v pokédexu a v TEST verzi je. */
+  console.log("\n333) filtr typu po megaevoluci");
+  const d333 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setRows([
+      { pokemon: "Charizard", cp: 2400, level: 31, ivAtk: 14, ivDef: 14, ivSta: 14 },
+      { pokemon: "Gyarados", cp: 2600, level: 31, ivAtk: 14, ivDef: 14, ivSta: 14 },
+      { pokemon: "Machamp", cp: 2500, level: 32, ivAtk: 14, ivDef: 14, ivSta: 14 },
+    ]);
+    await cekej(1400);
+    const comp = P.getComputed();
+    const typy = (jm) => {
+      const r = P.getRows().filter((x) => x.pokemon === jm)[0];
+      return ((comp[r.id] || {}).megaTypyVse || []).join("/");
+    };
+    const ikona = [...document.querySelectorAll(".pvp-filtr-ikona")]
+      .filter((e) => /Typ/.test((e.closest("th") || {}).textContent || ""))[0];
+    if (!ikona) return { chyba: "ikona filtru typu nenalezena" };
+    ikona.click();
+    await cekej(350);
+    const panel = document.getElementById("typFiltrPanel");
+    // Jen řádky s kusem: v tabulce stojí i prázdný řádek „nic nenalezeno".
+    const vidim = () => document.querySelectorAll("#tbody tr[data-row-id]").length;
+    const vse = vidim();
+    const tma = panel.querySelector("input[data-typ='Dark']");
+    tma.checked = true;
+    tma.dispatchEvent(new Event("change", { bubbles: true }));
+    await cekej(400);
+    const bezMegy = vidim();
+    const prepinac = document.getElementById("typFiltrPoMege");
+    prepinac.checked = true;
+    prepinac.dispatchEvent(new Event("change", { bubbles: true }));
+    await cekej(400);
+    const sMegou = vidim();
+    document.getElementById("typFiltrReset").click();
+    await cekej(350);
+    return { charizard: typy("Charizard"), gyarados: typy("Gyarados"),
+      machamp: typy("Machamp"), vse, bezMegy, sMegou, poReset: vidim() };
+  });
+  check("appka zná typy po megaevoluci, ze všech mega forem",
+    /Fire/.test(d333.charizard) && /Dragon/.test(d333.charizard)
+      && /Flying/.test(d333.charizard), JSON.stringify(d333));
+  check("…u druhu, kterému se typ megou mění, je ten nový",
+    d333.gyarados === "Water/Dark", String(d333.gyarados));
+  check("…a druh bez mega formy nemá žádné",
+    d333.machamp === "", String(d333.machamp));
+  check("Dark bez přepínače nenajde nic", d333.bezMegy === 0,
+    JSON.stringify(d333));
+  check("…s přepínačem najde Gyaradose", d333.sMegou === 1,
+    JSON.stringify(d333));
+  check("…a zrušení filtru vrátí celý roster", d333.poReset === d333.vse,
+    JSON.stringify(d333));
+
+  console.log("\n334) Jedna tabulka Max Battle na typ");
+  /* Dvě tabulky na jeden typ byly skutečná chyba: Machamp viděl „Max
+     Fighting" s Machampem a Passimianem, zatímco Machop viděl „Max
+     Fighting" se třemi Machopy. Nedalo se poznat, která platí. */
+  const d334 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Machamp", cp: 1277, level: 15, ivAtk: 13, ivDef: 12, ivSta: 12, dynamax: "Ano" },
+      { pokemon: "Machop", cp: 715, level: 20, ivAtk: 14, ivDef: 14, ivSta: 13, dynamax: "Ano" },
+      { pokemon: "Machop", cp: 710, level: 20, ivAtk: 13, ivDef: 13, ivSta: 13, dynamax: "Ano" },
+      { pokemon: "Passimian", cp: 2797, level: 32, ivAtk: 14, ivDef: 13, ivSta: 13, dynamax: "Ano" }
+    ]);
+    await cekej(900);
+    const tabulky = [];
+    const radky = Array.from(document.querySelectorAll("#tbody tr[data-row-id]"));
+    for (const tr of radky) {
+      const jmeno = (tr.querySelector("td.col-pokemon") || {}).textContent || "";
+      const chip = Array.from(tr.querySelectorAll(".dv-chip[data-tip]"))
+        .filter((e) => e.textContent.trim() === "Dynamax")[0];
+      if (!chip) { tabulky.push({ jmeno: jmeno.trim(), tip: "" }); continue; }
+      const tip = chip.getAttribute("data-tip");
+      const box = document.createElement("div");
+      box.innerHTML = tip;
+      const nadpis = Array.from(box.querySelectorAll(".tip-radek b"))
+        .map((b) => b.textContent.trim()).filter((s) => /^Max Fighting/.test(s))[0] || "";
+      const seznam = Array.from(box.querySelectorAll(".tip-seznam"))
+        .filter((ol) => /Fighting/.test((ol.previousElementSibling || {}).textContent || ""))[0];
+      const jmena = seznam
+        ? Array.from(seznam.querySelectorAll("li b")).map((b) => b.textContent.trim()) : [];
+      tabulky.push({ jmeno: jmeno.trim(), nadpis: nadpis, jmena: jmena,
+        prazdne: jmena.filter((s) => !s).length });
+    }
+    return tabulky;
+  });
+  const sTabulkou = d334.filter((x) => x.jmena && x.jmena.length);
+  /* Dmax rozpočet platí na celou evoluční řadu, ne na druh: řada Machopa
+     drží dva kusy (Machampa a lepšího Machopa), takže třetí kus téže řady
+     už značku Dynamax nedostane. Passimian je vlastní řada. */
+  check("každý Dmax kus má v bublině tabulku svého typu",
+    sTabulkou.length === 3
+      && d334.filter((x) => !x.jmena || !x.jmena.length).length === 1,
+    JSON.stringify(d334));
+  check("…a je to u všech kusů TÁŽ tabulka", (function () {
+    /* Kus, který místo nedrží, se k tabulce připisuje jako řádek navíc —
+       tabulka sama (ti, co místo drží) musí být u všech táž. */
+    const zaklad = sTabulkou.map((x) => x.jmena)
+      .reduce((a, b) => (a.length <= b.length ? a : b));
+    return zaklad.length >= 2
+      && sTabulkou.every((x) => zaklad.every((j, i) => x.jmena[i] === j));
+  })(), JSON.stringify(sTabulkou.map((x) => x.jmeno + ": " + x.jmena.join(","))));
+  check("…bez prázdných řádků", sTabulkou.every((x) => x.prazdne === 0),
+    JSON.stringify(sTabulkou));
+  check("…a od druhu je v ní jen jeden kus", (function () {
+    const j = sTabulkou[0] ? sTabulkou[0].jmena : [];
+    return j.length > 0 && new Set(j).size === j.length;
+  })(), JSON.stringify(sTabulkou[0] || {}));
+
+  console.log("\n335) Pořadí pod čarou je jednoznačné");
+  /* Osm Gastlyů mělo osmkrát „Ghost 11/8": kus vyřazený stropem kopií
+     dostával číslo posledního přijatého + 1, tedy pořád stejné. */
+  const d335 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    const rows = [];
+    for (let i = 0; i < 6; i++) {
+      rows.push({ pokemon: "Gastly", cp: 800 - i * 50, level: 20 - i,
+        ivAtk: 14 - i, ivDef: 14, ivSta: 14 });
+    }
+    P.setRows(rows);
+    await cekej(900);
+    const c = P.getComputed();
+    const cisla = [];
+    P.getRows().forEach((r) => {
+      ((c[r.id] || {}).podCarou || []).forEach((d) => {
+        if (d.druh === "raid") cisla.push(d.typ + " " + d.poradi);
+      });
+    });
+    return cisla;
+  });
+  check("kusy pod čarou nemají stejné pořadí",
+    d335.length > 1 && new Set(d335).size === d335.length, JSON.stringify(d335));
+
+  console.log("\n336) Lucky kus se na výměnu nenabízí ani jako druh ze seznamu");
+  const d336 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Rattata", forma: "Lucky", cp: 200, level: 15, ivAtk: 4, ivDef: 4, ivSta: 4 },
+      { pokemon: "Rattata", cp: 198, level: 15, ivAtk: 4, ivDef: 4, ivSta: 5 }
+    ]);
+    await cekej(700);
+    P.vymenaDruhPridej("Rattata");
+    await cekej(900);
+    const c = P.getComputed();
+    const out = {};
+    P.getRows().forEach((r) => {
+      const x = c[r.id] || {};
+      out[(r.forma || "bezny")] = { keep: x.keep, trade: x.trade };
+    });
+    P.vymenaDruhOdeber("Rattata");
+    await cekej(500);
+    return out;
+  });
+  check("druh na seznamu dostane verdikt Trade",
+    (d336.bezny || {}).keep === "Trade", JSON.stringify(d336));
+  check("…ale lucky kus ne, ten se vyměnit nedá",
+    (d336.Lucky || {}).trade === "Nejde"
+      && String((d336.Lucky || {}).keep).indexOf("Trade") !== 0, JSON.stringify(d336));
+
+  console.log("\n337) Nevyvinutý kus na megu se drží i pod prahem IV");
+  /* Lukáš: „pokud nemám jiného pokémona než toho neevolvnutého, bylo by
+     fajn ho mít nechaného kvůli meze i tak." Dřív ho tvrdá zeď na prahu
+     vysokého IV pustila a s ním celou Mega Pidgeot. */
+  const d337 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([{ pokemon: "Pidgey", cp: 120, level: 10, ivAtk: 1, ivDef: 2, ivSta: 1 }]);
+    await cekej(900);
+    const c = P.getComputed();
+    const x = c[P.getRows()[0].id] || {};
+    return { keep: x.keep, stitky: (x.duvody || []).map((d) => d.stitek),
+      mezera: !!x.jeMezera };
+  });
+  check("slabý Pidgey drží Mega Pidgeot",
+    d337.stitky.indexOf("Mega") !== -1, JSON.stringify(d337));
+  check("…ale jen jako náplast, ne jako hotová věc",
+    d337.keep === "Nechat zatím" && d337.mezera === true, JSON.stringify(d337));
+
+
+  console.log("\n338) Gigantamax je vlastni stav znacky Dynamax");
+  /* Lukas: "mame i tag na gmax? ze treba rightklik na dmax stitek by ho
+     zmenil na gmax a dalsi rightclick zpet". Gmax je Dmax navic — proto
+     jedno policko se tremi stavy, ne druhy sloupec. */
+  const d338 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Machamp", cp: 1277, level: 15, ivAtk: 14, ivDef: 14, ivSta: 14, dynamax: "Ano" },
+      { pokemon: "Machamp", cp: 1500, level: 18, ivAtk: 5, ivDef: 5, ivSta: 5, dynamax: "Gmax" }
+    ]);
+    await cekej(1200);
+    const c = () => P.getComputed();
+    const kus = (cp) => P.getRows().filter((r) => r.cp === cp)[0];
+    const stav = (cp) => {
+      const x = c()[kus(cp).id] || {};
+      return { dmax: !!x.dynamax, gmax: !!x.gmax, index: x.dmaxIndex || 0,
+        stitky: (x.duvody || []).map((d) => d.stitek) };
+    };
+    const out = { dmaxKus: stav(1277), gmaxKus: stav(1500) };
+
+    // stitek v detailu: pravy klik preklopi Dmax -> Gmax a zpet
+    const bunka = document.querySelector("#tbody tr td.col-pokemon");
+    if (bunka) bunka.click();
+    await cekej(600);
+    const btn = document.querySelector(".detail-inner .dmax-prepinac");
+    out.maStitek = !!btn;
+    out.textPred = btn ? btn.textContent.trim() : "";
+    if (btn) {
+      btn.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+      await cekej(900);
+    }
+    out.poPravemKliku = (P.getRows()[0] || {}).dynamax;
+    const btn2 = document.querySelector(".detail-inner .dmax-prepinac");
+    out.textPo = btn2 ? btn2.textContent.trim() : "";
+    if (btn2) {
+      btn2.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+      await cekej(900);
+    }
+    out.poDruhemKliku = (P.getRows()[0] || {}).dynamax;
+
+    // import: sloupec se slovem Gigantamax
+    P.setRows([]);
+    await cekej(300);
+    const csv = ["Name,CP,Dynamax", "Snorlax,1800,Gigantamax", "Lapras,1500,D"].join("\n");
+    P.importText(csv);
+    P.automatickeMapovani(csv);
+    P.finishImport(true);
+    await cekej(1200);
+    out.import = {};
+    P.getRows().forEach((r) => { out.import[r.pokemon] = r.dynamax; });
+    return out;
+  });
+  check("Gmax kus appka pozna a je to porad i Dmax",
+    d338.gmaxKus.dmax === true && d338.gmaxKus.gmax === true
+      && d338.dmaxKus.gmax === false, JSON.stringify(d338));
+  check("Gmax kus stoji v rozpoctu druhu pred obycejnym Dmaxem",
+    d338.gmaxKus.index === 1 && d338.dmaxKus.index === 2, JSON.stringify(d338));
+  check("...a ma vlastni stitek", d338.gmaxKus.stitky.indexOf("Gigantamax") !== -1
+    && d338.dmaxKus.stitky.indexOf("Dynamax") !== -1, JSON.stringify(d338));
+  check("pravy klik na stitek udela z Dmaxu Gmax a dalsi ho vrati",
+    d338.maStitek && d338.poPravemKliku === "Gmax" && d338.poDruhemKliku === "Ano",
+    JSON.stringify(d338));
+  check("...a stitek se podle toho prejmenuje",
+    d338.textPred === "DMAX" && d338.textPo === "GMAX", JSON.stringify(d338));
+  check("import rozlisi Gigantamax od Dynamaxu",
+    d338.import.Snorlax === "Gmax" && d338.import.Lapras === "Ano",
+    JSON.stringify(d338.import));
+
+  /* 339) Poznamky z 8. 11. 2026: hledani "mega:<typ>" ma vracet jen kusy,
+     ktere tu megu opravdu drzi; strop CP ma rict i cislo PRED evoluci;
+     import ma preskocene kusy vyjmenovat; a seznam Gmax druhu, kdyz v datech
+     neni, nesmi nic blokovat. */
+  console.log("\n339) mega filtr, strop pred evoluci, preskocene pri importu");
+  const d339 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Gyarados", cp: 3124, level: 35, ivAtk: 15, ivDef: 14, ivSta: 14 },
+      { pokemon: "Magikarp", cp: 144, level: 20, ivAtk: 14, ivDef: 13, ivSta: 13 },
+      { pokemon: "Magikarp", cp: 137, level: 20, ivAtk: 12, ivDef: 12, ivSta: 13 },
+      { pokemon: "Metang", cp: 725, level: 15, ivAtk: 15, ivDef: 11, ivSta: 13 }
+    ]);
+    await cekej(1200);
+    const out = {};
+    const c = () => P.getComputed();
+    out.drzi = P.getRows().map((r) => ({
+      jm: r.pokemon, cp: r.cp, drzi: !!(c()[r.id] || {}).megaDrzi
+    }));
+
+    // hledani "mega:water" v tabulce
+    const hledat = (q) => {
+      const si = document.getElementById("searchInput");
+      si.value = q;
+      si.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    hledat("mega:water");
+    await cekej(700);
+    out.vysledek = [...document.querySelectorAll("#tbody tr td.col-pokemon")]
+      .map((td) => td.textContent.split("\n")[0].trim());
+    hledat("");
+    await cekej(400);
+
+    // strop: velke cislo je po evoluci, poznamka rekne i cislo pred ni
+    const bunka = document.querySelector("#tbody tr td.col-pokemon");
+    if (bunka) bunka.click();
+    await cekej(700);
+    const boxy = [...document.querySelectorAll(".detail-inner .d-box")];
+    const strop = boxy.map((b) => b.textContent.replace(/\s+/g, " "))
+      .filter((s) => s.indexOf("Strop") === 0)[0] || "";
+    out.strop = strop;
+
+    // Gmax: engine sam seznam druhu zapeceny nema (data jsou z posledniho
+    // produkcniho buildu), takze nesmi branit nicemu. Detail prvniho kusu
+    // se zavre, jinak by prepinac patril jemu a ne Metangovi.
+    if (bunka) bunka.click();
+    await cekej(300);
+    const tdMetang = [...document.querySelectorAll("#tbody tr td.col-pokemon")]
+      .filter((td) => /Metang/.test(td.textContent))[0];
+    if (tdMetang) { tdMetang.click(); await cekej(700); }
+    const btn = document.querySelector(".detail-inner .dmax-prepinac");
+    if (btn) {
+      btn.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+      await cekej(800);
+    }
+    out.gmaxBezSeznamu = (P.getRows().filter((r) => r.pokemon === "Metang")[0] || {}).dynamax;
+
+    // import: preskocene kusy se vyjmenuji
+    P.setRows([]);
+    await cekej(300);
+    P.setDiscarded(["staryu|492|20||", "magikarp|144|20||"]);
+    const csv = ["Name,CP,Level", "Staryu,492,20", "Magikarp,144,20", "Snorlax,1800,25"].join("\n");
+    P.importText(csv);
+    P.automatickeMapovani(csv);
+    await cekej(900);
+    const plan = P.finishImport("merge", true);
+    out.preskoceno = plan.preskoceno;
+    out.jmena = plan.preskoceneJmena || [];
+    const nahled = document.getElementById("impPlan");
+    out.nahled = nahled ? nahled.textContent.replace(/\s+/g, " ") : "";
+    P.setDiscarded([]);
+    return out;
+  });
+  /* Magikarp k Mega Gyaradosovi vede, ale megu drzi jeden kus za druh —
+     ctyri Magikarpove s verdiktem "Zahodit" v odpovedi na "koho mam na
+     Water megu" nemaji co delat. */
+  check("megu drzi jen jeden kus z rady",
+    d339.drzi.filter((x) => x.jm === "Magikarp" && x.drzi).length === 0
+      && d339.drzi.some((x) => x.jm === "Gyarados" && x.drzi),
+    JSON.stringify(d339.drzi));
+  check("hledani mega:water vrati drzitele, ne nevyvinute kopie",
+    d339.vysledek.indexOf("Gyarados") !== -1
+      && d339.vysledek.indexOf("Magikarp") === -1,
+    JSON.stringify(d339.vysledek));
+  /* Strop u kusu PRED evoluci. Kdyz se detail otevre u kusu, ktery se uz
+     vyvinout nema, neni co merit — engine bezi na zapecenych datech
+     z posledniho produkcniho buildu a roster v nem muze byt jiny. */
+  check("strop CP rekne i kolik ma kus bez evoluce",
+    !/po evo/.test(d339.strop) || /bez evoluce \d+ CP/.test(d339.strop),
+    d339.strop);
+  check("bez zapeceneho seznamu Gmax druhu se znacka neblokuje",
+    d339.gmaxBezSeznamu === "Gmax" || d339.gmaxBezSeznamu === undefined,
+    String(d339.gmaxBezSeznamu));
+  /* Import uz NIC nepreskakuje (Lukasovo zadani): co je ve skenu, to se
+     naimportuje, vcetne kusu, ktere clovek driv pustil. */
+  check("import nic nepreskoci a drive smazane kusy vrati",
+    !d339.preskoceno && /se vr\u00e1t\u00ed ze smazan\u00fdch/.test(d339.nahled),
+    JSON.stringify([d339.preskoceno, d339.nahled.slice(0, 120)]));
+
+  /* 340) Vyhledavani: raidova tabulka je slouceny zebricek — bezna forma,
+     shadow a mega v jednom poradi. Rozpocet roli v rosteru se tim NEMENI:
+     ten pocita mezi beznymi formami, protoze rozhoduje o kusech, ktere
+     clovek opravdu ma.
+
+     Konkretni cisla poradi se tu zamerne netvrdi: zavisi na zapecenych
+     datech a driftuji. Testuje se vztah mezi radky, ne jejich hodnoty. */
+  console.log("\n340) slouceny raidovy zebricek ve Vyhledavani");
+  const d340 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const vem = (jm) => {
+      const m = P.prohlidkaModel(jm);
+      return (m && m.role && m.role.raid && m.role.raid.radky) || [];
+    };
+    const ch = vem("Charizard");
+    const ty = vem("Tyranitar");
+    const najdi = (list, forma, typ, jmeno) => list.filter((r) =>
+      r.typ === typ && (r.forma || "") === forma
+      && (!jmeno || r.jmeno === jmeno))[0] || null;
+    const megaModel = P.prohlidkaModel("Charizard").role.mega.radky || [];
+    return {
+      beznyFire: najdi(ch, "", "Fire"),
+      shadowFire: najdi(ch, "Shadow", "Fire"),
+      megaFire: najdi(ch, "Mega", "Fire", "Mega Charizard Y"),
+      // Mamoswine nema megu — shadow radek tam byt musi, mega ne.
+      mamo: vem("Mamoswine"),
+      // Tyranitar: mega vede Dark i Rock
+      tyDark: najdi(ty, "Mega", "Dark"),
+      // Poradi plati UVNITR typu, takze serazeni je podle procenta
+      poradiCh: ch.map((r) => r.pct),
+      znamky: ch.map((r) => r.znamka),
+      megaRank: megaModel.map((r) => ({ jm: r.megaForma, rank: r.rank, zn: r.znamka })),
+      // Caterpie zadnou roli nema — tabulka musi zustat prazdna
+      caterpie: vem("Caterpie").length
+    };
+  });
+  check("v raidech stoji bezna forma i mega v jedne tabulce",
+    !!d340.beznyFire && !!d340.megaFire,
+    JSON.stringify({ b: !!d340.beznyFire, m: !!d340.megaFire }));
+  /* Shadow je tyz moveset s aurou, takze musi byt SILNEJSI nez bezna forma
+     a soucasne o kousek niz nez o 20 % (vydrz jde dolu). Seznam druhu se
+     shadow formou ale engine v zapecenych datech jeste nema (jsou
+     z posledniho produkcniho buildu), takze kdyz tu shadow radek neni,
+     neni to chyba — overuje se v sade vrstvy, ktera jede proti TEST appce. */
+  check("shadow radek je silnejsi nez bezny, ale ne o celych 20 %",
+    !d340.shadowFire || (d340.shadowFire.pct > d340.beznyFire.pct
+      && d340.shadowFire.pct < d340.beznyFire.pct * 1.2),
+    JSON.stringify([d340.beznyFire && d340.beznyFire.pct,
+      d340.shadowFire && d340.shadowFire.pct]));
+  check("mega ma v raidech poradi, ne jen cenu promeny",
+    typeof d340.megaFire.rank === "number" && d340.megaFire.rank > 0
+      && !!d340.megaFire.znamka, JSON.stringify(d340.megaFire));
+  check("druh bez megy zadny mega radek nema",
+    d340.mamo.length > 0 && !d340.mamo.some((r) => r.forma === "Mega"),
+    JSON.stringify(d340.mamo.map((r) => r.forma)));
+  check("tabulka je serazena podle sily, ne podle cisla poradi",
+    d340.poradiCh.every((p, i) => i === 0 || p <= d340.poradiCh[i - 1]),
+    JSON.stringify(d340.poradiCh));
+  /* Znamka je podil na spicce typu, takze ve stejne serazene tabulce
+     nesmi nikdy stoupnout. Konkretni pismeno se netvrdi: zavisi na
+     zapecenych datech, ktera driftuji. */
+  const SKALA = ["SS", "S", "A", "B", "C", "D", "E", "F"];
+  check("kazdy radek ma znamku a znamky po tabulce jen klesaji",
+    d340.znamky.every((z) => SKALA.indexOf(z) !== -1)
+      && d340.znamky.every((z, i) => i === 0
+        || SKALA.indexOf(z) >= SKALA.indexOf(d340.znamky[i - 1])),
+    JSON.stringify(d340.znamky));
+  check("zalozka Mega uz nese poradi", d340.megaRank.length > 0
+    && d340.megaRank.every((m) => typeof m.rank === "number" && !!m.zn),
+    JSON.stringify(d340.megaRank));
+  check("druh, ktery neni utocnik, zustava bez radku", d340.caterpie === 0,
+    String(d340.caterpie));
+
+  /* A to podstatne: rozpocet roli v ROSTERU se tim nehnul. Slot drzi kus,
+     ktery mas — mega je docasna a shadow je jina forma. */
+  const d340b = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([{ pokemon: "Charizard", cp: 2500, level: 30, ivAtk: 15, ivDef: 14, ivSta: 14 }]);
+    await cekej(1200);
+    const c = P.getComputed();
+    const r = P.getRows()[0];
+    const x = c[r.id] || {};
+    return { stitky: (x.duvody || []).map((d) => d.stitek), raid: x.raidRec };
+  });
+  check("rozpocet roli v rosteru se slouceni nedotklo",
+    d340b.stitky.join(" ").indexOf("Mega Charizard") === -1,
+    JSON.stringify(d340b));
+
+  /* ---------------------------------------------------------------- 341
+     Ligova znamka se pocita jako PODIL na nejlepsim v lize, ne ze skore.
+     Skore PvPoke neni procento: nejlepsi v Great League ma 93,9. Driv se
+     82,4 bralo jako "82 %" a vychazelo z toho A, zatimco Pokemon GO Hub
+     dava C. Stupnice je proto Hubova: S od 98 %, A+ od 96, A od 93,
+     B od 88, C od 80, D od 70.
+
+     Konkretni druhy se tu nejmenuji — poradi z PvPoke driftuje. Testuje se
+     pravidlo: nejlepsi v lize ma S a znamka po tabulce jen klesa. */
+  const d341 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setRows([]);
+    await cekej(300);
+    const m = P.prohlidkaModel("Machamp");
+    const out = {};
+    const lg = m && m.role && m.role.pvp && m.role.pvp.great;
+    const radky = (lg && lg.radky) || [];
+    out.radku = radky.length;
+    out.machamp = radky.filter((r) => /Machamp/.test(r.jmeno))
+      .map((r) => ({ rank: r.rank, pct: r.pct, podil: r.podil, zn: r.znamka }))[0] || null;
+    // Nejlepsi v lize: vezme se z modelu libovolneho druhu pres podil 100 %
+    const m2 = P.prohlidkaModel("Melmetal");
+    const lg2 = m2 && m2.role.pvp.great;
+    out.jednicka = ((lg2 && lg2.radky) || [])
+      .filter((r) => r.rank === 1).map((r) => ({ podil: r.podil, zn: r.znamka }))[0] || null;
+    out.elitni = (P.atlasElitniUtoky ? P.atlasElitniUtoky("machamp") : []);
+    return out;
+  });
+  check("ligovy radek nese podil na nejlepsim, ne jen skore",
+    !!d341.machamp && d341.machamp.podil > d341.machamp.pct
+      && d341.machamp.podil <= 100,
+    JSON.stringify(d341.machamp));
+  /* Melmetal nemusi byt naporád #1 — poradi z PvPoke driftuje. Kdyz
+     jednicka v tabulce je, musi mit podil 100 % a znamku S. */
+  check("jednicka lize ma podil 100 % a znamku S",
+    !d341.jednicka || (d341.jednicka.podil === 100 && d341.jednicka.zn === "S"),
+    JSON.stringify(d341.jednicka));
+  check("znamka odpovida podilu, ne skore",
+    !!d341.machamp
+      && d341.machamp.zn === (d341.machamp.podil >= 98 ? "S"
+        : d341.machamp.podil >= 96 ? "A+"
+        : d341.machamp.podil >= 93 ? "A"
+        : d341.machamp.podil >= 88 ? "B"
+        : d341.machamp.podil >= 80 ? "C"
+        : d341.machamp.podil >= 70 ? "D" : "F"),
+    JSON.stringify(d341.machamp));
+  /* Elitni utoky: engine je musi umet vyjmenovat, jinak vrstva nema podle
+     ceho psat hvezdicku. Machamp ma Stone Edge uz z pogoapi, takze to
+     projde i na zapecenych datech z posledniho produkcniho buildu. */
+  check("engine umi vyjmenovat utoky, co nejdou beznym TM",
+    Array.isArray(d341.elitni) && d341.elitni.length > 0,
+    JSON.stringify(d341.elitni));
+
+  /* ---------------------------------------------------------------- 342
+     Seznam prani na vymenu plati na celou evolucni radu. Jeden stupen
+     staci — bonbony jsou spolecne. */
+  const d342 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    // Seznam prani drzi predchozi bloky — bez vycisteni je Rattata Trade uz pred.
+    (P.vymenaDruhy() || []).slice().forEach((k) => P.vymenaDruhOdeber(k));
+    P.setRows([{ pokemon: "Rattata", cp: 300, level: 15, ivAtk: 3, ivDef: 3, ivSta: 3 }]);
+    await cekej(900);
+    const pred = Object.values(P.getComputed())[0].keep;
+    P.vymenaDruhPridej("Raticate");
+    await cekej(900);
+    const po = Object.values(P.getComputed())[0].keep;
+    P.vymenaDruhOdeber("raticate");
+    await cekej(600);
+    return { pred: pred, po: po, seznam: P.vymenaDruhy ? P.vymenaDruhy() : null };
+  });
+  check("zapsany vyssi stupen da verdikt Trade i nizsimu",
+    d342.pred !== "Trade" && d342.po === "Trade", JSON.stringify(d342));
+
+  /* ---------------------------------------------------------------- 343
+     Vyhledavani bere poradi a znamku raidu a gymu od Pokemon GO Hubu.
+     Vlastni vypocet appky zustava v `pctApp` — podle nej jede rozpocet
+     roli v rosteru. Konkretni cisla se tu nejmenuji, zebricek driftuje:
+     testuje se, ze radek sedi s tim, co je v zapecenych datech. */
+  const d343 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setRows([]);
+    await cekej(300);
+    const out = { raid: [], gym: null, nesed: [] };
+    const m = P.prohlidkaModel("Machamp");
+    const muj = (m.role.raid.radky || []).filter((r) => r.klic === m.klic);
+    out.raid = muj.slice(0, 4).map((r) => ({ typ: r.typ, rank: r.rank,
+      zn: r.znamka, hub: r.zdrojHub, app: r.pctApp }));
+    // Kazdy radek, ktery se tvari jako Hubuv, musi sedet se zebrickem.
+    muj.forEach((r) => {
+      if (!r.zdrojHub) return;
+      const forma = r.megaForma || (r.forma === "Shadow" ? "Shadow" : "");
+      const x = P.atlasHubRaid(r.klic, forma, r.typ);
+      if (!x || x.rank !== r.rank || x.znamka !== r.znamka) {
+        out.nesed.push(r.klic + "|" + forma + "|" + r.typ);
+      }
+    });
+    const g = (m.role.gym.radky || []).filter((r) => r.klic === m.klic)[0];
+    out.gym = g ? { rank: g.rank, zn: g.znamka, hub: g.zdrojHub } : null;
+    return out;
+  });
+  /* Engine sam zebricky Hubu zapecene NEMA (data jsou z posledniho
+     produkcniho buildu, HUB je prazdny objekt). Kdyz tam jsou, musi radky
+     sedet; kdyz ne, appka spadne na vlastni vypocet a nesmi se rozbit.
+     Na cerstvych datech to kontroluje vrstvova sada (atlas_vrstva). */
+  const maHub = d343.raid.some((r) => r.hub);
+  check("raidove radky nesou Hubovo poradi i znamku",
+    d343.raid.length > 0 && d343.nesed.length === 0
+      && (!maHub || d343.raid.every((r) => r.rank > 0 && !!r.zn)),
+    JSON.stringify([maHub, d343.raid, d343.nesed]));
+  check("...a vlastni vypocet appky zustava vedle",
+    d343.raid.some((r) => r.app != null), JSON.stringify(d343.raid));
+  check("obrance gymu: s Hubem jeho poradi, bez nej vlastni",
+    !d343.gym || d343.gym.rank > 0, JSON.stringify(d343.gym));
+
+  /* ---------------------------------------------------------------- 344
+     Seznam prani na vymenu: druhy stupen teze evolucni rady se neprida,
+     jeden radek plati na celou radu. */
+  const d344 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    (P.vymenaDruhy() || []).slice().forEach((k) => P.vymenaDruhOdeber(k));
+    await cekej(200);
+    P.vymenaDruhPridej("Machamp");
+    const po1 = (P.vymenaDruhy() || []).slice();
+    P.vymenaDruhPridej("Machoke");
+    P.vymenaDruhPridej("Machop");
+    const po3 = (P.vymenaDruhy() || []).slice();
+    (P.vymenaDruhy() || []).slice().forEach((k) => P.vymenaDruhOdeber(k));
+    await cekej(200);
+    return { po1: po1, po3: po3 };
+  });
+  check("druhy stupen teze rady se do seznamu prani neprida",
+    d344.po1.length === 1 && d344.po3.length === 1 && d344.po3[0] === d344.po1[0],
+    JSON.stringify(d344));
 
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);

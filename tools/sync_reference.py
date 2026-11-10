@@ -30,8 +30,12 @@ reference = {k: reference_all[k] for k in ("raidAttackers", "megaEvolutions",
 dex_all = json.loads(DEX.read_text(encoding="utf-8"))
 # "evoluce" = celý evoluční graf; appka z něj skládá řadu oběma směry
 # (detail kusu ukazuje, z čeho vznikl i čím se může stát).
+# "gmax" = druhy s Gigantamax formou (z herniho GAME_MASTERu). Zebricek
+# Dynamax utocniku je jen top 10 na typ, takze na otazku "ma ten druh
+# Gmax?" odpovedet neumi.
 pokedex = {k: dex_all[k] for k in ("cpm", "powerup", "species", "mega",
-                                  "evoluce", "evoPozadavky", "buddyKm")}
+                                  "evoluce", "evoPozadavky", "buddyKm",
+                                  "gmax", "shadow")}
 
 MOVES = ROOT / "data" / "moves.json"
 moves_all = json.loads(MOVES.read_text(encoding="utf-8"))
@@ -56,6 +60,11 @@ sprites = sprites_all.get("sprites", {})
 # inline SVG, takže appka nic nestahuje.
 TYPE_ICONS_P = ROOT / "data" / "type_icons.json"
 type_icons_all = json.loads(TYPE_ICONS_P.read_text(encoding="utf-8"))
+if "--test" in sys.argv:
+    atlas_icons = json.loads((ROOT / "web-app/atlas/assets/type-symbols.json").read_text(encoding="utf-8"))
+    if set(atlas_icons["ikony"]) != set(type_icons_all["ikony"]):
+        raise ValueError("Atlas: neúplná sada typových ikon")
+    type_icons_all = atlas_icons
 type_icons = {k: type_icons_all[k] for k in ("viewBox", "ikony")}
 
 # Žebříček Dynamax útočníků po typech (Pokémon GO Hub). Jediný zdroj, ze
@@ -64,6 +73,13 @@ type_icons = {k: type_icons_all[k] for k in ("viewBox", "ikony")}
 DMAX = ROOT / "data" / "dmax.json"
 dmax_all = json.loads(DMAX.read_text(encoding="utf-8")) if DMAX.exists() else {}
 dmax = {k: dmax_all.get(k) for k in ("typy", "druhy") if dmax_all.get(k)}
+
+# Žebříčky Hubu: útočníci po typech a obránci gymů. Vyhledávání není
+# o tvých kusech, je to obecná informace — a tam má stát totéž, co říká
+# Hub. Vlastní výpočet appky zůstává pro rozpočet rolí v rosteru.
+HUBJ = ROOT / "data" / "hub.json"
+hub_all = json.loads(HUBJ.read_text(encoding="utf-8")) if HUBJ.exists() else {}
+hub = {k: hub_all.get(k) for k in ("typy", "gym") if hub_all.get(k)}
 
 META = ROOT / "data" / "meta.json"
 meta_all = json.loads(META.read_text(encoding="utf-8"))
@@ -91,11 +107,15 @@ data_info = {
     "pokedex": dex_all["_meta"].get("stazeno", ""),
     "meta": meta_all["_meta"].get("stazeno", ""),
     "metaTop": meta_all["_meta"].get("top", 0),
+    # Spodní hranice skóre, pod kterou se druh do mety nebere. Appka tím
+    # vysvětluje křížek u ligy, kterou PvPoke zná, ale engine ji nepočítá.
+    "metaSkore": meta_all["_meta"].get("min_skore", 0),
     "reference": reference_all["_meta"].get("aktualizovano", ""),
     "moves": moves_all["_meta"].get("stazeno", ""),
     "events": events_all["_meta"].get("stazeno", ""),
     "raketa": (raketa_all.get("_meta") or {}).get("stazeno", ""),
     "dmax": (dmax_all.get("_meta") or {}).get("staženo", ""),
+    "hub": (hub_all.get("_meta") or {}).get("staženo", ""),
 }
 
 # Razítko sestavení. Bez něj se u sdíleného souboru nepozná, jestli má druhý
@@ -165,6 +185,7 @@ BLOCKS = [
     ("// === EVENTS START", "// === EVENTS END ===", "EVENTS", events),
     ("// === RAKETA START", "// === RAKETA END ===", "RAKETA", raketa),
     ("// === DMAX START", "// === DMAX END ===", "DMAX", dmax),
+    ("// === HUB START", "// === HUB END ===", "HUB", hub),
     ("// === SPRITES START", "// === SPRITES END ===", "SPRITES", sprites),
     ("// === TYPE ICONS START", "// === TYPE ICONS END ===", "TYPE_ICONS", type_icons),
     ("// === DATA INFO START", "// === DATA INFO END ===", "DATA_INFO", data_info),

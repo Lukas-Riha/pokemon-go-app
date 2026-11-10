@@ -355,6 +355,76 @@ if dok13:
           any(sekce_p[k].get("stav") == "nacteno" for k in s_textem) or not s_textem,
           {k: sekce_p[k]["stav"] for k in s_textem})
 
+print("\n11) nadpis plati jen pro svou skupinu")
+dok_wa = stranka("pokemon-go-wild-area-2026-global")
+check("stranka Wild Area je v repu", bool(dok_wa), str(STRANKY))
+okna_wa = mod.okna(dok_wa, "2026-11-14T10:00", "2026-11-15T18:00") if dok_wa else []
+raidy = [w[2].get("raid", []) for w in okna_wa]
+
+
+def popisek(seznam, druh):
+    """Pod kterym mezinadpisem ten druh v seznamu stoji."""
+    p = ""
+    for jmeno, shiny in seznam:
+        if shiny == -1:
+            p = jmeno
+        elif jmeno == druh:
+            return p
+    return None
+
+
+def okno_druhu(druh):
+    for w in okna_wa:
+        if popisek(w[2].get("raid", []), druh) is not None:
+            return (w[0], w[1])
+    return None
+
+
+# Na strance stoji „Six-Star Max Battles" a „Saturday, November 14" vedle
+# sebe jako h3 pod h2 „Max Battles". Dialga pod tim druhym nadpisem tedy
+# neni sestihvezdickovy — sest hvezd ma jen Gigantamax Duraludon.
+kdeD = [popisek(s, "Gigantamax Duraludon") for s in raidy]
+check("Gigantamax Duraludon stoji pod sesti hvezdami",
+      "Six-Star Max Battles" in kdeD, kdeD)
+kdeDialga = [popisek(s, "Dialga") for s in raidy]
+kdePalkia = [popisek(s, "Palkia") for s in raidy]
+check("...Dynamax Dialga a Palkia pod sest hvezd nepatri",
+      "Six-Star Max Battles" not in kdeDialga + kdePalkia,
+      [kdeDialga, kdePalkia])
+check("...a nespletou se ani s petihvezdickovymi raidy",
+      "Five-Star Raids" not in kdeDialga + kdePalkia,
+      [kdeDialga, kdePalkia])
+check("...plati pro ne nadrazene Max Battles",
+      "Max Battles" in kdeDialga and "Max Battles" in kdePalkia,
+      [kdeDialga, kdePalkia])
+# Opacny smer: popisek nad okny se timhle uklidem ztratit nesmi.
+check("petihvezdickove raidy si svuj nadpis nechaly",
+      [popisek(s, "Zekrom") for s in raidy].count("Five-Star Raids") == 1,
+      [popisek(s, "Zekrom") for s in raidy])
+# Kazdy ze dvou legendarnich je jen jeden den, Duraludon oba.
+check("Dialga je v sobotnim okne a Palkia v nedelnim",
+      bool(okno_druhu("Dialga")) and okno_druhu("Dialga")[0].startswith("2026-11-14")
+      and bool(okno_druhu("Palkia")) and okno_druhu("Palkia")[0].startswith("2026-11-15"),
+      [okno_druhu("Dialga"), okno_druhu("Palkia")])
+check("...a Duraludon bezi celou akci",
+      okno_druhu("Gigantamax Duraludon") == ("2026-11-14T10:00", "2026-11-15T18:00"),
+      okno_druhu("Gigantamax Duraludon"))
+# Na stránkách pro Sendai a Mexiko stojí Dialga s Palkiou pod seznamem
+# Duraludona. Šest hvězd po něm zdědit nesmějí — konec jeho skupiny dělá
+# buď vodorovná čára, nebo (od listopadu 2026) vlastní nadpis skupiny.
+# Jak se ten nadpis jmenuje, se tu nedrží natvrdo: text na stránce se mění.
+for mesto in ("sendai-japan", "mexico-city"):
+    dok_m = stranka("pokemon-go-wild-area-2026-" + mesto)
+    okna_m = mod.okna(dok_m, "2026-11-06T01:00", "2026-11-08T09:00") if dok_m else []
+    raidy_m = [w[2].get("raid", []) for w in okna_m]
+    kde_m = [popisek(s, "Dialga") for s in raidy_m] + [popisek(s, "Palkia") for s in raidy_m]
+    check("...a maji vlastni popisek, ne ten o sesti hvezdach (" + mesto + ")",
+          "Six-Star Max Battles" not in kde_m and any(kde_m), kde_m)
+    kde_d = [popisek(s, "Gigantamax Duraludon") for s in raidy_m]
+    check("...a Duraludon o sest hvezd neprisel (" + mesto + ")",
+          "Six-Star Max Battles" in kde_d, kde_d)
+
+
 print("\n%d kontrol proslo, %d selhalo" % (passed, len(failures)))
 if failures:
     for f in failures:

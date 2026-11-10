@@ -261,6 +261,63 @@ def doplnit_z_pvpoke(learn, fast_names, ch_names):
     return pridano_f, pridano_c, nezname
 
 
+def doplnit_elitni_z_pvpoke(learn, fast_names, ch_names, refresh=False):
+    """Přesune útoky z PvPoke `eliteMoves` do elitních slotů learnsetu.
+
+    pogoapi vede jako elitní jen to, co už prošlo Elite TM. Útoky, které se
+    daly získat JEN na akci (Gigaton Hammer u Tinkatona), tam chybí — a appka
+    je pak nabízela, jako by je šlo přeučit kdykoli. PvPoke je vede v poli
+    `eliteMoves` a dělá za ně hvězdičku; bereme totiž seznam.
+
+    Slot (rychlý / nabitý) se bere z téhož záznamu — hádat se podle hodnot
+    útoku nedá, část rychlých útoků má nulový zisk energie.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("bm2", ROOT / "tools" / "build_meta.py")
+    bm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bm)
+
+    dex_path = ROOT / "data" / "pokedex.json"
+    znami = set(json.loads(dex_path.read_text(encoding="utf-8"))["species"]) if dex_path.exists() else set()
+
+    def klic_utoku(jmeno):
+        return re.sub(r"[^a-z0-9]", "", str(jmeno).lower())
+
+    fast_idx = {klic_utoku(n): i for i, n in enumerate(fast_names)}
+    ch_idx = {klic_utoku(n): i for i, n in enumerate(ch_names)}
+
+    gm = stahni_gamemaster(refresh)
+    presunuto = 0
+    druhu = set()
+    for r in gm.get("pokemon") or []:
+        elite = r.get("eliteMoves") or []
+        if not elite:
+            continue
+        key = bm.dex_key(r.get("speciesId", ""), znami)
+        l = learn.get(key) or learn.get(key.split("-")[0])
+        if not l:
+            continue
+        rychle = {str(x) for x in (r.get("fastMoves") or [])}
+        for jmeno in elite:
+            jmeno = str(jmeno)
+            if jmeno in PVPOKE_MIMO:
+                continue
+            slot = 0 if jmeno in rychle else 1
+            i = (fast_idx if slot == 0 else ch_idx).get(klic_utoku(jmeno))
+            if i is None:
+                continue
+            if i in l[slot + 2]:
+                continue
+            # Z běžného seznamu pryč: elitní útok se nedá naučit běžným TM
+            # a appka podle toho počítá sestavu "bez Elite TM".
+            if i in l[slot]:
+                l[slot].remove(i)
+            l[slot + 2].append(i)
+            presunuto += 1
+            druhu.add(key)
+    return presunuto, len(druhu)
+
+
 def dorovnat_learnsety(current, learn, fast_names, ch_names):
     """Doplní do learnsetů útoky, které v době jejich stavby ještě neexistovaly.
 
@@ -446,6 +503,10 @@ def main():
 
     pridano_f, pridano_c, nezname = doplnit_z_pvpoke(learn, fast_names, ch_names)
     print(f"z PvPoke doplněno: {pridano_f} rychlých, {pridano_c} nabitých")
+    presunuto, elit_druhu = doplnit_elitni_z_pvpoke(
+        learn, fast_names, ch_names, "--refresh" in sys.argv)
+    print(f"elitních (event / Elite TM) útoků podle PvPoke: {presunuto}"
+          f" u {elit_druhu} druhů")
     if nezname:
         print(f"  PvPoke zná {len(nezname)} útoků, které v herních datech nejsou: "
               + ", ".join(sorted(nezname)[:8]) + (" …" if len(nezname) > 8 else ""))

@@ -294,5 +294,111 @@
       "**Cena vylepšení na dva řádky** (do L40 a L41–50), bez schovávání pod „víc“.",
       "**Útoky se při užším okně neschovají pod hlavičku**, šipky u akcí v kalendáři jsou pryč a obrázky v čištění neproblikávají."
     ]
+  },
+  "2.13": {
+    "nadpis": "Co je nového",
+    "body": [
+      {
+        "sekce": "Roster na dvou zařízeních"
+      },
+      "**Přihlášení k OneDrivu už jde zapnout.** Appka je zaregistrovaná u Microsoftu, takže se v Nastavení stačí přihlásit — nic se nevyplňuje. Kdo se přihlásí stejným účtem na počítači i v telefonu, má všude stejný roster.",
+      "**Roster z cloudu se slučuje, nepřepisuje.** Appka porovnává kus po kuse podle stálého otisku, takže co přibude na jednom zařízení, se na druhém objeví a nic se neztratí. Kus zůstane týmž kusem, i když ho přejmenuješ nebo vylepšíš.",
+      {
+        "text": "**Roster z cloudu se ukazuje jako hlášení po importu.** Místo jedné věty vidíš kusy po jménech — co přibude, u čeho se převezme novější verze, co ubude a u kterých kusů se verze rozcházejí.",
+        "obrazek": "cloud-okno"
+      },
+      "**U kusu, na který jsi sáhl na obou zařízeních, vybíráš ty.** Appka se ptá jen tehdy, když je opravdu na co — a ukáže obě verze vedle sebe.",
+      {
+        "sekce": "Nastavení"
+      },
+      {
+        "text": "**Nastavení je kratší a přehlednější.** Přihlášení k OneDrivu je v kartě první — tlačítko vlevo, za ním stav a oba dlouhé výklady („vlastní registrace“ i „jak funguje synchronizace“) pod otazníkem. Osm položek už nepadá do koše „Ostatní“ (přibyly sekce **Pojistky proti puštění** a **Raidy a gymy**) a každá volba stojí na jednom řádku: název vlevo, hodnota vpravo.",
+        "obrazek": "nastaveni-sekce"
+      },
+      {
+        "text": "**Výklad se otevře nad appkou, ne pod řádkem.** Otazník za názvem ukáže vysvětlení jako okno přes appku, i s živými křivkami. Stránka se pod ním nehne, takže zbytek nastavení neuteče dolů; zavře se klikem vedle nebo Escapem. **Práh „vysoké IV“** k tomu konečně má vlastní výklad — dosud stál i s varováním u cizího pole o pět řádků níž.",
+        "obrazek": "nastaveni-vyklad"
+      },
+      "**Kontrola počtu kusů z boxu je pryč** a u každého čísla je vidět, co dělá. Hodnota a jednotka drží pohromadě, takže „50 000“ a „60 %“ sedí středem pod sebou.",
+      {
+        "sekce": "Transfer a seznam přání"
+      },
+      {
+        "text": "**Transfer si nechá říct, odkud brát kusy.** Přepínač nahoře v okně: „poslední import“ nebo „celý roster“. U každé volby je vidět, kolika kusů se týká, a přepnutí přepočítá filtry hned.",
+        "obrazek": "transfer-okno"
+      },
+      "**Celý roster znamená celý roster.** Co máš zrovna vyhledaného v tabulce, Transfer už neovlivňuje. Rozdělané nebo čerstvě dokončené čištění boxu se nabídne jako třetí volba a je na přepínači vidět, že je rozdělané.",
+      "**Na výměnu si vybereš i druh, kterého nemáš.** Našeptávač nabízí celou hru, ne jen tvůj roster — na trade si člověk dává právě to, co teprve shání.",
+      "**Seznam přání platí na celou evoluční řadu.** Stačí napsat jeden stupeň: „Machamp“ pokryje i Machopa a Machokea, protože bonbóny jsou stejně společné. U štítku je „+2“ a po najetí celá řada.",
+      "**Druhý stupeň téže řady se nepřidá.** Nabízí se dál — u Weedla stojí „pokrývá Beedrill“ — ale po kliknutí se místo přidání rozsvítí ten štítek, který ho už drží. Kusy na výměnu najdeš v rosteru napsáním **trade** do hledání.",
+      "**Seznam jde poslat dál.** Pod štítky je textové pole s tlačítkem Kopírovat — pošli ho kamarádovi. Nikam se nic nenahrává.",
+      {
+        "sekce": "Vyhledávání: čísla jsou teď stejná jako na Pokémon GO Hubu"
+      },
+      "**Raidy i obránci gymů berou pořadí a známku od Pokémon GO Hubu.** Vyhledávání není o tvých kusech — je to obecná informace o druhu, takže tam má stát totéž, co uvidíš u něj. Max Battle od něj appka brala už dřív. Rozpočet rolí v **rosteru** jede dál podle vlastního výpočtu: ten rozhoduje o kusech, které opravdu máš.",
+      "**Ligová známka se počítá jako na Hubu.** Skóre PvPoke není procento — nejlepší v Great League má 93,9, ne 100. Appka ho jako procento brala a dávala až o tři stupně víc: Machamp měl A tam, kde Hub dává C. Teď platí Hubovy hranice a přibyl stupeň **A+**, který má jen liga.",
+      {
+        "text": "**Nadpisy lig jsou vidět.** Great, Ultra a Master League mají vlastní podbarvený pruh se svislým proužkem, takže se v dlouhém výpisu pozná, kde jedna liga končí a druhá začíná.",
+        "obrazek": "ligy-tabulka"
+      },
+      "**Raidová tabulka je jedna.** Běžná forma, shadow i mega stojí v jednom pořadí, každý řádek má známku SS–F a za jménem štítek SHADOW nebo MEGA. Záložka Mega zmizela — cena mega proměny jede s mega řádkem jako poslední sloupec.",
+      "**Max Battle zná celý žebříček, ne jen špičku.** Jsou v něm i druhy se známkou F, takže „tenhle druh tam není“ znamená, že Dynamax podle Hubu neumí. Na jeden typ je jedna tabulka a u každého druhu je vidět, jestli má Gigantamax formu.",
+      "**Žebříčky se obnovují samy každý den** ve stejné úloze jako ligy z PvPoke.",
+      {
+        "sekce": "Vyhledávání: jak to vypadá"
+      },
+      "**V hlavičce je hodnocení druhu na jeden pohled** — ikona, pořadí a známka za sebou, seřazené jako na Hubu: raidy, Gigantamax, Dynamax, obrana gymu a ligy až nakonec. Začíná vždycky na stejném místě, ať se druh jmenuje jakkoli.",
+      "**Shadow a mega jsou samostatné formy.** Našeptávač nabídne „Shadow Beedrill“ i „Mega Beedrill“, přepínač nad hodnocením má tlačítko za každou formu a hodnocení patří té vybrané. U megy sedí i jméno, typy, staty a CP: Mega Charizard X je Fire/Dragon se stropem 4 353, Charizard Fire/Flying s 3 266. Role, které formě nepatří, se nevypisují — mega nehraje ligy, shadow nesmí do gymu ani do Max Battle.",
+      {
+        "text": "**Tabulka výsledků je přehlednější.** Známka má vlastní sloupec hned za druhem, pořadí za ní a sestava útoků dostala místo po zrušeném sloupci s příkazem.",
+        "obrazek": "hledani-zalozky"
+      },
+      "**Tabulka má sloupce na stálých místech** a Hodnocení stojí ve všech rolích stejně. Známka je vlastní sloupec před pořadím, velký jako obrázek druhu. Sloupec s příkazem „Vyhledat X“ je pryč — jméno v prvním sloupci dělá totéž a je odkazem u každé formy kromě té, kterou právě prohlížíš.",
+      "**Záložky rolí jsou v pořadí PvP, Raidy, Max, Gym** a při přepnutí zůstanou vidět.",
+      "**Míň bublin.** U písmena známky žádná není a u mega role zbylo jen to, co platí o tom kuse — výklad patří do **Odkud se to bere**.",
+      "**Útoky, které nejdou běžným TM, mají hvězdičku** jako na PvPoke: Gigaton Hammer u Tinkatona, Stone Edge u Machampa. Přeučením o ně přijdeš.",
+      {
+        "sekce": "Ikony a drobnosti"
+      },
+      "**Ikona typu v kolečku útoku sedí na střed** a v detailu kusu je stejně velká jako ve Vyhledávání. Štítky typu nemají kolem piktogramu bílé kolečko a v detailu je piktogram větší; v dlaždici rosteru zůstal menší, aby se dva typy vešly na řádek.",
+      "**Našeptávač jmen už nemá posuvník u jediného výsledku.**",
+      {
+        "sekce": "Čištění boxu"
+      },
+      "**Čtyři místa, která si lezla do cesty, jsou srovnaná** a evoluční řada se vejde celá. Ligy jsou bez posuvníku a běžících cupů se vypíšou nejvýš dva.",
+      "**Útoky jsou jen ikony typu, jméno řekne bublina** — plná jména vytlačila blok se stropem CP, který teď říká i číslo před evolucí.",
+      "**Pruh „tenhle už jsi pustil, ale teď by se zase vešel“ řekne skutečnou příčinu** — tedy kterého sourozence jsi pustil, ne náhodný jiný kus.",
+      {
+        "sekce": "Proč si appka kus nechává"
+      },
+      "**U každého ponechaného kusu je vidět skutečný důvod.** U štítku Lucky je napřímo, že verdikt nemění; značka CUTE ani 100 % verdikt nezhorší a oranžová značka nikdy nepřebije zelenou.",
+      "**Kus, který se vyměnit nedá, už nemá verdikt Trade** a lucky kus se na výměnu nenabízí. Kusy pod čarou mají každý svoje číslo.",
+      "**U pojistky na cupy je vidět liga** — ve verdiktu stojí „99 % ML“ — a pojistka má dno.",
+      "**Štítek „Duplikát?“ je pryč** a shadow kus už nedostane „Mega“.",
+      "**Verdikt „Nejde pustit“ je pryč — pustit jde každý kus.** U Meltana, kterých má člověk z Mystery Boxu desítky, appka tvrdila, že ho hra profesorovi poslat nenechá. Není to pravda u něj ani u ostatních mytických a u Zygarde. O ponechání proto rozhoduje u všech druhů rozpočet rolí a pořadí kopií stejně jako u Rattaty; u vzácného kusu se jen připomene, že transfer je nevratný. Zamknutá zůstává **výměna** — tu hra u mytických, Zygarde, shadow a lucky kusů nedovolí — a hromadný výběr, který mytické nenabízí.",
+      {
+        "sekce": "Mega a Dynamax v rozpočtu"
+      },
+      "**Od každého druhu s mega formou si appka nechá jeden kus.** Když hotový nemáš, drží megu i ten nevyvinutý; pod prahem IV je to ale jen náplast. Na jednu megu se drží jeden kus, i když k ní vedou dva druhy, a mega, kterou zná jen herní soubor, se nedrží vůbec.",
+      "**Značka MEGA svítí i u kusu, kterému megu přisoudila appka** — a bublina u ní říká, že ji vybrala appka, ne ty.",
+      "**Dynamax strop platí na celou evoluční řadu,** ne na druh. Řada Machopa držela dva Machopy, dva Machokey a dva Machampy; teď se o strop dělí celá řada a Gmax kus je v ní první.",
+      "**Gigantamax má vlastní značku,** přenáší se importem, exportem i do druhého zařízení, a v rozpočtu druhu stojí před obyčejným Dmaxem i s horšími IV.",
+      {
+        "sekce": "Import"
+      },
+      "**Import už nic nepřeskakuje.** Co je ve skenu, to se naimportuje — včetně kusů, které jsi dřív pustil. Když se tím něco vrátí, appka to vypíše jménem.",
+      "**Změna verdiktu se ohlásí hned,** ne až u jiného kusu o pět kroků dál.",
+      {
+        "sekce": "Formy, ligy a rozpis akcí"
+      },
+      "**Hisuiánské a jiné zvláštní formy mají vlastní čísla** a křížek u ligy řekne proč tam ten druh appka nepočítá.",
+      "**Roster jde vyhledat podle typu PO megaevoluci** a hledání `mega:<typ>` vrací jen kus, který tu megu doopravdy drží.",
+      "**V rozpisu akcí platí nadpis jen pro svou skupinu** a detail otevře tu akci, na kterou jsi klikl.",
+      "**Max Battles v rozpisu akcí zase stojí.** LeekDuck jim 9. 11. dal vlastní sekci stránky a appka ji předtím neznávala — z Wild Area 2026 tím vypadl Gigantamax Duraludon, Dynamax Dialga i Palkia. Teď jsou zpátky u raidů a je u nich napsané, do které skupiny patří.",
+      {
+        "sekce": "Odkud se to bere"
+      },
+      "**V dokumentaci je seznam všech adres, ze kterých se data tahají,** a Pokémon GO Hub má vlastní řádek v tabulce zdrojů. Je tam i vysvětlení, proč se pořadí v typu nemusí shodovat s cizími žebříčky a jak se liší obě stupnice známek."
+    ]
   }
 }

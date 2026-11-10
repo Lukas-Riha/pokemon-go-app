@@ -2,6 +2,22 @@
   "_meta": {
     "popis": "Posledni zachrana pro mega formu, kterou nema ani pogoapi, ani herni GAME_MASTER. Zapece se jen tehdy, kdyz pro ten druh z obou zdroju nic neprijde.",
     "pravidlo": "Jakmile se druh objevi v pogoapi nebo v GAME_MASTERu, tenhle zaznam se ignoruje a muze se smazat. Malamar takhle odesel 7. 10. 2026 — GAME_MASTER ho ma, a navic se spravnou cenou promeny (rucne tu stalo 40, ve hre je to 60 a poprve 300).",
-    "schema": "klic -> [[jmeno, atk, def, sta, [typy], mega_energie, Mega|Primal, mega_energie_poprve], ...]; posledni pole nech null, kdyz cenu prvniho premeneni zdroj neuvadi"
-  }
+    "schema": "klic -> [[jmeno, atk, def, sta, [typy], mega_energie, Mega|Primal, mega_energie_poprve], ...]; posledni pole nech null, kdyz cenu prvniho premeneni zdroj neuvadi",
+    "kontrola": "Co tu chybi, hlasi audit: porovnava mega formy z pvpoke_gamemaster.json proti zapecenemu pokedexu. Staraptor se takhle nasel az po mesici od vydani."
+  },
+  "staraptor": [
+    [
+      "Mega Staraptor",
+      278,
+      207,
+      198,
+      [
+        "Fighting",
+        "Flying"
+      ],
+      60,
+      "Mega",
+      300
+    ]
+  ]
 }

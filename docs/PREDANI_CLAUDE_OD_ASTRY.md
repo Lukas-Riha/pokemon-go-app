@@ -489,3 +489,55 @@ Ověřen detail Halloween Part I při šířkách 1440/768/390 bez vodorovného 
 Pouze CSS A031 a test build. Úkoly jako karty s oddělenými odměnami, mezititulky Krok přes celou šířku gridu (ne jako obyčejná poloviční karta), GO Pass responsivní karty s rankem. Odstraněny duplicitní ozdobné puntíky u ikon a u odstavců podmínek. Data, parser a JS beze změn.
 
 Reálná akce adidas × Pokémon Timed Research: ověřeno 11 úkolů, 1440 a 390 px bez horizontálního přetečení. Mobilní screenshot vizuálně zkontrolován; docs/navrhy/a031/vyzkum-390.png a vyzkum-1440.png. Kontrola GO Passu v tomto kole není samostatně dokončená; celá regresní sada neběžela. Produkce ani Git nepublikovány.
+
+## A033 — UI audit čtyř sekcí + návrhy Nastavení a Transferu (2. 11.)
+
+Lukáš nyní upřednostňuje Nastavení a Transfer před A032 Žebříčky. Žádné změny aplikace ani build. Přečti docs/navrhy/a033/ANALYZA_A_NAVRHY.md; vizuály navrh-nastaveni.png a navrh-transfer.png ve stejné složce. Vše jsou návrhy, ne implementace. Důležité: homepage kolize dlouhého titulku s popiskem; nastavení už má skupiny, ale nové pojistky jsou mimo ně a vysvětlení třetí obsahuje opakovaný/nesouvisející text. Transfer hlavní filtr utápí pod pomocnými výměnnými filtry. Detailní instrukce a omezení testu jsou v dokumentu. Zachovat ID, pravidla, překlady a engine; mockupové zkrácené texty před implementací obsahově schválit. Hodnocení není audit výpočtů.
+
+## A035 — Nastavení podle aktuálního A034 (3. 11.)
+
+Implementováno v atlas.js/CSS, pouze TEST: 6 kategorií, vždy jeden obsah, jednotné řádky, 21 klikacích otazníků. Přesunuty původní hinty a živé grafy do details, žádné přepisování výkladu ani ID. Varování zůstávají mimo nápovědu. Zachovaných 28 input/select v kartě s 28 unikátními ID. Číselná pole zachována přesná, dlouhé selecty na vlastním řádku. Cloud nahoře se zvýrazněným přihlášením; žádné přihlášení/propojení nebylo provedeno.
+
+Ověřeno: přepínání kategorií, otevření celého výkladu, 500 px bez přetečení, screenshot desktop 1500. Uložení IV prahu 89 po reloadu funguje s demo rosterem; prázdný profil se vracel na 90 (pravděpodobně ochrana persist prázdného rosteru, pravidla neupravována). Skutečný osobní roster nezměněn. Snímky docs/navrhy/a035/settings-1500.png, settings-500.png, help-500.png. Kompletní regresní sada neběžela.
+
+Běžný sync_reference.py --test po první úspěšné verzi začal odmítat sestavení kvůli chybějícímu data/novinky_obrazky/cloud-nastaveni.webp. Poslední oprava rozložení byla proto přenesena pouze do ATLAS CSS/JS slotů existujícího TESTu, včetně aktuálního calendar.js; engine/data neaktualizovány. Po doplnění obrázku nutno provést standardní build. Produkce neupravována.
+
+Obsahové podněty pro Clauda: ivThresh nemá vlastní výklad, u pvpPojistkaRank stále je druhý opakovaný odstavec o tiebreaku/IV patřící zřejmě jinému poli. Zachováno doslova, prosím opravit vazbu v enginu. Zvážit názvy „Minimální PvP kvalita kusu (%)“, „Snížení prahu pro nejlepší druhy (body)“ a krátkou volbu PvP stovky „Ano — chránit nejlepší IV“. Nejsou implementované, jen návrhy textů. A035 používá samostatný layout uvnitř details kvůli nativnímu ::details-content; nerozbít přímým gridem na details.
+
+## A036 — Kompaktní Nastavení dle nového A034 (4. 11.)
+
+Uživatel odmítl roztažené A035. Nová vrstva navazuje na Claudův nastaveni-navrh.html: mřížka 2 sloupců (1 pod 1100 px, 3 nad 1800), ikony sekcí, hledání bez diakritiky v názvech i výkladu. Levé submenu z A035 odstraněno. Nápovědy jako tlačítko ? s aria-expanded/controls, původní výklad a živé uzly pod řádkem. 28 původních input/select stále v DOM. Výpočty a výchozí hodnoty beze změn.
+
+Čísla: původní input readonly ve stepperu −/+, stepUp/stepDown respektují enginové min/max/step. Dispatch input/change na původním uzlu. Selecty a checkbox jsou skryté původní uzly, ovládané tlačítky; krátké Ano/Ne a Tři/Dvě/Jedna podle schváleného návrhu, title drží původní text. Vybrané krátké názvy/jednotky převzaté doslova z A034. Ostatní původní názvy zachovány, nejde o kompletní obsahové přejmenování. Sync stavu po input/change i kliknutí resetu. CloudProc přesunut do rozbalení Jak funguje synchronizace, ID zachováno, stav a akce viditelné.
+
+Standardní build --test tentokrát prošel. Ověřeno 1500/500 bez přetečení; screenshoty docs/navrhy/a036/settings-1500.png a settings-500.png. Hledání rezerva vrací 3 relevantní položky (prohledává i výklad), prázdný výsledek má hlášení. Otazník odhalí výklad. Maximum IV vypíná +. Na izolovaném demo rosteru změna IV 90→91 i pvpStovka 1→0 přežily reload. Cloud login nezkoušen, produkce/commit/push nedělány. Celá regresní sada neběžela. Technický dluh: A036 převádí existující A035 DOM; při pozdějším úklidu sloučit inicializaci a přebíjející CSS do jednoho bloku.
+
+## A037 — Grafické doladění Nastavení (5. 11.)
+Pouze atlas.css a standardní --test build. Otazník sedí hned za názvem, hodnoty vpravo; menší řádky, barevné ikony sekcí, viditelný focus, lupa v hledání. Cloud na desktopu spojuje stav a akce do jedné řady. Engine a hodnoty nedotčeny. Ověřeno šest sekcí a žádné vodorovné přetečení při 1500/768/500 px; klik rozbalil nápovědu. Snímky docs/navrhy/a037/settings-{1500,768,500}.png. Stav přihlášeného účtu ani celá regresní sada v tomto kole neověřovány.
+
+## A050 — Rozlišení rolí ve Vyhledávání a grafika Transferu
+CSS A050 navazuje na atlas-hodnoceni, atlas-znamka a atlas-vysledek-cena. V hlavičce vlastní lokální SVG pro LC/GL/UL/ML, raid, gym, Max. Zkratky lig, ikona herního typu, pořadí a známky z enginu zůstávají. Transfer dostal kompaktnější okno, styl zdrojů a oddělené skupiny filtrů. Bez změny verdiktů, pořadí nebo generování filtrů. Standardní --test build, Machamp vykreslil 5 ikon. Mobilní kontrola prázdného Transferu; test s demo daty neotevřel očekávanou neprázdnou sekci, vzhled plné dávky neověřen. Snímky docs/navrhy/a050. Původní inline barvy známek zůstaly.
+
+## A051 — Hodnocení ve Vyhledávání bez rámečků
+Vlastní ligové SVG, zachované zkratky, typy a data. Oddělen styl Transferu, odstraněn rámeček rolí a margin čísla. TEST, ukázka docs/navrhy/a051/whimsicott.png.
+
+## A052 — Hlavní hodnocení ikonami bez opakování názvů
+Pouze TEST. Raid jen typ; gym štít, Max růžový znak X, ligy rozdílné vnitřní motivy. Pořadí a známka z enginu. Popisek se otevře i dotykem či klávesnicí. Snímek docs/navrhy/a052/machamp.png.
+
+## A054 — Ligové praporky a Little Cup
+TEST: roleIcon používá vlastní SVG; GL 1 červený, UL 2 zlaté, ML 3 růžové pruhy, LC pastelová trojice. Pořadí a známka 29 px dle A053, typy a výpočty beze změny. Snímky Charizard a Ducklett v docs/navrhy/a054/.
+
+## A055 — Společná sada 18 typových ikon
+Pouze --test načítá web-app/atlas/assets/type-symbols.json místo původní geometrie. Kontrola shody všech typových klíčů při buildu. Jediný renderer typIkonaHtml; odstíny poskytuje původní TYPE_COLORS. CSS zachovává bílý symbol i na barevném štítku. Vykresleno všech 18 ikon přes __pgo.typIkona v Chromium: docs/navrhy/a055/typy.png. Produkční sada a výsledky enginu nezměněny.
+
+## A056 — DMAX/GMAX a ořez typových ikon útoků
+Opraven .atlas-utok-typ: odstraněna korekce translate(19px,-4px) scale(1.2) ze staré sady 256. Nové symboly 32×32 jsou centrované. V tabulce Snorlaxe se kontrolované glyfy vešly; typová ikona v hlavičce nedotčena. Nové vlastní SVG v atlas/assets pro DMAX a GMAX, štítky r-D/r-GM a Max hodnocení podle maxForma řádku. TEST build prošel. Snímky docs/navrhy/a056.
+
+## A057 — DMAX obrys, GMAX plný
+DMAX má průhlednou výplň, růžový tah 2,4/32; GMAX zůstává plný. Náhled obou při 30 a 15 px: docs/navrhy/a057/max.png. TEST.
+
+## A058 — Oprava GMAX podle DMAX
+Nahrazuje A056/A057: oba soubory mají shodnou SVG cestu, tah i gradient. Jediný rozdíl je fill: DMAX none, GMAX barva tahu. Bez plamene. Geometrie ověřena porovnáním atributů, náhled docs/navrhy/a058/max.png.
+
+## A059 — Grafický návrh Transferu, zatím bez implementace
+Viz docs/navrhy/a059/transfer.html a dva PNG. Zdroj → skupina → jeden filtr s počtem a jednoznačnou akcí. Pomocné výměnné seznamy zvlášť. V reálné verzi zachovat Po jednom, ruční kontrolu, nedostupné kusy a podmíněné ověření podle dat; potvrzení puštění jen pro odpovídající smazanou dávku, nikdy po kopírování. Před přepisem schválit návrh s Lukášem.

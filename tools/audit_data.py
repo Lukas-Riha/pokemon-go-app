@@ -226,6 +226,27 @@ for k, formy in mega.items():
         if not (m[1] > 0 and m[2] > 0 and m[3] > 0):
             chyba("mega", "%s: nesmyslné staty %r" % (k, m[1:4]))
 
+# Chybějící mega se dřív našla jen okem — Mega Staraptor vyšel 19. 9. 2026
+# a appka o něm mlčela ještě v listopadu. Zdroje, ze kterých se mega peče
+# (pogoapi, herní GAME_MASTER), ho neměly ani jeden. PvPoke svůj gamemaster
+# drží čerstvý a mega formy v něm značkuje, takže jeho seznam je nezávislá
+# kontrola toho, co appce chybí. Je to varování, ne chyba: PvPoke může mít
+# formu dřív, než je ve hře, a build se kvůli tomu zastavit nemá.
+_pvp = ROOT / "data" / "raw" / "pvpoke_gamemaster.json"
+if _pvp.exists():
+    _pk = json.load(io.open(_pvp, encoding="utf-8")).get("pokemon") or []
+    _chybi = set()
+    for _p in _pk:
+        _tags = _p.get("tags") or []
+        if "mega" not in _tags and "primal" not in _tags:
+            continue
+        _zaklad = re.sub(r"_(mega|primal)(_[xy])?$", "", _p.get("speciesId") or "")
+        if _zaklad and _zaklad in species and _zaklad not in mega:
+            _chybi.add((_zaklad, _p.get("speciesName") or _zaklad))
+    for _k, _jm in sorted(_chybi):
+        varuj("mega", "%s zná PvPoke jako %s, ale v pokédexu mega forma není"
+              " — dopiš ji do data/mega_doplnky.json" % (_k, _jm))
+
 # ---------------------------------------------------------------- útoky
 fastN, fast = moves["fastNames"], moves["fast"]
 chN, ch = moves["chargedNames"], moves["charged"]

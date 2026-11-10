@@ -1424,6 +1424,12 @@ s rosterem**. Nové kusy přibydou, doskenované se aktualizují. Transferované
 kusy ti v rosteru chvíli zůstanou navíc — nevadí, engine je stejně označí jako
 duplicity nebo „Zahodit".
 
+Hned po importu má smysl otevřít **Transfer** a nechat přepínač zdroje na
+**Posledním importu**: filtry se pak vyrobí jen z kusů, které přihrál ten
+poslední sken, ne z celého boxu. Na pořádný úklid se přepne na **Celý roster** —
+to bere všechno, co appka pouští, bez ohledu na to, co máš zrovna vyhledané
+v tabulce.
+
 ### Po úklidu boxu: přepiš roster posledním skenem
 
 Když si ve hře uděláš pořádek (hromadný transfer), udělej **jeden průchod

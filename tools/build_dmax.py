@@ -10,10 +10,15 @@ Co z toho appka navíc získá: **seznam druhů, které Dynamax vůbec umí**. T
 dosud nebyl nikde — appka poznala Dmax kus jen podle značky, kterou nastavil
 sken nebo člověk.
 
-Čísla jsou MODEL POKÉMON GO HUBU, ne appky: „Max Move Damage" si počítají oni
-a appka ho nepřepočítává. Všude, kde se ukazuje, musí být napsané odkud je.
+Čte se stránka jednoho typu: `pokemon-list/best-dynamax-per-type/<typ>`.
+Má **CELÝ** žebříček (u Normal 44 řádků) i s Hubovou známkou SS…F. Dokud
+se četla souhrnná stránka `best/dynamax-attackers-per-type`, měla appka jen
+top 10 na typ — druh jako Feebas v ní nebyl vůbec a v appce to vypadalo, že
+Max formu nemá. Souhrn se už nečte: Hub z něj mezitím sloupec „Max Move
+Damage" odstranil, takže nenesl nic navíc.
 
-Zdroj: https://db.pokemongohub.net/best/dynamax-attackers-per-type
+Pořadí i známka jsou MODEL POKÉMON GO HUBU, ne appky — všude, kde se
+ukazují, musí být napsané odkud jsou.
 
 Spuštění:
     python tools/build_dmax.py              # použije cache v data/raw/
@@ -22,28 +27,41 @@ Spuštění:
 import json
 import re
 import sys
+import time
 import urllib.request
 from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW = ROOT / "data" / "raw" / "dmax.html"
+RAW_TYP = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "dmax.json"
-URL = "https://db.pokemongohub.net/best/dynamax-attackers-per-type"
+URL_TYP = "https://db.pokemongohub.net/pokemon-list/best-dynamax-per-type/%s"
+
+# Pořadí odpovídá hře; velké písmeno je klíč, pod kterým typ zná appka.
+TYPY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug",
+        "Ghost", "Steel", "Fire", "Water", "Grass", "Electric", "Psychic",
+        "Ice", "Dragon", "Dark", "Fairy"]
 
 # Kolik typů stránka vede. Když jich najdeme výrazně míň, změnila se struktura
 # a je lepší skončit chybou než zapéct půlku dat — denní úloha pak vrátí zálohu.
 MIN_TYPU = 15
 MIN_RADKU = 3
+# Celý žebříček má přes tři stovky řádků. Když jich najdeme pár desítek,
+# parser trefil jinou tabulku a data by byla horší než ta minulá.
+MIN_RADKU_CELKEM = 200
 
-HLAVICKA = re.compile(
-    r'<h1 id="([a-z]+)"[^>]*>\s*Top\s+\d+\s+([A-Za-z]+)-type\s+Dynamax\s+Attackers\s*</h1>',
-    re.I)
 TBODY = re.compile(r"<tbody>(.*?)</tbody>", re.S | re.I)
 RADEK = re.compile(r"<tr>(.*?)</tr>", re.S | re.I)
 BUNKA = re.compile(r"<td[^>]*>(.*?)</td>", re.S | re.I)
 TITULEK = re.compile(r'title="([^"]+?)\s+stats[^"]*"', re.I)
 ODKAZ = re.compile(r'href="/pokemon/([^"]+)"', re.I)
+
+# Stránka jednoho typu je stavěná jinak: buňky nesou `data-column-id`
+# a sloupec se známkou má `rowSpan`, takže u druhého a dalšího řádku téže
+# známky chybí. Nese se proto dolů.
+BUNKA_ID = re.compile(r'<td data-column-id="([a-z_]+)"[^>]*>(.*?)</td>', re.S | re.I)
+ZNAMKA = re.compile(r'data-tier="([A-Z]{1,2})"')
+JMENO_CHIP = re.compile(r'data-pokemon-chip-name="true">([^<]+)<')
 
 
 def text(html):
@@ -62,17 +80,18 @@ def cislo(s):
     return float(m.group(0).replace(",", "."))
 
 
-def stahni(refresh):
+def _stahni(url, cesta, refresh):
     """HTML ze sítě, nebo z cache. Cache je tu kvůli opakovanému spouštění
     (přegenerování z týchž dat nesmí sahat na síť)."""
-    if refresh or not RAW.exists():
-        req = urllib.request.Request(URL, headers={
+    if refresh or not cesta.exists():
+        req = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (pokemon-go-planner data refresh)"})
         html = urllib.request.urlopen(req, timeout=60).read().decode("utf-8", "replace")
-        RAW.parent.mkdir(parents=True, exist_ok=True)
-        RAW.write_text(html, encoding="utf-8")
+        cesta.parent.mkdir(parents=True, exist_ok=True)
+        cesta.write_text(html, encoding="utf-8")
+        time.sleep(0.4)
         return html
-    return RAW.read_text(encoding="utf-8")
+    return cesta.read_text(encoding="utf-8")
 
 
 def rozloz_jmeno(cele):
@@ -84,43 +103,35 @@ def rozloz_jmeno(cele):
     return cele.strip(), ""
 
 
-def sekce(html):
-    """Rozkrájí stránku na úseky podle nadpisu typu."""
-    nalez = list(HLAVICKA.finditer(html))
-    out = []
-    for i, m in enumerate(nalez):
-        konec = nalez[i + 1].start() if i + 1 < len(nalez) else len(html)
-        out.append((m.group(2).capitalize(), html[m.end():konec]))
-    return out
-
-
-def radky_typu(usek):
-    """Řádky první tabulky v úseku. Druhá tabulka (kdyby přibyla) se ignoruje
-    schválně — žebříček je ten první."""
-    tb = TBODY.search(usek)
+def radky_typu(html):
+    """Celý žebříček jednoho typu ze stránky `best-dynamax-per-type/<typ>`."""
+    tb = TBODY.search(html)
     if not tb:
         return []
     out = []
+    znamka = ""
     for rm in RADEK.finditer(tb.group(1)):
         syrovy = rm.group(1)
-        bunky = BUNKA.findall(syrovy)
-        if len(bunky) < 5:
+        bunky = dict(BUNKA_ID.findall(syrovy))
+        if "attacker_name" not in bunky or "order" not in bunky:
             continue
-        poradi = cislo(text(bunky[0]))
-        tm = TITULEK.search(bunky[1])
-        cele = text(tm.group(1)) if tm else text(bunky[1])
-        druh, forma = rozloz_jmeno(cele)
+        # Známka drží přes `rowSpan`: stojí jen u prvního řádku skupiny.
+        zm = ZNAMKA.search(bunky.get("tier", ""))
+        if zm:
+            znamka = zm.group(1)
+        jm = JMENO_CHIP.search(bunky["attacker_name"])
+        druh, forma = rozloz_jmeno(text(jm.group(1)) if jm else text(bunky["attacker_name"]))
+        poradi = cislo(text(bunky["order"]))
         if not druh or not forma or poradi is None:
             continue
-        om = ODKAZ.search(bunky[1])
+        om = ODKAZ.search(bunky["attacker_name"])
         out.append({
             "poradi": int(poradi),
             "druh": druh,
             "forma": forma,
-            "rychly": text(bunky[2]),
-            "nabity": text(bunky[3]),
-            "poskozeni": cislo(text(bunky[4])),
-            "faze": cislo(text(bunky[5])) if len(bunky) > 5 else None,
+            "rychly": text(bunky.get("qm_name", "")),
+            "nabity": text(bunky.get("cm_name", "")),
+            "znamka": znamka,
             "odkaz": om.group(1) if om else "",
         })
     return out
@@ -128,16 +139,23 @@ def radky_typu(usek):
 
 def main():
     refresh = "--refresh" in sys.argv
-    html = stahni(refresh)
     typy = {}
-    for nazev, usek in sekce(html):
-        r = radky_typu(usek)
+    for nazev in TYPY:
+        cesta = RAW_TYP / ("dmax_%s.html" % nazev.lower())
+        try:
+            html = _stahni(URL_TYP % nazev.lower(), cesta, refresh)
+        except Exception as e:                                # noqa: BLE001
+            print("  typ %s se nestáhl: %s" % (nazev, e))
+            continue
+        r = radky_typu(html)
         if len(r) >= MIN_RADKU:
             typy[nazev] = r
 
-    if len(typy) < MIN_TYPU:
-        print("CHYBA: našlo se jen %d typů (čekám aspoň %d) — stránka se "
-              "nejspíš přestavěla a parser je potřeba opravit." % (len(typy), MIN_TYPU))
+    celkem = sum(len(v) for v in typy.values())
+    if len(typy) < MIN_TYPU or celkem < MIN_RADKU_CELKEM:
+        print("CHYBA: našlo se jen %d typů a %d řádků (čekám aspoň %d / %d) — "
+              "stránka se nejspíš přestavěla a parser je potřeba opravit."
+              % (len(typy), celkem, MIN_TYPU, MIN_RADKU_CELKEM))
         return 1
 
     # Index podle druhu: kde všude stojí a jak vysoko. Z něj appka pozná
@@ -153,15 +171,15 @@ def main():
             # jako Gigantamax #2 a jako Dynamax #10. Bez toho by to vypadalo
             # jako tentýž pokémon na dvou místech.
             z["role"].append({"typ": typ, "poradi": r["poradi"],
-                              "poskozeni": r["poskozeni"], "forma": r["forma"]})
+                              "znamka": r["znamka"], "forma": r["forma"]})
     for z in druhy.values():
         z["role"].sort(key=lambda x: x["poradi"])
 
     out = {
         "_meta": {
-            "zdroj": URL,
+            "zdroj": URL_TYP % "<typ>",
             "staženo": date.today().isoformat(),
-            "model": "Max Move Damage počítá Pokémon GO Hub, ne appka.",
+            "model": "Pořadí i známku (SS…F) počítá Pokémon GO Hub, ne appka.",
             "pozn": "Regeneruj přes: python tools/build_dmax.py --refresh",
         },
         "typy": typy,
@@ -169,8 +187,7 @@ def main():
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n",
                    encoding="utf-8")
-    print("typů: %d, druhů: %d, řádků: %d"
-          % (len(typy), len(druhy), sum(len(v) for v in typy.values())))
+    print("typů: %d, druhů: %d, řádků: %d" % (len(typy), len(druhy), celkem))
     print("zapsáno: %s" % OUT)
     return 0
 

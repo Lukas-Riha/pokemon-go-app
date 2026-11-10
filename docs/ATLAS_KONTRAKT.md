@@ -79,7 +79,6 @@ je obojí jeho veřejnou součástí.
 | `atlasStropLigy(jmeno, limit, iva, ivd, ivs)` | nejvyšší půllevel, kde se kus ještě vejde pod limit ligy |
 | `atlasRankLimit()` | do kolikátého místa v lize bere člověk druh vážně (z nastavení) |
 | `atlasCounterStav()` / `atlasCounterZrus()` | proti kterému druhu se roster zrovna poměřuje; druhé to vypne |
-| `atlasDuplikatPrepni(id, hodnota?)` | přepne odbavení podezření na duplikát (štítek u kusu zůstává) |
 | `srovnejDuvody(kontejner)` | po vložení štítků schová, co se do šířky nevejde, do „+N" s bublinou |
 | `utokyDruhu(jmeno)` | útoky, které se druh může naučit: `{fast: [jména], charged: [jména], znamy}`; neznámý druh vrátí všechny |
 | `atlasSort("liga:LC"/"liga:GL"/"liga:UL"/"liga:ML", 1/-1)` | řazení podle pořadí druhu v jedné lize; kdo ji nehraje, je na konci v obou směrech |

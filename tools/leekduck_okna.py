@@ -40,6 +40,10 @@ SEKCE = {
     "spawns": "spawn",
     "eggs": "vejce",
     "raids": "raid",
+    # Max Battles dal LeekDuck v listopadu 2026 vlastni sekci (do te doby
+    # stala jako podnadpis uvnitr Raids). V appce patri k raidum — je to
+    # totez rozhodnuti „kam dnes vyrazit".
+    "max-battles": "raid",
     "research": "vyzkum",
     "bonuses": "bonus",
     "shiny": "shiny",
@@ -55,6 +59,11 @@ SEKCE = {
 # (`go-pass` se do oken nečte taky, ale bezplatnou větev z něj bere
 # `go_pass()` — proto už mezi nečtenými není.)
 NECTENE = ("go-pass", "sales")
+
+# Sekce, ktere se v appce slevaji do jine. Nadpis takove sekce se nechava
+# jako popisek skupiny — jinak by v seznamu raidu nebylo poznat, ze Dialga
+# je Max Battle a ne petihvezdickovy raid.
+SLOUCENE = ("max-battles",)
 
 # Jak se sekce stránky jmenují v datech appky — i ty, které se do oken
 # nečtou. Slouží provenance: bez téhle mapy nejde poznat, že stránka sekci
@@ -394,9 +403,16 @@ class _Parser(HTMLParser):
         # pole, druhé okno přepíše první a obě sady se slijí do jedné.
         self.cas = ""              # nadpis, ze kterého jde přečíst datum
         self.label = ""            # nadpis, ze kterého datum přečíst nejde
+        # Otevřené nadpisy podle úrovně: [(úroveň, text, je_to_čas)].
+        # Bez úrovní nejde poznat, kdy skupina skončila — viz handle_endtag.
+        self._nadpisy = []
+        # Vodorovná čára mezi seznamy je konec skupiny — ale jen když po ní
+        # rovnou jde obsah, ne další nadpis. Pozná se to až u toho obsahu.
+        self._prelom = False
         self.bloky = []            # [{sekce, cas, label, polozky: [...]}]
         self._h = None             # sbírám text nadpisu
         self._h_sekce = None       # třída sekce z právě otevřeného <h2>
+        self._h_trida = None       # jak se ta třída na stránce jmenuje
         self._jmeno = None         # sbírám .pkmn-name
         self._odstavec = None
         self._bonus = None         # sbírám .bonus-text
@@ -422,7 +438,28 @@ class _Parser(HTMLParser):
             return "kadidlo"
         return self.sekce
 
+    def _obnovit_popisky(self):
+        """cas a label = nejhlubsi otevreny nadpis sveho druhu."""
+        self.cas = ""
+        self.label = ""
+        for _u, text, je_cas in self._nadpisy:
+            if je_cas:
+                self.cas = text
+            else:
+                self.label = text
+
     def _blok(self):
+        if self._prelom:
+            self._prelom = False
+            # Po čáře přišel rovnou obsah: skupina posledního nadpisu
+            # skončila a platí až ten nadřazený. Na stránce Wild Area
+            # takhle za nadpisem Six-Star Max Battles nasleduji Dialga a Palkia,
+            # kteří šest hvězd nemají. Časový nadpis se takhle nemaže —
+            # okno čárou nekončí.
+            if self._nadpisy and not self._nadpisy[-1][2] \
+                    and self._nadpisy[-1][0] > 0:
+                self._nadpisy.pop()
+                self._obnovit_popisky()
         sekce = self._sekce_bloku()
         p = self.bloky[-1] if self.bloky else None
         if not p or p["sekce"] != sekce or p["cas"] != self.cas \
@@ -436,6 +473,9 @@ class _Parser(HTMLParser):
         a = dict(attrs)
         tridy = (a.get("class") or "").split()
 
+        if tag == "hr":
+            self._prelom = True
+
         # Konec článku: dál už je autor a patička webu, ne obsah akce.
         if tag == "footer" or "author-box" in tridy or "site-footer" in tridy:
             self.sekce = None
@@ -446,10 +486,12 @@ class _Parser(HTMLParser):
         if tag in ("h1", "h2", "h3", "h4"):
             self._h = []
             self._h_sekce = None
+            self._h_trida = None
             if "event-section-header" in tridy:
                 for t in tridy:
                     if t in SEKCE:
                         self._h_sekce = SEKCE[t]
+                        self._h_trida = t
                         break
                 # Sekce, o kterou nestojíme (features, sales, go-pass…) —
                 # obsah se přeskočí, ať se nesmíchá s tím předchozím.
@@ -509,19 +551,35 @@ class _Parser(HTMLParser):
     def handle_endtag(self, tag):
         if tag in ("h1", "h2", "h3", "h4") and self._h is not None:
             text = re.sub(r"\s+", " ", "".join(self._h)).strip()
+            uroven = int(tag[1])
             if self._h_sekce is not None:
                 self.sekce = None if self._h_sekce == "?" else self._h_sekce
                 self.cas = ""
                 self.label = ""
+                self._nadpisy = []
+                # Nadpis slouceny sekce je koren jeji skupiny: uroven 0 ho
+                # drzi pod vsemi h2–h4, takze „Max Battles" plati i tam, kde
+                # je nad polozkami uz jen datum.
+                if self._h_trida in SLOUCENE:
+                    self._nadpisy.append((0, text, False))
+                    self._obnovit_popisky()
+                self._prelom = False
             elif self.sekce is not None:
-                if rozsah(text, self.zacatek, self.konec) is not None:
-                    # Nové časové okno. Popisek skupiny ("Incense Encounters")
-                    # se NEMAŽE: ve zdroji stojí NAD okny a platí pro ně pro
-                    # všechna. Když se mazal, přišla appka o to, že ty druhy
-                    # chodí jen na kadidlo.
-                    self.cas = text
-                else:
-                    self.label = text
+                # Nadpis uzavírá to, co stálo pod ním nebo vedle něj: skupina
+                # předchozího nadpisu stejné nebo hlubší úrovně skončila.
+                # Hloubka je jediné, podle čeho to jde poznat — „Six-Star Max
+                # Battles" a „Saturday, November 14" jsou na LeekDucku oba h3,
+                # takže Dialga pod tím druhým nemá se šesti hvězdami nic
+                # společného; platí pro něj až nadřazené „Max Battles" (h2).
+                # Naopak „Incense Encounters" stojí jako h2 NAD okny, takže
+                # hlubším nadpisům platí dál.
+                while self._nadpisy and self._nadpisy[-1][0] >= uroven:
+                    self._nadpisy.pop()
+                self._nadpisy.append(
+                    (uroven, text,
+                     rozsah(text, self.zacatek, self.konec) is not None))
+                self._prelom = False
+                self._obnovit_popisky()
             self._h = None
             self._h_sekce = None
             return

@@ -1961,3 +1961,940 @@ délkou filtru pro Transfer. Vrstva se karty zatím vůbec nedotkla (v
 ale ne co dnes znamená — hodnota bez kontextu („práh 96 %") toho moc
 neřekne. Pokud na to vymyslíš místo (malý řádek pod polem), engine umí
 dodat číslo, kolik kusů se po změně pohne.
+
+## Úkol A032 pro Astru: Bojové nástroje, Žebříčky v čele (zadal Lukáš 2. 11.)
+
+**Proč zrovna tohle.** Přehled, Pokémoni, Vyhledávání i detail kusu už
+vrstva drží. Jediná skupina v navigaci, kde `atlas.css` nemá prakticky
+nic, jsou **Týmy → Bojové nástroje**. Počty pravidel v `atlas.css`:
+`prohlidkaCard` 86, proti tomu `refCard` 0, `rozpocetCard` 0,
+`typesCard` 0, `friendCard` 0. Obsah těch čtyř stránek kreslí engine,
+Atlas je kolem nich jenom rám — a vedle přestavěného detailu a kalendáře
+je to na první pohled vidět.
+
+Snímky současného stavu (TEST 2.13, šířky 1500 a 500 px) jsou v
+`docs/navrhy/a032/`.
+
+### 1. Žebříčky (`refCard`) — hlavní kus zadání
+
+Struktura v enginu: `<details class="ref-toggle card">` (`id` dopisuje
+`atlas.js`), uvnitř mřížka `.ref-tables` (dnes 1fr 1fr) a v ní čtyři
+bloky:
+
+* `#refRaidTable` — TOP raidoví útočníci (Typ / # / Pokémon / Sestava / % špičky)
+* `#refGymTable` — TOP obránci gymů (# / Pokémon / Typy / Def × HP / příjem / útok / skóre)
+* `#refPvpTables` — PvP žebříčky, celý obsah generuje engine (čtyři ligy
+  a k nim cupy, které jsou zrovna v rozpisu GBL)
+* `#refMegaTable` — Mega / Primal evoluce podle typů
+
+**Co na tom dnes vadí:**
+
+* Je to **jedna plachta: 5 206 px na 1500 px šířky, 8 766 px na 500 px.**
+  Žádný filtr, žádné stránkování, žádné sbalení — k poslednímu typu se
+  člověk doroluje. Vodorovně to nikde nepřetéká, to je v pořádku.
+* **Typy jsou holý text** („Steel / Ground"), přestože odznáčky typů má
+  appka hotové na sousední stránce (Typy a počasí) i v detailu kusu.
+* **U druhů nejsou obrázky.** Dlaždice rosteru i detail je mají, tady se
+  člověk orientuje jen podle jména.
+* **Dva sloupce vedle sebe** znamenají, že raidy a gymy běží paralelně a
+  oko mezi nimi skáče. To rozdělení je enginové, klidně ho přebij.
+* `<summary>` „Zobrazit referenční seznamy…" je pozůstatek doby, kdy to
+  byla sbalená karta uprostřed jedné dlouhé stránky. Jako samostatná
+  záložka už to nedává smysl.
+
+**Co od toho čekáme** (směr, ne předpis): aby se dal žebříček vybrat
+a ne prorolovat — typ nebo liga nahoře, pod tím jen to vybrané. Řádek
+s obrázkem druhu a odznáčky typů jako jinde v appce. Hlavička tabulky,
+která při rolování zůstává vidět.
+
+**Čeho se nedotýkej:** `id` těch čtyř tabulek a `#refPvpTables` (engine
+do nich píše obsah), ani znění vět nad tabulkami — texty jsou obsah, ne
+grafika. Když ti některá věta překáží, napiš to a změníme ji v enginu.
+
+### 2. Pokrytí rolí (`rozpocetCard`) — jedna viditelná chyba
+
+Úvodní odstavec je zkrácený na dva řádky a odkaz „víc" ho rozbaluje.
+Ořez ale padá **doprostřed řádku**, takže druhá řádka je vodorovně
+rozpůlená, odkaz „víc" stojí sám vlevo pod ní a hlavička tabulky
+(ROLE / MÁM / NÁPLAST / CÍL / CHYBÍ / KUSY) na něj hned navazuje bez
+mezery. Na snímku `stav-pokryti-roli-1500.png` je to první věc, které si
+člověk všimne.
+
+Zbytek stránky je enginová tabulka: proužky pokrytí, štítky kusů
+(`Machamp náplast`), počítadla `0 z 48` v rohu skupiny. Na 500 px se to
+samo přeskládá do karet po typech a vypadá líp než na desktopu.
+
+### 3. Typy a počasí (`typesCard`) — nejblíž hotovu
+
+Barevné odznáčky typů i matice násobků vypadají dobře. Zbývají drobnosti:
+nativní `<select>` u „Dnešní počasí" (jediný takový prvek na stránce),
+tři vysvětlující odstavce pod sebou ve třech různých stylech a matice
+18 × 18 bez ukotvené hlavičky a prvního sloupce — při rolování se ztratí,
+co je útok a co obrana.
+
+### 4. Výměna (`friendCard`) — nejmenší kus
+
+Karta je vysoká 260 px a pod ní zbývá prázdná obrazovka. Tlačítka jsou
+enginová modrá, ne `.atlas-cta` / `.atlas-mini-btn` jako jinde, „Jak
+dlouho jste kamarádi" je nativní `<select>` a „Nemáme společnou složku —
+načíst ručně" je holé `<details>` s trojúhelníčkem. Hodina práce, ale je
+to vidět.
+
+### 5. Drobné dluhy z posledních dní (patří do téže dávky)
+
+1. **Přepínač zdroje v Transferu** (`.hled-zdroj`, `.hled-zdroj-pocet`).
+   Přibyl včera: okno Transferu si teď říká, odkud dávka je (smazané
+   dnes z rosteru / celý roster / jen vybrané). V `atlas.css` o něm není
+   ani řádka, takže vypadá enginově.
+2. **Pruh hlášek v čištění boxu** (`.atlas-box-hlasky` uvnitř
+   `#bmActions`, blok **Claude 130**). Hlášky o přepočtu verdiktu a
+   nabídka vrácení stály mimo tok a překrývaly čtyři buňky „na co se
+   hodí". Dal jsem jim vlastní pruh s pevnou výškou 32 px, aby se kvůli
+   hlášce nic nehýbalo. Funguje to, ale je to holý řádek — **pravidlo
+   „výška se nemění, když hláška přijde a odejde" prosím zachovej.**
+3. **Hlavička kusu v čištění** (blok **Claude 129**). Zrušil jsem jí
+   pevných 226 px, protože podklad přerůstal pod verdikt a vypadalo to
+   jako druhé okno za ním. Teď se řídí obsahem, jenže blok se jménem ji
+   stejně natahuje na 174 px a pod staty zbývá prázdno.
+4. **Čtyři buňky „na co se hodí"** (`.atlas-vyuziti`) jsou nalepené
+   12 px pod tabulkou lig. Vzhledová sada chce aspoň 18 px a má v tom
+   pravdu — vypadá to jako součást tabulky.
+
+5. **Proměnná `--surface-2` nikde neexistuje.** Sahá po ní 16 pravidel,
+   skoro všechna v detailu akce, jenže definovaná není ani v `atlas.css`,
+   ani v enginu — takže z těch míst je průhledné pozadí. Buď ji doplň mezi
+   ostatní proměnné u `.atlas-test` (a u tmavého motivu), nebo těch
+   šestnáct míst přepiš na `--atlas-soft` / `--input-bg`.
+
+### Co do téhle dávky nepatří, ale pořád visí
+
+Zadání z 27. 10. jsou obě otevřená a zůstávají na později, ať toho není
+moc najednou:
+
+* **Omezené cupy a pruh s ligami** — `.d-cup-radek` v detailu,
+  `.d-cupy-tab` ve Vyhledávání (tam není jediné pravidlo), `.ac-ligy` na
+  Přehledu.
+* **Přestavba nastavení** — mezitím přibylo 28. pole
+  (`pvpPojistkaRank`, práh pořadí druhu u pojistky na cupy), takže je to
+  pořád jeden sloupec, jen o kus delší.
+
+### Pravidla, která platí pořád
+
+* **Dolů do 500 px.** Pod 500 px se nic neřeší, nad 500 se nic nesmí
+  lámat ani přetékat do šířky.
+* **`id` jsou enginová.** Přesouvat v DOM ano, přejmenovat ne — engine
+  podle nich píše obsah.
+* **Věty jsou obsah.** Nepřepisuj je v `atlas.css` ani `atlas.js`.
+* Svoje bloky v `atlas.css` čísluj dál; poslední je **Claude 130**.
+
+## Úkol A033 pro Astru: Roster v cloudu dostal místo v Atlasu (3. 11.)
+
+**Co se stalo:** appka je od 3. 11. zaregistrovaná u Microsoftu, takže
+přihlášení k OneDrivu opravdu funguje — kdo se přihlásí stejným účtem na
+počítači i v telefonu, má stejný roster a spojuje se po kusech. Do téhle
+chvíle to byla mrtvá karta a vrstva ji proto schovávala.
+
+**Co jsem kvůli tomu odebral (oboje bylo správně, dokud se přihlásit
+nešlo):**
+
+* `atlas.css`, řádek 10: `.atlas-test #cloudCard{display:none!important}`
+* `atlas.js`, na konci úvodní funkce: řádek, který vypínal všechna
+  tlačítka a pole v `#cloudCard`, i s dvouřádkovým komentářem nad ním.
+
+**Kde karta teď je:** nese ji engine spolu s Nastavením (v `SPOLU` je
+`cloudCard → settings-card`), takže v Atlasu vyjede pod **Nastavení** pod
+vlastním nastavením. Funguje to, ale je to jen „přivěšeno" — vypadá to
+jako obyčejná karta uprostřed stránky.
+
+**Co od tebe potřebuju:** dát tomu v Atlasu vlastní místo. Návrh, ne
+zadání: samostatná položka v levém sloupci pod Nastavením (třeba
+*Zálohy a synchronizace*), nebo panel nahoře v Nastavení se stavem
+„Přihlášeno jako… / Nepřihlášeno". Stav appka píše do `#cloudStav`
+(třída `on`, když je přihlášeno, `warn`, když se z téhle kopie přihlásit
+nejde), tlačítka `#cloudLogin`, `#cloudStahnout`, `#cloudNahrat`,
+`#cloudOdhlasit` se samy schovávají podle toho, jestli je přihlášeno.
+Rozbalovátko `#cloudNastaveni` je okrajové (vlastní registrace) — klidně
+úplně dolů.
+
+**Co jsem do `atlas.js` přidal (3. 11. odpoledne):** `window.AtlasCloudOtazka(data, ok)`
+— okno, kterým se appka ptá na roster z cloudu. Používá **tvůj importní
+dialog** (`#atlasImportDialog`) a jeho třídy (`atlas-import-result`,
+`atlas-import-stats`, `atlas-import-group`, `atlas-import-tiles`,
+`atlas-result-actions`), protože Lukáš chtěl „přesně jako u importu“.
+Rozdíl je jen v tom, že se ještě nic nestalo — místo „Přejít do rosteru“
+má dvě tlačítka (**Sloučit** / **Teď ne**). Když budeš s tím dialogem
+hýbat, počítej i s ním; hlídá ho kontrola 89 ve vzhledové sadě.
+
+**Na co pozor:** `#cloudCard` se nesmí schovávat natvrdo a tlačítka v ní
+nesmí zůstat vypnutá — hlídá to kontrola 88 ve vzhledové sadě.
+
+## Úkol A034 pro Astru: Nastavení (zadal Lukáš 3. 11.)
+
+Lukášova slova: *„to tlačítko pro Outlook je hrozně schované a je potřeba
+zjednodušit a zkompaktnit a i zmodernizovat nastavení, udělat ho přehlednější
+a vizuálnější pro uživatele, teď je to peklo bez vzhledu a s hromadou textu."*
+
+### Co jsem udělal já (3. 11., engine)
+
+Než jsem ti to poslal, spravil jsem čtyři věci, které dělaly půlku toho
+dojmu. Snímky **po** téhle opravě jsou v `docs/navrhy/a034/`.
+
+1. **Karta „Roster v cloudu" je nad Nastavením.** Dřív byla v DOM až za ním,
+   takže přihlášení k OneDrivu leželo pod dvěma tisíci pixely a Lukáš ho
+   nenašel. (Tohle je ten „Outlook".)
+2. **Sekce už nevynechávají půlku položek.** `rozdelitNastaveni()` skládalo
+   do sekcí jen `.setting`, ne `.nast-pole`, a seznam `ids` se od té doby
+   nedoplňoval. Osm položek proto padalo do koše **„Ostatní"** a tři
+   přepínače (PvP stovka, pojistka na cupy) visely úplně nad sekcemi jako
+   zeď textu. Přibyly sekce **Pojistky proti puštění** a **Raidy a gymy**,
+   „Čištění boxu" se rozšířilo o transfer a koš „Ostatní" je prázdný.
+3. **Výklad u přepínačů se skládá jako všude jinde.** `.nast-pole .hint` se
+   jako jediný neskládal pod „víc" — proto byl pravý sloupec pětkrát delší
+   než ostatní.
+4. **Smazal jsem osiřelý odstavec.** Nastavení CMP (`cmpPasmo`) bylo z appky
+   odebrané, ale jeho desetiřádkové vysvětlení v kartě zůstalo — text o
+   „tomhle čísle", které nikde nebylo.
+
+**Výsledek:** karta spadla z **2 178 px na 1 738 px** (−20 %) a sloupce jsou
+srovnatelně dlouhé. Pořád je to ale formulář, ne obrazovka.
+
+### Jak to vypadá teď (změřeno při 1500 px)
+
+| | |
+|---|---|
+| Výška karty | **1 738 px** |
+| Textu | **1 755 slov** |
+| Položek | **24** v **7 sekcích** |
+| Polí a tlačítek | 30 polí, 19 tlačítek |
+
+### Co od tebe potřebuju
+
+**Návrh a grafiku Nastavení.** Nic ti nepředepisuju, jen to, že se nesmí
+ztratit žádné pole ani tlačítko a `id` zůstávají enginová.
+
+Čeho si všimni:
+
+1. **Hodnoty.** Skoro všechno je číslo nebo procento v `input type=number`.
+   Vypadá to jako formulář z roku 2005 — posuvník, segmentovaný přepínač
+   nebo číslo s krokovými tlačítky by to zvedlo nejvíc.
+2. **Skládaný text.** Zkrácený výklad se dnes ořízne uprostřed řádku a pod
+   ním visí odkaz „víc" — ten řez vypadá jako chyba vykreslení. Chtělo by to
+   buď čistý ústřih (jedna věta), nebo ikonu „?" s bublinou.
+3. **Sekce.** Mají hlavičku `.nast-hlava` (tučný název + popis), ale žádný
+   vizuální předěl kromě rámečku. Nabízí se kotvy v levém sloupci Atlasu —
+   Nastavení dnes žádné podpoložky nemá.
+4. **Sloupce.** `.nast-mrizka` je `auto-fit minmax(290px)`, takže sekce
+   skáčou podle toho, kolik mají položek. Nejdelší sekce (Kvalita kusu,
+   Rozpočet rolí) jsou dvakrát delší než nejkratší.
+5. **Cloud nahoře.** Panel „Roster v cloudu" je teď první věc v Nastavení.
+   Stav píše engine do `#cloudStav` (třída `on` = přihlášeno, `warn` = odsud
+   se přihlásit nejde), tlačítka `#cloudLogin`, `#cloudStahnout`,
+   `#cloudNahrat`, `#cloudOdhlasit` se samy schovávají podle stavu.
+   Rozbalovátko `#cloudNastaveni` je okrajové — vlastní registrace.
+
+### Sekce a jejich obsah (stav po mé opravě)
+
+| Sekce | Položky |
+|---|---|
+| Kvalita kusu | `ivThresh`, `spThresh`, `prahSleva`, `rankThresh`, `rankLimit` |
+| Rozpočet rolí | `keepCopies`, `roleThresh`, `ligaRezerva`, `pametPoradi`, `dmaxKeep`, `dmaxSlotu` |
+| Pojistky proti puštění | `pvpStovka`, `pvpPojistka`, `pvpPojistkaRank`, `tradeThresh` |
+| Raidy a gymy | `raidSlotu`, `raidSlotuMimo`, `gymSlotu` |
+| Prach a vylepšování | `prachZaBod`, `ligaVaha` |
+| Čištění boxu a transfer | `boxSekce`, `hledaniDelka` |
+
+
+### Co Lukáš upřesnil (3. 11. odpoledne) — tohle je zadání, ne návrh
+
+> *„hlavně mě tam prostě štve to, že jsou tam šíleně dlouhé texty vidět,
+> zda by nešly schovat třeba pod otazníky, vypadá to fakt staře
+> a nepřehledně, a každé trochu jinak za mě, něco tučně, něco ne, něco má
+> jiná pole a tak."*
+
+1. **Výklad pod otazník — všechen.** U pole má zůstat jen název a hodnota;
+   vysvětlení se objeví po kliknutí na „?". Jeho podmínka: **název pole
+   musí být srozumitelný sám o sobě**. Kde název bez výkladu nedává smysl,
+   napiš které to jsou — přepíšu je já, texty jsou obsah. Jestli ti
+   v designu vyjde líp „jedna krátká věta + otazník", vezmi si to; Lukáš
+   nechal rozhodnutí na tobě.
+2. **Jednotnost.** Dnes je každá položka trochu jiná — někde je v názvu
+   tučné slovo, jinde ne; někde je `input`, jinde `select`, jinde
+   zaškrtávátko. Chce to **jeden tvar položky** a jeden způsob, jak se
+   v ní zvýrazňuje to podstatné.
+3. **„Držet ‚PvP stovku'" se nevejde do okna.** Ta volba je `select`
+   s dlouhým textem a přetéká. Zkrať ji, nebo jí dej jiný tvar — text
+   voleb klidně navrhni, přepíšu ho.
+4. **Sekce „Kontrola a data" je pryč.** Políčka „Ve hře mám / z toho
+   v gymech" jsem z appky odebral celá, včetně kontroly počtu kusů.
+   Nehledej je.
+
+**Co se nesmí:** sahat na výpočty. Verdikty, pořadí, prahy ani rozpočet
+rolí se nesmí změnit ani o kus — `atlas.css` a `atlas.js` jsou vzhled,
+ne pravidla. Když ti nějaká hodnota přijde špatně spočítaná, napiš to.
+
+### Návrh ke schválení (Claude, 3. 11.)
+
+`docs/navrhy/a034/nastaveni-navrh.html` — **spustitelný náhled**, ne obrázek:
+otazníky se otvírají, přepínače přepínají, hledání filtruje. Je postavený
+ze **skutečných polí, hodnot a textů** z appky, takže na něm jde posoudit
+hustota i délka vět. Snímky: `navrh-1400.png`, `navrh-500.png`.
+
+Co z něj platí jako zadání (Lukáš to tak chtěl):
+
+1. **Jeden tvar položky:** název vlevo, otazník za názvem, ovládání vpravo.
+   Žádná položka nemá v klidovém stavu pod sebou odstavec.
+2. **Výklad pod otazníkem**, ne pod polem. Otevře se na místě, pod položkou.
+3. **Jednotka patří k hodnotě**, ne do názvu — „Rezerva v lize“ a vedle
+   hodnoty „kusů“. Názvy se tím zkrátily a pořád dávají smysl samy o sobě.
+4. **Číslo se ťuká** plusem a mínusem, ne psaním do políčka.
+5. **Dvě nebo tři volby = přepínač**, ne vybírátko. Tím se spravilo i to,
+   že „Držet ‚PvP stovku'“ přetékalo z okna: dlouhý popis volby
+   („ano — kombinace #1 ze 4096 se nepouští“) patří pod otazník, v přepínači
+   stojí jen „ano / ne“.
+6. **Hledání nahoře.** Dvaadvacet položek se očima neprochází.
+7. **Sekce v mřížce** podle šířky okna, každá s ikonou.
+
+Čísla: v klidovém stavu je na obrazovce **2 221 znaků textu** místo 9 277,
+výška při 1400 px **1 368 px** místo 1 738. Při 500 px nic nepřetéká.
+
+**Co je na tobě:** vzít to jako východisko a udělat z toho vzhled — typografie,
+odstupy, stavy (najetí, zaměření, vypnuto), ikony sekcí, chování otazníku
+(bublina vs. rozbalení). Návrh je schválně syrový: řeší tvar a hustotu,
+ne krásu.
+
+## A038 — Doladění Nastavení po A037 (Claude, 5. 11.)
+
+Lukáš si prošel A037 a chtěl doladit: „hezké, zarovnané, čisté, srozumitelné
+a otazníček ať se po kliku zobrazuje jako vrstva nad appkou, ne že se rozbalí
+a posune stránku.“ **Sáhl jsem ti do `atlas.js` i `atlas.css`** — blok
+`Claude A038` na konci obou souborů. Tvoje A035/A036/A037 jsem nepřepisoval,
+A038 jen navazuje a pár věcí přebíjí. Co z toho chceš udělat po svém, udělej;
+jen ať zůstane zachované tohle:
+
+**1. Výklad stojí nad appkou.** Otazník otevře `.atlas-help-pop` — pevná
+vrstva (`z-index: 1600`) s lehkým ztmavením, box se posadí k tomu otazníku,
+na který se kliklo; pod 720 px je z něj spodní plachta. Zavírá se klikem
+vedle, křížkem i Escapem. **Výklad se do vrstvy stěhuje i s uzlem**
+(`.atlas-setting-help-body` se přesune a po zavření vrátí zpátky do řádku),
+takže živé křivky `#prahKrivka`, `#prachKurz` a `#ligaVahaInfo` dál žijí
+a překreslují se, když člověk zrovna ve vrstvě ťuká na „+“. Klonovat je
+nejde — engine si je hledá podle `id`.
+
+**2. Ovládání má jeden sloupec.** `--atlas-ctl` (176 px, pod 600 px 160 px).
+Krok je mřížka o čtyřech buňkách `− | hodnota | jednotka | +` a **jednotka
+drží místo i tam, kde žádná není** — bez toho se číslo posouvalo podle toho,
+jak byla jednotka dlouhá, a v kartě nestálo pod sebou vůbec nic (naměřeno:
+pravé okraje čísel se rozcházely o 34 px). Přepínač má stejnou šířku jako
+krok, takže obojí začíná i končí na stejné svislici. Kdybys sloupec měnila,
+drž tu zásadu: **jednotka je vlastní buňka, ne text přilepený k hodnotě.**
+
+**3. Dvě opravy, které nejsou kosmetika:**
+
+* **Osiřelé „víc“.** Engine si delší výklad skládá na dva řádky a přidává
+  k němu tlačítko. Když se stránka načte **rovnou na Nastavení** (appka si
+  pamatuje poslední záložku), je karta při jeho průchodu už otevřená, takže
+  tlačítko přistane přímo v řádku — a tvoje A035 pak odstěhuje jen `.hint`.
+  Výsledek: 22 řádků vysokých 95 px místo 60 a v kartě cloudu tlačítko mezi
+  `#cloudStav` a `.cloud-akce`, které je rozhodilo na dva řádky (tvoje A037
+  „stav a akce v jedné řadě“ tím pádem na reálném načtení nefungovalo).
+  A038 je maže a výklady značí `slozeno cely`, aby se už neskládaly.
+* **Ikona ✕ u „Raidy a gymy“** znamená v appce všude zavřít. Je z ní věž gymu.
+
+**4. V enginu jsem opravil, co jsi hlásila v A035:** „Práh «vysoké IV»“ měl
+celý svůj odstavec i `#ivThreshWarn` v cizím poli o pět řádků níž, u pojistky
+na cupy — tam navíc byla jedna věta dvakrát za sebou. Výklad je zpátky u svého
+pole, duplicita pryč. **Teď má otazník každý řádek, žádný není bez výkladu.**
+Tvoje návrhy názvů jsem použil jen tam, kde šlo o jednotku v závorce
+(`roleThresh`, `tradeThresh`, `pvpPojistka`, `pvpPojistkaRank`); zbytek jsem
+nepřejmenovával — to je obsah a patří Lukášovi.
+
+**Jak to teď vypadá:** `docs/navrhy/a038/nastaveni-{1400,500}.png`
+a `vyklad-{1400,500}.png`. Ověřeno 1500/500 px bez vodorovného přetečení,
+všech 22 řádků na jedné řádce, obě testovací sady zelené bez nových chyb
+(vrstva 505/6, engine 2591/40 — ty zbylé jsou starý dluh, ne tohle).
+Nové kontroly: vrstva 91–93, engine 329.
+
+**Technický dluh po A036 platí dál** a teď je větší: A035 staví, A036
+převádí, A037 přebíjí a A038 přebíjí znovu. Až na to bude čas, slož to do
+jednoho bloku — hlavně inicializaci řádku, ať se třikrát nepřepisuje totéž.
+
+## A039 — Vyhledávání: přilepené záložky rolí (Claude, 5. 11.)
+
+Lukáš: záložky (PvP, Raidy, Gym, Mega, Max) mít přilepené i při scrollování,
+přepínání mezi nimi ať neposkakuje, a hlavně — karta si pamatovala výšku
+podle nejvyšší otevřené role a pod třemi řádky Gymu zbývalo přes osm set
+pixelů prázdna. **Sáhl jsem do `atlas.js` i `atlas.css`**, blok `Claude A039`.
+
+**Co jsem zahodil.** `rezerva` / `rezervaPrirozena` / `pouzijRezervu()` /
+`zrusRezervu()` a posluchač scrollu u nich. Držely `min-height` tabulky na
+maximu ze všech rolí, které člověk otevřel, a pustily ho až při scrollu, na
+který se u krátké role nedalo dosáhnout — takže prakticky nikdy. Navíc to
+nefungovalo ani na to, k čemu to bylo: u Megy, kde Eevee žádné pořadí nemá,
+prohlížeč scroll stejně srazil až úplně nahoru.
+
+**Co je místo toho.** `prekresliBezSkoku()` si zapamatuje scroll a po
+překreslení ho vrátí. Když je nová tabulka opravdu kratší, prohlížeč ho srazí
+znovu — a to je správně, pod tabulkou už nic není. Záložky zůstanou vidět
+tak jako tak, protože `.atlas-vysledek-hlava` je `position:sticky;top:74px`
+(na telefonu 64, podle výšky `.atlas-top`), `z-index:5` — tedy **pod** horní
+lištou (80), ne nad ní.
+
+**Dvě drobnosti, na které si dej pozor, kdyby ses toho dotkla:**
+
+* Podklad hlavičky přetéká do stran přes vnitřní okraj karty
+  (`margin:-12px -20px 12px; padding:12px 20px 0`), jinak pod ní prosvítají
+  řádky. V `@media(max-width:650px)` má karta `padding:16px`, takže tam je
+  bleed jen −16.
+* Mezeru pod čarou kryje `::after` (`top:100%;height:12px`). Bez něj v ní
+  prosvítal rozříznutý řádek tabulky.
+* `position:sticky` tu drží jen proto, že `.atlas-vysledek` je v konečné
+  kaskádě `display:block` (přebíjí to pozdější pravidlo v bloku 50). Kdyby se
+  z karty zase stal grid, hlavička by se jako grid item přilepila jen uvnitř
+  svého řádku, tedy vůbec.
+
+**Vedlejší účinek, který je vidět:** u krátké role se stránka zkrátí, takže
+se scroll posune nahoru. Prázdné místo by to neřešilo, jen schovalo — a to
+bylo přesně to, co Lukášovi vadilo. Kdyby se to mělo vrátit, je to jeho
+rozhodnutí, ne naše.
+
+Testy: vrstva **517 prošlo / 6 selhalo** (stejných šest jako předtím), nové
+kontroly 94 a 95, a přepsal jsem blok 86 — ten kontroloval starou rezervu.
+Snímky: `docs/navrhy/a039/pvp-zalozky-prilepene.png` a `gym-bez-prazdna.png`.
+
+## A040 — Nastavení: hodnoty na střed, bilance rosteru, bubliny (Claude, 5. 11.)
+
+Lukášovy tři věci k A038: hodnoty v kroku nejsou zarovnané na výšku ani
+středem („50000“ a pod tím „60 %“ nesedí pod sebou), bubliny mají být
+přehlednější, a v Nastavení chybí údaj, kolik kusů se těmi čísly drží.
+Blok `Claude A040` v `atlas.css`, zásahy i v mém A038 v `atlas.js`.
+
+**1. Hodnota a jednotka jsou jedna dvojice a stojí uprostřed kroku.**
+V A038 měla jednotka vlastní buňku pevné šířky — čísla sice stála pod sebou
+na pravém okraji, ale dvojice jako celek ne. Teď je krok mřížka
+`− | dvojice | +`, dvojice je `.atlas-stepper-hodnota` (flex, `baseline`,
+na střed) a políčko se měří na délku hodnoty.
+
+Dvě věci, o které se to opřelo a které se nesmí rozbít:
+
+* Šířka políčka jde přes proměnnou `--sirka-hodnoty` (v `ch`, s tabulkovými
+  číslicemi je `ch` přesně šířka cifry). **Ne přes `style.width`** — A036 má
+  na políčku pevnou šířku s `!important` a ta by přímý zápis do stylu přebila.
+* Políčka mají v enginu `margin-bottom:4px`. Kvůli němu stálo číslo o dva
+  pixely výš než „−“ a „+“ a žádné zarovnání to nespravilo, dokud se margin
+  nevynuloval. Měřeno, ne odhadnuto.
+
+**2. Bilance nad sekcemi.** `.atlas-nast-bilance` hned pod hledáním: kolik
+kusů z kolika si appka při téhle kalibraci nechává, pruh a při změně odskok
+`+6` / `−3` na tři a půl vteřiny. Počítá se z `getRows()` a `keepGood`
+(což je přesně enginové „nechat“, viz jeho vlastní filtr `keep`). **Nic se
+nepočítá podruhé** — čte se, co spočítal engine.
+
+Spouštěčem je značka, kterou engine vkládá do `#tbody` po každém přepočtu
+(viz ATLAS KONTRAKT). Tím je jisté, že se čte **po** přepočtu, ne během něj.
+Na `change` v kartě visí ještě záloha se stejným časovačem, kdyby někdy
+přepočet tělem tabulky nehnul.
+
+**3. Bubliny u zkrácených přepínačů** mají nadpis s názvem nastavení
+(„Pojistka na cupy“ / „98 % a víc“) a tam, kde by jen zopakovaly text
+tlačítka („vypnuto“, „Ne“), nejsou vůbec. Původní `title` se zahazuje,
+jinak by ho engine převedl zpátky na `data-tip` a přepsal ten můj.
+Ve výkladu pod otazníkem přibyl řádek **„teď 5 bodů“** — řádek s hodnotou
+je v tu chvíli schovaný za vrstvou, takže se jinak nedá porovnat.
+
+Testy: vrstva **531 prošlo / 6 selhalo** (stejná šestice jako předtím).
+Nové kontroly 96–98. Z bloku 91 jsem vyhodil kontrolu pravých okrajů čísel —
+ta hlídala staré zarovnání na pravou hranu a po změně právem spadla; to nové
+hlídá 96. Snímky `docs/navrhy/a040/`.
+
+## A041 — Hledání pryč, karta cloudu přeskládaná (Claude, 5. 11.)
+
+Lukášovy tři věci: odskok u bilance dát k číslu, **hledání v Nastavení
+zrušit celé**, a v kartě cloudu dát tlačítko úplně doleva, za něj stav
+a obě rozbalovátka schovat pod otazník.
+
+**Hledání je pryč i z kódu**, ne jen schované: v A036 zmizelo zakládání
+pole, hláška „Žádné nastavení neodpovídá hledání“ i `search.oninput`,
+a s nimi obě pravidla v CSS. Kdybys ho chtěla vrátit, je to vědomé
+rozhodnutí, ne nedopatření — Lukáš ho chtěl pryč.
+
+**Karta cloudu** je `auto minmax(0,1fr) auto`: akce, stav, otazník. Obě
+rozbalovátka jdou do `.atlas-cloud-vyklad`, což je obyčejné tělo výkladu
+pro tutéž vrstvu jako v nastavení. **`#cloudNastaveni` zůstává celým
+`<details>` a se svým `id`** — engine ho sám otevírá, když chybí ID
+aplikace, a pak posílá člověka vyplnit `#cloudClientId`. Na `open` proto
+visí `MutationObserver`, který otevře i vrstvu; bez něj by appka ukazovala
+na políčko, které není vidět.
+
+### Co jsem rozbil a spravil — ať to nepotká tebe
+
+Při rušení hledání jsem CSS profiltroval po řádcích: `text.split("\r\n")`,
+vyhodit řádky s `atlas-settings-search`, složit zpátky. Skript ohlásil
+„odebráno 2 řádky“ a ve skutečnosti **smazal celé bloky A036 a A037** —
+asi padesát pravidel: barvy sekcí, ikony, mřížku karet, kroky, patičku
+i tvou řadu cloudu.
+
+Důvod: **`atlas.css` má mezi 3 800 řádky s CRLF deset řádků zakončených
+jen LF.** Dělení po `\r\n` z každé takové oblasti udělá jeden obrovský
+„řádek“ — a vyhození jednoho s sebou vezme všechno kolem.
+
+Obnovil jsem obojí doslova (jediná ztráta je jeden prázdný řádek nebo
+komentář mezi pravidly A036; funkčně nic). Ověřeno zpětně testy i snímky.
+**Pravidlo pro nás oba: v tomhle souboru se needitujte po řádcích.**
+Nahrazuj konkrétní pravidlo jako řetězec, nebo soubor nejdřív sjednoť na
+jeden konec řádku.
+
+## A042 — Shadow vs. mega, otazník u cloudu, cupy v čištění (Claude, 5. 11.)
+
+**Enginová oprava, která se týká i tvého vzhledu.** Ve hře se shadow forma
+vymegovat nedá — napřed se musí očistit. Appka hledala mega formu podle
+druhu a formy kusu si nevšímala, takže shadow Pinsir dostal mega slot
+a ve verdiktu stálo „Mega“: rada, která ve hře nejde provést.
+
+Co se změnilo v datech, na která kreslíš:
+
+* `megaEntry` má nové pole **`poOcisteni`** (shadow kus).
+* Slot mega má taky `poOcisteni` a jeho `popis` to dopisuje.
+* `slotZkratka` u takového kusu vrací **„mega po očistě“** místo „mega“
+  a `duvody` mají `stitek: "Mega po očistě"`. **Počítej s delším štítkem** —
+  v kartě rosteru i v čištění.
+* `megaSub` je „až po očistě“ a bublina to vysvětluje.
+* Dokud je po ruce běžná kopie téhož druhu, slot patří jí, i kdyby byla
+  jinak horší. Shadow kus má pak „Lepší kopie“.
+
+**Otazník v kartě cloudu** (z A041) byl 27 × 40 px, tedy ovál s otazníkem
+nakřivo: globální pravidlo pro tlačítka má v enginu `min-height:40px`
+a tvoje kolečko ze settings je scoupené na `.atlas-settings-compact`.
+Dostal vlastní rozměr v A041 bloku.
+
+**Cupy v čištění.** `.d-cupy` je teď `flex-wrap`, takže dva běžící cupy
+stojí vedle sebe místo pod sebou (enginové CSS). A `[data-detail-section=ligy]`
+má v `box-mode.siroky` nově `overflow:auto`: pevný strop 512 px zůstává
+(panel se mezi kusy nesmí hýbat), ale co se nevejde, jde dorolovat —
+dosud se to uřízlo v půlce textu. Blok `Claude A042` v `atlas.css`.
+
+**Novinky 2.13** jsem při té příležitosti protřídil: 28 položek na 25.
+Vyhodil jsem větu „čísla se srovnala do sloupce“ — po tvém a mém
+přeskládání už to není pravda, hodnoty stojí středem. Obrázky jsou
+přestřelené z aktuálního sestavení.
+
+Testy: engine **2596 / 40**, vrstva **544 / 6** — obojí beze změny
+v počtu chyb. Nové kontroly: engine 330, vrstva 100 a 101.
+Snímky `docs/navrhy/a042/`.
+
+## A043 — Příznak „Duplikát?“ zrušen, strop ligy se vešel (Claude, 5. 11.)
+
+**Zmizela celá značka DUPLIKÁT?** Lukáš: „ten duplikát nic neřekne a je
+k ničemu, prostě ho normálně vyhodnoť s verdiktem.“ Dva skeny jednoho kusu
+(stejná přesná IV, jiné CP) se teď posuzují jako každý jiný kus.
+
+Co se tím ztratilo z toho, na co můžeš kreslit:
+
+* `computed.duplikat`, `computed.duplikatPodezreni`, `computed.duplikatOver`
+  — **neexistují**.
+* Značka `.rarity-chip.r-DUP` / `.duplikat-prepinac` v hlavičce detailu
+  a štítek „Duplikát?“ mezi důvody — pryč i s CSS.
+* Verdikt „Nechat – ověř duplikát“ — pryč.
+* **`atlasDuplikatPrepni(id, hodnota?)` z kontraktu zmizela.** Kdybys ji
+  někde volala, spadne to.
+* Příznak `maybeSameMon` chránil takový kus před „horší kopie“. Tahle výjimka
+  je taky pryč, takže se dvojice posuzuje rozpočtem kopií jako každá jiná —
+  to byla podstata zadání. Jeden enginový test to hlídal naopak a opravil
+  jsem ho.
+
+**„je strop ligy“** v čištění bylo 16 px proti 9,5 px okolo a řádek se nevešel:
+velké číslo pořadí má pravidlo `.d-ligy-tab td b{font-size:16px}` a to chytlo
+i tohle `<b>` uvnitř ceny. Přebito vlastní třídou `b.d-lg-varovani`
+(specifičtější než `td b`) v bloku `Claude A042`.
+
+Testy: engine **2593 / 39**, vrstva **543 / 6**. Engine má o jednu chybu
+míň než ráno — zrušení duplikátu rovnou spravilo starý nález
+„appka varuje místo doporučení zahodit“.
+
+## A044 — evoluční řada v čištění se vejde celá
+
+Gourgeist má v posledním stupni tři formy (Small / Large / Super). Kusy
+byly 119 px široké, sloupec má 340 px — třetí se zalomil na druhý řádek
+a ten už byl mimo pruh, který má stupeň k dispozici (`flex:1 1 0`,
+`overflow:hidden`). Vypadalo to, že je obrázek uříznutý v půlce.
+
+* Stupeň teď **nezalamuje** (`flex-wrap:nowrap`) a kusy se o šířku dělí
+  rovným dílem (`flex:1 1 0;min-width:0`); popisek se láme uvnitř kusu.
+* Velikost obrázku řídí proměnná `--evo-obr` (výchozí 76 px). Nastavuje ji
+  `atlas.js` (`evoVejdiSe`) — zmenšuje po krocích, dokud se každý stupeň
+  nevejde do svého pruhu. **Nepiš do `.d-evo-kus img` pevnou velikost**,
+  přebila by to.
+
+## A045 — ligy v čištění bez posuvníku
+
+Sekce lig měla 254 px a obsah 273–337. Zvětšit ji nejde: panel má 968
+z 1000 px okna a hlavička (190), verdikt (120) i tlačítka jsou potřeba
+celé. **Zrušit strop nejde taky** — zkoušel jsem to a obsah přerostl
+`.atlas-box-obsah{overflow:hidden}`, takže pruh hlášek
+(`position:absolute;bottom:calc(100% + 10px)`) skončil přes čtyři buňky
+„na co se hodí“. Místo se proto vzalo jinde:
+
+| kde | bylo | je |
+| --- | --- | --- |
+| řádek ligy (`.d-lg-in`) | 52 px | 26 px |
+| odsazení buněk tabulky | 3 px | 1 px |
+| řádek typů (`.detail-title`) | 40 px | 34 px |
+| buňka role (`.d-role`) | 58 px | 50 px |
+| odsazení sekce | 12 px | 4 px |
+| tlačítka Pustit/Nechat | 10 px | 5 px |
+| spodní lišta se zkratkami | 11,5 px | 10,5 px |
+
+Dvě věci, do kterých **nesahej**:
+
+* **Verdikt má 120 px schválně.** Je to místo na dva řádky štítků důvodů
+  (`data-radku="2"`). Zkrátil jsem ho na 94 a u prvního kusu s důvody se
+  štítky vysypaly přes řádek typů pod ním.
+* **Buňka role musí uhlídat svou hodnotu.** Při 40 px se u Medichama
+  uřízlo „GL 96,1 %“. 50 px je dno.
+
+`overflow:auto` na sekci zůstává jako pojistka pro nižší okno — u kusu
+se třemi běžícími cupy na okně 950 px se posuvník objeví a to je správně.
+Testy to dělí: blok 101 hlídá krajní případ, blok 102 běžný kus na 1000 px.
+
+## A046 — mega formy ve Vyhledávání
+
+Záložka Mega ukazovala jeden řádek na druh se jménem a typy **základní**
+formy. Charizard má přitom dvě megy s různými typy a po megaevoluci
+neplatí ani jedna dvojice z toho, co tam stálo.
+
+Řádek je teď jeden za každou mega formu a nese navíc:
+
+* `r.megaForma` — jméno formy („Mega Charizard X“). Kreslí se místo jména
+  druhu; `data-evo-hledat` zůstává jméno druhu, jinak by hledání nic
+  nenašlo.
+* `r.megaTypy` — typy **po** proměně. Kreslí je `typyBubliny(seznam)`
+  (nová pomocná funkce vedle `typyHtml(klic)`, která bere typy z pokédexu).
+* `r.megaEnergie`, `r.megaEnergiePoprve`, `r.megaDruh` (`Mega`/`Primal`).
+
+Hlavička tabulky se u Megy mění: **Mega forma / Proměna / K čemu je**.
+Pořadí mega nemá, takže sloupec „Pořadí druhu“ by u ní vždycky říkal
+„v tomhle žebříčku není“ — teď je tam cena proměny.
+
+Zdroj se přesunul z `reference.json` (ohodnocený seznam, 47 druhů) na
+pokédex (59 druhů), takže v záložce jsou i megy, které appka nehodnotí.
+
+## A047 — dva nové prvky, které potřebují vzhled
+
+Obojí je z enginu, takže jen říkám, že existují — ať je nenajdeš jako
+neostylované.
+
+**`.d-cup-radek.d-cup-vic`** — pod tabulkou lig se vypíšou nejvýš dva
+běžící cupy a zbytek je v tomhle jednom prvku: `<b>+1</b>` a popisek,
+`data-tip` nese výpis schovaných. Engine mu dává jen `flex:0 0 auto`
+a `cursor:help`, takže vypadá jako plnohodnotný cup, jen užší. Když
+chceš, ať je vizuálně vedlejší, je to tvoje.
+
+**`#typFiltrPoMege`** — další zaškrtávátko v panelu filtru typu
+(`#typFiltrPanel`), stejná třída `typ-filtr-rezim` jako to vedle něj.
+Přepíná, jestli se filtruje podle typů kusu, nebo podle typů **po
+megaevoluci**. Panel tím má tři řádky místo dvou — jestli se to
+s tvým rozložením pere, řekni.
+
+## A048 — GMAX, dva nové štítky důvodu a jedno zrušené tlačítko
+
+**`.rarity-chip.r-GM` je teď i na kusu.** Dosud žila ta třída jen v tabulce
+Max Battle u mega/gmax formy druhu. Nově se Gigantamax zadává u kusu:
+`štítek .dmax-prepinac` má tři stavy a přepíná si i třídu — `r-D` s textem
+`DMAX`, `r-GM` s textem `GMAX`, a `.vypnuto`, když značka není. Levý klik
+zapíná/vypíná, pravý překlápí DMAX↔GMAX. Kdyby se ti `r-GM` (tmavě růžová)
+vedle `r-D` tloukla, je to tvoje.
+
+Stejná dvojice je v rosterové kartě (`AtlasTags` v `atlas.js` — to je můj
+soubor, jen říkám, že tam `GMAX` přibylo), v dlaždicích a ve filtru značek
+(`data-znacka="GM"`).
+
+**Dva nové štítky důvodu** ve verdiktu: `PvP stovka` a `Pojistka na cupy`.
+Kreslí se stejně jako ostatní `.dv-chip` a řadí se k ligám, tedy úplně
+doleva. Žádná nová třída, jen delší text — „Pojistka na cupy“ je
+nejdelší štítek, jaký appka má (16 znaků). Jestli se ti rozbíjí řádek
+štítků v čištění boxu, řekni — dá se zkrátit na „Pojistka“.
+
+**`.d-cup-radek.d-cup-vic` už neexistuje.** Sekce A047 ho ohlašovala; Lukáš
+ho zrušil. Běžící cupy jsou nejvýš dva a třetí se nevypisuje vůbec. Styl
+jsem z enginu odebral — jestli sis ho mezitím vzala do `atlas.css`, můžeš
+ho smazat.
+
+**`.tip-seznam em.slabe`** — pomlka místo procenta v bublině Max Battle
+u druhu, který žebříček svého typu nemá. Engine mu dává jen
+`color: var(--text-muted)` a `font-style: normal`.
+
+**Nové kolíčko v Nastavení:** `#megaIvPrah` („Práh IV u nevyvinutého kusu
+na megu“), stejný `number` jako `#dmaxKeep` vedle něj. A `#rbGmax`
+v formuláři nového kusu — další `.rb-znacka` vedle `#rbDmax`.
+
+## A049 — štítky s ligou, útoky v čištění a Max záložka
+
+**Štítky `PvP stovka` a `Pojistka na cupy` teď nesou i ligu** — na kartě
+stojí `Pojistka na cupy · UL`. Filtr a hledání dál jedou podle holého
+jména, mění se jen popisek. Je to teď nejdelší štítek v appce (21 znaků);
+A048 se ptá na totéž — když to rozbije řádek, řekni a zkrátím ho.
+
+**Čištění boxu: útoky jen ikonami.** Panel má pevnou výšku a plná jména
+útoků z něj vytlačila blok se stropem CP. V `atlas.js` má proto
+`atlas-ident-utoky` uvnitř `#boxMode` úzký režim: `.d-move` nemá
+`.d-move-jm`, jméno jde do `data-tip`, šipka `.atlas-utok-lepsi` se nekreslí
+a `.atlas-sestava-utoky` dostal **inline** `display:flex;flex-wrap:wrap`.
+Ten inline styl je provizorium — když si ho vezmeš do `atlas.css`
+(například `#boxMode .atlas-sestava-utoky{…}`), vyhodím ho.
+
+**Strop CP má delší poznámku.** `.d-box` se záhlavím `Strop` má u kusu před
+evolucí `na levelu 50 po evo · bez evoluce 1914 CP` — delší řádek než dřív.
+
+**Pruh vrácených kusů** (`#bmVraceni`) má v `.bm-vraceni-txt` o jeden
+`<span>` víc: pod verdiktem stojí, proč se ten kus zase vejde. Hlavička
+pruhu se zkrátila na „přepočítáno po změně u X“.
+
+**Náhled importu** (`.imp-plan-pozn`) vypisuje jména přeskočených kusů,
+takže ten řádek bývá delší — přes dva řádky i u širokého okna.
+
+**Raidová tabulka ve Vyhledávání je sloučená** — běžná forma, shadow
+i mega v jednom pořadí. Za jménem proto stává `.rarity-chip.r-SH` / `.r-MG`
+(SHADOW / MEGA); obě třídy už existovaly, jen teď stojí i tady.
+
+**Záložka Mega už není.** Mega formy jsou v raidové tabulce a cena měny
+jede s nimi jako poslední sloupec. Sloupce teď jsou:
+`Druh | Hodnocení | Pořadí… | (Nejlepší IV u PvP) | Útoky | (Cena megy
+u raidů) | akce`, nové třídy buněk `.atlas-vysledek-znamka`
+a `.atlas-vysledek-cena`. Pruh s názvem ligy má `colspan="6"`. Věta pod
+tabulkou je pryč — Lukáš info věty nechce, vysvětlení známky je v bublině.
+
+**Pořadí záložek je PvP – Raidy – Max – Gym.** Max Battle rozhoduje o tom,
+koho si nechat; obrana gymu je dnes okrajová. Stejné pořadí mají
+odznáčky v hlavičce.
+
+**Známka** `.atlas-znamka[data-znamka="SS…F"]` má inline už jen **barvu
+pozadí** — ta je z dat. Velikost a tvar jsou v `atlas.css`. Ve vlastním
+sloupci tabulky má navíc třídu `.atlas-znamka-velka` (22 px, aby byla
+vysoká jako obrázek druhu vedle ní).
+
+**Hodnocení druhu v hlavičce** (`.atlas-hledani-kde`) je řádek odznáčků
+`.atlas-hodnoceni > .atlas-hodnoceni-kus`. Odznáček už **není**
+`<details>/<summary>`, ale `<span>` s bublinou — rozbalený popis posunul
+všechno pod sebou. Pravidla pro `.atlas-role-detail` v `atlas.css` tak
+nemají co obsluhovat, můžeš je smazat. Odznáček **Max** má nově dvě
+ikony vedle sebe — značku formy (`img.atlas-max-mark`, dmax/gmax) a za ní
+typ (`svg.typ-ikona`), protože Max Battle má pořadí v každém typu zvlášť
+a druh jich může mít víc (Charizard tři). Ukazují se nejvýš tři.
+
+**Všechny provizorní inline styly z minulého předání jsou pryč.** Jsou
+v `atlas.css` v bloku **Claude (133)** na konci souboru:
+
+* `table-layout:fixed` na `.atlas-vysledek-tab` **až nad 1100 px**. Šířky
+  drží `<colgroup>` z `atlas.js`: Druh 24 %, Hodnocení **86 px**
+  (pod tím se do hlavičky nevejde slovo), Pořadí 16 %, Nejlepší IV 14 %
+  jen u PvP, Cena 13 % jen u raidů, akce 14 %, zbytek útoky. Díky tomu
+  začíná Hodnocení ve všech rolích na témže místě. Pod 1100 px si šířky
+  rozdělí prohlížeč — na užším okně by na útoky zbyl proužek. Blok
+  přebíjí `Claude (128)`, který pevné rozložení vypínal.
+* `vertical-align:middle` na buňkách tabulky.
+* velikost `.atlas-znamka` a `.atlas-znamka-velka`.
+* `display:inline-flex` na `.atlas-hodnoceni-kus` (předtím to dělalo
+  `<summary>`).
+* `grid-template-columns: clamp(240px,34%,520px) 1fr` na
+  `.atlas-hledani-identita` nad 901 px, aby blok `Hodnocení druhu`
+  začínal u každého druhu stejně — předtím si mřížka měřila sloupce
+  podle obsahu a u Charizarda s přepínačem Shadow skákal o 235 px.
+* `white-space:normal` na `.atlas-vysledek-hledat` nad 1100 px — při
+  pevném rozložení už příkaz nemá kam přerůst a vylezl z karty.
+
+Je to **moje provizorium, ne tvůj vzhled** — když si cokoli z toho vezmeš
+k sobě, blok (133) smažu.
+
+**Nové volání enginu:** `__pgo.atlasMaGmax(jméno)` → `true` / `false` /
+`null` (= seznam v zapečených datech není, takže se nemá co tvrdit).
+Používá se na záložce **Max** ve Vyhledávání.
+
+## A050 — ligová známka A+, hvězdička u útoků, pořadí odznáčků
+
+**Známka může být `A+`.** V ligách se známka počítá podle stupnice
+Pokémon GO Hubu (S / A+ / A / B / C / D / F), jinde zůstává naše
+SS–F. `data-znamka="A+"` je tedy nová hodnota, barvu má mezi S a A
+(`#3f9f69`, pořád inline z `atlas.js` — je z dat).
+
+**Nový prvek `sup.atlas-utok-elitni`** uvnitř `.atlas-utok-chip`: hvězdička
+za jménem útoku, který ten druh běžným TM nedostane (jen z akce nebo za
+Elite TM). Stejně to značí PvPoke i Hub. Základní vzhled jsem dal do
+bloku **Claude (134)** v `atlas.css` — je to jen barva a velikost, klidně
+si to vezmi k sobě.
+
+**Pořadí odznáčků v hlavičce** (`.atlas-hodnoceni`) se změnilo na pořadí,
+jaké má Hub: raidy → Gigantamax → Dynamax → obrana gymu → ligy. Žádná
+nová třída, jen jiné pořadí — ale je to řádek, který se teď častěji
+zalomí na dva (Charizard má sedm odznáčků).
+
+**Seznam druhů na výměnu** (`.hled-vymena`, stránka Transfer) má dvě nové
+drobnosti:
+
+* `.hled-pred-druh > small` — „+2“ za jménem, kolik dalších stupňů řady
+  ten řádek pokrývá (jeden stupeň platí na celou řadu).
+* `.hled-pred-dvojmo` — řádek, který už nic nepřidává (stejnou řadu drží
+  jiný řádek). Teď jen `opacity:.62` v bloku (134).
+* Pod seznamem přibyl obvyklý `.hled-radek` s `.hled-text` a
+  `.hled-kopie` — seznam jako text na poslání kamarádovi.
+
+**Nová volání enginu:** `__pgo.atlasElitniUtoky(jméno|klíč)` → pole jmen
+útoků, které ten druh běžným TM nedostane. `__pgo.atlasStupnice("pvp")`
+nebo `("typ")` → věta o prazích známek (prahy zná jen engine, vrstva je
+jen vypisuje). `window.AtlasUtokySestava(text, klíč)` bere druhý argument
+— bez něj hvězdičku není podle čeho napsat.
+
+## A051 — žebříčky od Hubu, hvězdička u útoků, ikony na střed
+
+**Vyhledávání teď ukazuje čísla Pokémon GO Hubu** — u raidů i u obránců
+gymů (Max Battle od něj bylo už dřív). Pro vzhled z toho plyne jediné: řádků
+v raidové tabulce přibylo (Snorlax jich má čtrnáct, dřív dva) a známky
+po tabulce dál jen klesají. Nové pole řádku `zdrojHub`; `pctApp` nese to,
+co si počítá appka sama — řekne ho bublina u známky.
+
+**Dvě drobnosti v `atlas.css`**, obojí v bloku **Claude (135)**:
+
+* `.atlas-utok-typ svg{margin:0}` — `.typ-ikona` má obecně
+  `margin-right:3px` (stojí vedle textu typu) a v kolečku, kde žádný text
+  není, posouvala glyf o 1,5 px doleva od středu. Změřeno na všech chipech.
+* `.d-lg-sestava .atlas-utok-chip .atlas-utok-typ svg{width:18px}` —
+  v ligové tabulce detailu platí `svg{width:10px}` kvůli spritům v témže
+  chipu a chytalo to i ikonu typu: v kolečku 18 px seděl glyf 10 px.
+  Kolečko je správně velké, mění se jen glyf.
+
+**Blok Claude (136)**: `@keyframes atlas-hled-blik` a
+`.hled-pred-druh[data-blik]`. Druhý stupeň téže evoluční řady se do seznamu
+přání už nepřidává (jeden řádek platí na celou řadu), takže místo přidání
+problikne řádek, který ho pokrývá. Běží to samo při vykreslení, žádný JS
+k tomu není. Pravidlo `.hled-pred-dvojmo` z (134) jsem smazal — nemá už
+co obsluhovat.
+
+**Co by si zasloužilo tvoje oko:** Lukáš by chtěl **záložku Žebříčky
+přestavět do podoby, jakou mají žebříčky na Hubu** — teda tabulka
+s odznáčkem stupně vlevo, pořadím, druhem a sestavou. Data pro to už
+v appce všechna jsou (`HUB.typy`, `HUB.gym`, `DMAX`, `META.leagues`).
+Zadá ti to až po překlopení téhle verze do produkce.
+
+## A052 — pikogram typu bez kolečka, méně bublin
+
+**Štítek typu už nemá kolem piktogramu kolečko.** Ikona typu nese vlastní
+`.typ-ik-kruh` a uvnitř barevného štítku z toho bylo kolečko v kolečku —
+tvůj bílý obrys z A055 ho ještě zvýraznil. V bloku **Claude (137)** se
+kolečko skrývá a glyf se zvětšil na `1.5em`, stejně jako v kolečku útoku.
+**Kromě dlaždic v rosteru** (`.atlas-roster-type`): tam glyf zůstává
+v původní velikosti, protože dva typy se tam musí vždycky vejít na jeden
+řádek a při 1.5em se Garchompovi zlomily pod sebe. Kolečko mizí i tam.
+Když to budete chtít jinak, je to jeden blok.
+
+**Bublina u písmena známky je pryč.** Lukáš ji nechce — co stupně
+znamenají a odkud jsou, patří do „Odkud se to bere". `znamkaHtml` už
+dostává prázdný tip, `title` na `.atlas-znamka` v tabulce není žádný.
+
+**Blok Claude (136) doplněn o `.app-okno-cip[data-blik]`** — týž efekt
+probliknutí, ale už v dialogu, kde se seznam přání upravuje. Druhý stupeň
+téže řady se nepřidá a místo toho se rozsvítí štítek, který ho pokrývá.
+
+## A053 — přepínač formy umí i megy
+
+`.atlas-forma-prepinac` už nemá dvě tlačítka, ale **až čtyři**: Běžný,
+Shadow a jednu za každou mega formu (Charizard má dvě, takže tam jsou
+čtyři). Tlačítka nesou `data-forma-text` s tím, co se napíše do pole —
+staré `data-forma` už tam není. Na širokém okně se to vejde, na užším
+by to chtělo zalomit nebo zkrátit popisky („Mega X" / „Mega Y").
+
+Hodnocení v hlavičce se teď řídí vybranou formou, takže odznáčků může
+být méně: mega má jen raidy, shadow raidy a ligy.
+
+**Mega má v hlavičce svoje čísla:** jméno, typy, staty i CP. Obrázek
+zůstává základního druhu — mega sprity v `atlas-art.json` nejsou.
+Kdyby přibyly, stačí pustit `obrazekRam` na `model.megaForma`.
+
+**Bonus:** `.druh-napoveda .druh-polozka > img` má v bloku **Claude (138)**
+pevných 34 px a vypnutý vystředovací `transform`. Ten se nepočítá do
+rozměru řádku, ale do přerůstání panelu, takže se u JEDINÉHO výsledku
+objevil posuvník a u pěti ne.
+
+## A054 — poslední sloupec tabulky zrušen, hlavička už neskáče
+
+**Sloupec s příkazem „Vyhledat X" je pryč.** Jméno v prvním sloupci je
+odkaz na totéž u každého řádku kromě právě prohlíženého, takže to byla
+tatáž věc dvakrát a brala šestinu šířky. Tabulka má teď **pět sloupců**
+(Druh, Hodnocení, Pořadí, Útoky, u raidů Cena megy) a pruh s názvem ligy
+má `colspan="5"`. Pravidla pro `.atlas-vysledek-akce`
+a `.atlas-vysledek-hledat` v `atlas.css` už nemají co obsluhovat — jsou
+na řádcích 2635, 2638 a 3593, můžeš je smazat (jsou ve tvé části, proto
+jsem do nich nesáhl).
+
+**Pozor na specifičnost u `.atlas-hledani-identita`.** Pravidlo z bloku
+Claude (133) se neprosazovalo, protože tvé
+`#prohlidkaCard .atlas-hledani-identita{grid-template-columns:auto 1fr auto}`
+má id. Blok ho teď má taky. Bez toho se levý sloupec roztahoval podle
+délky jména a u „Mega Charizard Y" zbylo na hodnocení 61 px.
+
+**Jméno v hlavičce nese formu** — „Shadow Beedrill", „Mega Charizard Y".
+Je to delší text než dřív, takže se štítky typů častěji zalomí.
+
+**Přepínač formy se kvůli tomu přestěhoval** z `.atlas-hledani-kdo` do
+`.atlas-hledani-kde`, nad popisek „Hodnocení druhu". Pod jménem s ním
+hýbala délka názvu; teď má stejný levý okraj jako řádek odznáčků
+(729 px u Beedrilla, Charizarda i Snorlaxe). Vlastní řádek a zalamování
+mu dává blok **Claude (139)** — `.atlas-hledani-kde` je blok, takže by
+jinak seděl vedle popisku.
+
+## A055 — info věty a tlačítko protihráčů pryč
+
+Lukáš nechce pod tabulkami výkladové věty. Zmizely tři:
+
+* „Pořadí i známku počítá Pokémon GO Hub…" pod Max Battle,
+* „Gigantamax formu tenhle druh má/nemá…",
+* „Pořadí je ze shadow žebříčku PvPoke…" u shadow formy.
+
+Zpráva o přepnutí role (`.atlas-vysledek-presun`) zůstává — to není výklad,
+ale odpověď na to, proč člověk kouká na jinou záložku. Prázdný stav
+(`.atlas-vysledek-prazdno`) také.
+
+**Tlačítko „Vybrat protihráče z mého rosteru" na záložce Typy je pryč.**
+Bylo to jediné místo, odkud se v Atlasu spouštěl režim protihráčů, takže
+už nemají co dělat ani pravidla `.atlas-typy-counter`, `.atlas-proti-pruh`
+a `.atlas-proti-skore` v `atlas.css` (tvoje část, nesáhl jsem na ně).
+Výpočet `counterScore` žije dál — počítají z něj typové tabulky i Tahák.
+
+**Novinky 2.13 jsou sjednocené:** ze 121 bodů je 57 ve dvanácti sekcích
+a snímky jsou přestříhané z aktuální TEST sestavy. `hledani-zalozky` už
+není Eevee s třiceti ligovými řádky (2 089 px na výšku), ale raidová
+tabulka Beedrilla — mega, shadow, známka i cena megy na jednom obrázku.
+
+## A056 — větší glyf typu nesměl rozhodit hlavičku
+
+Tvůj větší piktogram typu (`1.5em`, blok 137) měl tři vedlejší účinky,
+které našla vrstvová sada. Spravil jsem je **ve svých blocích**, tvůj
+glyf zůstává velký:
+
+* **Štítek typu v hlavičce byl 25 px**, značky vedle něj 24 px — v řádku
+  z toho byl schod. `.detail-title .atlas-typy-slot>.d-type` má teď pevných
+  24 px (`inline-flex`, `padding-block:2px`, `padding-inline:8px`), takže
+  výšku bere ze značky. **Důležité:** `.atlas-vyhoda` má svoje `.pk-typ`
+  chipy a ty musí zůstat malé — když to pravidlo vezme i je, celé
+  „silný proti" naroste z 135 na 359 px a řádek se zlomí.
+* **Chip útoku v ligové tabulce** detailu přetékal pevný 26px řádek
+  o pixel — glyf 18 px z chipu udělal 24 px. Chip má teď
+  `padding-block:0;line-height:1`.
+* **Útoky v úzkém rozboru** (čištění boxu) se centrovaly: třída
+  `.atlas-sestava-utoky` má `flex-direction:column`, takže `align-items`
+  je VODOROVNÁ osa a útoky začínaly o 32 px jinde než popisek. Je to
+  `flex-start` (v `atlas.js`, můj inline styl).
+
+## A057 — Max Battles mají na LeekDucku vlastní sekci
+
+9. 11. přestavili stránku akce: `Max Battles` je teď `event-section-header`
+a to, co pod ním bývalo `h3`, je `h2`. Parser tu sekci neznal, takže z Wild
+Area 2026 vypadl Gigantamax Duraludon, Dynamax Dialga i Palkia. Vrátilo se to
+k raidům a nad položkami stojí název skupiny („Six-Star Max Battles",
+„Dynamax Dialga and Dynamax Palkia"). Vzhledu se to netýká, jen ať víš, proč
+v detailu akce přibyly řádky.
+
+### Pravidla, která platí pořád
+
+* **Dolů do 500 px.** Pod 500 px se nic neřeší, nad 500 se nic nesmí lámat.
+* **`id` jsou enginová.** Přesouvat v DOM ano, přejmenovat ne.
+* **Věty jsou obsah.** Když ti některá přijde dlouhá, napiš to — nepřepisuj
+  ji v `atlas.css` ani `atlas.js`.
+* Svoje bloky v `atlas.css` čísluj dál.

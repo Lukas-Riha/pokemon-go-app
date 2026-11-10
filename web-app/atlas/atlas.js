@@ -48,7 +48,7 @@ window.AtlasVerdict=c=>({
 });
 window.AtlasPohlavi=(r={})=>{const g=__pgo.atlasPohlavi?__pgo.atlasPohlavi(r):null;
  return g?` <span class="atlas-pohlavi atlas-pohlavi-${g}" aria-label="${g==='f'?'Samice':'Samec'}">${g==='f'?'♀':'♂'}</span>`:''};
-window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+[['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],['D','DMAX',c.dynamax],['C','CUTE',c.cute],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
+window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+[['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],[c.gmax?'GM':'D',c.gmax?'GMAX':'DMAX',c.dynamax],['C','CUTE',c.cute],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
   .replace(/^(.+)$/,'<span class="atlas-tag-vlastni">$1</span>');
 
 window.AtlasRole=function(c){if(c.cuteOnly)return 'Osobní sbírka · bez investičního cíle';const roles=[];if(c.pvpRec&&!['Ne','–'].includes(c.pvpRec))roles.push(c.pvpRec);if(c.raidRec&&!['Ne','Slabý','Slabý útok','–'].includes(c.raidRec))roles.push('Raid · '+c.raidRec);if(c.gymRec&&!['Ne','Slabý','–'].includes(c.gymRec))roles.push('Gym · '+c.gymRec);return roles.join(' / ')||(c.megaKandidat?'Mega evoluce':'Sbírka a další využití');};
@@ -368,9 +368,6 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   if(!(groups[start]||[]).some(x=>x[0]===startRoute))startRoute='';
   go(start,startRoute||undefined);
   if(window.__atlasStorageUnavailable){const note=document.createElement('p');note.className='atlas-notice';note.textContent='Prohlížeč zablokoval ukládání. Data a změny si exportuj do souboru.';heading.after(note)}
-  // Explicit local-only surface: production cloud controls retain their code,
-  // but cannot be activated accidentally in the test design.
-  $('#cloudCard')?.querySelectorAll('button,input,select').forEach(el=>el.disabled=true);
   window.__atlasTest={go,refresh,openDetail,closeDetail,setCompact,getDetailSequence:()=>renderedRows().map(r=>r.id),getState:()=>({view,route,page,dialogId,compact,rows:cache.rows.length})};
 })();
 
@@ -1078,6 +1075,24 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
   result.innerHTML='<div class="atlas-import-stats">'+(m?[['Aktualizováno',m.updated],['Nových',m.added],['Vylepšených',m.poweredUp],['Vyvinutých',m.evolved]]:[['Načteno',data.imported.length],['Zachováno',data.retained.length]]).map(([label,n])=>'<div><strong>'+n+'</strong><span>'+label+'</span></div>').join('')+'</div><p class="atlas-result-note">Vylepšené a vyvinuté kusy jsou součástí aktualizovaných. Nezachycené kusy se samy nemažou; rozhoduje volba celého boxu.</p>'+groups.map(([label,items])=>'<details class="atlas-import-group"><summary>'+esc(label)+'<span>'+items.length+'</span></summary>'+(items.length?'<div class="atlas-import-tiles">'+items.map(({before,after:r})=>'<div class="atlas-import-tile">'+(window.AtlasMonImage?window.AtlasMonImage(r):'')+'<div class="atlas-import-tile-txt"><strong>'+esc(r.pokemon)+'</strong><span>'+(before&&before.pokemon!==r.pokemon?esc(before.pokemon)+' → '+esc(r.pokemon)+' · ':'')+(before&&String(before.cp||'')!==String(r.cp||'')?esc(String(before.cp||'?'))+' → ':'')+esc(String(r.cp||'?'))+' CP'+(r.level?' · L'+esc(String(r.level)):'')+'</span></div></div>').join('')+'</div>':'<p>Žádný kus v této kategorii.</p>')+'</details>').join('')+'<details class="atlas-import-group"><summary>Podrobné hlášení importu</summary><p class="atlas-import-message">'+esc(message)+'</p></details><div class="atlas-result-actions"><button data-result-done>Přejít do rosteru</button></div>';
   dialog.querySelectorAll('.atlas-import-result').forEach(e=>e.remove());dialog.append(result);result.querySelector('[data-result-done]').onclick=()=>{dialog.close();__atlasTest.go('roster')};dialog.scrollTop=0;dialog.querySelector('header button').focus({preventScroll:true});
  };
+ /* Roster z cloudu: stejne okno jako hlaseni po importu, jen se jeste nic
+    nestalo - proto dve tlacitka. Kusy i pocty prichazeji z enginu. */
+ window.AtlasCloudOtazka=(data,ok)=>{
+  box.classList.add('open');box.hidden=true;dialog.classList.add('atlas-import-complete');if(!dialog.open)dialog.showModal();
+  $('#atlasImportTitle').textContent='Roster z cloudu';
+  dialog.querySelector('header p').textContent='Uloženo '+new Date(data.ulozeno).toLocaleString()+(data.zarizeni?' z '+data.zarizeni:'')+' · '+data.kusuVCloudu+' kusů. Rozbal kategorii a zkontroluj konkrétní kusy.';
+  const pridane=data.pridane||[],zmenene=data.zmenene||[],smazane=data.smazane||[],konflikty=data.konflikty||[];
+  const groups=[['Přibudou',pridane.map(after=>({after}))],['Převezme se novější verze',zmenene.map(z=>({before:z.moje,after:z.jejich}))],['Ubudou, protože jsi je pustil jinde',smazane.map(after=>({after}))],['Verze se rozcházejí — vyber si',konflikty.map(k=>({after:{pokemon:k.jmeno}}))]];
+  const result=document.createElement('section');result.className='atlas-import-result';
+  result.innerHTML='<div class="atlas-import-stats">'+[['Přibude',pridane.length],['Novějších',zmenene.length],['Ubude',smazane.length],['K výběru',konflikty.length]].map(([label,n])=>'<div><strong>'+n+'</strong><span>'+label+'</span></div>').join('')+'</div><p class="atlas-result-note">Kus, na který sáhla obě zařízení, appka nerozhoduje sama. Vyber v poslední kategorii, která verze platí; bez výběru zůstane ta zdejší.</p>'+groups.map(([label,items])=>'<details class="atlas-import-group"><summary>'+esc(label)+'<span>'+items.length+'</span></summary>'+(items.length?'<div class="atlas-import-tiles">'+items.map(({before,after:r})=>'<div class="atlas-import-tile">'+(window.AtlasMonImage?window.AtlasMonImage(r):'')+'<div class="atlas-import-tile-txt"><strong>'+esc(r.pokemon)+'</strong><span>'+(before&&String(before.cp||'')!==String(r.cp||'')?esc(String(before.cp||'?'))+' → ':'')+esc(String(r.cp||'?'))+' CP'+(r.level?' · L'+esc(String(r.level)):'')+'</span></div></div>').join('')+'</div>':'<p>Žádný kus v této kategorii.</p>')+'</details>').join('')+'<div class="atlas-result-actions"><button data-cloud-ok>Sloučit</button><button data-cloud-ne>Teď ne</button></div>';
+  const volbaHTML=k=>'<div class="atlas-konflikt" data-konflikt="'+esc(k.sid)+'"><strong>'+esc(k.jmeno)+'</strong><div class="atlas-konflikt-verze">'+[['moje','Tady',k.moje],['jejich',(data.zarizeni||'Druhé zařízení'),k.jejich]].map(([klic,nadpis,r])=>'<label><input type="radio" name="kon-'+esc(k.sid)+'" value="'+klic+'"'+(klic==='moje'?' checked':'')+' /><span><b>'+esc(nadpis)+'</b>'+(k.rozdily||[]).map(d=>'<i>'+esc(d.popis)+': '+esc(klic==='moje'?d.tady:d.tam)+'</i>').join('')+'</span></label>').join('')+'</div></div>';
+
+  dialog.querySelectorAll('.atlas-import-result').forEach(e=>e.remove());dialog.append(result);dialog.scrollTop=0;
+  if(konflikty.length){const posledni=[...result.querySelectorAll('.atlas-import-group')].pop();posledni.open=true;posledni.querySelector('p,.atlas-import-tiles')?.remove();posledni.insertAdjacentHTML('beforeend',konflikty.map(volbaHTML).join(''));}
+  result.querySelector('[data-cloud-ok]').onclick=()=>{const volby={};result.querySelectorAll('[data-konflikt]').forEach(el=>{const vybrane=el.querySelector('input:checked');if(vybrane)volby[el.dataset.konflikt]=vybrane.value;});dialog.close();ok(volby)};
+  result.querySelector('[data-cloud-ne]').onclick=()=>dialog.close();
+  result.querySelector('[data-cloud-ok]').focus({preventScroll:true});
+ };
  dialog.addEventListener('close',()=>{dialog.querySelector('.atlas-import-result')?.remove();dialog.querySelector('.atlas-replace-confirm')?.remove();box.hidden=false;dialog.classList.remove('atlas-import-complete');$('#atlasImportTitle').textContent='Import rosteru';dialog.querySelector('header p').textContent='Vyber soubor, zkontroluj náhled a rozhodni, jak data přidat.'});
 })();
 (() => {
@@ -1219,10 +1234,15 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
     box.append(nadpis);
     const stav=utokySekce.querySelector('.atlas-move-status'),moves=utokySekce.querySelector('.d-moves');
     const cisteJmeno=s=>String(s).replace(/\s*\(Elite TM\)\s*/i,'').trim();
+    /* V čištění boxu je panel vysoký 1000 px a víc nebude — útoky s plnymi
+       jmény z něj vytlačily strop CP. Zůstanou proto jen typové ikony vedle
+       sebe a jména se ukážou v bublině, přesně jako jinde v rozboru. */
+    const uzke=!!(hostitel&&hostitel.closest&&hostitel.closest('#boxMode'));
     const chipUtoku=(jmeno,rychly)=>{const cist=cisteJmeno(jmeno);const m=rychly?(P.fastByNameOf?P.fastByNameOf(cist):null):(P.chargedByNameOf?P.chargedByNameOf(cist):null);
       const el=document.createElement('span');el.className='d-move';
       const typ=document.createElement('span');typ.className='d-type';
       if(m){const barva=(P.typeColors()||{})[m.type];if(barva)typ.style.background=barva;typ.innerHTML=(P.typIkona?P.typIkona(m.type):'')+m.type}else typ.textContent='?';
+      if(uzke){el.dataset.tip=jmeno;el.append(typ);return el}
       const jm=document.createElement('span');jm.className='d-move-jm';jm.textContent=jmeno;
       el.append(typ,jm);return el};
     // Jeden řádek = popisek („má" / „teď" / „po evo") a pod ním jednotlivé
@@ -1239,6 +1259,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
       if(tip)radek.setAttribute('data-tip',tip);
       const popisek=document.createElement('small');popisek.className='atlas-sestava-kdy';popisek.textContent=kdy;radek.append(popisek);
       const sloupec=document.createElement('div');sloupec.className='atlas-sestava-utoky';
+      if(uzke){sloupec.style.cssText='display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start';radek.dataset.tip=(tip?tip+' ':'')+cista.join(' + ')}
       const sTeckou=kdy==='má';
       /* Kdyz na dva sloty vychazi tataz nahrada, dostane ji ten utok, ktery
          ji potrebuje vic: cerveny (preucit) pred oranzovym (dobry). Driv
@@ -1278,7 +1299,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
           const lepsi=prideleno.get(cist)||'';
           // U `poEvoluci` engine rika "ted neprecuj" — sipka na lepsi utok
           // by mu primo odporovala.
-          if(stav!=='nej'&&stav!=='poEvoluci'&&lepsi){
+          if(!uzke&&stav!=='nej'&&stav!=='poEvoluci'&&lepsi){
             const sip=document.createElement('em');sip.className='atlas-utok-lepsi';
             sip.textContent=lepsi;
             const proc=duvody.get(cist)||'';
@@ -1408,10 +1429,10 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
      el.dataset.chipy='1';
      el.dataset.cela=text;
      if(window.AtlasUtokySestava){
-       el.innerHTML=window.AtlasUtokySestava(text);
+       el.innerHTML=window.AtlasUtokySestava(text,row.pokemon);
        /* Bublina u sestavy ukazuje tytéž chipy s ikonami jako řádek —
           jen vždycky celé, i když se do buňky vejdou jen ikony. */
-       el.dataset.tip=window.AtlasUtokySestava(text);
+       el.dataset.tip=window.AtlasUtokySestava(text,row.pokemon);
        el.removeAttribute('title');
      } else if(!el.title)el.title=text;
     });
@@ -1527,6 +1548,23 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
    if(!pruh){pruh=document.createElement('div');pruh.className='atlas-box-prepocet';stoh.insertBefore(pruh,stoh.firstChild)}
    return pruh;
  }
+ /* Evolucni rada se musi vejit cela — v boxu ji nic neroluje a kazdy
+    stupen ma pevny pruh (`flex:1 1 0`, `overflow:hidden`). Kdyz je ve
+    stupni vic forem, nez se vedle sebe vejde, zalomi se a spodni radek
+    zmizi: u Gourgeista se tak uriz treti forma. Obrazky proto zmensuju,
+    dokud kazdy stupen nesedi ve svem pruhu. Mereni je levne (jeden
+    `scrollHeight` na stupen) a bezi jen pri prekresleni rozboru. */
+ const EVO_KROKY=[76,68,60,54,48,42,36,30];
+ function evoVejdiSe(evo){
+  const rada=evo&&evo.querySelector('.d-evo:not(.husty)');if(!rada)return;
+  const stupne=[...rada.querySelectorAll('.d-evo-stupen')];if(!stupne.length)return;
+  const sedi=()=>stupne.every(s=>s.scrollHeight<=s.clientHeight+1)
+   &&rada.scrollHeight<=rada.clientHeight+1;
+  for(const px of EVO_KROKY){
+   rada.style.setProperty('--evo-obr',px+'px');
+   if(sedi())return;
+  }
+ }
  function boxRozbor(){
    const body=$('#bmBody');if(!body||boxPrestavba)return;
    const stav=P.boxStav?P.boxStav():null,seznam=P.bmSeznam?P.bmSeznam():[];
@@ -1564,6 +1602,7 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
        .map(k=>(k.getAttribute('data-druh')||'')+(k.classList.contains('tady')?'*':'')).join('>');
        if(boxEvoKlic===klic&&boxEvoUzel){evo.remove();host.append(boxEvoUzel)}
        else{boxEvoKlic=klic;boxEvoUzel=evo;host.append(evo)}}
+     evoVejdiSe(host.querySelector('.atlas-evolution-column'));
      // Místo pro dva typy je vždycky stejné, jinak značky poskakují podle toho,
      // jestli má kus jeden typ nebo dva.
      // Hláška o přepočtu seděla nahoře v obsahu a posunula všechno pod sebou.
@@ -2594,7 +2633,13 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
   if(!cards.length)return '';
   return '<nav class="atlas-event-highlights" aria-label="Důležité informace">'+cards.map(([t,v,target])=>`<button type="button" data-event-jump="${target}"><small>${esc(t)}</small><strong>${esc(v)}</strong><span aria-hidden="true">↓</span></button>`).join('')+'</nav>';
  }
- function openEvent(i){const e=events[i];if(!e)return;const url=safeUrl(e[5]);modal.innerHTML=`<header><div><span class="atlas-eyebrow">TAHÁK AKCE</span><h2 id="atlasEventTitle">${esc(e[0])}</h2><p>${format(e[3])} — ${format(e[4])}</p>${gopassTermin(e)}${stitkyAkce(e)}</div><button class="atlas-mini-btn" data-event-close aria-label="Zavřít detail akce">✕</button></header><div class="atlas-event-body">${shrnutiAkce(e)}${utokAkce(e)}${teloAkce(e)}${vyzkumAkce(e)}${gopassAkce(e)}<p class="atlas-small-note">Seznam popisuje obsah akce, nikoli živé spawny v okolí. Dostupné shiny neznamená zvýšenou šanci. Podmínky a zvláštní časová okna ověř ve zdroji.${zdrojVeta(e)}</p><div class="atlas-event-actions">${ctaAkce(e)}${url?`<a class="atlas-mini-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Zdroj akce ↗</a>`:''}</div></div>`;modal.showModal();
+ /* Index ukazuje do ŽIVÉHO rozpisu, ne do kopie z posledního kreslení.
+    `events` se plní až ve `render()`. Když engine mezitím dotáhl čerstvý
+    events.json a přibyla v něm akce, kalendář už počítal indexy z nového
+    pole, kdežto tahle kopie zůstala stará — a detail otevřel akci o jednu
+    vedle. Vypadalo to tak, že „Gigantamax Machamp“ otevře „Mexico City“. */
+ function openEvent(i){const seznam=(P.eventsData()||{}).events||events;
+  const e=seznam[i];if(!e)return;const url=safeUrl(e[5]);modal.innerHTML=`<header><div><span class="atlas-eyebrow">TAHÁK AKCE</span><h2 id="atlasEventTitle">${esc(e[0])}</h2><p>${format(e[3])} — ${format(e[4])}</p>${gopassTermin(e)}${stitkyAkce(e)}</div><button class="atlas-mini-btn" data-event-close aria-label="Zavřít detail akce">✕</button></header><div class="atlas-event-body">${shrnutiAkce(e)}${utokAkce(e)}${teloAkce(e)}${vyzkumAkce(e)}${gopassAkce(e)}<p class="atlas-small-note">Seznam popisuje obsah akce, nikoli živé spawny v okolí. Dostupné shiny neznamená zvýšenou šanci. Podmínky a zvláštní časová okna ověř ve zdroji.${zdrojVeta(e)}</p><div class="atlas-event-actions">${ctaAkce(e)}${url?`<a class="atlas-mini-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Zdroj akce ↗</a>`:''}</div></div>`;modal.showModal();
   /* Herní ikona má kresbu jinde v každém souboru; engine si to měří a
      posouvá na střed. Bez tohohle sedí v rámečku nakřivo — stejná chyba
      jako kdysi v rosteru. */
@@ -2699,7 +2744,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     všechny evoluce a všechny ligy skládaly pod sebe a v tom seznamu
     nešlo nic najít. Data dává engine (`prohlidkaModel`); vrstva z nich
     jen kreslí, nic nepočítá znovu. */
- const ROLE_POPIS={pvp:'PvP',raid:'Raidy',gym:'Gym',mega:'Mega',max:'Max'};
+ /* Záložka Mega už není: mega formy stojí rovnou v raidové tabulce
+    (sloučený žebříček) a cena proměny jede s nimi jako poslední sloupec.
+    Dvě místa o témže znamenala přepínat, aby šlo porovnat. */
+ /* Poradi zalozek = poradi, v jakem se na to clovek pta. Max Battle
+    rozhoduje o tom, koho si nechat; obrana gymu je dnes okrajova. */
+ const ROLE_POPIS={pvp:'PvP',raid:'Raidy',max:'Max',gym:'Gym'};
  /* Vlastni ikonky zalozek: `icon()` z hlavni vrstvy sem nedosahne (jiny
     uzaver) a ctyri cary staci. Navrh V2 od Astry. */
  const ROLE_IKONA={
@@ -2711,17 +2761,16 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  const ikona=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${ROLE_IKONA[k]}"/></svg>`;
  /* Klic ligy, kterou ma clovek vybranou — stejny, jakym ji zna engine. */
  let ligaKlicVModelu='great';
- let role='pvp',liga='great',shinyVic=false;
+ let role='pvp',liga='great';
  /* Ke kteremu druhu patri to, co je zrovna v tabulce, a proc se pripadne
     ukazuje jina role, nez byla vybrana. Vysledek se prekresluje vickrat
     (engine si o tom rekne sam), takze si to hlaseni musi pamatovat —
     jinak probliklo a zmizelo. */
  let vysledekDruh=null,presunZprava='';
- /* Rezerva vysky vysledku (viz `drzVysku`): drzi stranku stejne dlouhou
-    pri prepnuti role, aby se scroll neorizl. `prirozena` je vyska, kterou
-    by tabulka mela sama od sebe — z rozdilu se pozna, kdy uz rezervu neni
-    treba. */
- let rezerva=0,rezervaPrirozena=0;
+ /* Která forma je zrovna vybraná ('' / 'Shadow' / jméno megy). Řádek
+    tabulky je obyčejný text jen u ní — na všechny ostatní formy musí jít
+    kliknout, jinak se ze shadow nebo z megy už nejde vrátit na běžný kus. */
+ let vybranaForma='';
  /* Prepnuty shiny obrazek. Meni se JEN obrazek — jina barva neni jiny druh,
     takze cisla, poradi ani sestavy zustavaji. Po zmene druhu se vraci na
     bezny obrazek: shiny u predchoziho druhu o tomhle nic nerika. */
@@ -2846,15 +2895,10 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     const b=e.target.closest('button');if(!b)return;
     if(b.dataset.sekcePrepnout){prepniSekci(b.dataset.sekcePrepnout);return}
     if(b.dataset.role){
-     /* Drzi se jen tehdy, kdyz uz je stranka posunuta: nahore neni co
-        oriznout, takze ani neni co drzet. */
-     const telo=document.querySelector('.atlas-vysledek-telo');
-     if(telo&&window.scrollY>0)
-      rezerva=Math.max(rezerva,telo.getBoundingClientRect().height);
      role=b.dataset.role;presunZprava='';
-     vykresliVysledek();return}
+     prekresliBezSkoku();return}
     if(b.dataset.liga){liga=b.dataset.liga;ligaKlicVModelu=b.dataset.liga;
-     presunZprava='';vykresliVysledek();return}
+     presunZprava='';prekresliBezSkoku();return}
     /* Vyber cesty ve stromu. Mega je jina vec nez evoluce, takze se
        nevybiraji obe najednou. */
     if(b.dataset.evoCil){
@@ -2881,21 +2925,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      jmeno.value=b.dataset.evoForma;
      jmeno.dispatchEvent(new Event('input',{bubbles:true}));
      jmeno.dispatchEvent(new Event('change',{bubbles:true}));
-     return;
-    }
-    /* Counter mod pracuje s TVYM rosterem — appka zadny vlastni seznam
-       protihracu nevymysli. Prazdny roster to rekne na miste. */
-    if(b.hasAttribute('data-counter-rezim')){
-     const jmenoDruhu=jmeno.value.trim();
-     if(!P.getRows().length){
-      b.insertAdjacentHTML('afterend',
-       '<p class="atlas-typy-pozn" data-counter-hlaska>Nejdřív si naimportuj roster — '
-       +'protihráče vybírá appka z toho, co máš ty.</p>');
-      b.disabled=true;return;
-     }
-     window.__atlasTest&&window.__atlasTest.go('roster');
-     const t=P.atlasProtiBossovi&&P.atlasProtiBossovi(jmenoDruhu);
-     if(!t||!t.length)window.__atlasTest&&window.__atlasTest.go('teams','cheatCard');
      return;
     }
    });
@@ -2999,8 +3028,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +obranaHtml
    +`<h4 class="atlas-typy-druhy">Kam se hodí jeho útoky</h4>`
    +utokHtml
-   +`<button type="button" class="atlas-typy-counter" data-counter-rezim>`
-   +`Vybrat protihráče z mého rosteru</button>`
    +`</section>`;
  }
 
@@ -3170,7 +3197,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const casti=String(klic).split('/').map(x=>x.trim()).filter(Boolean);
   const ikona=t=>(P.typIkona?P.typIkona(t):'')+esc(t);
   if(casti.length<2)return `<span class="d-type atlas-typ-kombi" style="background:${esc(barvy[casti[0]]||'')}">${ikona(casti[0])}</span>`;
-  /* Barva se riznе presne na delici care: kazda pulka ma vlastni pozadi.
+  /* Barva se rizne presne na delici care: kazda pulka ma vlastni pozadi.
      Prechod pres cely stitek rezal jinde, nez kde cara opravdu je. */
   return `<span class="d-type atlas-typ-kombi atlas-typ-kombi2">`
    +`<span style="background:${esc(barvy[casti[0]]||'#555')}">${ikona(casti[0])}</span>`
@@ -3179,29 +3206,50 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
 
  /* Typy druhu jako barevne ovaly — stejne jako v identite a v rosteru.
     Radek tim rovnou rika, proti cemu se ten druh hodi. */
+ function typyBubliny(typy){
+  const barvy=P.typeColors?P.typeColors():{};
+  return (typy||[]).map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('');
+ }
  function typyHtml(klic){
-  const d=P.dexByKey?P.dexByKey(klic):null,barvy=P.typeColors?P.typeColors():{};
-  return ((d&&d.types)||[]).map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('');
+  const d=P.dexByKey?P.dexByKey(klic):null;
+  return typyBubliny((d&&d.types)||[]);
  }
 
  /* Utok jako bublina s barvou typu — stejne jako v rozboru kusu.
     Typ se ptame enginu (`fastByNameOf` / `chargedByNameOf`); co nenajde,
     zustane textem. Nic se neodhaduje: sestava "mimo metu — sestavu appka
     nema" neni jmeno utoku a bublinu nedostane. */
- function utokChip(jmeno){
+ /* Hvězdička za jménem = útok, který ten druh běžným TM nedostane
+    (z akce nebo za Elite TM). Značí to tak PvPoke i Hub a je to důležité:
+    přeučením o něj kus přijde a zpátky už ho nemusí jít dostat. */
+ const ELITNI_TIP='Jen z akce nebo za Elite TM — běžným TM ho nepřeučíš.';
+ const elitniCache={};
+ function elitniUtoky(klic){
+  if(!klic||!P.atlasElitniUtoky)return null;
+  if(elitniCache[klic]===undefined){
+   let v=null;
+   try{v=new Set((P.atlasElitniUtoky(klic)||[]).map(x=>String(x).toLowerCase()))}catch(e){v=null}
+   elitniCache[klic]=v;
+  }
+  return elitniCache[klic];
+ }
+ function utokChip(jmeno,elitni){
   const m=(P.fastByNameOf&&P.fastByNameOf(jmeno))||(P.chargedByNameOf&&P.chargedByNameOf(jmeno));
   if(!m||!m.type)return null;
   const barvy=P.typeColors?P.typeColors():{};
+  const hvezda=elitni&&elitni.has(String(m.name).toLowerCase())
+   ?`<sup class="atlas-utok-elitni" title="${esc(ELITNI_TIP)}">*</sup>`:'';
   return `<span class="atlas-utok-chip"><span class="atlas-utok-typ" `
    +`style="background:${esc(barvy[m.type]||'')}">${P.typIkona?P.typIkona(m.type):''}</span>`
-   +`${esc(m.name)}</span>`;
+   +`${esc(m.name)}${hvezda}</span>`;
  }
  /* Skladani sestavy do chipu potrebuje i detail kusu (ligova tabulka),
     a ten zije v jinem bloku — proto je funkce i na `window`. */
- function utokySestava(text){
+ function utokySestava(text,klic){
+  const elitni=elitniUtoky(klic);
   const casti=String(text).split(/\s*([+/])\s*/);
   const kusy=casti.map(c=>c==='+'||c==='/'
-   ?`<span class="atlas-utok-spoj">${c}</span>`:utokChip(c.trim()));
+   ?`<span class="atlas-utok-spoj">${c}</span>`:utokChip(c.trim(),elitni));
   // Kdyz se nepozna ani jeden nazev, je to veta, ne sestava — necha se text.
   if(!kusy.some((x,i)=>x&&casti[i]!=='+'&&casti[i]!=='/'))return esc(text);
   return `<span class="atlas-utok-sada">`
@@ -3226,12 +3274,56 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`${P.typIkona?P.typIkona(r.typ):''}${esc(r.typ)}</span>`;
  }
 
+ /* Známka SS–F: podíl na špičce toho typu, včetně meg. Pořadí platí
+    uvnitř jednoho typu, známka říká sílu — proto obojí vedle sebe.
+    Barvy jsou inline, aby to fungovalo dřív, než si je vezme atlas.css. */
+ /* `A+` má jen ligová stupnice (tak to vede Pokémon GO Hub); barvu má
+    mezi S a A, protože je mezi nimi i stupněm. */
+ const ZNAMKA_BARVA={SS:'#b45cff',S:'#2f9e44','A+':'#3f9f69',A:'#4c9f4c',B:'#8a9a2b',
+  C:'#b08a1e',D:'#b06a1e',E:'#a2552a',F:'#7a4040'};
+ /* Inline je jen barva — ta je z dat. Velikost a tvar řídí `atlas.css`.
+    `velka` = známka ve vlastním sloupci tabulky: čte se jako první údaj
+    řádku, takže má být vysoká jako obrázek druhu vedle ní. */
+ const znamkaHtml=(z,tip,velka)=>z?`<span class="atlas-znamka${velka?' atlas-znamka-velka':''}" data-znamka="${esc(z)}"`
+  +(tip?` title="${esc(tip)}"`:'')
+  +` style="background:${ZNAMKA_BARVA[z]||'#555'}">${esc(z)}</span>`:'';
+ const FORMA_POPIS={Shadow:'Shadow forma — útočí silněji, ale víc schytá.',
+  Mega:'Mega forma — dočasná, drží se jedna naráz.'};
+ const formaHtml=f=>f?` <span class="rarity-chip ${f==='Shadow'?'r-SH':'r-MG'}"`
+  +` title="${esc(FORMA_POPIS[f]||f)}">${f==='Shadow'?'SHADOW':'MEGA'}</span>`:'';
+
  function radekHtml(r,vstupKlic,ligaKlic){
+  /* Mega poradi nema a mit nebude — v tom sloupci stalo jen „v tomhle
+     zebricku neni", coz je o megach pravda u vsech a nerika nic. Misto
+     toho tam je cena promeny, jediny tvrdy udaj, ktery appka o mege ma. */
+  const megaCena=r.megaEnergie
+   ?`<b>${r.megaEnergie}</b> <small>energie za proměnu${r.megaEnergiePoprve
+     ?`, poprvé ${r.megaEnergiePoprve}`:''}</small>`
+   :'<span class="atlas-vysledek-nezname">cenu proměny appka nezná</span>';
+  /* Mega má v raidech řádek jako kdokoli jiný, včetně pořadí. Cena
+     proměny jede s ním jako poslední sloupec — je to jediný další tvrdý
+     údaj, který o mege appka má. */
   const poradi=r.rank==null
    ?`<span class="atlas-vysledek-nezname">${role==='pvp'
      ?'v téhle lize nemá pořadí':'v tomhle žebříčku není'}</span>`
-   :`<b>#${r.rank}</b>${r.pct!=null?` <small>${r.pct} % nejlepšího</small>`:''}`;
-  const utoky=r.utoky?utokySestava(r.utoky)
+   :`<b>#${r.rank}</b>`
+    /* U lig je `pct` skóre PvPoke (nejlepší má 93,9, ne 100), takže se
+       jako procento vypsat nedá — engine k němu pošle i `podil`. */
+    +`${(r.podil!=null?r.podil:r.pct)!=null
+      ?` <small>${String(r.podil!=null?r.podil:r.pct).replace('.',',')} % nejlepšího</small>`:''}`;
+  /* Známka má vlastní sloupec před pořadím: čte se jako první a poznáš
+     podle ní sílu dřív, než začneš porovnávat čísla. Bublina u ní není —
+     co stupně znamenají a odkud jsou, stojí v „Odkud se to bere". */
+  const znamkaBunka=r.znamka
+   ?znamkaHtml(r.znamka,'',true)
+   :'<span class="atlas-vysledek-nezname">—</span>';
+  /* Mega, kterou zna jen herni soubor, ve hre byt nemusi (Mega Mewtwo X a Y).
+     V tabulce stat ma — appka ji zna — ale bez tehle vety by vypadala stejne
+     jako forma, kterou si zitra zapnes. Rozpocet ji ze stejneho duvodu
+     zadnemu kusu nedrzi. */
+  const utoky=r.megaJenHra
+   ?'<span class="atlas-vysledek-nezname">zná ji jen herní soubor — ve hře zatím být nemusí</span>'
+   :r.utoky?utokySestava(r.utoky,r.klic)
    :(r.priorita?`priorita do raidů: ${esc(r.priorita)}`
     :(r.jeMeta===false?'<span class="atlas-vysledek-nezname">mimo metu — sestavu appka nemá</span>'
      :'<span class="atlas-vysledek-nezname">sestavu appka nemá</span>'));
@@ -3244,22 +3336,33 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    ?` <span class="rarity-chip ${r.maxForma==='Gigantamax'?'r-GM':'r-D'} atlas-max-forma"`
     +` title="${esc(r.maxForma)}">${r.maxForma==='Gigantamax'?'GMAX':'DMAX'}</span>`
    :'';
-  const znacka=(r.vztah==='vstup'?' <span class="atlas-vysledek-znacka">Hledaný druh</span>'
+  const znacka=(r.vztah==='vstup'?''
    :(r.vztah==='forma'?' <small>jiná forma</small>'
      :(r.vztah==='drive'?' <small>dřívější stupeň</small>':' <small>až po evoluci</small>')))+maxForma;
   /* Klepnuti na jmeno otevre ten druh v hledani. Driv jen zvyraznilo radek,
      coz nikam nevedlo — a oznaceni, ktere nic nedela, jen plete. */
-  const jmenoHtml=r.vztah==='vstup'
-   ?`<b>${esc(r.jmeno)}</b>`
+  /* V Mega je jmeno radku jmeno MEGA FORMY („Mega Charizard X"), ne druhu.
+     Charizard ma dve megy a obe stale pod jednim jmenem „Charizard" —
+     nesly rozeznat. Hleda se dal podle druhu: „Mega Charizard X" by
+     v poli nic nenaslo. */
+  const popisek=r.megaForma||r.jmeno;
+  /* Co se právě prohlíží, není odkaz sám na sebe. Všechno ostatní ano —
+     i běžný a shadow kus téhož druhu, jinak se z megy nebylo jak vrátit. */
+  const tatoForma=r.megaForma||(r.forma==='Shadow'?'Shadow':'');
+  const jeVybrany=r.vztah==='vstup'&&tatoForma===vybranaForma;
+  const jmenoHtml=jeVybrany
+   ?`<b>${esc(popisek)}</b>`
    :`<button type="button" class="atlas-vysledek-jmeno" data-evo-hledat="${esc(r.jmeno)}"`
-    +` title="Vyhledat ${esc(r.jmeno)}">${esc(r.jmeno)}</button>`;
+    +` title="Vyhledat ${esc(r.jmeno)}">${esc(popisek)}</button>`;
   return `<tr data-klic="${esc(r.klic)}"${r.klic===vstupKlic?' class="je-vstup"':''}>`
    +`<td class="atlas-vysledek-druh">${obrazekRam(r.jmeno,'atlas-vysledek-obr')}`
-    +`<span>${jmenoHtml}${znacka}${typNavic(r,role==='raid'||role==='max')}`
+    +`<span>${jmenoHtml}${formaHtml(r.forma)}${znacka}${typNavic(r,role==='raid'||role==='max')}`
     /* V raidech se typ uz pise za jmenem (za ktery typ ten radek stoji),
        takze vlastni typy druhu by byly podruhe — u Centiskorche vysel
        "Bug Fire Bug". Jinde se typy hodi: rikaji, proti cemu se druh postavi. */
-    +`<span class="atlas-vysledek-typy">${role==='raid'||role==='max'?'':typyHtml(r.klic)}</span></span></td>`
+    +`<span class="atlas-vysledek-typy">${role==='raid'||role==='max'?''
+      :(r.megaTypy?typyBubliny(r.megaTypy):typyHtml(r.klic))}</span></span></td>`
+   +`<td class="atlas-vysledek-znamka">${znamkaBunka}</td>`
    +`<td>${poradi}</td>`
    /* Nejlepsi mozna kombinace IV stoji hned za poradim: obe cisla rikaji,
       jak dobry ten druh v lize je. Driv tu byl sloupec o tvem kuse — ten
@@ -3271,36 +3374,34 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
        :'<span class="atlas-vysledek-nezname">—</span>'}</td>`
      :'')
    +`<td>${utoky}</td>`
-   /* Misto holé sipky pojmenovany prikaz: samotna sipka nerikala, co udela,
-      a zvyrazneni radku uz umi klepnuti na jmeno. U hledaneho druhu nic —
-      hledat to, co uz je v poli, nema smysl. */
-   +`<td class="atlas-vysledek-akce">${r.vztah==='vstup'?''
-     :`<button type="button" class="atlas-vysledek-hledat" data-evo-hledat="${esc(r.jmeno)}">`
-      +`Vyhledat ${esc(r.jmeno)}</button>`}</td></tr>`;
+   /* Cena megy jede s mega řádkem — je to jediný další tvrdý údaj,
+      který o mege appka má, a po zrušení záložky Mega by jinak zmizel. */
+   +(role==='raid'
+     ?`<td class="atlas-vysledek-cena">${r.megaForma?megaCena:''}</td>`
+     :'')
+   /* Sloupec s příkazem „Vyhledat X" už tu není: jméno v prvním sloupci
+      je odkaz na tutéž věc u každého řádku kromě prohlíženého, takže to
+      bylo totéž dvakrát — a bral šestinu šířky tabulky. */
+   +`</tr>`;
  }
 
- /* Vyska tabulky se po prepnuti role drzi na tom, co tu bylo — jinak se
-    kratsi role zkrati stranku a prohlizec scroll orizne na nove maximum.
-    Pouziva se jen tehdy, kdyz uz je clovek zascrollovany pod zalozkami
-    roli; nahore neni co drzet a prazdne misto by jen prekazelo. */
- function pouzijRezervu(){
-  const telo=document.querySelector('.atlas-vysledek-telo');
-  if(!telo)return;
-  telo.style.minHeight=rezerva?rezerva+'px':'';
+ /* Prepnuti role nesmi hnout strankou.
+
+    Drzelo se to tak, ze si tabulka nechala `min-height` po nejvyssi roli,
+    jakou clovek otevrel — jenze tu vysku uz nikdy nepustila: u Eevee zbylo
+    pod tri radky Gymu pres osm set pixelu prazdna. A nefungovalo to ani na
+    to, k cemu to bylo: u Megy, kde zadne poradi neni, prohlizec stejne
+    scroll srazil az uplne nahoru.
+
+    Ted se misto toho vraci scroll tam, kde byl. Kdyz je nova tabulka
+    opravdu kratsi, prohlizec ho srazi znovu a to je spravne — pod tabulkou
+    uz nic neni a prazdne misto by nic neresilo. Zalozky roli zustanou videt
+    tak jako tak, drzi je `position:sticky`. */
+ function prekresliBezSkoku(){
+  const kde=window.scrollY;
+  vykresliVysledek();
+  if(window.scrollY!==kde)window.scrollTo(0,kde);
  }
- function zrusRezervu(){
-  if(!rezerva)return;
-  rezerva=0;rezervaPrirozena=0;pouzijRezervu();
- }
- /* Rezerva se pusti, az kdyz se da pustit bez skoku: stranka bez ni musi
-    byt porad dost dlouha na to, kde clovek prave stoji. */
- window.addEventListener('scroll',()=>{
-  if(!rezerva)return;
-  const navic=Math.max(0,rezerva-rezervaPrirozena);
-  if(!navic){zrusRezervu();return}
-  const max=document.documentElement.scrollHeight-navic-window.innerHeight;
-  if(window.scrollY<=max)zrusRezervu();
- },{passive:true});
 
  function vykresliVysledek(){
   const el=vysledekBlok(),hodnota=jmeno.value.trim();
@@ -3321,7 +3422,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
      tabulky se prepne tam, kde poradi opravdu je. Rucni volbu to nepresune
      — prepina se jen pri zmene druhu a rekne se, proc. */
   if(vysledekDruh!==m.klic){
-   vysledekDruh=m.klic;presunZprava='';zrusRezervu();
+   vysledekDruh=m.klic;presunZprava='';
    /* Prazdna je i tabulka, ve ktere sice radky jsou, ale nikdo v ni nema
       poradi — od te doby, co se ukazuje cela evolucni rada, takovy pripad
       existuje ("v tehle lize nema poradi" u vsech clanku). */
@@ -3336,7 +3437,9 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     const kandidati=[];
     if(role==='pvp')m.poradiLig.forEach(k=>kandidati.push(['pvp',k]));
     m.poradiLig.forEach(k=>{if(role!=='pvp')kandidati.push(['pvp',k])});
-    ['raid','gym','mega','max'].forEach(k=>{if(k!==role)kandidati.push([k,null])});
+    /* Zalozka Mega uz neni (mega formy stoji v raidech), takze se na ni
+       nesmi prepnout — tabulka by se ukazala bez zalozky, ktera ji vybrala. */
+    ['raid','max','gym'].forEach(k=>{if(k!==role)kandidati.push([k,null])});
     const nalez=kandidati.filter(([r,l])=>{
      const g=r==='pvp'?m.role.pvp[l]:m.role[r];
      // Stejne jako `prazdna`: radek bez poradi se nepocita, jinak by appka
@@ -3378,21 +3481,45 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +`<h4 class="atlas-vysledek-nadpis">${esc(nadpis)}</h4>`
    +`<div class="atlas-vysledek-telo">`
    +(radky.length
-     ?`<table class="atlas-vysledek-tab${role==='pvp'?' ma-iv':''}"><thead><tr><th>Druh</th><th>Pořadí druhu</th>${role==='pvp'?'<th>Nejlepší IV</th>':''}<th>Doporučené útoky</th><th></th></tr></thead><tbody>`
+     
+     /* Mega nema poradi ani doporucenou sestavu — hlavicka proto rika,
+        co v tech sloupcich opravdu je. */
+     /* Šířky sloupců — aby Hodnocení a Pořadí stály ve všech rolích na
+        témže místě. Bez toho si je počítal obsah a přepnutí záložky celá
+        tabulka poskočila (PvP má navíc Nejlepší IV, raidy Cenu megy).
+        Hodnocení má pevných 86 px: pod tím se do hlavičky nevejde slovo.
+        Platit začnou až nad 1100 px (`atlas.css`), na užším okně by
+        na útoky zbyl proužek — tam si šířky rozdělí prohlížeč. */
+     ?`<table class="atlas-vysledek-tab${role==='pvp'?' ma-iv':''}">`
+      +`<colgroup><col style="width:24%"><col style="width:86px">`
+      +`<col style="width:16%">`
+      +(role==='pvp'?'<col style="width:14%">':'')
+      +`<col>${role==='raid'?'<col style="width:13%">':''}`
+      +`</colgroup><thead><tr>`
+      +`<th>Druh</th><th>Hodnocení</th>`
+      +`<th>${role==='raid'?'Pořadí v typu':'Pořadí druhu'}</th>`
+      +(role==='pvp'?'<th>Nejlepší IV</th>':'')
+      +`<th>Doporučené útoky</th>`
+      +(role==='raid'?'<th>Cena megy</th>':'')
+      +`</tr></thead><tbody>`
       +(role==='pvp'
+        /* Pruh s názvem ligy musí překrýt VŠECHNY sloupce. Dokud tu stála
+           přibitá pětka, zůstal po přibytí sloupce Hodnocení poslední
+           sloupec bez podbarvení a pruh končil v půlce. */
         ?ligoveSkupiny.map(([k,g])=>`<tr class="atlas-vysledek-liga"><td colspan="5">`
           +`${esc(g.nazev)}</td></tr>`+g.radky.map(r=>radekHtml(r,m.klic,k)).join('')).join('')
         :radky.map(r=>radekHtml(r,m.klic)).join(''))+`</tbody></table>`
-     :`<p class="atlas-vysledek-prazdno">Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.</p>`)
+     /* Žebříček Hubu je úplný — jsou v něm i druhy se známkou F. Kdo
+        v něm není, Dynamax podle Hubu neumí, a to už se říct dá. */
+     :`<p class="atlas-vysledek-prazdno">${role==='max'
+       ?'Mezi Dynamax útočníky Pokémon GO Hub tenhle druh nevede — podle něj tedy Dynamax neumí. Žebříček je úplný, ne jen špička: jsou v něm i druhy se známkou F.'
+       :'Pro tuhle roli appka o tomhle druhu žádné pořadí nemá.'}</p>`)
    +(presunZprava?`<p class="atlas-vysledek-presun">${esc(presunZprava)}</p>`:'')
-   /* U shadow formy musi byt jasne, ktera cisla se tim zmenila a ktera ne. */
-   +(role==='max'?`<p class="atlas-vysledek-presun">Pořadí i poškození počítá`
-     +` <b>Pokémon GO Hub</b>, ne appka${(P.atlasDmaxZdroj&&P.atlasDmaxZdroj())
-       ?' (staženo '+esc(P.atlasDmaxZdroj().datum)+')':''}.`
-     +` Je to žebříček druhů — o tvých kusech nic neříká.</p>`:'')
-   +(m.forma==='Shadow'?`<p class="atlas-vysledek-presun">${role==='pvp'
-     ?'Pořadí je ze shadow žebříčku PvPoke — je to vlastní tabulka, ne přepočet běžné.'
-     :'Tenhle žebříček appka počítá mezi běžnými formami, takže se do něj shadow nepromítá.'}</p>`:'')
+   /* Žádné info věty pod tabulkou (Lukáš). Odkud čísla jsou, stojí
+      v „Odkud se to bere"; co známka znamená tamž; že je tabulka sloučená,
+      je vidět ze štítků SHADOW/MEGA; a jestli druh umí Gigantamax, řekne
+      značka GMAX u řádku. Zpráva o přepnutí role tu zustává — to není
+      výklad, ale odpověď na to, proč člověk kouká na jinou záložku. */
    +`</div></section>`;
   /* Evoluce maji vlastni zalozku, takze uz nestoji vedle tabulky —
      tabulka tim dostala celou sirku a u druhu se dvema radky nezustava
@@ -3401,8 +3528,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   if(evoPanel){evoPanel.innerHTML=evoluceHtml(m);if(P.vystreditSprity)P.vystreditSprity(evoPanel)}
   if(P.vystreditSprity)P.vystreditSprity(el);
   if(klicFokusu){const znovu=el.querySelector(klicFokusu);if(znovu)znovu.focus({preventScroll:true})}
-  {const telo=el.querySelector('.atlas-vysledek-telo');
-   if(telo){rezervaPrirozena=telo.getBoundingClientRect().height;pouzijRezervu()}}
   vykresliKotvy(true);
  }
 
@@ -3478,49 +3603,103 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   const model=P.prohlidkaModel?P.prohlidkaModel(syrove):null;
   const d=model&&model.jmeno&&model.jmeno!==zaznam.name
    ?Object.assign({},zaznam,{name:model.jmeno}):zaznam;
-  const typy=(d.types||[]).filter(t=>t&&t!=='–');
+  /* Vybraná mega má vlastní typy, staty i CP — Mega Charizard X je
+     Fire/Dragon, i když Charizard je Fire/Flying. Obrázek zůstává
+     základního druhu: mega sprity appka nemá. */
+  const megaJm=(model&&model.megaForma)||'';
+  const megaTypy=(model&&model.megaTypy)||[];
+  vybranaForma=megaJm||(model&&model.forma==='Shadow'?'Shadow':'');
+  const typy=((megaJm&&megaTypy.length?megaTypy:d.types)||[]).filter(t=>t&&t!=='–');
   const barvy=P.typeColors()||{};
   const shiny=P.atlasShiny?P.atlasShiny(d.name):null;
-  const cp20=P.atlasCP?P.atlasCP(d.name,20):null;
-  const cp25=P.atlasCP?P.atlasCP(d.name,25):null;
   const pocasi=[...new Set(typy.map(t=>P.atlasPocasi?P.atlasPocasi(t):'').filter(Boolean))]
    .map(x=>POCASI_CZ[x]||x);
-  /* Shiny má tři stavy, ne dva: "ve hře zatím není" tvrdí něco o hře,
-     "nevíme" o datech. A obecné shiny ANO neříká nic o tom, jestli shiny
-     padá z raidu — u raidového úlovku se proto ptáme zvlášť. */
-  const shinyStav=shiny?shiny.stav:'neověřeno';
   /* Čísla CP jsou referenční — o tom, jestli druh PRÁVĚ TEĎ v raidech je,
      rozhoduje rozpis akcí, ne pokédex. */
   /* Prostredni bunka navrhu: kde druh v appce stoji. Neni to hodnoceni
      vymyslene vrstvou — role se ctou z tehoz modelu jako tabulka. */
-  const kdeStoji=(()=>{
+  /* Hodnocení druhu jako řádek odznáčků: ikona role, pořadí a známka.
+     Věta „v žebříčku Great League, raidy, Max Battle“ říkala, KDE druh je,
+     ale ne jak vysoko — a to je první, co člověk chce vědět. Role se čtou
+     z téhož modelu jako tabulka pod tím, takže se ta dvě místa nerozejdou. */
+  const hodnoceniHtml=(()=>{
    if(!model)return '';
+   /* Hodnocení patří k VYBRANÉ formě. Když se hledal Shadow Beedrill,
+      stála v hlavičce čísla běžného Beedrilla — ligy se měnily (ty se
+      počítají s formou), raidy ne. Shadow do gymu ani do Max Battle nesmí
+      a mega nehraje ligy, takže se u nich ty role vůbec nevypisují. */
+   const megaStav=model.megaForma||'';
+   const shadowStav=!megaStav&&model.forma==='Shadow';
+   const muj=r=>r.klic===model.klic&&!r.forma&&!r.megaForma;
+   const mujRaid=r=>r.klic===model.klic&&(megaStav
+     ?r.megaForma===megaStav
+     :(shadowStav?r.forma==='Shadow':(!r.forma&&!r.megaForma)));
+   /* Odznáček se nerozklíkává. Rozbalený popis posunul všechno pod
+      sebou a člověk po něm stejně nesáhl — češe na tom, co ikona
+      znamená, a na to stačí bublina po najetí. */
+   const kus=(ik,popis,rank,znamka)=>
+    `<span class="atlas-hodnoceni-kus" title="${esc(popis)}"`
+    +` aria-label="${esc(popis)}, pořadí ${esc(String(rank))}, známka ${esc(znamka||'neuvedena')}"`
+    +`>${ik}<b>#${rank}</b>${znamkaHtml(znamka)}</span>`;
+   // A053: smaltované odznaky Atlasu. Každý má vlastní siluetu i znak.
+   const roleIcon=k=>{
+    // A054: tři praporky stupňované barvou a počtem stuh, Little má vlastní motiv.
+    const league={great:['#4172dc','#182e79','#fa625c',1],ultra:['#464d59','#171c26','#f5cf50',2],master:['#78449e','#34134f','#f268d5',3]}[k];
+    if(league){
+     const [light,dark,ribbon,n]=league,id='atlas-pennant-'+k;
+     const bands=Array.from({length:n},(_,i)=>`<path d="M4 ${26+i*6} 45 ${3+i*6}" stroke="${ribbon}" stroke-width="${n===1?4:3.2}"/>`).join('');
+     return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="${id}" x2=".5" y2="1"><stop stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient><clipPath id="${id}-cut"><path d="M4 5h40L24 44Z"/></clipPath></defs><path d="M4 5h40L24 44Z" fill="url(#${id})" stroke="#d4dbec" stroke-width="2"/><g clip-path="url(#${id}-cut)">${bands}<path d="M6 6h35L9 11Z" fill="#fff" opacity=".15"/></g><path d="m15 9 3 3-3 3-3-3Z" fill="#fff8df"/></svg>`;
+    }
+    if(k==='little')return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><g stroke-width="1.3" stroke-linejoin="round"><path d="m3 22 5-6 5 2 5-2 4 7-3 5 1 8-6 1-3-3-5 1-2-6Z" fill="#f7a29d" stroke="#d97e82"/><path d="m16 13 6 4 4-1 7-5-1 10 3 6-5 5-1 5-5-2-5 1-1-6-3-5 3-5Z" fill="#ffda67" stroke="#e0af49"/><path d="m31 18 4-8 3 8 5-6 1 9-2 4 3 7-4 5-6-1-5 1-1-6 3-6Z" fill="#64b9ed" stroke="#4096d0"/></g></svg>`;
+    const art={
+     gym:['#d3fff0','#45af9b','#165653','M24 3c6 4 12 5 18 6v12c0 11-7 18-18 24C13 39 6 32 6 21V9c6-1 12-2 18-6Z','M16 15h4v5h2v-7h4v7h2v-5h4v10l-2 2v6H18v-6l-2-2Z'],
+     max:['#ffd5f5','#e63687','#81184e','m7 5 12 5 5 7 6-9 12-4-6 15 7 4-10 4 8 15-13-5-5-8-7 10-12 4 7-17-6-4 9-4Z','m16 14 8 7 8-9-4 11 5 8-9-5-10 10 6-13Z']
+    };
+    const a=art[k];if(!a)return '';const [light,mid,dark,shape,glyph]=a,id='atlas-enamel-'+k;
+    return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="${id}" x2=".65" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="${light}"/><stop offset=".36" stop-color="${mid}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs><path d="${shape}" fill="${dark}" stroke="${dark}" stroke-width="3"/><path d="${shape}" fill="url(#${id})" stroke="${light}" stroke-width="1.5"/><path d="${shape}" transform="translate(4.3 4.3) scale(.82)" fill="none" stroke="${light}" stroke-opacity=".53" stroke-width="1.2"/><path d="${glyph}" transform="translate(0 1.6)" fill="${dark}"/><path d="${glyph}" fill="#fff8e9"/></svg>`;
+   };
    const ven=[];
-   /* Samotny zaznam v zebricku nic nerika: Chandelure je v Great League
-      #802 a to neni role, to je misto v poradi. Bere se proto stejny prah,
-      jakym se ridi cely rozpocet — "do kolikateho mista brat druh vazne". */
-   const prah=P.atlasRankLimit?P.atlasRankLimit():50;
-   (model.poradiLig||[]).forEach(k=>{
-    const lg=model.role.pvp[k];
-    const radek=lg&&lg.radky.filter(r=>r.klic===model.klic)[0];
-    if(radek&&radek.rank!=null&&radek.rank<=prah)ven.push({nazev:lg.nazev,rank:radek.rank});
+   /* Raidů může být víc typů; tady stačí tři nejlepší, zbytek je
+      v tabulce. Ikona je typ, ne meče — bez ní by tři stejné odznáčky
+      nešly rozeznat. */
+   (model.role.raid.radky||[]).filter(mujRaid).slice(0,3).forEach(r=>{
+    ven.push(kus((P.typIkona&&r.typ?P.typIkona(r.typ):'')||esc(r.typ||'Raid'),
+     'Raidy — '+r.typ,r.rank,r.znamka));
    });
-   // Od nejlepsiho poradi po nejhorsi — jinak to bylo poradi lig, ne sily.
-   ven.sort((a,b2)=>a.rank-b2.rank);
-   const vse=ven.map(x=>x.nazev);
-   /* Raidy a gym nemaji poradi srovnatelne s ligou, takze stoji za nimi
-      v poradi, v jakem se o nich mluvi jinde. */
-   if(model.role.raid.radky.some(r=>r.klic===model.klic))vse.push('raidy');
-   if(model.role.gym.radky.some(r=>r.klic===model.klic))vse.push('obrana gymu');
-   /* Max Battle je jediny zebricek, ktery appka nepocita sama. Byt na nem
-      znamena "patri mezi desitku na ten typ" — proto staci zminka s typem. */
-   const dm=P.atlasDmax?P.atlasDmax(d.name):null;
-   if(dm&&dm.role.length)vse.push('Max Battle ('+dm.role[0].typ+' #'+dm.role[0].poradi+')');
-   return vse.length?vse.join(' · '):'';
+   /* Max Battle má pořadí v každém typu zvlášť a druh jich může mít
+      víc — ze samotné značky Dmax nepoznáš, za jaký typ to číslo stojí.
+      Ikony jsou proto dvě: značka formy a za ní typ, stejně jako
+      v raidech. Víc než tři se do řádku nevejdou, zbytek je v tabulce. */
+   /* Gmax před Dmaxem: je to vzácnější forma a shání se hůř. V tabulce
+      pod tím rozhoduje pořadí, tady pořadí až uvnitř formy. */
+   (megaStav||shadowStav?[]:(model.role.max.radky||[]))
+    .filter(r=>r.klic===model.klic&&r.rank!=null)
+    .slice().sort((a,b)=>((b.maxForma==='Gigantamax')-(a.maxForma==='Gigantamax'))
+      ||(a.rank-b.rank))
+    .slice(0,3).forEach(mx=>{
+     const zn=`<img class="atlas-role-icon atlas-max-mark" alt="" src="atlas/assets/`
+      +`${mx.maxForma==='Gigantamax'?'gmax':'dmax'}-mark.svg">`;
+     ven.push(kus(zn+((P.typIkona&&mx.typ?P.typIkona(mx.typ):'')||''),
+      `${mx.maxForma==='Gigantamax'?'Gigantamax':'Max Battle'} — ${mx.typ}`
+      +' (žebříček Pokémon GO Hub)',mx.rank,mx.znamka));
+    });
+   const g=megaStav||shadowStav?null:(model.role.gym.radky||[]).filter(muj)[0];
+   if(g&&g.rank!=null)ven.push(kus(roleIcon('gym'),'Obrana gymu',g.rank,g.znamka));
+   /* Ligy až nakonec — stejné pořadí, jaké má Pokémon GO Hub:
+      nejdřív čím ten druh mlátí, pak čím drží, až potom PvP. */
+   (megaStav?[]:(model.poradiLig||[])).forEach(k=>{
+    const lg=model.role.pvp[k];
+    const radek=lg&&lg.radky.filter(muj)[0];
+    if(radek&&radek.rank!=null){
+     ven.push(kus(roleIcon(k)||esc(lg.nazev),lg.nazev,radek.rank,radek.znamka));
+    }
+   });
+   return ven.join('');
   })();
   identita.hidden=false;
-  vykresliCpPas(d,pocasi);
-  vykresliTypy(d);
+  const dZobrazeny=megaJm?Object.assign({},d,{name:megaJm,types:typy}):d;
+  vykresliCpPas(dZobrazeny,pocasi);
+  vykresliTypy(dZobrazeny);
   if(shinyDruh!==d.name){shinyDruh=d.name;shinyObrazek=false}
   /* Shiny sprite se predem natahne do pameti prohlizece. Bez toho se po
      prepnuti na okamzik ukazala nahradni ikona, nez se obrazek stahl. */
@@ -3529,10 +3708,11 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    const src=(html.match(/src="([^"]+)"/)||[])[1];
    if(src&&!shinyPredem.has(src)){shinyPredem.add(src);const i=new Image();i.src=src}
   }
-  /* Prepinac se nabizi jen tam, kde shiny opravdu existuje. U "zatim ne"
-     nebo "neoveureno" by slibil obrazek, ktery ve hre nikdo nema. */
-  const shinyLze=shinyStav==='ano';
-  const staty=P.atlasStaty?P.atlasStaty(d.name):null;
+  /* Prepinac pod obrazkem je jedina zprava o shiny, kterou stranka
+     dava: kdyz tam neni, shiny u toho druhu ve hre neni — nebo o nem
+     data nic nevi. Radek navic to same rikal podruhe. */
+  const shinyLze=!!shiny&&shiny.stav==='ano';
+  const staty=P.atlasStaty?P.atlasStaty(megaJm||d.name):null;
   const pruh=(popis,hodnota,max,tr)=>`<div class="atlas-staty-radek" data-stat="${tr}">`
    +`<span>${esc(popis)}</span><span class="atlas-staty-drah">`
    +`<i style="width:${Math.round(Math.min(1,hodnota/(max||1))*100)}%"></i></span>`
@@ -3545,11 +3725,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
        +`✦ ${shinyObrazek?'Běžný':'Shiny'}</button>`:''}
     </div>
     <div>
-     <h3>${esc(d.name)}</h3>
-     ${P.atlasMaShadow&&P.atlasMaShadow(d.name)?`<div class="atlas-forma-prepinac" role="group" aria-label="Forma">`
-       +`<button type="button" data-forma="" aria-pressed="${formaStav!=='Shadow'}">Běžný</button>`
-       +`<button type="button" data-forma="Shadow" aria-pressed="${formaStav==='Shadow'}">Shadow</button>`
-       +`</div>`:''}
+     <h3>${esc(megaJm||(model&&model.forma==='Shadow'?'Shadow '+d.name:d.name))}</h3>
      <div class="atlas-hledani-typy">${typy.map(t=>`<span class="d-type" style="background:${esc(barvy[t]||'')}">${P.typIkona?P.typIkona(t):''}${esc(t)}</span>`).join('')}</div>
      ${staty?`<div class="atlas-staty">`
        +pruh('Útok',staty.utok,staty.max.utok,'utok')
@@ -3559,20 +3735,14 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     </div>
    </div>
    <div class="atlas-hledani-kde">
+    <!-- Přepínač formy stojí TADY, ne pod jménem: jinak s ním hnula délka
+         jména a u „Shadow Charizard" spadl pod něj na druhý řádek. -->
+    ${formyPrepinac(d,model)}
     <span class="atlas-hledani-rezim-znacka">Hodnocení druhu</span>
-    <b>${kdeStoji?esc(kdeStoji):'žádnou roli nezastane'}</b>
-   </div>
-   <dl class="atlas-hledani-fakta">
-    <div data-shiny="${shinyStav}">
-     <dt>Shiny</dt>
-     <button type="button" class="atlas-hledani-shiny" data-shiny-vic aria-expanded="${shinyVic}">
-      <span>${{ano:'✦ Shiny dostupné',ne:'Shiny zatím ne'}[shinyStav]||'Shiny neověřeno'}</span>
-      <span class="atlas-hledani-shiny-sip" aria-hidden="true">›</span>
-     </button>
-     ${shinyVic?`<small>${esc({ano:shiny&&shiny.zdroje.length?'Odkud padá: '+shiny.zdroje.join(' · '):'zdroj neuveden',
-       ne:'ve hře se zatím neobjevil'}[shinyStav]||'o tomhle druhu zdroj nic neříká')}</small>`:''}
-    </div>
-   </dl>`;
+    ${hodnoceniHtml
+      ?`<div class="atlas-hodnoceni">${hodnoceniHtml}</div>`
+      :`<b>žádnou roli nezastane</b>`}
+   </div>`;
   /* Sprity z hry maji kazdy jinou pozici v pruhlednem platne; engine je
      umi vystredit, ale musi se mu o novem obrazku rict. Jinak sedi
      nakrivo a prelezaji ramecek. */
@@ -3580,19 +3750,37 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   vykresliVysledek();
  }
 
- /* Zdroje shiny jsou o klik dal, jak je v navrhu; klik prekresli
-    identitu, takze se posluchac vesi na cely blok, ne na tlacitko. */
+ /* Přepínač formy. Shadow i každá mega jsou samostatné hledané jméno,
+    takže tlačítko nese rovnou text, který se napíše do pole — slepovat
+    „Mega " + jméno" by u „Mega Charizard Y" nedalo nic rozumného. */
+ function formyPrepinac(d,model){
+  const megy=(P.atlasMegaFormy?P.atlasMegaFormy(d.name):[])||[];
+  const maShadow=!!(P.atlasMaShadow&&P.atlasMaShadow(d.name));
+  if(!maShadow&&!megy.length)return '';
+  const vybrana=(model&&model.megaForma)||(formaStav==='Shadow'?'Shadow':'');
+  const tl=(text,popis,je)=>`<button type="button" data-forma-text="${esc(text)}"`
+   +` aria-pressed="${je}">${esc(popis)}</button>`;
+  return `<div class="atlas-forma-prepinac" role="group" aria-label="Forma">`
+   +tl(d.name,'Běžný',!vybrana)
+   +(maShadow?tl('Shadow '+d.name,'Shadow',vybrana==='Shadow'):'')
+   /* Popisek bez jména druhu: „Mega Charizard Y" → „Mega Y",
+      „Mega Beedrill" → „Mega", „Primal Kyogre" → „Primal". Celé jméno
+      už stojí v nadpisu nad tím a přepínač se kvůli němu lámal. */
+   +megy.map(m=>tl(m,m.split(d.name).join('').replace(/\s+/g,' ').trim()||m,
+     vybrana===m)).join('')
+   +`</div>`;
+ }
+
+ /* Klik prekresli identitu, takze posluchac visi na celem bloku, ne na
+    jednotlivych tlacitkach — ta po prekresleni uz neexistuji. */
  identita.addEventListener('click',e=>{
-  if(e.target.closest('[data-shiny-vic]')){shinyVic=!shinyVic;vykresli();return}
   /* Meni se jen obrazek: zadne cislo, poradi ani sestava na barve nezalezi,
      takze se prekresli identita a nic jineho. */
-  const fp=e.target.closest('[data-forma]');
+  const fp=e.target.closest('[data-forma-text]');
   if(fp){
    /* Prepnuti prepise text v poli — ten je jediny zdroj pravdy o tom, co se
       hleda, takze se stav nemuze rozejit s tim, co je videt. */
-   const zaklad=P.atlasRozlozFormu?P.atlasRozlozFormu(jmeno.value).jmeno:jmeno.value;
-   const nova=fp.dataset.forma;
-   jmeno.value=(nova?nova+' ':'')+zaklad;
+   jmeno.value=fp.dataset.formaText;
    jmeno.dataset.tiseVybrano='1';
    jmeno.dispatchEvent(new Event('input',{bubbles:true}));
    return;
@@ -4234,4 +4422,322 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
   });
   zkouska.src=cesta;
  });
+})();
+
+/* Astra A035 — nastavení: existující uzly, kategorie a výklad na kliknutí. */
+(function(){
+ function enhance(){
+  const card=document.querySelector('.settings-card'),row=card?.querySelector('.settings-row[data-rozdeleno]');
+  if(!row||card.dataset.atlasSettings)return false;
+  const sections=[...row.querySelectorAll(':scope > .nast-sekce')];if(!sections.length)return false;
+  card.dataset.atlasSettings='1';card.classList.add('atlas-settings');
+  const layout=document.createElement('div');layout.className='atlas-settings-layout';card.append(layout);[...card.children].filter(el=>el!==layout&&el.tagName!=='SUMMARY').forEach(el=>layout.append(el));
+  const nav=document.createElement('nav');nav.className='atlas-settings-nav';nav.setAttribute('aria-label','Kategorie nastavení');row.before(nav);
+  sections.forEach((section,i)=>{
+   const name=section.querySelector('.nast-hlava b')?.textContent||'Nastavení';
+   if(!section.id)section.id='atlasSettingsSection'+i;
+   const button=document.createElement('button');button.type='button';button.textContent=name;button.setAttribute('aria-controls',section.id);
+   function select(){sections.forEach((s,j)=>{s.hidden=j!==i;nav.children[j].setAttribute('aria-pressed',String(j===i))})}
+   button.addEventListener('click',select);nav.append(button);section.hidden=i!==0;button.setAttribute('aria-pressed',String(i===0));
+   section.querySelectorAll('.setting,.nast-pole').forEach(field=>{
+    const label=field.querySelector('label');const input=field.querySelector('input,select');if(!label||!input)return;
+    field.classList.add('atlas-setting-row');
+    const hints=[...field.children].filter(el=>el.matches('.hint,.prah-krivka'));
+    if(hints.length){
+     const details=document.createElement('details');details.className='atlas-setting-help';
+     const summary=document.createElement('summary');summary.textContent='?';summary.setAttribute('aria-label','Vysvětlení: '+label.textContent.trim());
+     const body=document.createElement('div');body.className='atlas-setting-help-body';details.append(summary,body);hints.forEach(el=>body.append(el));field.append(details);
+    }
+   });
+  });
+  return true;
+ }
+ if(!enhance()){const observer=new MutationObserver(()=>{if(enhance())observer.disconnect()});observer.observe(document.body,{childList:true,subtree:true});setTimeout(()=>observer.disconnect(),15000)}
+})();
+
+/* Astra A036 — kompaktní mřížka podle předání A034. */
+(function(){
+ function init(){
+  const card=document.querySelector('.atlas-settings');if(!card||card.dataset.compactSettings)return false;
+  card.dataset.compactSettings='1';card.classList.add('atlas-settings-compact');
+  card.querySelector('.atlas-settings-nav')?.remove();
+  const row=card.querySelector('.settings-row');const sections=[...row.querySelectorAll('.nast-sekce')];
+  const syncs=[];
+  const paths=['M4 13l4 4L20 5','M4 5h16v14H4zM8 9h8M8 13h5','M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z','m4 4 16 16M20 4 4 20','M12 3v18M5 10l7-7 7 7','M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14'];
+  sections.forEach((section,i)=>{
+   section.hidden=false;const head=section.querySelector('.nast-hlava');head.insertAdjacentHTML('afterbegin',`<svg class="atlas-settings-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[i%paths.length]}"/></svg>`);
+   section.querySelectorAll('.atlas-setting-row').forEach(field=>{
+    const label=field.querySelector('label'),input=field.querySelector('input,select');if(!label||!input)return;
+    // Krátké názvy a jednotky převzaté z Claudova návrhu A034.
+    const names={ivThresh:['Práh „vysoké IV“','%'],spThresh:['Práh PvP potenciálu','%'],prahSleva:['Sleva za umístění v lize','bodů'],rankThresh:['Práh „elitní“ PvP rank','pořadí'],ligaRezerva:['Rezerva v lize','kusů'],ligaVaha:['Liga, která se zrovna nehraje','%'],hledaniDelka:['Délka jednoho filtru pro transfer','znaků']};
+    if(names[input.id])label.textContent=names[input.id][0];
+const top=document.createElement('div');top.className='atlas-setting-top';field.prepend(top);top.append(label);
+    const help=field.querySelector('.atlas-setting-help');if(help){const body=help.querySelector('.atlas-setting-help-body');const btn=document.createElement('button');btn.type='button';btn.className='atlas-help-button';btn.textContent='?';btn.setAttribute('aria-label','Vysvětlení: '+label.textContent.trim());btn.setAttribute('aria-expanded','false');body.hidden=true;body.id='atlasHelp-'+input.id;btn.setAttribute('aria-controls',body.id);btn.onclick=()=>{body.hidden=!body.hidden;btn.setAttribute('aria-expanded',String(!body.hidden))};top.append(btn);field.append(body);help.remove()}
+    const control=document.createElement('div');control.className='atlas-setting-control';top.append(control);
+    if(input.type==='number'){
+     control.classList.add('atlas-stepper');control.append(input);input.readOnly=true;
+     const minus=document.createElement('button'),plus=document.createElement('button');
+     [[minus,'−',-1],[plus,'+',1]].forEach(([button,text,dir])=>{button.type='button';button.textContent=text;button.setAttribute('aria-label',(dir<0?'Snížit: ':'Zvýšit: ')+label.textContent.trim());button.onclick=()=>{dir<0?input.stepDown():input.stepUp();input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));sync()}});
+     control.prepend(minus);if(names[input.id]?.[1]){const unit=document.createElement('span');unit.className='atlas-setting-unit';unit.textContent=names[input.id][1];control.append(unit)}control.append(plus);
+     const sync=()=>{minus.disabled=input.disabled||(input.min!==''&&Number(input.value)<=Number(input.min));plus.disabled=input.disabled||(input.max!==''&&Number(input.value)>=Number(input.max))};syncs.push(sync);sync();
+    }else if(input.tagName==='SELECT'||input.type==='checkbox'){
+     control.classList.add('atlas-segments');input.hidden=true;field.append(input);
+     const choices=input.type==='checkbox'?[['1','Ano'],['0','Ne']]:[...input.options].map(o=>[o.value,o.textContent]);
+     const short={pvpStovka:['Ano','Ne'],boxSekce:['Tři','Dvě','Jedna']};
+     const buttons=choices.map(([value,text],i)=>{const btn=document.createElement('button');btn.type='button';btn.textContent=short[input.id]?.[i]||text;btn.title=text;btn.onclick=()=>{if(input.type==='checkbox')input.checked=value==='1';else input.value=value;input.dispatchEvent(new Event(input.type==='checkbox'?'change':'input',{bubbles:true}));if(input.type!=='checkbox')input.dispatchEvent(new Event('change',{bubbles:true}));sync()};control.append(btn);return btn});
+     const sync=()=>buttons.forEach((b,i)=>{b.disabled=input.disabled;b.setAttribute('aria-pressed',String(choices[i][0]===(input.type==='checkbox'?(input.checked?'1':'0'):input.value)))});syncs.push(sync);sync();
+    }else control.append(input);
+   });
+  });
+  card.addEventListener('input',()=>syncs.forEach(f=>f()));card.addEventListener('change',()=>syncs.forEach(f=>f()));card.addEventListener('click',()=>setTimeout(()=>syncs.forEach(f=>f()),0));
+  const cloud=document.querySelector('#cloudCard');if(cloud&&!cloud.querySelector('.atlas-cloud-info')){const info=document.createElement('details');info.className='atlas-cloud-info';const title=document.createElement('summary');title.textContent='Jak funguje synchronizace';info.append(title);[...cloud.children].filter(e=>e.matches('p,.hint')&&!e.id&&!e.querySelector('button,input')).forEach(e=>info.append(e));const proc=cloud.querySelector('#cloudProc');if(proc)info.append(proc);if(info.children.length>1)cloud.append(info)}
+  return true;
+ }
+ if(!init()){const o=new MutationObserver(()=>{if(init())o.disconnect()});o.observe(document.body,{childList:true,subtree:true});setTimeout(()=>o.disconnect(),15000)}
+})();
+/* Claude A038 — Nastavení: srovnané hodnoty a výklad jako vrstva nad appkou.
+
+   Dvě věci, které A036/A037 nechaly otevřené:
+   1) jednotka stála uvnitř kroku mezi hodnotou a „+“, takže se čísla v řádcích
+      posouvala podle toho, jak byla jednotka dlouhá — nic nestálo pod sebou.
+      Teď má každý krok pevné čtyři buňky (− | hodnota | jednotka | +), takže
+      prázdná jednotka drží místo a sloupec čísel sedí i přes celou kartu.
+   2) výklad se rozbaloval pod řádkem a odsouval zbytek stránky pryč. Teď stojí
+      jako vrstva nad appkou u toho otazníku, na který se kliklo, a appka se
+      pod ním nehne. */
+(function(){
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ // Jednotka patří k hodnotě, ne do názvu — tohle jsou zbylé řádky, které ji
+ // ještě měly v závorce za jménem.
+ const NAZVY={roleThresh:['Práh užitečnosti role','%'],tradeThresh:['Od jakého IV nechat kus na trade','%'],pvpPojistka:['Pojistka na cupy',''],pvpPojistkaRank:['Pojistka na cupy jen do pořadí druhu','pořadí']};
+
+ /* ---- vrstva s výkladem ---- */
+ const vrstva=document.createElement('div');vrstva.className='atlas-help-pop';vrstva.hidden=true;
+ vrstva.innerHTML='<div class="atlas-help-pop-stin"></div>'
+  +'<div class="atlas-help-pop-box" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="atlasHelpPopNadpis">'
+  +'<div class="atlas-help-pop-hlava"><div><strong id="atlasHelpPopNadpis"></strong>'
+  +'<span class="atlas-help-pop-ted" hidden></span></div>'
+  +'<button type="button" class="atlas-help-pop-zavrit" aria-label="Zavřít výklad">×</button></div>'
+  +'<div class="atlas-help-pop-telo"></div></div>';
+ const box=vrstva.querySelector('.atlas-help-pop-box');
+ const nadpis=vrstva.querySelector('#atlasHelpPopNadpis');
+ const telo=vrstva.querySelector('.atlas-help-pop-telo');
+ const tedRadek=vrstva.querySelector('.atlas-help-pop-ted');
+ let otevreny=null;
+
+ function umisti(){
+  if(!otevreny)return;
+  if(window.innerWidth<720){box.classList.add('atlas-help-pop-dole');box.style.left=box.style.top='';return}
+  box.classList.remove('atlas-help-pop-dole');
+  box.style.left='0px';box.style.top='0px';
+  const r=otevreny.tlacitko.getBoundingClientRect(),s=box.getBoundingClientRect();
+  let x=Math.min(Math.max(12,r.left-14),window.innerWidth-s.width-12);
+  let y=r.bottom+10;
+  if(y+s.height>window.innerHeight-12)y=Math.max(12,r.top-s.height-10);
+  box.style.left=Math.round(x)+'px';box.style.top=Math.round(y)+'px';
+ }
+ function zavri(){
+  if(!otevreny)return;
+  otevreny.domov.append(otevreny.obsah);otevreny.obsah.hidden=true;
+  otevreny.tlacitko.setAttribute('aria-expanded','false');
+  vrstva.hidden=true;otevreny=null;
+ }
+ /* `ted` je aktuální hodnota toho nastavení. Výklad mluví o tom, co to
+    dělá; bez čísla, na kterém to zrovna stojí, si to člověk musí složit
+    z okna a z řádku pod ním — a ten je zrovna schovaný za vrstvou. */
+ function otevri(tlacitko,titulek,obsah,ted){
+  const stejny=otevreny&&otevreny.tlacitko===tlacitko;
+  zavri();if(stejny)return;
+  otevreny={tlacitko:tlacitko,obsah:obsah,domov:obsah.parentNode};
+  nadpis.textContent=titulek;obsah.hidden=false;telo.append(obsah);
+  tedRadek.textContent=ted||'';tedRadek.hidden=!ted;
+  vrstva.hidden=false;tlacitko.setAttribute('aria-expanded','true');
+  umisti();box.focus();
+ }
+ vrstva.querySelector('.atlas-help-pop-stin').onclick=zavri;
+ vrstva.querySelector('.atlas-help-pop-zavrit').onclick=zavri;
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&otevreny)zavri()});
+ addEventListener('resize',umisti);
+ addEventListener('scroll',umisti,{capture:true,passive:true});
+
+ /* ---- přestavba řádků ---- */
+ function init(){
+  const card=document.querySelector('.atlas-settings-compact');
+  if(!card||!card.dataset.compactSettings||card.dataset.atlasA038)return false;
+  card.dataset.atlasA038='1';
+  if(!vrstva.isConnected)document.body.append(vrstva);
+  // Engine si delší výklad skládá na dva řádky a dává k němu „víc“. Když se
+  // stránka načte rovnou na Nastavení, je karta otevřená už při jeho průchodu
+  // a tlačítko přistane přímo v řádku — čtyřicet pixelů pod každým názvem.
+  // Ve vrstvě stojí výklad celý, takže nemá co rozbalovat. `slozeno cely`
+  // znamená „hotovo, tenhle text už neskládej“.
+  // V kartě cloudu je to totéž: A036 odstěhovala odstavce do rozbalení a
+  // tlačítko zůstalo stát mezi stavem a akcemi — a rozhodilo je na dva řádky.
+  [card,document.querySelector('#cloudCard')].forEach(koren=>{
+   if(!koren)return;
+   koren.querySelectorAll('.vic-btn').forEach(b=>b.remove());
+   koren.querySelectorAll('.hint,.plan-intro').forEach(h=>h.classList.add('slozeno','cely'));
+  });
+
+  // „Raidy a gymy“ měly ikonu ✕ — ta v appce všude znamená zavřít nebo zrušit.
+  // Věž gymu je to, u čeho se obojí odehrává.
+  const raidy=[...card.querySelectorAll('.nast-sekce')].find(s=>/Raidy/.test(s.querySelector('.nast-hlava b')?.textContent||''));
+  raidy?.querySelector('.atlas-settings-icon path')?.setAttribute('d','M12 3 5 7v13h14V7zM9 20v-5h6v5');
+
+  card.querySelectorAll('.atlas-setting-row').forEach(radek=>{
+   const popis=radek.querySelector('label'),pole=radek.querySelector('input,select');
+   if(!popis||!pole)return;
+   const uprava=NAZVY[pole.id];
+   if(uprava)popis.textContent=uprava[0];
+   const krok=radek.querySelector('.atlas-stepper');
+   if(krok){
+    let jednotka=krok.querySelector('.atlas-setting-unit');
+    if(!jednotka){
+     jednotka=document.createElement('span');jednotka.className='atlas-setting-unit';
+     const plus=[...krok.querySelectorAll('button')].pop();
+     krok.insertBefore(jednotka,plus);
+    }
+    if(uprava)jednotka.textContent=uprava[1];
+    /* Hodnota a jednotka jsou jedna věc a stojí uprostřed mezi „−“ a „+“.
+       Napřed byla jednotka vlastní buňkou pevné šířky — čísla sice stála
+       pod sebou, ale „50000“ a „60 %“ nesedělo středem a dvojice vypadala
+       rozházeně. Políčko se proto měří na délku hodnoty (tabulkové číslice,
+       takže `ch` je přesně šířka cifry) a dvojice se vystředí. */
+    const obal=document.createElement('span');obal.className='atlas-stepper-hodnota';
+    pole.after(obal);obal.append(pole,jednotka);
+    // Šířku drží proměnná, ne `style.width`: vrstva A036 má na políčku
+    // pevnou šířku s `!important`, a tu by přímý zápis do stylu nepřebil.
+    const naMiru=()=>pole.style.setProperty('--sirka-hodnoty',Math.max(1,String(pole.value).length)+'ch');
+    pole.addEventListener('input',naMiru);pole.addEventListener('change',naMiru);naMiru();
+   }
+   /* „98 % a víc“ se do přepínače nevejde a ořízlo se na „98 % a…“. Celá
+      volba patří do bubliny — ale s nadpisem, ať je poznat, čeho se týká,
+      a jen tam, kde bublina opravdu něco přidá: u „vypnuto“ nebo „Ne“ by
+      jen zopakovala, co stojí na tlačítku. A036 dala tlačítkům `title`,
+      ten se tady zahazuje, jinak by ho engine převedl zpátky. */
+   radek.querySelectorAll('.atlas-segments button').forEach(b=>{
+    const cele=(b.title||b.dataset.tip||b.textContent).trim();
+    b.textContent=b.textContent.replace(/\s+a víc$/,'');
+    b.removeAttribute('title');
+    if(cele.toLowerCase()===b.textContent.trim().toLowerCase()){b.removeAttribute('data-tip');return}
+    b.dataset.tip='<div class="tip-hlava">'+esc(popis.textContent.trim())+'</div>'+esc(cele);
+   });
+   const tlacitko=radek.querySelector('.atlas-help-button'),obsah=radek.querySelector('.atlas-setting-help-body');
+   if(tlacitko&&obsah){
+    obsah.hidden=true;
+    tlacitko.setAttribute('aria-label','Výklad: '+popis.textContent.trim());
+    const ted=()=>{
+     if(pole.type==='checkbox')return 'teď '+(pole.checked?'ano':'ne');
+     if(pole.tagName==='SELECT')
+      return 'teď '+((pole.selectedOptions[0]||{}).textContent||'').trim();
+     const j=radek.querySelector('.atlas-setting-unit');
+     return 'teď '+pole.value+(j&&j.textContent?' '+j.textContent:'');
+    };
+    tlacitko.onclick=()=>otevri(tlacitko,popis.textContent.trim(),obsah,ted());
+   }
+  });
+
+  // Patička: zůstane tlačítko a jedna věta, celá kalibrace jde pod otazník.
+  const pata=card.querySelector('.settings-foot'),vyklad=pata&&pata.querySelector('.hint');
+  if(pata&&vyklad&&!pata.dataset.atlasA038){
+   pata.dataset.atlasA038='1';
+   const obal=document.createElement('div');obal.className='atlas-setting-help-body';
+   vyklad.replaceWith(obal);obal.append(vyklad);obal.hidden=true;
+   const veta=document.createElement('span');veta.className='atlas-foot-kratce';
+   veta.textContent='Vrátí všechny volby na výchozí kalibraci.';
+   const tlacitko=document.createElement('button');tlacitko.type='button';
+   tlacitko.className='atlas-help-button';tlacitko.textContent='?';
+   tlacitko.setAttribute('aria-expanded','false');
+   tlacitko.setAttribute('aria-label','Výklad: co výchozí kalibrace nastaví');
+   tlacitko.onclick=()=>otevri(tlacitko,'Co výchozí kalibrace nastaví',obal,'');
+   pata.append(veta,tlacitko,obal);
+  }
+
+  /* Kolik kusů tahle čísla nechávají.
+
+     Bez toho je Nastavení sada abstraktních prahů: člověk zvedne práh o dva
+     body a netuší, jestli tím pustil tři kusy, nebo sto. Přepočítává se na
+     signálu, kterým engine hlásí „přepočítal jsem" — značce, kterou vždycky
+     vloží do těla tabulky (viz ATLAS KONTRAKT). Tím je jisté, že se čte až
+     po přepočtu, ne během něj. */
+  const bilance=document.createElement('section');
+  bilance.className='atlas-nast-bilance';
+  bilance.innerHTML='<div class="atlas-nast-bilance-cislo" aria-live="polite">'
+   +'<strong data-nechat>0</strong><span data-celkem></span>'
+   +'<span class="atlas-nast-bilance-zmena" hidden></span></div>'
+   +'<div class="atlas-nast-bilance-text"><b>si appka při těchhle číslech nechává.</b>'
+   +'<span data-zbytek></span></div>'
+   +'<div class="atlas-nast-bilance-pruh"><i></i></div>'
+   +'<p class="atlas-nast-bilance-prazdno" hidden>Až naimportuješ roster, uvidíš tady,'
+   +' kolik kusů ti tahle čísla nechají.</p>';
+  card.querySelector('.settings-row').before(bilance);
+  const kus=s=>bilance.querySelector(s);
+  let minule=null,odpocet=0,tik=0;
+  function prepocitej(){
+   const P=window.__pgo;
+   if(!P||!P.getRows||!P.getComputed)return;
+   const rows=P.getRows(),c=P.getComputed(),celkem=rows.length;
+   bilance.classList.toggle('atlas-nast-bilance-bez',!celkem);
+   kus('.atlas-nast-bilance-prazdno').hidden=!!celkem;
+   if(!celkem){minule=null;return}
+   const nechat=rows.reduce((n,r)=>n+(c[r.id]&&c[r.id].keepGood?1:0),0);
+   kus('[data-nechat]').textContent=nechat;
+   kus('[data-celkem]').textContent='z '+celkem+' '+(celkem===1?'kusu':'kusů');
+   kus('[data-zbytek]').textContent=celkem===nechat
+    ?'Nic na puštění nezbývá.'
+    :'Zbylých '+(celkem-nechat)+' jde pryč. Přepočítá se při každé změně.';
+   kus('.atlas-nast-bilance-pruh > i').style.width=Math.round(nechat/celkem*100)+'%';
+   const rozdil=minule===null?0:nechat-minule;
+   minule=nechat;
+   const znacka=kus('.atlas-nast-bilance-zmena');
+   if(!rozdil){znacka.hidden=true;return}
+   znacka.textContent=(rozdil>0?'+':'−')+Math.abs(rozdil);
+   znacka.classList.toggle('vic',rozdil>0);
+   znacka.classList.toggle('min',rozdil<0);
+   znacka.hidden=false;
+   clearTimeout(odpocet);odpocet=setTimeout(()=>{znacka.hidden=true},3500);
+  }
+  const telo=document.getElementById('tbody');
+  if(telo)new MutationObserver(()=>{clearTimeout(tik);tik=setTimeout(prepocitej,60)})
+   .observe(telo,{childList:true});
+  // Záchrana pro případ, že by přepočet tělem tabulky nehnul: po zásahu do
+  // nastavení se spočítá i tak. Stejný `tik` je oba spojí do jednoho běhu.
+  card.addEventListener('change',()=>{clearTimeout(tik);tik=setTimeout(prepocitej,120)});
+  prepocitej();
+
+  /* Karta cloudu: napřed tlačítko, za ním stav, a oba výklady pod otazník.
+
+     Rozbalovátka „Chci se přihlašovat přes vlastní registraci" a „Jak funguje
+     synchronizace" zabírala dva řádky nad vším ostatním, ačkoli je člověk
+     otevře jednou za život. Jdou do téže vrstvy jako výklady v nastavení. */
+  const cloud=document.querySelector('#cloudCard');
+  if(cloud&&!cloud.dataset.atlasOtaznik){
+   cloud.dataset.atlasOtaznik='1';
+   const stav=cloud.querySelector('#cloudStav'),akce=cloud.querySelector('.cloud-akce');
+   if(stav&&akce)stav.before(akce);
+   const vyklad=document.createElement('div');
+   vyklad.className='atlas-setting-help-body atlas-cloud-vyklad';vyklad.hidden=true;
+   const info=cloud.querySelector('.atlas-cloud-info');
+   if(info){[...info.children].forEach(e=>{if(e.tagName!=='SUMMARY')vyklad.append(e)});info.remove()}
+   // Registrace zůstává celým `<details>`: engine ji umí sám otevřít
+   // (`#cloudNastaveni`), když chybí ID aplikace, a na to `id` sahá.
+   const registrace=cloud.querySelector('#cloudNastaveni');
+   if(registrace)vyklad.append(registrace);
+   if(vyklad.children.length){
+    const otaznik=document.createElement('button');otaznik.type='button';
+    otaznik.className='atlas-help-button atlas-cloud-otaznik';otaznik.textContent='?';
+    otaznik.setAttribute('aria-expanded','false');
+    otaznik.setAttribute('aria-label','Výklad: jak funguje synchronizace');
+    otaznik.onclick=()=>otevri(otaznik,'Jak funguje synchronizace',vyklad,'');
+    cloud.append(otaznik,vyklad);
+    /* Když engine sám otevře registraci (chybí ID aplikace), musí se otevřít
+       i vrstva — jinak posílá člověka vyplnit políčko, které není vidět. */
+    if(registrace)new MutationObserver(()=>{
+     if(registrace.open&&vyklad.hidden)otaznik.click();
+    }).observe(registrace,{attributes:true,attributeFilter:['open']});
+   }
+  }
+  return true;
+ }
+ if(!init()){const o=new MutationObserver(()=>{if(init())o.disconnect()});o.observe(document.body,{childList:true,subtree:true});setTimeout(()=>o.disconnect(),15000)}
 })();

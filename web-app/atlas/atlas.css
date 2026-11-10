@@ -7,7 +7,7 @@ html[data-theme=dark] .atlas-test{color-scheme:dark;--page:#111927;--surface-1:#
 .atlas-subnav{display:flex;gap:7px;overflow:auto;margin-bottom:23px;padding:2px}.atlas-subnav:empty{display:none}.atlas-subnav button{background:var(--surface-1);border:1px solid var(--border);color:var(--text-secondary);white-space:nowrap;padding:9px 15px;font-size:13px}.atlas-subnav button.active{background:var(--atlas-soft);border-color:var(--series-1);color:var(--series-1)}
 .atlas-test[data-atlas-view=home] .app>.card,.atlas-test:not([data-atlas-view=home]) #atlasHome{display:none!important}.atlas-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}.atlas-stat{padding:20px;text-align:left;border:1px solid var(--border);border-radius:13px;background:var(--surface-1);color:var(--text-primary)}.atlas-stat>span{display:flex;align-items:center;justify-content:space-between;color:var(--text-secondary);font-size:13px}.atlas-stat strong{display:block;font-size:32px;line-height:1.5;margin-top:6px;font-variant-numeric:tabular-nums}.atlas-stat small{font-size:11px;color:var(--text-muted)}.atlas-dashboard{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px}.atlas-panel{border:1px solid var(--border);border-radius:14px;background:var(--surface-1);overflow:hidden;margin-bottom:22px}.atlas-panel-head{padding:22px;display:flex;justify-content:space-between;align-items:center;gap:15px}.atlas-panel-head h2{margin:0;font-size:18px;color:var(--text-primary)}.atlas-panel-head p{margin:4px 0 0;color:var(--text-muted);font-size:12px}.atlas-feature{background:#142c54;color:#fff;padding:27px;border-radius:14px;position:relative;overflow:hidden;min-height:235px;display:flex;align-items:center;margin-bottom:24px}.atlas-feature>div{max-width:65%;position:relative;z-index:2}.atlas-feature .atlas-eyebrow{color:#9fc2ff}.atlas-feature h2{font-size:26px;line-height:1.2;letter-spacing:-.6px;margin:0}.atlas-feature p{color:#c1d2ea;font-size:13px;line-height:1.6;margin:12px 0 17px;max-width:310px}.atlas-feature img{position:absolute;width:220px;height:220px;object-fit:contain;right:0;top:8px;filter:drop-shadow(0 12px 12px #0004)}.atlas-feature button{border:0;background:white;color:#1a3560;border-radius:8px;padding:10px 14px;font-weight:650}.atlas-small-note{padding:18px 22px;color:var(--text-secondary);font-size:12px;border-top:1px solid var(--border)}.atlas-coverage{padding:0 22px 22px}.atlas-cover-row{margin-top:17px}.atlas-cover-row>div{display:flex;justify-content:space-between;font-size:13px}.atlas-track{height:6px;border-radius:8px;background:var(--page);margin-top:8px;overflow:hidden}.atlas-track i{display:block;height:100%;background:var(--series-1);border-radius:8px}.atlas-task{display:flex;gap:13px;border-top:1px solid var(--border);padding:17px 22px;font-size:13px;color:var(--text-secondary)}.atlas-task strong{display:block;color:var(--text-primary);margin-bottom:4px}.atlas-task .atlas-icon{color:var(--series-1);margin-top:3px}
 .atlas-roster{margin-top:20px;border:1px solid var(--border);border-radius:12px;overflow:hidden}.atlas-list-head{display:grid;grid-template-columns:minmax(200px,1.2fr) 90px minmax(130px,.8fr) minmax(170px,1fr) 30px;gap:16px;background:var(--input-bg);padding:13px 20px;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-muted)}.atlas-row{display:grid;grid-template-columns:minmax(200px,1.2fr) 90px minmax(130px,.8fr) minmax(170px,1fr) 30px;gap:16px;align-items:center;width:100%;text-align:left;background:var(--surface-1);border:0;border-bottom:1px solid var(--border);padding:15px 20px;color:var(--text-primary);cursor:pointer}.atlas-row:hover{background:var(--atlas-soft)}.atlas-poke{display:flex;align-items:center;gap:13px;min-width:0}.atlas-poke img{width:56px;height:56px;object-fit:contain;border-radius:12px;background:var(--input-bg)}.atlas-poke b{display:block;font-size:14px}.atlas-poke small,.atlas-row small{display:block;color:var(--text-muted);font-size:12px;margin-top:4px;font-weight:400}.atlas-num{font-variant-numeric:tabular-nums;font-weight:650;font-size:14px}.atlas-pill{display:inline-flex;gap:5px;align-items:center;border-radius:6px;padding:4px 8px;background:var(--atlas-soft);color:var(--series-1);font-size:11px;font-weight:650}.atlas-pill.good{background:var(--good-bg);color:var(--status-good)}.atlas-pill.warning{background:var(--warning-bg);color:var(--status-warning)}.atlas-next{font-size:13px;line-height:1.6}.atlas-row .atlas-arrow{color:var(--text-muted)}.atlas-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;font-size:12px;color:var(--text-secondary)}.atlas-pagination>div{display:flex;gap:8px}.atlas-empty{padding:45px;text-align:center;color:var(--text-secondary)}.atlas-compact .table-wrap:has(#rosterTable){display:none}.atlas-test:not(.atlas-compact) #atlasRoster{display:none}.atlas-mode{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 0;color:var(--text-muted);font-size:12px}.atlas-mode button{font-size:12px;background:var(--atlas-soft);color:var(--series-1);border:1px solid var(--border);padding:8px 12px}.atlas-compact #viewSelect{display:none}
-.atlas-modal[hidden]{display:none!important}.atlas-modal{position:fixed;inset:0;z-index:1500}.atlas-backdrop{position:absolute;inset:0;background:#07152c66;backdrop-filter:blur(2px)}.atlas-drawer{position:absolute;right:0;top:0;bottom:0;background:var(--surface-1);width:min(740px,93vw);overflow:auto;box-shadow:-15px 0 50px #10244220}.atlas-drawer-header{position:sticky;top:0;z-index:4;background:var(--surface-1);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:15px 24px;color:var(--text-muted);font-size:11px;letter-spacing:1px}.atlas-drawer-header button{border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);width:42px}.atlas-detail-identity{display:flex;align-items:center;gap:22px;padding:25px;background:var(--input-bg)}.atlas-detail-identity img{width:150px;height:150px;object-fit:contain}.atlas-detail-identity h2{font-size:29px;line-height:1.2;margin:6px 0 10px;color:var(--text-primary)}.atlas-detail-identity p{font-size:13px;color:var(--text-secondary);margin:5px 0}.atlas-detail-content{padding:22px}.atlas-detail-content .detail-close{display:none}.atlas-detail-content .detail-inner{padding:0;max-width:none}.atlas-detail-content .detail-grid{grid-template-columns:1fr!important}.atlas-detail-content .detail-section,.atlas-detail-content .detail-box{background:var(--input-bg);border-radius:12px}.atlas-bottom{display:none}.atlas-notice{padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--atlas-soft);color:var(--text-secondary);font-size:12px;margin:16px 0}.atlas-test #cloudCard{display:none!important}.atlas-test .atlas-drawer *{max-width:100%}
+.atlas-modal[hidden]{display:none!important}.atlas-modal{position:fixed;inset:0;z-index:1500}.atlas-backdrop{position:absolute;inset:0;background:#07152c66;backdrop-filter:blur(2px)}.atlas-drawer{position:absolute;right:0;top:0;bottom:0;background:var(--surface-1);width:min(740px,93vw);overflow:auto;box-shadow:-15px 0 50px #10244220}.atlas-drawer-header{position:sticky;top:0;z-index:4;background:var(--surface-1);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:15px 24px;color:var(--text-muted);font-size:11px;letter-spacing:1px}.atlas-drawer-header button{border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);width:42px}.atlas-detail-identity{display:flex;align-items:center;gap:22px;padding:25px;background:var(--input-bg)}.atlas-detail-identity img{width:150px;height:150px;object-fit:contain}.atlas-detail-identity h2{font-size:29px;line-height:1.2;margin:6px 0 10px;color:var(--text-primary)}.atlas-detail-identity p{font-size:13px;color:var(--text-secondary);margin:5px 0}.atlas-detail-content{padding:22px}.atlas-detail-content .detail-close{display:none}.atlas-detail-content .detail-inner{padding:0;max-width:none}.atlas-detail-content .detail-grid{grid-template-columns:1fr!important}.atlas-detail-content .detail-section,.atlas-detail-content .detail-box{background:var(--input-bg);border-radius:12px}.atlas-bottom{display:none}.atlas-notice{padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--atlas-soft);color:var(--text-secondary);font-size:12px;margin:16px 0}.atlas-test .atlas-drawer *{max-width:100%}
 #atlasHome .atlas-row{grid-template-columns:minmax(150px,1fr) 70px minmax(125px,1fr) 24px}#atlasHome .atlas-row .atlas-next{display:none}
 @media(min-width:1600px){.atlas-test .app{padding-left:48px;padding-right:48px}.atlas-dashboard{grid-template-columns:minmax(0,1fr) 350px}}
 @media(max-width:1200px){.atlas-dashboard{grid-template-columns:1fr}.atlas-aside{display:grid;grid-template-columns:1fr 1fr;gap:20px}.atlas-row,.atlas-list-head{grid-template-columns:minmax(175px,1.1fr) 75px minmax(110px,.8fr) 25px}.atlas-next,.atlas-list-head span:nth-child(4){display:none}.atlas-test .app{padding-left:22px;padding-right:22px}.atlas-stat{padding:15px}.atlas-feature img{right:6%}}
@@ -1558,16 +1558,6 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   text-transform:uppercase;color:var(--text-muted)}
 #prohlidkaCard .atlas-hledani-typy{display:flex;flex-wrap:wrap;gap:6px}
 
-#prohlidkaCard .atlas-hledani-fakta{display:flex;gap:26px;margin:0;flex-wrap:wrap}
-#prohlidkaCard .atlas-hledani-fakta > div{min-width:110px}
-#prohlidkaCard .atlas-hledani-fakta dt{font-size:10px;font-weight:700;letter-spacing:.7px;
-  text-transform:uppercase;color:var(--text-muted)}
-#prohlidkaCard .atlas-hledani-fakta dd{margin:3px 0 2px;font-size:20px;font-weight:700;
-  font-variant-numeric:tabular-nums;color:var(--text-primary)}
-#prohlidkaCard .atlas-hledani-fakta small{font-size:11px;color:var(--text-secondary)}
-#prohlidkaCard .atlas-hledani-fakta > div[data-ano] dd{color:var(--status-good)}
-#prohlidkaCard .atlas-hledani-boost{color:var(--series-1)}
-
 /* Udaje kusu: nabidnou se, az kdyz je o ne zajem. */
 #prohlidkaCard .atlas-hledani-udaje{border:1px solid var(--border);border-radius:12px;
   background:var(--surface-1);margin:0 0 18px}
@@ -1583,7 +1573,6 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 
 @media(max-width:900px){
   #prohlidkaCard .atlas-hledani-identita{grid-template-columns:1fr}
-  #prohlidkaCard .atlas-hledani-fakta{gap:18px}
 }
 
 /* Claude 25. 9. (25): hledani v rosteru — stitky se skladaji do pole.
@@ -1908,13 +1897,6 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    sloupecek i svuj popisek: co to cislo znamena, stoji pod nim.
    Shiny ma tri stavy — ano svitne, "zatim ne" a "neovereno" ne, protoze
    to druhe netvrdi nic o hre, jen o datech. */
-.atlas-test .atlas-hledani-raid dd{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0}
-.atlas-test .atlas-hledani-raid dd>span{display:flex;flex-direction:column;line-height:1.2}
-.atlas-test .atlas-hledani-raid dd>span>b{font-size:inherit;font-weight:700}
-.atlas-test .atlas-hledani-raid dd>span>small{font-size:10.5px;color:var(--text-muted);
-  white-space:nowrap}
-.atlas-test .atlas-hledani-fakta>div[data-shiny=ano] dd{color:var(--status-good)}
-.atlas-test .atlas-hledani-fakta>div[data-shiny=neověřeno] dd{color:var(--text-secondary)}
 
 /* Claude 29. 9. (44): karta "Dnes a brzy" podle A-015 bodu 4.
 
@@ -1973,7 +1955,9 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-vysledek-tab td button{background:none;border:0;padding:0;font:inherit;
   color:inherit;font-weight:650;cursor:pointer;text-align:left;min-height:34px}
 .atlas-test .atlas-vysledek-tab td small{color:var(--text-muted);font-weight:400}
-.atlas-test .atlas-vysledek-tab tr.je-vstup td{background:var(--atlas-soft)}
+/* Hledany druh se uz nepodbarvuje: pruh pres cely radek vypadal stejne
+   jako nadpis ligy nad nim a cetlo se to jako druhy nadpis. Zustava
+   barva jmena — ta rika totez a nic neprekryva. */
 .atlas-test .atlas-vysledek-tab tr.je-vstup td:first-child button{color:var(--series-1)}
 /* Vybirani radku uz neni: klepnuti na jmeno ten druh rovnou vyhleda. */
 .atlas-test .atlas-vysledek-nezname{color:var(--text-muted)}
@@ -2048,9 +2032,6 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   gap:6px;min-width:0;max-width:calc(100% - 52px)}
 .atlas-test .atlas-vysledek-typy{display:inline-flex;flex-wrap:wrap;gap:4px}
 .atlas-test .atlas-vysledek-typy .d-type{font-size:10px;padding:2px 7px}
-.atlas-test .atlas-vysledek-znacka{display:inline-block;font-size:10px;font-weight:700;
-  letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:var(--series-1);
-  color:#fff;vertical-align:1px}
 /* Tytez ligy uz ukazuje tabulka nahore, evoluce i typove zasahy maji
    vlastni zalozku — v rozboru druhu pod tim by stalo totez podruhe.
    Typovou cast navic pocita zalozka Typy z doporucene sestavy, kdezto
@@ -2079,8 +2060,6 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test #prohlidkaCard .atlas-hledani-kdo h3{margin:0}
 .atlas-test #prohlidkaCard .atlas-hledani-kdo .atlas-hledani-typy{margin:0}
 .atlas-test #prohlidkaCard .atlas-hledani-obr{background:var(--input-bg);border-radius:12px;padding:4px}
-.atlas-test #prohlidkaCard .atlas-hledani-fakta{border-left:1px solid var(--border);
-  padding-left:22px;gap:22px}
 /* Obrazek druhu v radku ma ramecek jako v navrhu, at radky drzi rytmus. */
 .atlas-test .atlas-vysledek-obr{background:var(--input-bg);border-radius:9px;padding:2px;
   width:38px;height:38px}
@@ -2088,32 +2067,18 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-vysledek-sip{background:none;border:0;color:var(--text-muted);
   font-size:17px;line-height:1;padding:4px 6px;cursor:pointer}
 .atlas-test .atlas-vysledek-tab tr:hover .atlas-vysledek-sip{color:var(--series-1)}
-/* Hledany druh se jen podbarvi. Prouzek vlevo obrazek prekryval a obtah
-   kolem radku se v `border-collapse:collapse` trhal na hranach bunek. */
-.atlas-test .atlas-vysledek-tab tr.je-vstup td{background:var(--atlas-soft)}
 .atlas-test #prohlidkaCard .atlas-hledani-udaje>summary{display:flex;align-items:center;gap:10px}
 .atlas-test #prohlidkaCard .atlas-hledani-udaje>summary::after{content:"›";margin-left:auto;
   font-size:18px;color:var(--text-muted)}
 @media(max-width:650px){
   .atlas-test #prohlidkaCard .atlas-hledani-pole,
   .atlas-test #prohlidkaCard .atlas-hledani-rezim{flex:1 1 100%;margin-left:0}
-  .atlas-test #prohlidkaCard .atlas-hledani-fakta{border-left:0;padding-left:0;
-    border-top:1px solid var(--border);padding-top:12px}
 }
 
 /* Claude 30. 9. (49): posledni kousky navrhu V2.
 
-   Shiny je souhrn s sipkou a zdroje az po kliknuti (v navrhu je to
-   rozbalovaci radek). Zalozky roli se na uzkem okne posunou do strany
-   misto zalomeni. (Evoluce maji vlastni zalozku, viz blok 56.) */
-.atlas-test #prohlidkaCard .atlas-hledani-shiny{display:flex;align-items:center;gap:10px;
-  background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;
-  font-size:19px;font-weight:700;min-height:34px}
-.atlas-test #prohlidkaCard [data-shiny=ano] .atlas-hledani-shiny{color:var(--status-good)}
-.atlas-test #prohlidkaCard .atlas-hledani-shiny-sip{font-size:17px;color:var(--text-muted);
-  transition:transform .15s ease}
-.atlas-test #prohlidkaCard .atlas-hledani-shiny[aria-expanded=true] .atlas-hledani-shiny-sip{
-  transform:rotate(90deg)}
+   Zalozky roli se na uzkem okne posunou do strany misto zalomeni.
+   (Evoluce maji vlastni zalozku, viz blok 56.) */
 @media(max-width:650px){
   /* Ctyri zalozky na jeden radek: na uzkem okne se jede do strany,
      zalomeny "Mega" pod tim vypadal jako samostatna volba. */
@@ -2788,11 +2753,7 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test .atlas-razeni-rychle button{flex:none;min-height:44px!important}
   .atlas-test #prohlidkaCard .atlas-hledani-identita{gap:12px;padding:14px}
   .atlas-test #prohlidkaCard .atlas-hledani-kde{padding-top:10px}
-  .atlas-test #prohlidkaCard .atlas-hledani-fakta{margin:0;padding-top:8px;gap:8px}
-  .atlas-test #prohlidkaCard .atlas-hledani-fakta > div{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}
-  .atlas-test #prohlidkaCard .atlas-hledani-fakta dd{font-size:14px;margin:0}
-  .atlas-test #prohlidkaCard .atlas-hledani-fakta dt{margin:0}
-  .atlas-test #prohlidkaCard .atlas-hledani-shiny,.atlas-test #prohlidkaCard .atlas-forma-prepinac button{min-height:44px}
+  .atlas-test #prohlidkaCard .atlas-forma-prepinac button{min-height:44px}
   #atlasCalendar .ac-controls > button,#atlasCalendar .ac-filters button{min-height:44px}
   #atlasHome .atlas-panel-head button{min-height:44px}
 }
@@ -3471,11 +3432,8 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    (měřeno: kresba sedí vodorovně na střed, svisle je o ~4/256 níž). */
 .atlas-test .atlas-utok-typ svg{width:18px;height:18px;stroke-width:2}
 .atlas-test .atlas-utok-typ svg .typ-ik-kruh{display:none}
-/* Kresba je v původní ikoně posunutá doleva (po schování vlastního
-   kolečka vyšel střed o 19/256 vedle) — měřeno u tří různých typů, posun
-   je u všech stejný, takže se dá srovnat jedním posunem. */
-.atlas-test .atlas-utok-typ svg>g{transform-box:view-box;transform-origin:center;
-  transform:translate(19px,-4px) scale(1.2)}
+/* A056: nová sada 32×32 má glyf už vystředěný. */
+.atlas-test .atlas-utok-typ svg.typ-ikona>g{transform:none;stroke:none}
 .atlas-test .atlas-utok-chip{padding-left:4px}
 .atlas-test .d-lg-sestava .atlas-utok-chip{padding:2px 6px 2px 4px}
 
@@ -3497,6 +3455,23 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    tabulkou — panel i sekce lig proto rostou o jeden řádek. */
 .atlas-test .box-mode.siroky .bm-panel{height:min(1020px,100%)}
 .atlas-test .box-mode.siroky .atlas-box-rozbor [data-detail-section=ligy]{max-height:512px}
+/* ---- Claude A042 — v čištění se nic neořezává potichu ---- */
+/* Sekce lig má pevný strop, aby panel mezi kusy neposkakoval. Jenže
+   `overflow:hidden` z karty detailu to, co se nevejde, uřízlo v půlce
+   textu — u Charizarda zůstal z druhého cupu proužek. Posuvník drží
+   výšku stejně a nic nezahazuje. */
+/* Posuvník uvnitř sekce lig. Zkusil jsem ho zrušit a nechat sekci růst,
+   jenže obsah rozboru má `overflow:hidden` a pruh hlášek visí nad
+   tlačítky absolutně — vyšší sekce ho položila přes čtyři buňky „na co
+   se hodí“. Dokud se nepřestaví celý panel (obsah rolovat, ne ořezávat),
+   je posuvník jediná varianta, která nic nezahodí. */
+.atlas-test .box-mode.siroky .atlas-box-rozbor [data-detail-section=ligy]{overflow:auto}
+/* Velké číslo pořadí má v čištění pravidlo `td b{font-size:16px}` — to
+   ale chytlo i varování „je strop ligy“ uvnitř ceny a nafouklo ho na
+   16 px proti 9,5 px okolo, takže se řádek nevešel. Vlastní třída je
+   specifičtější než `td b`, jinak by se neprosadila. */
+.atlas-test .atlas-box-rozbor .d-ligy-tab td b.d-lg-varovani{font-size:inherit;
+  line-height:inherit;letter-spacing:inherit}
 /* Pevná výška: řádek s cupem a náhradní věta „teď žádný" se liší o dva
    pixely a tabulka lig by se o ně posouvala mezi kusy. */
 .atlas-test .atlas-box-rozbor .d-cupy{margin:4px 0 0;min-height:31px}
@@ -3624,4 +3599,524 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   /* Nadpis ligy je jedina bunka radku — pravidlo pro posledni sloupec by
      ho jinak zuzilo a zarovnalo doprava. */
   .atlas-test .atlas-vysledek-tab tr.atlas-vysledek-liga td{width:auto}
+}
+
+/* Claude (129): v čištění boxu hlavička kusu přerůstala svoje místo.
+   Pevných 226 px drží detail v plachtě, aby při listování neposkakoval —
+   jenže čištění má vlastní, kompaktnější hlavičku a je v gridu, kterému
+   výška nezbývá. Podklad hlavičky tak vylezl pod verdikt a vypadalo to
+   jako druhé, větší okno za ním. Tady se výška řídí obsahem. */
+.atlas-test .atlas-box-rozbor .atlas-detail-identity{min-height:0}
+
+/* Claude (130): hlášky nad tlačítky (přepočet verdiktu, nabídka vrácení)
+   stály mimo tok a překrývaly čtyři buňky „na co se hodí". Teď mají
+   vyhrazený pruh v toku: je tam pořád stejně vysoký, takže se kvůli
+   hlášce nic nehýbe, ale ani nic nezakrývá. */
+.atlas-test #bmActions{flex-wrap:wrap}
+.atlas-test .atlas-box-hlasky{position:static;flex:1 1 100%;bottom:auto;
+  min-height:32px;margin:0 0 2px;justify-content:flex-end}
+
+/* Claude (131): nadpis ligy ve vysledcich hledani byl stejne tichy jako
+   hlavicka tabulky — mala kapitalkova vrstva v tlumene barve. V seznamu,
+   kde pod sebou stoji ctyri ligy, se neda rychle najit, kde jedna konci
+   a druha zacina. Ted je to pruh: podbarveni pres celou sirku radku,
+   svisly prouzek v barve serie a vetsi, svetlejsi pismo. Barvy jdou z
+   promennych, at to sedi i ve svetlem motivu. */
+.atlas-test .atlas-vysledek-tab tr.atlas-vysledek-liga td{padding:8px 10px;
+  font-size:12px;letter-spacing:.09em;color:var(--text-primary);
+  background:var(--atlas-soft);box-shadow:inset 3px 0 0 var(--series-1)}
+/* Prvni nadpis uz nema nad sebou radek, od ktereho by se odrazel, takze
+   mu misto mezery nahore staci stejne odsazeni jako ostatnim. */
+.atlas-test .atlas-vysledek-tab tr.atlas-vysledek-liga:first-child td{padding-top:8px}
+
+/* Astra A035 — kompaktní nastavení; ID, hodnoty a texty vlastní engine. */
+.atlas-test .atlas-settings:not(.zal-skryta){display:grid!important;grid-template-columns:210px minmax(0,1fr);gap:22px;padding:22px!important}
+.atlas-test .atlas-settings>summary{display:none}
+.atlas-test .atlas-settings-nav{display:flex;flex-direction:column;gap:6px;align-self:start;position:sticky;top:90px}
+.atlas-test .atlas-settings-nav button{padding:13px 14px;text-align:left;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--text-secondary);font:inherit;cursor:pointer;line-height:1.4}
+.atlas-test .atlas-settings-nav button[aria-pressed=true]{background:#1385da22;border-color:#4cafff60;color:var(--text-primary);font-weight:700}
+.atlas-test .atlas-settings .settings-row{display:block!important;min-width:0;margin:0}
+.atlas-test .atlas-settings .nast-sekce[hidden]{display:none!important}
+.atlas-test .atlas-settings .nast-sekce{border:0!important;padding:0!important;background:transparent}
+.atlas-test .atlas-settings .nast-hlava{padding:0 0 20px;border-bottom:1px solid var(--border);margin:0}
+.atlas-test .atlas-settings .nast-hlava b{font-size:20px;display:block;text-transform:none}
+.atlas-test .atlas-settings .nast-hlava span{display:block;margin-top:6px;color:var(--text-secondary)}
+.atlas-test .atlas-settings .nast-mrizka{display:block!important}
+.atlas-test .atlas-settings .atlas-setting-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(100px,190px) 38px;align-items:center;gap:12px;padding:18px 0!important;margin:0!important;border-bottom:1px solid var(--border);min-width:0}
+.atlas-test .atlas-settings label{font-size:14px;line-height:1.5;font-weight:600;margin:0}
+.atlas-test .atlas-settings label b{font-weight:inherit}
+.atlas-test .atlas-settings input:not([type=checkbox]),.atlas-test .atlas-settings select{width:100%!important;min-width:0!important;max-width:100%!important;min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text-primary);font:inherit}
+.atlas-test .atlas-settings select{grid-column:1/3;grid-row:2}
+.atlas-test .atlas-settings .atlas-setting-row:has(select)>label{grid-column:1/3}
+.atlas-test .atlas-settings input[type=checkbox]{width:23px;height:23px;accent-color:#168cec;justify-self:end}
+.atlas-test .atlas-settings .setting-warn{grid-column:1/-1}
+.atlas-test .atlas-settings .setting-warn:empty{display:none}
+.atlas-test .atlas-setting-help{grid-column:3;grid-row:1;border:0!important;padding:0!important;margin:0!important}
+.atlas-test .atlas-setting-help>summary{display:grid;place-items:center;width:36px;height:36px;list-style:none;cursor:pointer;border:1px solid var(--border);border-radius:50%;color:var(--series-1);font-weight:700;background:var(--surface-2)}
+.atlas-test .atlas-setting-help>summary::-webkit-details-marker{display:none}
+.atlas-test .atlas-setting-help[open]{display:contents}
+.atlas-test .atlas-setting-help[open]>summary{grid-column:3;grid-row:1;background:#168cec;color:white}
+.atlas-test .atlas-setting-help-body{grid-column:1/-1;padding:18px;background:var(--surface-2);border-left:3px solid #57bbef;border-radius:10px;font-size:13px;line-height:1.65}
+.atlas-test .atlas-setting-help:not([open])>.atlas-setting-help-body{display:none}
+.atlas-test .atlas-setting-help-body .hint{display:block!important;max-height:none!important;height:auto!important;overflow:visible!important;-webkit-line-clamp:unset!important;mask-image:none!important;margin-bottom:10px}
+.atlas-test .atlas-settings> :not(summary):not(nav):not(.settings-row){grid-column:1/-1}
+.atlas-test #cloudCard{border:1px solid #46acda60;border-radius:16px;background:linear-gradient(125deg,#168cec12,var(--surface-1));padding:22px;margin-bottom:20px}
+.atlas-test #cloudCard button{min-height:44px;border-radius:10px;padding:10px 16px}
+.atlas-test #cloudLogin{background:#087de0;border:1px solid #5ebeff;color:white;font-weight:700}
+.atlas-test #cloudStav{line-height:1.6}
+.atlas-test #cloudNastaveni{margin-top:18px}
+.atlas-test .atlas-settings button:focus-visible,.atlas-test .atlas-settings summary:focus-visible{outline:2px solid #6fcfff;outline-offset:3px}
+@media(max-width:900px){.atlas-test .atlas-settings{grid-template-columns:1fr;padding:16px!important}.atlas-test .atlas-settings-nav{position:static;flex-direction:row;flex-wrap:wrap;gap:6px}.atlas-test .atlas-settings-nav button{font-size:12px;padding:10px}.atlas-test .atlas-settings .atlas-setting-row{grid-template-columns:minmax(0,1fr) 110px 36px}}
+.atlas-test .atlas-setting-help[open]{display:block;grid-column:1/-1;grid-row:auto}
+.atlas-test .atlas-setting-help[open]>summary{margin-left:auto;margin-bottom:12px}
+.atlas-test .atlas-setting-help[open]>.atlas-setting-help-body{display:block!important}
+@media(max-width:900px){.atlas-test .atlas-settings:not(.zal-skryta){grid-template-columns:minmax(0,1fr)}.atlas-test .atlas-settings-nav{position:static;flex-direction:row!important}.atlas-test .atlas-settings .atlas-setting-row{width:100%}}
+.atlas-test .atlas-settings:not(.zal-skryta){display:block!important}
+.atlas-test .atlas-settings-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:22px}
+.atlas-test .atlas-settings-layout>.settings-foot{grid-column:1/-1}
+@media(max-width:900px){.atlas-test .atlas-settings-layout{grid-template-columns:minmax(0,1fr)}}
+/* Claude (132) — výběr verze u kusu, na který sáhla obě zařízení.
+   Je to jen to nejnutnější, aby to šlo přečíst a trefit; vzhled je tvůj. */
+.atlas-test .atlas-konflikt{border-top:1px solid var(--border);padding:14px 0}
+.atlas-test .atlas-konflikt:first-of-type{border-top:0}
+.atlas-test .atlas-konflikt>strong{display:block;margin-bottom:8px;color:var(--text-primary)}
+.atlas-test .atlas-konflikt-verze{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.atlas-test .atlas-konflikt-verze label{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--input-bg);cursor:pointer}
+.atlas-test .atlas-konflikt-verze label:has(input:checked){border-color:var(--series-1);box-shadow:inset 3px 0 0 var(--series-1)}
+.atlas-test .atlas-konflikt-verze input{margin:2px 0 0;width:auto;flex:0 0 auto}
+.atlas-test .atlas-konflikt-verze span{display:grid;gap:4px;min-width:0;font-size:12px;color:var(--text-secondary)}
+.atlas-test .atlas-konflikt-verze b{font-size:13px;color:var(--text-primary)}
+.atlas-test .atlas-konflikt-verze i{font-style:normal;overflow-wrap:anywhere}
+.atlas-test .atlas-settings-compact{padding:0!important;background:transparent!important;border:0!important}
+.atlas-test .atlas-settings-compact .atlas-settings-layout{display:block}
+.atlas-test .atlas-settings-compact .settings-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.atlas-test .atlas-settings-compact .nast-sekce{border:1px solid var(--border)!important;border-radius:15px;background:var(--surface-1)!important;overflow:hidden}
+.atlas-test .atlas-settings-compact .nast-hlava{display:grid;grid-template-columns:32px 1fr;gap:3px 10px;padding:17px!important;background:linear-gradient(120deg,#1385da12,transparent)}
+.atlas-test .atlas-settings-compact .nast-hlava b{font-size:15px;grid-column:2;letter-spacing:0}
+.atlas-test .atlas-settings-compact .nast-hlava span{font-size:11px;grid-column:2;margin:0;line-height:1.5}
+.atlas-settings-icon{width:28px;height:28px;fill:none;stroke:#6fcfff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;grid-row:1/3;align-self:center}
+.atlas-test .atlas-settings-compact .atlas-setting-row{display:block!important;padding:13px 16px!important;border-bottom:1px solid var(--border);width:100%}
+.atlas-test .atlas-settings-compact .atlas-setting-row:last-child{border-bottom:0}
+.atlas-test .atlas-settings-compact .atlas-setting-row[hidden],.atlas-test .atlas-settings-compact [hidden]{display:none!important}
+.atlas-setting-top{display:flex;align-items:center;gap:8px;min-width:0}
+.atlas-test .atlas-settings-compact label{font-size:12px;line-height:1.5;min-width:0;flex:1}
+.atlas-help-button{width:27px;height:27px;flex:0 0 27px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;padding:0}
+.atlas-help-button[aria-expanded=true]{background:#117dd6;color:white}
+.atlas-setting-control{flex:none;display:flex;align-items:center;max-width:100%;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);padding:3px;gap:2px}
+.atlas-test .atlas-settings-compact .atlas-stepper input{width:65px!important;min-height:30px!important;padding:2px!important;text-align:center;background:transparent;border:0;border-radius:0;font-size:13px;font-variant-numeric:tabular-nums;appearance:textfield}
+.atlas-stepper input::-webkit-inner-spin-button{appearance:none}
+.atlas-setting-control button{border:0;border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer;min-height:32px;padding:5px 9px;font-size:12px}
+.atlas-stepper button{width:30px;font-size:18px;padding:0}
+.atlas-setting-control button:disabled{opacity:.35;cursor:default}
+.atlas-setting-control button:hover:not(:disabled){background:#1385da22;color:var(--text-primary)}
+.atlas-setting-control button[aria-pressed=true]{background:#126fae;color:#fff}
+.atlas-test .atlas-settings-compact .atlas-setting-help-body{margin-top:12px;font-size:12px;line-height:1.65;padding:13px}
+.atlas-test .atlas-settings-compact .settings-foot{padding:15px;margin-top:16px;border:1px solid var(--border);border-radius:12px}
+.atlas-test .atlas-cloud-info{font-size:12px;margin-top:12px}
+.atlas-test .atlas-cloud-info summary{cursor:pointer;color:var(--text-secondary)}
+@media(max-width:1100px){.atlas-test .atlas-settings-compact .settings-row{grid-template-columns:1fr}}
+@media(min-width:1800px){.atlas-test .atlas-settings-compact .settings-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.atlas-test .atlas-settings-compact:not(.zal-skryta){padding:0!important;box-shadow:none!important}
+.atlas-setting-unit{font-size:10px;color:var(--text-secondary);padding-right:3px}
+.atlas-test .atlas-settings-compact .atlas-stepper input{width:48px!important}
+.atlas-test .atlas-settings-compact .atlas-help-button{border-radius:50%;min-height:27px;padding:0}
+.atlas-test .atlas-cloud-info #cloudProc{max-height:none!important;overflow:visible!important;mask-image:none!important}
+.atlas-test .atlas-settings-compact .nast-sekce{--ink:var(--series-1);align-self:start}
+.atlas-test .atlas-settings-compact .nast-sekce:nth-child(2){--ink:#62c3ae}
+.atlas-test .atlas-settings-compact .nast-sekce:nth-child(3){--ink:#daac69}
+.atlas-test .atlas-settings-compact .nast-sekce:nth-child(4){--ink:#b498e4}
+.atlas-test .atlas-settings-compact .nast-sekce:nth-child(5){--ink:#e29b83}
+.atlas-test .atlas-settings-compact .nast-sekce:nth-child(6){--ink:#75adb9}
+.atlas-test .atlas-settings-compact .nast-hlava{grid-template-columns:38px 1fr;column-gap:12px;background:linear-gradient(100deg,color-mix(in srgb,var(--ink) 10%,var(--surface-1)),var(--surface-1) 80%)}
+.atlas-test .atlas-settings-compact .atlas-settings-icon{width:36px;height:36px;padding:8px;box-sizing:border-box;stroke:var(--ink);border-radius:10px;background:color-mix(in srgb,var(--ink) 13%,var(--surface-1))}
+.atlas-test .atlas-settings-compact .nast-hlava b{font-size:16px;line-height:1.3}
+.atlas-test .atlas-settings-compact .atlas-setting-row{padding:9px 14px!important}
+.atlas-test .atlas-settings-compact .atlas-setting-top{gap:6px}
+.atlas-test .atlas-settings-compact .atlas-setting-top>label{flex:0 1 auto;font-size:13px}
+.atlas-test .atlas-settings-compact .atlas-setting-control{margin-inline-start:auto}
+.atlas-test .atlas-settings-compact .atlas-setting-row:focus-within{background:color-mix(in srgb,var(--ink) 7%,var(--surface-1))}
+.atlas-test .atlas-settings-compact .atlas-setting-help-body{border-left-color:var(--ink);margin-top:8px;line-height:1.65}
+.atlas-test .atlas-settings-compact .atlas-setting-control button:focus-visible,.atlas-test .atlas-settings-compact .atlas-help-button:focus-visible{outline:2px solid var(--series-1);outline-offset:2px}
+.atlas-test .atlas-settings-compact .atlas-setting-control button[aria-pressed=true]{background:#12669b;color:white;font-weight:700}
+@media(max-width:600px){.atlas-test .atlas-settings-compact .atlas-setting-top{flex-wrap:wrap}.atlas-test .atlas-settings-compact .atlas-setting-top>label{max-width:calc(100% - 35px)}.atlas-test .atlas-settings-compact .atlas-setting-row{padding:10px 12px!important}}
+/* ---- Claude A038 — Nastavení: srovnané hodnoty a výklad jako vrstva ---- */
+/* Jeden sloupec pro ovládání. Každý řádek ho má stejně široký, takže krok
+   i přepínač začínají i končí na stejné svislici. */
+.atlas-test .atlas-settings-compact{--atlas-ctl:176px;--ink:var(--series-1)}
+@media(max-width:600px){.atlas-test .atlas-settings-compact{--atlas-ctl:160px}}
+.atlas-test .atlas-settings-compact .atlas-setting-control{flex:0 0 var(--atlas-ctl);width:var(--atlas-ctl);box-sizing:border-box;padding:3px;gap:0}
+/* Hodnota a jednotka jsou jedna dvojice a stojí uprostřed mezi „−“ a „+“.
+   Jednotka měla vlastní buňku pevné šířky: čísla sice stála pod sebou, ale
+   „50000“ a „60 %“ nesedělo středem. Políčko se teď měří na délku hodnoty
+   (v `ch`, tabulkové číslice) a dvojice se vystředí na společné účaří. */
+.atlas-test .atlas-settings-compact .atlas-stepper{display:grid;grid-template-columns:30px minmax(0,1fr) 30px;align-items:center}
+.atlas-test .atlas-settings-compact .atlas-stepper-hodnota{display:flex;align-items:baseline;justify-content:center;gap:4px;min-width:0;overflow:hidden}
+.atlas-test .atlas-settings-compact .atlas-stepper input{width:var(--sirka-hodnoty,auto)!important;min-width:1ch;max-width:100%;min-height:0!important;height:auto;text-align:right;padding:0!important;margin:0!important;font-size:13px;line-height:1.25;font-variant-numeric:tabular-nums}
+.atlas-test .atlas-settings-compact .atlas-setting-unit{font-size:11px;padding:0;white-space:nowrap;line-height:1.25;color:var(--text-muted)}
+.atlas-test .atlas-settings-compact .atlas-stepper button{width:auto;min-width:0}
+.atlas-test .atlas-settings-compact .atlas-segments{display:flex}
+.atlas-test .atlas-settings-compact .atlas-segments button{flex:1 1 0;min-width:0;padding:5px 3px;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Otazník patří k názvu, ne k ovládání — drží se proto textu a je tišší. */
+.atlas-test .atlas-settings-compact .atlas-help-button{width:24px;height:24px;flex:0 0 24px;min-height:24px;font-size:12px;line-height:1;color:var(--text-muted);border-color:var(--border);transition:background .12s,color .12s}
+.atlas-test .atlas-settings-compact .atlas-help-button:hover{background:color-mix(in srgb,var(--ink) 18%,transparent);color:var(--text-primary)}
+.atlas-test .atlas-settings-compact .atlas-help-button[aria-expanded=true]{background:var(--ink);border-color:var(--ink);color:#07152c}
+
+.atlas-test .atlas-settings-compact .atlas-setting-row{transition:background .12s}
+.atlas-test .atlas-settings-compact .atlas-setting-row:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.atlas-test .atlas-settings-compact .nast-hlava span{font-size:12px}
+
+/* Patička: tlačítko a jedna věta, zbytek kalibrace pod otazníkem. */
+.atlas-test .atlas-settings-compact .settings-foot{align-items:center;gap:10px}
+.atlas-test .atlas-foot-kratce{flex:0 1 auto;font-size:12px;color:var(--text-secondary)}
+.atlas-test .atlas-settings-compact .settings-foot .atlas-setting-help-body{display:none}
+
+/* Výklad stojí nad appkou. Stránka se pod ním nehne. */
+.atlas-help-pop{position:fixed;inset:0;z-index:1600}
+.atlas-help-pop[hidden]{display:none!important}
+.atlas-help-pop-stin{position:absolute;inset:0;background:#07152c59;backdrop-filter:blur(1.5px)}
+.atlas-help-pop-box{position:absolute;box-sizing:border-box;width:min(380px,calc(100vw - 24px));max-height:min(62vh,520px);overflow:auto;padding:14px 16px 16px;background:var(--surface-1);border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 50px #04102aa6;animation:atlasHelpPop .13s ease-out}
+@keyframes atlasHelpPop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.atlas-help-pop-box.atlas-help-pop-dole{left:12px;right:12px;bottom:12px;top:auto;width:auto;max-height:70vh}
+.atlas-help-pop-hlava{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px}
+.atlas-help-pop-hlava strong{flex:1;min-width:0;font-size:13.5px;line-height:1.4;color:var(--text-primary)}
+.atlas-help-pop-zavrit{flex:0 0 26px;width:26px;height:26px;padding:0;border:1px solid var(--border);border-radius:50%;background:transparent;color:var(--text-secondary);font-size:16px;line-height:1;cursor:pointer}
+.atlas-help-pop-zavrit:hover{background:var(--surface-2);color:var(--text-primary)}
+.atlas-help-pop-zavrit:focus-visible,.atlas-help-pop-box:focus-visible{outline:2px solid var(--series-1);outline-offset:2px}
+.atlas-help-pop-telo{font-size:12.5px;line-height:1.7;color:var(--text-secondary)}
+.atlas-test .atlas-help-pop-telo .atlas-setting-help-body{padding:0!important;margin:0!important;border:0!important;background:transparent!important;font-size:inherit;line-height:inherit}
+.atlas-test .atlas-help-pop-telo .hint{display:block!important;max-height:none!important;height:auto!important;overflow:visible!important;-webkit-line-clamp:unset!important;mask-image:none!important;margin:0 0 10px;font-size:inherit;line-height:inherit;color:inherit}
+.atlas-test .atlas-help-pop-telo .hint:last-child{margin-bottom:0}
+.atlas-test .atlas-help-pop-telo .prah-krivka{max-width:100%;margin-top:10px}
+.atlas-test .atlas-help-pop-telo .hint::after{display:none}
+.atlas-help-pop-box:focus{outline:none}
+/* ---- Claude A039 — Vyhledávání: záložky rolí zůstanou vidět ---- */
+/* Tabulka má u PvP přes třicet řádků. Dokud záložky odjely s ní nahoru,
+   znamenalo přepnutí role doscrollovat zpátky; teď se přilepí pod horní
+   lištu (74 px, na telefonu 64). Podklad přetéká do stran přes vnitřní
+   okraj karty, jinak by pod ním prosvítaly řádky. */
+.atlas-test .atlas-vysledek-hlava{position:sticky;top:74px;z-index:5;
+  margin:-12px -20px 12px;padding:12px 20px 0;background:var(--surface-1)}
+/* Mezera pod carou musi byt taky kryta, jinak v ni prosvita rozriznuty
+   radek tabulky. Patri k hlavicce, ne k tabulce — proto pseudoprvek. */
+.atlas-test .atlas-vysledek-hlava::after{content:'';position:absolute;
+  left:0;right:0;top:100%;height:12px;background:var(--surface-1)}
+@media(max-width:650px){
+  .atlas-test .atlas-vysledek-hlava{top:64px;margin:-10px -16px 12px;padding:10px 16px 0}
+}
+/* ---- Claude A040 — Nastavení: bilance rosteru a dotažené bubliny ---- */
+/* Kolik kusů tahle čísla nechávají. Stojí hned pod hledáním, protože je to
+   jediný řádek v celém Nastavení, který odpovídá na otázku „a co to dělá". */
+.atlas-test .atlas-nast-bilance{position:relative;display:grid;
+  grid-template-columns:auto minmax(0,1fr);align-items:center;gap:0 18px;
+  margin:0 0 18px;padding:15px 18px;border:1px solid var(--border);border-radius:14px;
+  background:linear-gradient(120deg,color-mix(in srgb,var(--series-1) 10%,var(--surface-1)),var(--surface-1) 70%)}
+.atlas-test .atlas-nast-bilance-cislo{display:flex;align-items:baseline;gap:7px}
+.atlas-test .atlas-nast-bilance-cislo strong{font-size:31px;line-height:1;letter-spacing:-1.2px;
+  color:var(--text-primary);font-variant-numeric:tabular-nums}
+.atlas-test .atlas-nast-bilance-cislo span{font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.atlas-test .atlas-nast-bilance-text{font-size:12px;line-height:1.6;color:var(--text-secondary);min-width:0}
+.atlas-test .atlas-nast-bilance-text b{display:block;color:var(--text-primary);font-weight:650}
+.atlas-test .atlas-nast-bilance-pruh{grid-column:1/-1;height:6px;margin-top:12px;border-radius:99px;
+  background:color-mix(in srgb,var(--text-muted) 25%,transparent);overflow:hidden}
+.atlas-test .atlas-nast-bilance-pruh>i{display:block;height:100%;border-radius:99px;
+  background:var(--series-1);transition:width .25s ease}
+.atlas-test .atlas-nast-bilance-zmena{margin-left:4px;padding:3px 9px;align-self:center;
+  border-radius:99px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;
+  animation:atlasBilanceSkok .2s ease-out}
+.atlas-test .atlas-nast-bilance-zmena[hidden]{display:none}
+.atlas-test .atlas-nast-bilance-zmena.vic{color:var(--status-good);
+  background:color-mix(in srgb,var(--status-good) 20%,transparent)}
+.atlas-test .atlas-nast-bilance-zmena.min{color:var(--status-warning);
+  background:color-mix(in srgb,var(--status-warning) 20%,transparent)}
+@keyframes atlasBilanceSkok{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.atlas-test .atlas-nast-bilance-prazdno{grid-column:1/-1;margin:0;font-size:12px;color:var(--text-secondary)}
+.atlas-test .atlas-nast-bilance-bez{padding:13px 18px}
+.atlas-test .atlas-nast-bilance-bez>:not(.atlas-nast-bilance-prazdno){display:none}
+@media(max-width:600px){
+  .atlas-test .atlas-nast-bilance{grid-template-columns:minmax(0,1fr);gap:4px;padding:14px}
+}
+
+/* Nad výkladem stojí, na čem to nastavení zrovna je — řádek pod ním je
+   v tu chvíli schovaný za vrstvou, takže by se to jinak nedalo porovnat. */
+.atlas-test .atlas-help-pop-hlava>div{flex:1;min-width:0}
+.atlas-test .atlas-help-pop-ted{display:block;margin-top:4px;font-size:11.5px;
+  color:var(--series-1);font-variant-numeric:tabular-nums}
+.atlas-test .atlas-help-pop-ted[hidden]{display:none}
+
+/* Bublina u zkráceného přepínače: nadpis říká, čeho se volba týká. */
+.atlas-test .atlas-settings-compact .atlas-segments button[data-tip]{cursor:help}
+.atlas-test .tip-bublina .tip-hlava{font-size:12.5px;margin-bottom:7px;padding-bottom:7px}
+.atlas-test .atlas-settings-compact .atlas-setting-unit:empty{display:none}
+/* ---- Claude A041 — karta cloudu: tlačítko první, výklad pod otazník ---- */
+/* Pořadí v řadě: co se dělá (tlačítko), co se stalo (stav), proč (otazník). */
+@media(min-width:900px){
+  .atlas-test #cloudCard[open]::details-content{display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;gap:8px 18px;align-items:center}
+  .atlas-test #cloudCard #cloudStav,.atlas-test #cloudCard .cloud-akce{margin:0}
+  .atlas-test #cloudCard .atlas-cloud-vyklad{grid-column:1/-1}
+}
+.atlas-test #cloudCard .cloud-akce{display:flex;flex-wrap:wrap;gap:9px}
+/* Otazník v kartě cloudu je kolečko, ne ovál: globální pravidlo pro
+   tlačítka má v enginu min-height 40 px a kolečko ze settings je
+   scoupené na jinou kartu — tady proto vycházelo 27 × 40 a otazník
+   v něm seděl nakřivo. */
+.atlas-test #cloudCard .atlas-cloud-otaznik{justify-self:end;align-self:center;
+  width:28px;height:28px;min-height:28px;flex:0 0 28px;padding:0;border-radius:50%;
+  display:grid;place-items:center;line-height:1;font-size:12px}
+/* Výklad stojí ve vrstvě; v kartě po něm nesmí zbýt místo. */
+.atlas-test #cloudCard .atlas-cloud-vyklad[hidden]{display:none}
+.atlas-test .atlas-help-pop-telo .atlas-cloud-vyklad>details{margin-top:14px;
+  padding-top:12px;border-top:1px solid var(--border)}
+.atlas-test .atlas-help-pop-telo .atlas-cloud-vyklad>details>summary{cursor:pointer;
+  color:var(--text-primary);font-weight:650}
+.atlas-test .atlas-help-pop-telo .cloud-navod{margin:10px 0 0;padding-left:20px;line-height:1.8}
+.atlas-test .atlas-help-pop-telo .cloud-id{display:grid;gap:6px;margin-top:12px}
+.atlas-test .atlas-help-pop-telo .cloud-id input{width:100%;min-height:40px;padding:9px 11px;
+  border:1px solid var(--border);border-radius:9px;background:var(--input-bg);
+  color:var(--text-primary);font:inherit}
+.atlas-test .atlas-help-pop-telo #cloudProc{max-height:none!important;overflow:visible!important;
+  mask-image:none!important}
+
+/* Claude A044 — evoluční řada v čištění boxu se vejde celá.
+
+   Poslední stupeň Gourgeista nese tři formy (Small / Large / Super).
+   Vedle sebe se do sloupce nevešly, zalomily se na druhý řádek — a ten
+   už byl mimo pruh, který má stupeň k dispozici (`flex:1 1 0`,
+   `overflow:hidden`). Třetí Gourgeist se tím uřízl v půlce obrázku.
+
+   Pevnou velikost obrázku tu zvolit nejde: závisí na počtu stupňů,
+   počtu forem v nejširším stupni a výšce okna. Velikost proto určuje
+   vrstva (`atlas.js`, pomocná funkce `evoVejdiSe`) — zmenšuje obrázky,
+   dokud se každý stupeň nevejde do svého pruhu. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-kus img{
+  width:var(--evo-obr,76px)!important;height:var(--evo-obr,76px)!important}
+/* Zalomeni je to, co radu urizlo: tri Gourgeisti po 119 px se do sloupce
+   sirokeho 340 px vedle sebe nevesli a treti spadl na druhy radek, ktery
+   uz byl mimo pruh. Stupen proto nezalamuje a kusy se o sirku deli rovnym
+   dilem — popisek se zalomi uvnitr kusu, kde na to misto je. */
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-stupen{
+  flex-wrap:nowrap}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-stupen>.d-evo-kus{
+  flex:1 1 0;min-width:0}
+.atlas-test .atlas-box-rozbor>.atlas-evolution-column .d-evo:not(.husty) .d-evo-kus b{
+  overflow-wrap:anywhere;text-align:center}
+
+/* Claude A045 — ligy v čištění boxu se vejdou bez posuvníku.
+
+   Sekce měla 254 px a obsah 337 — chybělo 83 px a platilo se za ně
+   posuvníkem uvnitř panelu, který svůj posuvník už má. Zvětšit sekci
+   nejde: panel má 968 z 1000 px okna a každý díl nad ní (hlavička 190,
+   verdikt 120, tlačítka 110) je potřeba celý. Místo se proto bere
+   z řádků ligy, které měly 65 px na dva řádky textu.
+
+   `overflow:auto` zůstává jako pojistka pro nižší okno: posuvník se
+   objeví, jen když se to opravdu nevejde, a text se nikdy neuřízne. */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:26px}
+/* Zbylych 23 px davaji bunky rolí. Verdikt se zkratit nesmi: tech 120 px
+   je misto pro dva radky stitku duvodu a u kusu, ktery zadne nema, jen
+   vypada prazdne — po zkraceni by se stitky prvnimu kusu s duvody
+   vysypaly pres radek typu pod nim. Bunka role nese popisek a jedno
+   slovo, na to 58 px nikdy nebylo potreba. */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-vyuziti .d-role{height:50px;padding:6px 10px}
+/* …a zbytek z odsazeni kolem sekce a ze spodni listy. Tlacitka Pustit
+   a Nechat mela 60 px na jedno slovo a klavesovou zkratku pod nim. */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .atlas-detail-section{margin:4px 0}
+.atlas-test .box-mode.siroky .bm-actions{padding-top:2px}
+.atlas-test .box-mode.siroky .bm-actions .bm-btn{padding:5px 10px}
+.atlas-test .box-mode.siroky .bm-hint{font-size:10.5px;line-height:1.45;padding:4px 0 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td{padding-top:1px;padding-bottom:1px}
+/* Poslednich 6 px je ciste vzduch nad a pod radkou typu a znacek:
+   bubliny maji 26 px, radek jich mel 40. */
+.atlas-test .box-mode.siroky .atlas-box-rozbor .detail-title{height:34px;padding:4px 0}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td{padding-top:2px;padding-bottom:2px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab td b{font-size:14px}
+.atlas-test .box-mode.siroky .atlas-box-rozbor .d-cupy{margin:4px 0 0}
+/* A050: stejný rytmus odznaků v hodnocení a v pracovním okně Transferu. */
+.atlas-test :is(.atlas-hodnoceni,.hled-zdroj){display:flex;flex-wrap:wrap;gap:7px}
+.atlas-test .hled-zdroj label{border:1px solid var(--border);background:var(--surface-2);border-radius:9px;padding:5px 8px;line-height:1.35}
+.atlas-test .atlas-role-icon{width:19px;height:19px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.atlas-test .role-little{color:#75cc91}.atlas-test .role-great{color:#64b5ff}.atlas-test .role-ultra{color:#e5af53}.atlas-test .role-master{color:#be8ae3}
+.atlas-test .atlas-znamka,.atlas-test .hled-zdroj-pocet{font-variant-numeric:tabular-nums;white-space:nowrap}
+.atlas-test :is(.atlas-vysledek-cena,.hled-radek textarea){font-variant-numeric:tabular-nums}
+.atlas-test #hledaniOkno .hled-okno{width:min(1080px,calc(100vw - 32px));border-radius:18px}
+.atlas-test #hledaniOkno .hled-hlava{padding:16px 20px;background:var(--surface-1);border-bottom:1px solid var(--border)}
+.atlas-test #hledaniOkno .hled-sekce{background:var(--surface-2);border:1px solid var(--border);border-inline-start:3px solid var(--series-1);border-radius:12px;padding:14px}
+.atlas-test #hledaniOkno .hled-sekce h4{font-size:15px}
+.atlas-test #hledaniOkno .hled-sekce textarea{background:var(--surface-1);border-radius:9px}
+.atlas-test #hledaniOkno .hled-zdroj label.zap{border-color:var(--series-1);font-weight:700}
+@media(max-width:600px){.atlas-test #hledaniOkno .hled-okno{width:calc(100vw - 16px)}.atlas-test #hledaniOkno .hled-sekce{padding:10px}}
+
+/* A051 — hodnocení bez rámečků, jednotná osa pořadí a známky. */
+.atlas-test #prohlidkaCard .atlas-hodnoceni{gap:8px 14px!important}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus{align-items:center;line-height:1;white-space:nowrap}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>b{margin:0;padding:0;line-height:1;font-size:13px;font-variant-numeric:tabular-nums}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>.atlas-znamka{display:inline-flex;align-items:center;justify-content:center;min-height:16px;line-height:1}
+/* A052 — hlavní výsledky hledání, pouze symbol, pořadí a známka. */
+.atlas-test #prohlidkaCard .atlas-role-detail{margin:0;padding:0;border:0;background:transparent;min-width:0}
+.atlas-test #prohlidkaCard .atlas-role-detail>summary{display:inline-flex;align-items:center;gap:5px;min-height:40px;list-style:none;cursor:pointer}
+.atlas-test #prohlidkaCard .atlas-role-detail>summary::-webkit-details-marker{display:none}
+.atlas-test #prohlidkaCard .atlas-role-detail>summary:focus-visible{outline:2px solid var(--series-1);outline-offset:2px}
+.atlas-test #prohlidkaCard .atlas-role-detail>small{max-width:17em;line-height:1.4;text-transform:none;letter-spacing:0}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>:is(.atlas-role-icon,.typ-ikona){width:29px;height:29px;flex:none}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>b{font-size:17px}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>.atlas-znamka{font-size:12px!important;min-height:20px}
+.atlas-test .atlas-role-icon.role-gym{color:#81d3b1}.atlas-test .atlas-role-icon.role-max{color:#fd80b9;fill:currentColor;fill-opacity:.24}
+/* A053 — pořadí i známka mají stejnou nominální velikost jako symbol. */
+.atlas-test #prohlidkaCard .atlas-hodnoceni{--atlas-result-size:29px;gap:7px 18px!important}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>.atlas-enamel{stroke:none;fill-opacity:1;filter:drop-shadow(0 1px 1px #0005)}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>b,.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>.atlas-znamka{font-size:var(--atlas-result-size)!important;line-height:1;letter-spacing:-.04em}
+.atlas-test #prohlidkaCard .atlas-hodnoceni-kus>.atlas-znamka{padding:1px 5px!important;border-radius:5px!important}
+/* A055 — i uvnitř barevného štítku zůstává piktogram bílý. */
+.atlas-test :is(.d-type,.pk-typ,#typVyber button) .typ-ikona .typ-ik-kruh{fill:var(--typ-barva);stroke:#ffffff70;stroke-width:1}
+.atlas-test :is(.d-type,.pk-typ,#typVyber button) .typ-ikona g{fill:#fff}
+
+.atlas-test .rarity-chip:is(.r-D,.r-GM)::before{content:"";display:inline-block;width:1.25em;height:1.25em;vertical-align:-.25em;margin-right:3px;background:center/contain no-repeat url("atlas/assets/dmax-mark.svg")}
+.atlas-test .rarity-chip.r-GM::before{background-image:url("atlas/assets/gmax-mark.svg")}
+
+/* Claude (133): vysledkova tabulka ve Vyhledavani — sloupce na stalych
+   mistech, znamka ve velikosti obrazku, odznacky hodnoceni bez rozklikavani.
+
+   Hodnoceni se cte jako prvni udaj radku, ale zacinalo v kazde roli jinde:
+   PvP ma navic Nejlepsi IV, raidy Cenu megy, takze si prvni sloupec vzal
+   pokazde jinou sirku a pri prepnuti zalozky cela tabulka poskocila. Sirky
+   drzi <colgroup> v atlas.js (procenta + 86 px na Hodnoceni), tady se jen
+   zapina pevne rozlozeni, ktere je nechá platit. Az nad 1100 px: na uzsim
+   okne by na utoky zbyl prouzek a radsi at si sirky rozdeli prohlizec.
+   Prebija to blok Claude (128), ktery pevne rozlozeni vypinal. */
+@media(min-width:1100px){
+  .atlas-test .atlas-vysledek-tab{table-layout:fixed}
+}
+/* Prvni sloupec ma obrazek a je vysoky; ostatni bunky se k nemu srovnaji
+   na stred, jinak text visel u horni hrany radku. */
+.atlas-test .atlas-vysledek-tab td{vertical-align:middle}
+/* Znamka: barvu dava atlas.js z dat, zbytek je tady. Velka varianta stoji
+   ve vlastnim sloupci tabulky a ma byt vysoka jako obrazek druhu vedle ni. */
+.atlas-test .atlas-znamka{color:#fff;border-radius:4px;padding:0 5px;
+  font-weight:700;font-size:11px;letter-spacing:.5px}
+.atlas-test .atlas-znamka-velka{display:inline-block;font-size:22px;
+  padding:2px 7px;border-radius:6px;line-height:1.15}
+/* Odznacek hodnoceni uz neni <details> — rozbaleny popis posunul vsechno
+   pod sebou a clovek po nem stejne nesahl. Popis rika bublina po najeti,
+   takze zbyva jen rozlozeni, ktere drzelo <summary>. */
+.atlas-test .atlas-hodnoceni{align-items:center}
+.atlas-test .atlas-hodnoceni-kus{display:inline-flex;align-items:center;gap:5px}
+/* Leva cast hlavicky (obrazek, jmeno, staty) mela sirku podle obsahu, takze
+   hodnoceni zacinalo u Eevee jinde nez u Charizarda s prepinacem Shadow.
+   Pevny podil to srovna a pritom to zustane pruzne. */
+/* Pozor na specifičnost: `#prohlidkaCard .atlas-hledani-identita` (A052)
+   má id, takže bez něj se pravidlo neprosadí a blok se zase roztahuje
+   podle délky jména — u „Mega Charizard Y" zbylo na hodnocení 61 px. */
+/* Až po 650 px, kde Astra skládá hlavičku pod sebe. Mezi 651 a 900 px
+   jsem to dřív nechával na jejím `auto 1fr auto` — jenže tam levý
+   sloupec sebral všechno a na hodnocení zbyly dva pixely. */
+@media(min-width:651px){
+  .atlas-test #prohlidkaCard .atlas-hledani-identita{
+    grid-template-columns:clamp(240px,34%,520px) minmax(0,1fr)}
+  .atlas-test #prohlidkaCard .atlas-hledani-kdo{min-width:0}
+}
+
+/* Claude (134): hvezdicka u utoku, ktery nejde beznym TM, a radek seznamu
+   prani, ktery uz nic nepridava.
+
+   Hvezdicku ma PvPoke i Hub a znamena "jen z akce nebo za Elite TM" —
+   preucenim o nej kus prijde a zpatky uz ho dostat nemusi. Je to drobnost
+   v textu, takze barva musi nest vsechnu vahu.
+
+   V seznamu druhu na vymenu plati jeden stupen na celou evolucni radu.
+   Dva radky z teze rady nejsou chyba, jen nic nepridavaji — at je to videt
+   driv, nez clovek zacne hledat, proc se nic nestalo. */
+.atlas-test .atlas-utok-elitni{margin-left:1px;font-size:11px;font-weight:800;
+  line-height:1;vertical-align:super;color:var(--atlas-warning,#e0a33a);cursor:help}
+.atlas-test .hled-pred-druh>small{margin-left:4px;font-size:10px;font-weight:600;
+  color:var(--text-muted)}
+
+/* Claude (135): ikona typu v kolecku utoku — na stred a v detailu stejne
+   velka jako ve Vyhledavani.
+
+   1) `.typ-ikona` ma obecne `margin-right:3px` (stoji vedle textu typu).
+      V kolecku chipu zadny text neni, takze ta mezera jen posunula glyf
+      o 1,5 px doleva od stredu. Zmereno: dx -1,5 px u vsech chipu.
+   2) V ligove tabulce detailu plati `.d-lg-sestava .atlas-utok-chip svg
+      {width:10px}` kvuli spritum v tomtez chipu. Chytlo to i ikonu typu,
+      takze v kolecku 18 px sedel glyf 10 px. Kolecko je spravne velke,
+      meni se jen glyf. */
+.atlas-test .atlas-utok-typ svg{margin:0}
+.atlas-test .d-lg-sestava .atlas-utok-chip .atlas-utok-typ svg{width:18px;height:18px;
+  vertical-align:middle;margin-block:-2px}
+
+/* Claude (136): druhy stupen teze evolucni rady se do seznamu prani uz
+   nepridava — jeden radek plati na celou radu. Bez zpetne vazby by to
+   vypadalo, ze pridani neudelalo nic, takze radek, ktery to pokryva,
+   problikne obtazenim. Bezi samo pri vykresleni, zadny JS k tomu neni. */
+@keyframes atlas-hled-blik{
+  0%,100%{box-shadow:0 0 0 0 transparent}
+  25%,75%{box-shadow:0 0 0 2px var(--series-1)}
+}
+.atlas-test .hled-pred-druh[data-blik]{animation:atlas-hled-blik 1.1s ease-in-out 2}
+/* Tyz efekt v dialogu, kde se seznam upravuje — tam se to pozna driv
+   nez po ulozeni. Dialog ma vlastni stitky (`.app-okno-cip`). */
+.atlas-test .app-okno-cip[data-blik]{animation:atlas-hled-blik 1.1s ease-in-out 2}
+/* Nabidka ukazuje i druhy, co uz v seznamu jsou — at je clovek najde.
+   Zeslabene, aby bylo dopredu videt, ze kliknuti nic neprida. */
+.atlas-test .druh-polozka.uz-v-seznamu{opacity:.62}
+.atlas-test .druh-polozka.uz-v-seznamu .pocet{font-style:italic}
+
+/* Claude (137): piktogram typu ve stitku bez bileho kolecka a vetsi.
+
+   Ikona typu nese vlastni kolecko (`.typ-ik-kruh`). Uvnitr barevneho
+   stitku je ale kolecko druhe — a bily obrys kolem nej (A055) delal
+   z piktogramu malou placku v krouzku. Kolecko se proto skryva uplne
+   a glyf vyplni misto po nem, presne jako v kolecku utoku (Claude 120).
+   Plati to i na dlazdice v rosteru: `.atlas-roster-type` ma `.d-type`. */
+.atlas-test :is(.d-type,.pk-typ) .typ-ikona .typ-ik-kruh{display:none}
+/* Vetsi glyf JEN tam, kde je na nej misto. V dlazdici rosteru se musi
+   dva typy vejit na jeden radek — Garchompovi se pri 1.5em zlomily
+   pod sebe. Tam zustava puvodni velikost, meni se jen to kolecko. */
+.atlas-test :is(.d-type,.pk-typ):not(.atlas-roster-type) .typ-ikona{
+  width:1.5em;height:1.5em;vertical-align:-0.4em;margin-right:4px}
+/* Vetsi glyf nesmi stitek natahnout ani rozsirit. V hlavicce detailu
+   stoji stitek typu v jednom radku se znackami (24 px) a za nimi jeste
+   „silny proti" — glyf 1.5em pridal 0,8 px na vysku a 6 px na sirku,
+   takze z radku byl schod a na uzkem okne se zlomil. Vyska se proto bere
+   ze znacky a sirku vrati uzsi vnitrni odsazeni (znacky maji 10 px). */
+.atlas-test .detail-title .atlas-typy-slot>.d-type{box-sizing:border-box;height:24px;
+  padding-block:2px;padding-inline:8px;line-height:18px;
+  display:inline-flex;align-items:center}
+/* Chip utoku v ligove tabulce: radek ma pevnych 26 px a glyf 18 px z chipu
+   udelal 24 px, ktere s odsazenim pretekly o pixel. */
+.atlas-test .d-lg-sestava .atlas-utok-chip{padding-block:0;line-height:1}
+.atlas-test :is(.d-type,.pk-typ) .typ-ikona g{fill:#fff}
+
+/* Claude (138): v napovede jmen se u JEDINEHO vysledku objevil posuvnik.
+
+   Sprity maji vlastni `transform: scale(...)` (vystreduje je engine) a ten
+   se nepocita do rozmeru radku, ale DO SCROLLOVATELNEHO prerustani panelu.
+   U jedne polozky tak scrollHeight (54) prerostl clientHeight (50) a panel
+   dostal posuvnik; u peti polozek se to schovalo mezi radky, takze to
+   vypadalo jako nesmysl "jeden vysledek = posuvnik, pet = zadny".
+
+   V seznamu staci pevna ikonka: `object-fit` ji vystredi sam a zadne
+   prerustani nevznikne. Vystredovaci transform se tu proto vypina. */
+.atlas-test .druh-napoveda .druh-polozka>img{width:34px;height:34px;
+  object-fit:contain;transform:none!important}
+
+/* Claude (139): prepinac formy stoji nad hodnocenim druhu, ne pod jmenem.
+
+   Pod jmenem s nim hybala delka nazvu — u „Shadow Charizard" spadl na
+   druhy radek a u kazdeho druhu zacinal jinde. Ted je v pravem sloupci,
+   takze ma stejny levy okraj jako hodnoceni (zmereno 729 px u Beedrilla,
+   Charizarda i Snorlaxe). Vlastni radek potrebuje proto, ze `.atlas-
+   hledani-kde` je blok a prepinac i popisek jsou inline. */
+.atlas-test #prohlidkaCard .atlas-hledani-kde>.atlas-forma-prepinac{
+  display:flex;flex-wrap:wrap;width:max-content;max-width:100%;margin:0 0 10px}
+
+/* Claude (140): na telefonu je znamka zase mala.
+
+   Velka (22 px) ma smysl v tabulce, kde stoji vedle 42px obrazku druhu.
+   Na telefonu je ale kazda bunka vlastni radek karty a samotne pismeno
+   na nem zabiralo pres padesat pixelu. */
+@media(max-width:650px){
+  .atlas-test .atlas-vysledek-znamka .atlas-znamka-velka{font-size:13px;
+    padding:1px 5px;border-radius:4px}
 }

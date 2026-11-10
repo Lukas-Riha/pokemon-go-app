@@ -155,7 +155,20 @@ await stranka.evaluate(async () => {
   } else console.log('hledani-vysledky PŘESKOČENO — blok nenalezen');
 }
 
-// 5b) Záložky stránky druhu: co bylo jeden dlouhý sloupec, je teď pět karet.
+// 5b) Záložky stránky druhu a sloučená raidová tabulka. Beedrill schválně:
+//     má megu i shadow, takže je na jednom snímku vidět štítek formy, známka
+//     i cena megy. Eevee měl třicet ligových řádků a snímek byl dva tisíce
+//     pixelů vysoký — do okna novinek se takový obrázek nehodí.
+await stranka.evaluate(async () => {
+  const pole = document.getElementById('prohName');
+  pole.value = 'Beedrill';
+  pole.dataset.tiseVybrano = '1';
+  pole.dispatchEvent(new Event('input', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 1300));
+  const raid = document.querySelector('.atlas-vysledek-ovladani [data-role=raid]');
+  if (raid) raid.click();
+  await new Promise((r) => setTimeout(r, 900));
+});
 await snimek('hledani-zalozky', ['.atlas-sekce-zalozky', '.atlas-vysledek-tab'], 12);
 
 // 5c) Záložka Typy. Charizard je Fire/Flying — na dvojtypu je vidět,
@@ -275,6 +288,51 @@ await stranka.evaluate(async () => {
 await snimek('nova-verze', ['#verzePruh'], 0);
 // Ať se stránka pod skriptem neobnoví.
 await stranka.evaluate(() => document.querySelector('[data-verze-pozdeji]')?.click());
+
+// 11) Verze 2.13 — okno, kterým se appka ptá na roster z cloudu. Data jsou
+//     vymyšlená: přihlášení z kopie na disku nejde a do novinek nepatří
+//     cizí roster.
+await stranka.evaluate(async () => {
+  window.__atlasTest.closeDetail();
+  window.__atlasTest.go('roster');
+  await new Promise((r) => setTimeout(r, 700));
+  const kusy = window.__pgo.getRows();
+  const kus = (jmeno) => kusy.find((r) => r.pokemon === jmeno) || kusy[0];
+  window.AtlasCloudOtazka({
+    ulozeno: new Date('2026-11-03T11:46:00').toISOString(),
+    zarizeni: 'Telefon', kusuVCloudu: 408,
+    pridane: [kus('Tinkatink'), kus('Rookidee')],
+    zmenene: [{ moje: Object.assign({}, kus('Machamp'), { cp: 2600 }),
+      jejich: Object.assign({}, kus('Machamp'), { cp: 2812 }) }],
+    smazane: [kus('Gyarados')],
+    konflikty: [{ sid: 'x', jmeno: 'Charizard',
+      moje: kus('Charizard'), jejich: kus('Charizard') }],
+  }, () => {});
+  await new Promise((r) => setTimeout(r, 900));
+  document.querySelectorAll('.atlas-import-group')[0]?.setAttribute('open', '');
+  await new Promise((r) => setTimeout(r, 500));
+});
+await snimek('cloud-okno', ['.atlas-import-result'], 10);
+
+// 12) Verze 2.13 — Nastavení po přeskládání: cloud nahoře, sekce místo
+//     jednoho sloupce.
+await stranka.evaluate(async () => {
+  document.getElementById('atlasImportDialog')?.close();
+  window.__atlasTest.go('settings', 'settings-card');
+  await new Promise((r) => setTimeout(r, 900));
+});
+await snimek('nastaveni-sekce', ['.settings-card .nast-sekce'], 12);
+
+// 13) Verze 2.13 — výklad pod otazníkem stojí nad appkou, ne pod řádkem.
+//     Ztmavená karta pod ním je na snímku to podstatné: stránka se nehnula.
+await stranka.evaluate(async () => {
+  const radek = [...document.querySelectorAll('.atlas-setting-row')]
+    .find((r) => r.querySelector('input,select').id === 'keepCopies');
+  if (radek) radek.dataset.snimek = '1';
+  radek?.querySelector('.atlas-help-button')?.click();
+  await new Promise((r) => setTimeout(r, 600));
+});
+await snimek('nastaveni-vyklad', ['.atlas-help-pop-box', '[data-snimek]'], 14);
 
 await prohlizec.close();
 console.log('hotovo →', CIL);
