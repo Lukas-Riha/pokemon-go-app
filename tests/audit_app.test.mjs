@@ -421,8 +421,11 @@ try {
     JSON.stringify(smazano));
   check("…a je zapsaný v paměti smazaných", smazano.vPameti === 1, JSON.stringify(smazano));
   const poSmazani = await naimportuj([A, C], "merge");
-  check("smazaný kus se dalším importem nevrátí",
-    !poSmazani.kusy.some((k) => k.indexOf("Gyarados") === 0), poSmazani.kusy.join(" | "));
+  /* Od 8. 11. 2026 je sken pravda o tom, co v boxu máš: kus, který se v něm
+     zase objeví, se naimportuje a ze seznamu puštěných zmizí. Hroby
+     zůstávají už jen pro synchronizaci mezi zařízeními. */
+  check("kus, který se ve skenu zase objeví, se vrátí",
+    poSmazani.kusy.some((k) => k.indexOf("Gyarados") === 0), poSmazani.kusy.join(" | "));
 
   console.log("\n17) Slučování — kusy mimo sken zůstávají");
   await page.evaluate(() => {
