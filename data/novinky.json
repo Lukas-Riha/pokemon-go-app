@@ -400,5 +400,11 @@
       },
       "**V dokumentaci je seznam všech adres, ze kterých se data tahají,** a Pokémon GO Hub má vlastní řádek v tabulce zdrojů. Je tam i vysvětlení, proč se pořadí v typu nemusí shodovat s cizími žebříčky a jak se liší obě stupnice známek."
     ]
+  },
+  "2.14": {
+    "nadpis": "Co je nového",
+    "body": [
+      "**Zatím nic.** Verze 2.14 se teď staví — co do ní přijde, se tady objeví průběžně."
+    ]
   }
 }
