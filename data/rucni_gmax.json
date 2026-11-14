@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "popis": "Druhy, které Gigantamax formu UŽ ve hře mají, ale herní soubor je ještě nevede.",
+    "proc": "Seznam Gmax druhů se bere z GAME_MASTER (breadSettings.allowedSourdoughPokemon). Niantic ho občas doplní až po debutu, takže appka o nové formě pár dní neví. Tenhle soubor ji doplní ručně.",
+    "pravidlo": "Jakmile se druh objeví v herních datech, build_pokedex.py to vypíše a řádek odsud zmizí. Nic jiného sem nepatří — není to seznam přání, ale berlička na zpoždění zdroje.",
+    "meni": "ručně, podle oznámení Niantic"
+  },
+  "druhy": {
+    "duraludon": {
+      "od": "2026-11-14",
+      "proc": "debut Gigantamax Duraludona; herní soubor ho zatím nevede"
+    }
+  }
+}

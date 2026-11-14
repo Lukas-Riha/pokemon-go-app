@@ -170,6 +170,21 @@ def fetch_gm(refresh, ponechat):
         if q:
             quests[q.get("questTemplateId")] = q
     out, nezname, buddy, megy = {}, set(), {}, {}
+    # Druhy, ktere hra profesorovi poslat nenecha. Nerika to priznakem
+    # `isTransferable: false` — ten priznak u nich proste NENI. Ma ho pres
+    # tisic druhu, nema ho dvacet, a je to presne ta skupina z legendarnich
+    # vyzkumu (Mew, Celebi, Marshadow, Zygarde, Zarude...). Meltan ho ma,
+    # takze se pustit smi.
+    nelze_pustit = []
+    for e in gm:
+        ps = (e.get("data") or {}).get("pokemonSettings")
+        if not ps or ps.get("form"):
+            continue
+        if "isTransferable" in ps:
+            continue
+        k = norm(ps.get("pokemonId"))
+        if k and k not in nelze_pustit:
+            nelze_pustit.append(k)
     # Gigantamax se v herních datech jmenuje „sourdough" (kvásek) a seznam
     # druhů, které Gmax formu vůbec mají, stojí na jednom místě. Žebříček
     # Dynamax útočníků je proti tomu jen top 10 na typ — ten na otázku
@@ -241,9 +256,37 @@ def fetch_gm(refresh, ponechat):
         for f in formy:
             f["energie"], f["energiePoprve"] = cena.get((klic, f.get("id")), (None, None))
     vysledek = {"ukoly": out, "buddyKm": buddy, "mega": megy,
-                "gmax": sorted(gmax)}
+                "gmax": sorted(gmax),
+                "nelzePustit": sorted(nelze_pustit)}
     path.write_text(json.dumps(vysledek, ensure_ascii=False, indent=1), encoding="utf-8")
     return vysledek
+
+
+def gmax_seznam(z_hry, species):
+    """Gmax druhy z herniho souboru + rucni doplnek pro cerstve debuty.
+
+    Seznam vede GAME_MASTER (`breadSettings.allowedSourdoughPokemon`) a je
+    to jediny uplny zdroj. Niantic ho ale obcas doplni az nekolik dni po
+    debutu, takze appka o nove forme nejakou dobu nevi a znacku GMAX
+    nenabidne. `data/rucni_gmax.json` tu diru zaplni; jakmile se druh ve
+    hernich datech objevi, vypise se to a radek odtud ma zmizet.
+    """
+    ven = [k for k in z_hry if k in species]
+    cesta = ROOT / "data" / "rucni_gmax.json"
+    if not cesta.exists():
+        return ven
+    rucne = json.loads(cesta.read_text(encoding="utf-8")).get("druhy") or {}
+    for klic, info in sorted(rucne.items()):
+        if klic not in species:
+            print("  POZOR: rucni Gmax %s neni v pokedexu - preklep?" % klic)
+            continue
+        if klic in ven:
+            print("  rucni Gmax %s uz vede herni soubor - smaz ho z rucni_gmax.json"
+                  % klic)
+            continue
+        ven.append(klic)
+        print("  rucni Gmax: %s (%s)" % (klic, (info or {}).get("proc", "")))
+    return sorted(ven)
 
 
 def norm(name):
@@ -797,7 +840,11 @@ def main():
         "shadow": shadow_ids,
         # Druhy s Gigantamax formou. Je to vlastnost druhu, ne kusu —
         # appka podle toho pozná, kdy má smysl značku GMAX vůbec nabídnout.
-        "gmax": [k for k in (gm.get("gmax") or []) if k in species],
+        "gmax": gmax_seznam(gm.get("gmax") or [], species),
+        # Druhy, ktere hra nenecha poslat profesorovi. Je to vlastnost
+        # druhu, ne kusu — appka u nich nesmi radit „Zahodit", protoze
+        # ta rada se neda splnit.
+        "nelzePustit": [k for k in (gm.get("nelzePustit") or []) if k in species],
         # Celý evoluční graf, ne jen koncová forma. Appka z něj umí složit
         # linii oběma směry — dopředu i dozadu — což z „finální evoluce"
         # nešlo: ta neřekne, z čeho kus vznikl, ani kudy vede cesta.
@@ -811,6 +858,7 @@ def main():
                              "evoPozadavky_s_podminkou": s_podminkou,
                              "buddyKm": len(buddy_km),
                              "gmax": len(out["gmax"]),
+                             "nelzePustit": len(out["nelzePustit"]),
                              "shadow": len(shadow_ids),
                              "cpm": len(cpm),
                              "evolucnich_kroku": len(out["evoluce"]),

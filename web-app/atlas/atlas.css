@@ -3905,6 +3905,12 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    `overflow:auto` zůstává jako pojistka pro nižší okno: posuvník se
    objeví, jen když se to opravdu nevejde, a text se nikdy neuřízne. */
 .atlas-test .box-mode.siroky .atlas-box-rozbor .d-ligy-tab .d-lg-in{height:26px}
+/* Radek ligy v cisteni ukazuje jen poradi, kvalitu a sestavu — tedy to,
+   podle ceho se rozhoduje nechat/pustit. Cil levelu s cenou a stropy CP
+   po stupnich rady se do pevnych 26 px nevesly a orezavaly se; v detailu
+   kusu a v bubline u radku zustavaji (Lukas 14. 11.). */
+.atlas-test .box-mode .atlas-box-rozbor .d-ligy-tab .d-lg-cena,
+.atlas-test .box-mode .atlas-box-rozbor .d-ligy-tab .d-lg-strop{display:none}
 /* Zbylych 23 px davaji bunky rolí. Verdikt se zkratit nesmi: tech 120 px
    je misto pro dva radky stitku duvodu a u kusu, ktery zadne nema, jen
    vypada prazdne — po zkraceni by se stitky prvnimu kusu s duvody
@@ -4126,8 +4132,7 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 /* Blok nesmi byt vyssi nez zalozky roli: stoji jen v PvP a kdyby radek
    zvysil, pri prepnuti na Raidy by cela tabulka poskocila nahoru. Proto
    popisky VEDLE policek, ne nad nimi, a mensi vyska vsech tri prvku. */
-.atlas-test .atlas-ivp{margin-left:auto;display:flex;align-items:center;gap:8px;
-  max-height:34px}
+.atlas-test .atlas-ivp{margin-left:auto;display:flex;align-items:center;gap:8px}
 .atlas-test .atlas-ivp-pole{display:flex;align-items:center;gap:7px}
 .atlas-test .atlas-ivp-pole label{display:flex;align-items:center;gap:5px;
   font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
@@ -4135,7 +4140,7 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
 .atlas-test .atlas-ivp-pole input{width:46px;padding:4px 5px;text-align:center;
   font:600 13px/1 inherit;color:var(--text);background:var(--surface-1);
   border:1px solid var(--border);border-radius:7px}
-.atlas-test .atlas-ivp-btn{padding:6px 12px;border-radius:8px;
+.atlas-test .atlas-ivp-btn{padding:0 12px;height:38px;min-height:38px;border-radius:8px;
   border:1px solid var(--border);background:var(--surface-1);color:var(--text);
   font:600 12.5px/1 inherit;cursor:pointer;white-space:nowrap}
 .atlas-test .atlas-ivp-btn[aria-pressed="true"]{

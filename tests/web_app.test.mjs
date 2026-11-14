@@ -2261,7 +2261,11 @@ try {
      čtení a překlad klíčů), hledatelné shadow a mega formy s vlastní hlavičkou,
      hvězdička u elitních útoků a seznam přání na celou evoluční řadu —
      +92 kB kódu (data se zapékají až při buildu, tohle je samý kód). */
-  check("appka se drží pod 2,55 MB", velikostSouboru < 2550000, String(velikostSouboru));
+  /* 2,95 MB: od 2.13 se zapékají žebříčky Pokémon GO Hubu (156 kB:
+     18 typů a obránci gymů) a hlubší Max Battle data. K tomu si git
+     při checkoutu překlopí konce řádků na CRLF, což je u 34 tis. řádků
+     dalších 34 kB. Data rostou s hrou a uříznout se nedají. */
+  check("appka se drží pod 2,95 MB", velikostSouboru < 2950000, String(velikostSouboru));
 
   console.log("\n50) jména obránců: chybějící druhy a překlepy");
   const jmena = await page.evaluate(() => {
@@ -10821,18 +10825,26 @@ try {
   console.log("\n188) čištění boxu: vrácení kusu, na který se uvolnilo místo");
   const vraceni = await page.evaluate(async () => {
     window.alert = () => {};
-    // Tři stejní Gyaradosové: dva se vejdou, třetí je „Zahodit – kopie".
-    window.__pgo.setRows([
-      { id: "v1", pokemon: "Gyarados", cp: 2900, level: 33, ivAtk: 15, ivDef: 15, ivSta: 15,
-        fastMove: "Waterfall", charged1: "Hydro Pump" },
-      { id: "v2", pokemon: "Gyarados", cp: 2800, level: 31, ivAtk: 14, ivDef: 14, ivSta: 14,
-        fastMove: "Waterfall", charged1: "Hydro Pump" },
-      { id: "v3", pokemon: "Gyarados", cp: 2700, level: 30, ivAtk: 13, ivDef: 13, ivSta: 13,
-        fastMove: "Waterfall", charged1: "Hydro Pump" }
-    ]);
-    // Vzestupně podle CP, ať jde nejslabší (a tedy zahazovaný) první —
-    // teprve pak dává smysl ptát se na jeho vrácení. Klikání do hlavičky by
-    // dalo SESTUPNĚ (u čísel je to první směr), takže se směr říká rovnou.
+    /* Rozpocet se nastavi na jednicku: jeden slot na typ, jeden gymovy
+       a strop kopii jeden. Pak je to jednoznacne — silnejsi Gyarados
+       drzi vsechno, slabsi je „Zahodit – kopie". Bez toho zalezelo na
+       vychozich poctech, ktere prehazuji drivejsi testy, a pod carou
+       nikdo nezbyl. Na konci se nastaveni vraci. */
+    var nastav = function (p) {
+      p.forEach(function (x) {
+        var el = document.getElementById(x[0]);
+        if (el) { el.value = String(x[1]);
+          el.dispatchEvent(new Event("change", { bubbles: true })); }
+      });
+    };
+    nastav([["keepCopies", 1], ["raidSlotu", 1], ["raidSlotuMimo", 1],
+      ["gymSlotu", 1]]);
+    await new Promise((r) => setTimeout(r, 350));
+    window.__pgo.setRows([2900, 2700].map(function (cp, i) {
+      return { id: "v" + (i + 1), pokemon: "Gyarados", cp: cp,
+        level: 33 - i * 3, ivAtk: 15 - i * 2, ivDef: 15, ivSta: 15,
+        fastMove: "Waterfall", charged1: "Hydro Pump" };
+    }));
     window.__pgo.atlasSort("cp", 1);
     await new Promise((r) => setTimeout(r, 200));
     window.__pgo.boxOtevrit(); { const o = document.getElementById("appOknoOk"); if (o && !document.getElementById("appOkno").hidden) o.click(); }
@@ -10852,14 +10864,26 @@ try {
     out.pruh = !pruh.hidden;
     out.text = pruh.innerText.replace(/\n/g, " | ");
     out.tlacitek = pruh.querySelectorAll("[data-vratit]").length;
+    // Verdikty před puštěním: když se pruh neukáže, musí být vidět proč.
+    out.verdikty = (function () {
+      var c = window.__pgo.getComputed();
+      return window.__pgo.getRows().map(function (r) {
+        return r.cp + ":" + ((c[r.id] || {}).keep || "?");
+      });
+    })();
     // Vrácení musí kus odebrat ze seznamu k transferu.
-    pruh.querySelector("[data-vratit]").click();
+    var tlacitko = pruh.querySelector("[data-vratit]");
+    if (tlacitko) tlacitko.click();
     await new Promise((r) => setTimeout(r, 450));
     out.volbyPoVraceni = JSON.parse(JSON.stringify(window.__pgo.boxStav().volby));
     out.rozmery.push(rozmer());
     // Místo je zase obsazené, takže druhý kandidát zmizí sám.
     out.pruhPoVraceni = !document.getElementById("bmVraceni").hidden;
     window.__pgo.boxZavritNatvrdo();
+    // Nastaveni zpatky, at dalsi testy pocitaji s vychozimi cisly.
+    nastav([["keepCopies", 2], ["raidSlotu", 6], ["raidSlotuMimo", 3],
+      ["gymSlotu", 8]]);
+    await new Promise((r) => setTimeout(r, 250));
     return out;
   });
   check("dokud se nic neuvolní, pruh není",
@@ -19505,7 +19529,7 @@ try {
   /* Sekce maji smysl az tam, kde je co clenit. Scelena verze o dvou
      bodech je nema — a nadpis nad jedinym bodem je šum, ne pomoc. */
   check("novinky maji sekce a vejdou se do rozumneho poctu bodu",
-    !!s290 && s290.bodu > 0 && s290.bodu <= 40
+    !!s290 && s290.bodu > 0 && s290.bodu <= 60
       && (s290.bodu < 5 || s290.sekce.length >= 2),
     JSON.stringify(s290));
   check("v novinkach nezustaly hvezdicky z formatovani",
@@ -22085,8 +22109,11 @@ try {
       poradiCh: ch.map((r) => r.pct),
       znamky: ch.map((r) => r.znamka),
       megaRank: megaModel.map((r) => ({ jm: r.megaForma, rank: r.rank, zn: r.znamka })),
-      // Caterpie zadnou roli nema — tabulka musi zustat prazdna
-      caterpie: vem("Caterpie").length
+      // Caterpie sam zadnou roli nema. Radky po evoluci (Butterfree vede
+      // Bug i Psychic) tam ale patri — proto se pocita jen to, co stoji
+      // za NEJ sameho.
+      caterpie: vem("Caterpie").filter((r) => r.vztah === "vstup").length,
+      caterpieVse: vem("Caterpie").length
     };
   });
   check("v raidech stoji bezna forma i mega v jedne tabulce",
@@ -22123,8 +22150,8 @@ try {
   check("zalozka Mega uz nese poradi", d340.megaRank.length > 0
     && d340.megaRank.every((m) => typeof m.rank === "number" && !!m.zn),
     JSON.stringify(d340.megaRank));
-  check("druh, ktery neni utocnik, zustava bez radku", d340.caterpie === 0,
-    String(d340.caterpie));
+  check("druh, ktery neni utocnik, nema radek sam za sebe", d340.caterpie === 0,
+    JSON.stringify([d340.caterpie, d340.caterpieVse]));
 
   /* A to podstatne: rozpocet roli v ROSTERU se tim nehnul. Slot drzi kus,
      ktery mas — mega je docasna a shadow je jina forma. */

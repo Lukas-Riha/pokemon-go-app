@@ -405,6 +405,13 @@
     "nadpis": "Co je nového",
     "body": [
       {
+        "sekce": "Rozpočet rolí"
+      },
+      "**Sloty v typu berou prostě nejsilnější kusy.** Dřív směl jeden druh držet nejvýš tolik slotů, kolik je strop kopií — a zbytek šel pod čáru, i když nic lepšího na ten typ nemáš. Do party šesti Metagrossů postavit jde, takže ten strop zmizel: když držíš osm slotů na Steel, může je obsadit osm Metagrossů.",
+      "**Něco, co umí až po evoluci, už si nebere slot vedle své vyvinuté formy.** Metang 725 CP se držel jako „díra ve Steelu“, přestože jeho jediný přínos je „až po evoluci na Metagrosse“ — a těch bylo v rosteru deset lepších. Strop se počítal podle **druhu**, ne evoluční řady, takže Metang platil za samostatný druh. Teď platí na celou řadu — u gymů i u náplastí v raidech.",
+      "**V čištění boxu nese řádek ligy jen to, podle čeho se rozhoduje** — pořadí, kvalitu a sestavu. Cíl levelu s cenou a stropy CP po stupních řady se do pevné výšky řádku nevesly a ořezávaly se; v detailu kusu a v bublině zůstávají.",
+      "**Gigantamax Duraludon** appka zná. Seznam Gmax druhů se bere z herního souboru a ten ho po debutu ještě nevedl — proto přibyl ruční doplněk, který takové zpoždění překlene. Jakmile se druh v herních datech objeví, build to řekne a doplněk se smaže.",
+      {
         "sekce": "Vyhledávání"
       },
       "**Porovnat IV.** Vpravo u záložek rolí přibyl příkaz **Porovnat IV**. Po kliknutí vyjedou tři políčka (útok, obrana, HP) a pod každý řádek ligové tabulky se dopíše, **kolikátá je tvoje kombinace mezi 4096** možnými — včetně levelu a CP, na které se ještě pod limit ligy vejde. Čísla se mění rovnou při psaní. Dokud příkaz nepoužiješ, tabulka vypadá jako dosud. Je to jiná otázka než „pořadí druhu“: to říká, jak dobrý je DRUH, tohle, jak dobrá je zrovna tahle kombinace IV u téhož druhu.",
@@ -420,6 +427,8 @@
       {
         "sekce": "Drobnosti"
       },
+      "**V čištění boxu se řádek ligy už neořízne.** Měl pevných 26 px, ale nese tři řádky — pořadí se sestavou, cíl levelu s cenou a stropy CP po stupních řady. Horní řádek se usekával nahoře a strop CP dole. Teď se výška řídí obsahem a panel to unese bez posuvníku.",
+      "**Na shiny přepínači stojí, co je právě vidět** — u běžného obrázku „Běžný“, u shiny „Shiny“. Co klik udělá, řekne bublina.",
       "**Šipky u Import CSV a Export jsou prohozené.** Teď jdou podle směru dat: import míří dovnitř, export ven."
     ]
   }

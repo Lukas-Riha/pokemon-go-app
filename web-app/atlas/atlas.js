@@ -3845,8 +3845,12 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     <div class="atlas-hledani-obal">
      ${obrazekRam(d.name,'atlas-hledani-obr',null,shinyObrazek?{shiny:true}:null)}
      ${shinyLze?`<button type="button" class="atlas-shiny-prepinac" data-shiny-obrazek`
-       +` aria-pressed="${shinyObrazek}">`
-       +`✦ ${shinyObrazek?'Běžný':'Shiny'}</button>`:''}
+       +` aria-pressed="${shinyObrazek}"`
+       /* Na tlacitku stoji, co je PRAVE VIDET, ne co se stane po kliknuti
+          (Lukas 11. 11.) — co klik udela, rekne bublina. */
+       +` data-tip="${shinyObrazek?'Přepnout zpět na běžný obrázek'
+         :'Přepnout na shiny obrázek'}">`
+       +`✦ ${shinyObrazek?'Shiny':'Běžný'}</button>`:''}
     </div>
     <div>
      <h3>${esc(megaJm||(model&&model.forma==='Shadow'?'Shadow '+d.name:d.name))}</h3>
