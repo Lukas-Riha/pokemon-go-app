@@ -33,9 +33,12 @@ dex_all = json.loads(DEX.read_text(encoding="utf-8"))
 # "gmax" = druhy s Gigantamax formou (z herniho GAME_MASTERu). Zebricek
 # Dynamax utocniku je jen top 10 na typ, takze na otazku "ma ten druh
 # Gmax?" odpovedet neumi.
+# "nelzePustit" = druhy, ktere hra profesorovi poslat nenecha. Bez toho
+# appka radi "zahodit" u Marshadowa a dalsich dvaceti ze specialnich
+# vyzkumu — rada, ktera se neda splnit.
 pokedex = {k: dex_all[k] for k in ("cpm", "powerup", "species", "mega",
                                   "evoluce", "evoPozadavky", "buddyKm",
-                                  "gmax", "shadow")}
+                                  "gmax", "shadow", "nelzePustit")}
 
 MOVES = ROOT / "data" / "moves.json"
 moves_all = json.loads(MOVES.read_text(encoding="utf-8"))

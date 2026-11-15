@@ -4529,6 +4529,26 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    *  Dynamax útočníků vede jen ty, kteří Dynamax umí, a na otázku „má ten
    *  druh Gmax?“ odpovědět neumí. Gmax má jen poslední stupeň řady,
    *  takže se ptá přímo na jméno kusu, ne na jeho řadu. */
+  /**
+   * Nechá hra ten druh poslat profesorovi?
+   *
+   * GAME_MASTER to neříká příznakem `isTransferable: false` — říká to tím,
+   * že ten příznak u druhu VŮBEC NENÍ. Má ho přes tisíc druhů, nemá ho
+   * dvacet a je to přesně ta skupina ze speciálních výzkumů: Mew, Celebi,
+   * Jirachi, Marshadow, Zygarde, Zarude… Meltan ho naopak má, takže se
+   * pustit smí — a právě o něj šlo, když se tenhle zámek rušil podle
+   * vzácnosti. Teď se nehadá z rarity, ale čte se ze hry.
+   *
+   * Starší zapečená data seznam nemají. Pak appka nebrání ničemu: co neví,
+   * nemá co zakazovat.
+   */
+  function nelzePustitDruh(jmeno) {
+    var seznam = POKEDEX.nelzePustit || [];
+    if (!seznam.length) return false;
+    var k = dexKey(jmeno);
+    return !!k && seznam.indexOf(k) !== -1;
+  }
+
   function maGmaxFormu(jmeno) {
     var seznam = POKEDEX.gmax || [];
     // Starší zapečená data seznam nemají. Pak se nebrání ničemu: appka,
@@ -9618,9 +9638,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         var rada = (k.b.dex && k.b.dex.finalKey) || k.b.groupKey;
         if (!s.bezStropuDruhu
             && (videlRadu[rada] || 0) >= Math.max(1, s.keepCopies)) return false;
-        if (k.mezera && (videlNaplast[rada] || 0) >= 1) return false;
+        /* Naplast se pocita na DRUH, ne na radu. Pres radu by shadow
+           Machoke (utok x1,2, takze v poradi prvni) sebral jedinou
+           naplast cele rade a hotovy Machamp by vypadl uplne — pritom
+           pouzitelny je prave on. */
+        if (k.mezera && (videlNaplast[k.b.groupKey] || 0) >= 1) return false;
         videlRadu[rada] = (videlRadu[rada] || 0) + 1;
-        if (k.mezera) videlNaplast[rada] = (videlNaplast[rada] || 0) + 1;
+        if (k.mezera) videlNaplast[k.b.groupKey] = (videlNaplast[k.b.groupKey] || 0) + 1;
         k.prijat = true;
         return true;
       });
@@ -11118,6 +11142,19 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         keepTitle = "Tenhle řádek nemá jméno pokémona, takže se o něm nedá nic"
           + " spočítat. Vznikl tlačítkem „+ Přidat pokémona“ — buď ho dovyplň"
           + " (v zobrazení „Vše“), nebo ho smaž košem na konci řádku.";
+      } else if (nelzePustitDruh(r.pokemon)) {
+        /* Hra ten druh profesorovi poslat nenechá, takže rada „zahodit"
+           by se nedala splnit. Držet si ho není rozhodnutí — je to jediná
+           možnost, a appka to má říct rovnou, ne nechávat člověka hádat,
+           proč mu transfer ve hře nešel. */
+        keepGood = true;
+        keepLabel = "Ponechat";
+        keepTone = "good";
+        keepSubLate = "hra ho pustit nenechá";
+        keepTitle = "Tenhle druh hra profesorovi poslat nenechá — je"
+          + " ze speciálního výzkumu a transfer u něj hra vůbec nenabízí."
+          + " Držet si ho tedy není rozhodnutí, je to jediná možnost."
+          + nadLimitemVeta;
       } else if (b.dynamax && (b.dmaxIndex || 1) <= s.dmaxKeep) {
         // Dmax kus jde získat jen z Max Battle, takže se nedá „dochytat" jako
         // běžný kus — proto vlastní rozpočet místo tvrdého „držet všechny".
@@ -20610,6 +20647,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var k = speciesKey(b.row.pokemon);
     if (r === "M" && !MYTICKE_VYJIMKY[k]) return "mytický — hra ho do výměny nepustí vůbec";
     if (DRUHY_BEZ_VYMENY[k]) return "tenhle druh hra do výměny nepustí (ani do Pokémon HOME)";
+    /* Těch dvacet druhů, které nejdou poslat profesorovi, nejde ani
+       vyměnit — herní soubor u nich nemá ani `isTradable`. */
+    if (nelzePustitDruh(b.row.pokemon)) {
+      return "hra tenhle druh do výměny nepustí — je ze speciálního výzkumu";
+    }
     if (b.row.forma === "Shadow" || /shadow/i.test(b.row.pokemon || "")) {
       return "shadow se vyměnit nedá — nejdřív ho musíš očistit (a tím přijde o shadow bonus)";
     }

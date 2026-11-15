@@ -405,19 +405,22 @@
     "nadpis": "Co je nového",
     "body": [
       {
+        "sekce": "Verdikty"
+      },
+      "**Co hra pustit nenechá, už appka nenabízí k zahození.** Marshadow a dalších devatenáct druhů ze speciálních výzkumů (Mew, Celebi, Jirachi, Zygarde, Zarude…) hra profesorovi poslat nenechá, takže rada „zahodit“ se u nich nedala splnit. Teď u nich stojí **Ponechat · hra ho pustit nenechá** a nelezou do fronty v čištění ani do filtrů do hry.",
+      "**Ten seznam appka neodhaduje podle vzácnosti, čte ho ze hry.** Herní soubor to říká tím, že u těch dvaceti druhů příznak o transferu vůbec není — má ho přes tisíc druhů. **Meltan ho má**, takže se pustit smí a rozhoduje o něm rozpočet jako o kterémkoliv jiném kuse.",
+      {
         "sekce": "Rozpočet rolí"
       },
-      "**Sloty v typu berou prostě nejsilnější kusy.** Dřív směl jeden druh držet nejvýš tolik slotů, kolik je strop kopií — a zbytek šel pod čáru, i když nic lepšího na ten typ nemáš. Do party šesti Metagrossů postavit jde, takže ten strop zmizel: když držíš osm slotů na Steel, může je obsadit osm Metagrossů.",
-      "**Něco, co umí až po evoluci, už si nebere slot vedle své vyvinuté formy.** Metang 725 CP se držel jako „díra ve Steelu“, přestože jeho jediný přínos je „až po evoluci na Metagrosse“ — a těch bylo v rosteru deset lepších. Strop se počítal podle **druhu**, ne evoluční řady, takže Metang platil za samostatný druh. Teď platí na celou řadu — u gymů i u náplastí v raidech.",
-      "**V čištění boxu nese řádek ligy jen to, podle čeho se rozhoduje** — pořadí, kvalitu a sestavu. Cíl levelu s cenou a stropy CP po stupních řady se do pevné výšky řádku nevesly a ořezávaly se; v detailu kusu a v bublině zůstávají.",
-      "**Gigantamax Duraludon** appka zná. Seznam Gmax druhů se bere z herního souboru a ten ho po debutu ještě nevedl — proto přibyl ruční doplněk, který takové zpoždění překlene. Jakmile se druh v herních datech objeví, build to řekne a doplněk se smaže.",
+      "**Co umí až po evoluci, už si nebere slot vedle své vyvinuté formy.** Metang 725 CP se držel jako „díra ve Steelu“, přestože jeho jediný přínos je „až po evoluci na Metagrosse“ — a těch bylo v rosteru deset lepších. Strop kopií se počítal podle **druhu**, ne podle evoluční řady, takže Metang platil za samostatný druh. Teď platí na celou řadu — u gymů stejně jako u náplastí v raidech.",
+      "**Přibyla dvě nastavení, obojí výchozně vypnuté.** *Roli smí držet libovolně mnoho kusů téhož druhu* strop kopií zruší úplně: když držíš osm slotů na Steel, může je obsadit osm Metagrossů — do raidu taková parta postavit jde. Pozor, pak ale přestane platit i to, že se ze tří Lunal ta nejhorší smí pustit. *Nechat z každé evoluční řady nejlepší kus* je sběratelská pojistka: platí jen tam, kde z té řady nikdo slot nedrží — kdo roli má, o tom rozhoduje dál rozpočet.",
       {
         "sekce": "Vyhledávání"
       },
       "**Porovnat IV.** Vpravo u záložek rolí přibyl příkaz **Porovnat IV**. Po kliknutí vyjedou tři políčka (útok, obrana, HP) a pod každý řádek ligové tabulky se dopíše, **kolikátá je tvoje kombinace mezi 4096** možnými — včetně levelu a CP, na které se ještě pod limit ligy vejde. Čísla se mění rovnou při psaní. Dokud příkaz nepoužiješ, tabulka vypadá jako dosud. Je to jiná otázka než „pořadí druhu“: to říká, jak dobrý je DRUH, tohle, jak dobrá je zrovna tahle kombinace IV u téhož druhu.",
       "**U tvé kombinace je i známka — ale na vlastní škále.** Říká, jak **vzácná** taková kombinace je: SS je nejlepší procento ze 4096, S pět procent, A deset, B čtvrtina, C polovina. Se známkou druhu nemá nic společného — ta říká, jak silný je druh v lize — a proto je chip jen obtažený, ne vyplněný.",
-      "**U Master League se pořadí počítá na nejvyšším levelu** — liga limit nemá, takže tam prostě vyhrává síla. Appka to napíše místo toho, aby si něco domýšlela.",
-      "**U útoků se ukáže i smíšená sestava.** Dokud měl druh v daném typu jen jeden útok, stálo u řádku „sestavu appka nemá“ — třeba u Melmetala ve Steelu, který Steel rychlý útok nemá. Teď se vypíše nejlepší sestava, jakou proti tomu typu má, a je u ní poznámka **smíšená**: jeden útok nedostává bonus za shodu. Pokémon GO Hub počítá stejně široce, proto takový druh ve svém žebříčku vede. Vlastní výpočet appky se tím nemění — skóre pořád stojí jen na čistých sestavách, aby se nepohnul rozpočet rolí v rosteru.",
+      "**U Master League se pořadí počítá na nejvyšším levelu** — liga limit nemá, takže tam prostě vyhrává síla. Appka to napíše místo toho, aby si něco domyšlela.",
+      "**U útoků se ukáže i smíšená sestava.** Dokud měl druh v daném typu jen jeden útok svého typu, stálo u řádku „sestavu appka nemá“ — třeba u Melmetala ve Steelu, který Steel rychlý útok nemá. Teď se vypíše nejlepší sestava, jakou proti tomu typu má, i když jeden z útoků bonus za shodu nedostává; nijak se to neznačí, protože je to pořád to nejlepší, co ten druh proti tomuhle typu nabízí. Vlastní výpočet appky se tím nemění — skóre pořád stojí jen na čistých sestavách, aby se nepohnul rozpočet rolí v rosteru.",
       "**Sloupce stojí ve všech záložkách na témže místě.** Druh, Hodnocení, Pořadí a Doporučené útoky začínají v PvP, Raidech, Maxu i Gymu stejně, takže se při přepnutí nic neposune. Co má role navíc (Nejlepší IV, Cena megy), stojí hned za útoky. Poslední sloupec už se taky nelepí k pravému okraji — to byl zbytek po zrušeném sloupci s příkazem.",
       {
         "sekce": "Hledání v rosteru"
@@ -427,7 +430,8 @@
       {
         "sekce": "Drobnosti"
       },
-      "**V čištění boxu se řádek ligy už neořízne.** Měl pevných 26 px, ale nese tři řádky — pořadí se sestavou, cíl levelu s cenou a stropy CP po stupních řady. Horní řádek se usekával nahoře a strop CP dole. Teď se výška řídí obsahem a panel to unese bez posuvníku.",
+      "**V čištění boxu nese řádek ligy jen to, podle čeho se rozhoduje** — pořadí, kvalitu a sestavu. Cíl levelu s cenou a stropy CP po stupních řady se do pevné výšky řádku nevesly a ořezávaly se; v detailu kusu a v bublině zůstávají.",
+      "**Gigantamax Duraludon** appka zná. Seznam Gmax druhů se bere z herního souboru a ten ho po debutu ještě nevedl — proto přibyl ruční doplněk, který takové zpoždění překlene. Jakmile se druh v herních datech objeví, build to řekne a doplněk se smaže.",
       "**Na shiny přepínači stojí, co je právě vidět** — u běžného obrázku „Běžný“, u shiny „Shiny“. Co klik udělá, řekne bublina.",
       "**Šipky u Import CSV a Export jsou prohozené.** Teď jdou podle směru dat: import míří dovnitř, export ven."
     ]

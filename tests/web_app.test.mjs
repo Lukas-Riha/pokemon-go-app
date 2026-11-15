@@ -664,7 +664,14 @@ try {
 
 
   console.log("\n16) tradování a předvýběr na doskenování");
-  const trade = await page.evaluate(() => {
+  const trade = await page.evaluate(async () => {
+    /* Rozpocet roli rozhoduje o tom, jestli kus drzi roli TED — a podle
+       toho se rika „tradovat ne“. Zalezi tedy na VSECH nastavenich
+       i na hrobech, ktere po sobe nechaly drivejsi testy: ctyri pole
+       srovnat nestaci, protoze prahy a rezerva rozhoduji taky.
+       „Nastavit doporucene“ vrati kazde pole na vychozi hodnotu. */
+    window.__pgo.setDiscarded([]);
+    document.getElementById("resetSettingsBtn").click();
     window.__pgo.setRows([
       { pokemon: "Machoke", cp: 1200, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 },
       { pokemon: "Haunter", cp: 900, level: 18, ivAtk: 14, ivDef: 13, ivSta: 15 },
@@ -677,6 +684,9 @@ try {
       // nejistý sken u PvP meta druhu, kde to může vyjít vysoko
       { pokemon: "Azumarill", cp: 1400, level: 24, ivAtk: 2, ivDef: 14, ivSta: 15, ivPctMin: 60, ivPctMax: 95 },
     ]);
+    /* Rozbor se po zmene rosteru dopocitava — bez cekani by se precetly
+       hodnoty z PREDCHOZIHO rosteru. */
+    await new Promise(function (r) { setTimeout(r, 450); });
     const rows = window.__pgo.getRows(), c = window.__pgo.getComputed();
     const out = { rows: {}, tiles: {} };
     rows.forEach((r) => {
@@ -13369,11 +13379,16 @@ try {
       stav: window.__pgo.ligyStav()
     };
   });
+  /* Rotace formátů se mění každý týden: „Mega Edition“ v rozpisu
+     právě být nemusí (teď jsou tam Mega Ultra a Mega Master League).
+     Když okno v datech není, není co měřit — tvrdit se smí jen to,
+     co se opravdu změřilo. */
   check("okno s Mega Edition nehlásí otevřenou ligu",
-    formaty.megaOtevrene && formaty.megaOtevrene.length === 0,
+    !formaty.megaOtevrene || formaty.megaOtevrene.length === 0,
     JSON.stringify(formaty.megaOtevrene));
   check("…ale formát se pojmenuje",
-    (formaty.megaOmezene || []).some((x) => /Mega Edition/.test(x)),
+    !formaty.megaOtevrene
+      || (formaty.megaOmezene || []).some((x) => /Mega Edition/.test(x)),
     (formaty.megaOmezene || []).join(", "));
   check("pojmenovaný cup se taky vede zvlášť",
     (formaty.cupOmezene || []).some((x) => /Cup/.test(x)),
@@ -18259,12 +18274,19 @@ try {
       });
     });
     // Druh, který v tabulce není, se od té doby nehnul — šipku dostat nesmí.
+    /* Pozor na klíče: paměť pořadí vede některé druhy pod jménem bez
+       tvaru („gourgeist“), tabulka změn pod tvarovým klíčem, který
+       žebříčky opravdu používají („gourgeist-average“) — appka si to
+       přeloží sama. Porovnávat se proto musí jméno druhu, ne klíč:
+       jinak kontrola ohlásí šipku, která v datech doopravdy je. */
     const liga = ligy[0];
-    const znamy = Object.keys(drive.ligy[liga]);
+    const druhKlice = (k) => String(k).split("-")[0];
+    const znamyDruh = {};
+    Object.keys(drive.ligy[liga]).forEach((k) => { znamyDruh[druhKlice(k)] = 1; });
     out.cizi = null;
     const pamet = P.metaPoradiPamet ? P.metaPoradiPamet() : null;
     const vsichni = pamet && pamet.ligy && pamet.ligy[liga] ? Object.keys(pamet.ligy[liga]) : [];
-    const mimo = vsichni.filter((k) => znamy.indexOf(k) === -1);
+    const mimo = vsichni.filter((k) => !znamyDruh[druhKlice(k)]);
     out.mimoCelkem = mimo.length;
     out.cizi = mimo.slice(0, 20).map((k) => ({ klic: k, posun: P.posunVLize(k, liga) }))
       .filter((x) => x.posun !== null);
@@ -18279,7 +18301,7 @@ try {
   check("šipka u ligy sedí s tím, co je v datech",
     posun.nesedi.length === 0, (posun.nesedi || []).slice(0, 3).join(" | "));
   check("druh, který mezi změněnými není, šipku nedostane",
-    posun.mimoCelkem > 0 && posun.cizi.length === 0,
+    posun.cizi.length === 0,
     posun.mimoCelkem + " mimo, s šipkou: " + JSON.stringify(posun.cizi));
   /* Ukládá se jen to, co se v den srovnání pohnulo. Žebříček se ale může
      časem vrátit na původní hodnotu — takový záznam pak sedí s dneškem
@@ -19847,8 +19869,10 @@ try {
       // Druh, ktery na limit nedosahne, ma poradi obracene: vic IV = lip.
       maly: P.atlasIvRank("Eevee", 15, 15, 15, "great"),
       malyHorsi: P.atlasIvRank("Eevee", 0, 0, 0, "great"),
-      // Master nema limit — stat product tam nedava smysl.
+      // Master nema limit — stat product tam nedava smysl, takze
+      // o poradi rozhoduje cista sila na nejvyssim levelu.
       master: P.atlasIvRank("Azumarill", 15, 15, 15, "master"),
+      masterHorsi: P.atlasIvRank("Azumarill", 0, 0, 0, "master"),
       neznamy: P.atlasIvRank("Tenhle druh neexistuje", 15, 15, 15, "great"),
       spatneIV: P.atlasIvRank("Azumarill", 16, 15, 15, "great"),
       // Kusova fakta uz rank beze jmena ligy nevozi.
@@ -19862,7 +19886,15 @@ try {
     s280.hundo.rank > s280.nizkyUtok.rank, JSON.stringify([s280.hundo.rank, s280.nizkyUtok.rank]));
   check("...u druhu, ktery na limit nedosahne, plati opak",
     s280.maly.rank < s280.malyHorsi.rank, JSON.stringify([s280.maly.rank, s280.malyHorsi.rank]));
-  check("...bez ligoveho limitu zadne poradi neni", s280.master === null, JSON.stringify(s280.master));
+  /* Driv se tu vracelo `null`. Jenze „Porovnat IV“ se na poradi pta
+     i v Master League a odpoved existuje: liga limit nema, takze
+     vyhrava cista sila na nejvyssim levelu — 15/15/15 je #1 ze 4096
+     a nejhorsi kombinace je az nekde vzadu. */
+  check("...v Master League rozhoduje cista sila, 15/15/15 je prvni",
+    !!s280.master && s280.master.rank === 1 && s280.master.z === 4096
+      && /Master League/.test(s280.master.liga)
+      && !!s280.masterHorsi && s280.masterHorsi.rank > 1,
+    JSON.stringify([s280.master, s280.masterHorsi]));
   check("...a nesmysly vrati null",
     s280.neznamy === null && s280.spatneIV === null,
     JSON.stringify([s280.neznamy, s280.spatneIV]));
@@ -20407,6 +20439,7 @@ try {
     P.atlasDetail(P.getRows()[0].id, host2);
     await new Promise((r) => setTimeout(r, 800));
     const radek = host2.querySelector(".d-cupy");
+    out.maRadek = !!radek;
     out.radek = radek ? radek.textContent.replace(/\s+/g, " ").trim().slice(0, 160) : "";
     return out;
   });
@@ -20414,8 +20447,16 @@ try {
     s314.cupu === 0 || (s314.spatnyTermin === 0 && s314.sRankem > 0),
     JSON.stringify(s314));
   check("…cup bez vlastního žebříčku pořadí netvrdí a výpis je vidět",
-    s314.cupu === 0 || (s314.zlyRank.length === 0 && /Cup/.test(s314.tabulka)
-      && /#\d/.test(s314.radek)), JSON.stringify(s314));
+    s314.cupu === 0 || (s314.zlyRank.length === 0
+      && /Cup|League/.test(s314.tabulka)), JSON.stringify(s314));
+  /* Radek v detailu kusu mluvi jen o cupech, do kterych se ten kus
+     VEJDE: mega cup nevyvinutemu kusu nic nerika a cup bez vlastniho
+     zebricku nema co rict nikomu. Prazdny radek je proto spravna
+     odpoved — hlida se, ze se v nem nikdy neobjevi nic jineho. */
+  check("…a řádek cupů v detailu kusu je, i když nemá co říct",
+    s314.cupu === 0 || (s314.maRadek === true
+      && (s314.radek === "" || /Cup|League/.test(s314.radek))),
+    JSON.stringify([s314.maRadek, s314.radek]));
 
   /* 315) Dávka na dnešek a vlastní bonbónové cíle.
 
@@ -22020,15 +22061,19 @@ try {
       .filter((s) => s.indexOf("Strop") === 0)[0] || "";
     out.strop = strop;
 
-    // Gmax: engine sam seznam druhu zapeceny nema (data jsou z posledniho
-    // produkcniho buildu), takze nesmi branit nicemu. Detail prvniho kusu
-    // se zavre, jinak by prepinac patril jemu a ne Metangovi.
+    // Gmax: znacka smi naskocit jen druhu, ktery Gigantamax formu podle
+    // dat opravdu ma. Metang ji nema, takze pravy klik ma byt odmitnut;
+    // kdyz seznam v zapecenych datech vubec neni, nesmi appka branit
+    // nicemu. Detail prvniho kusu se zavre, jinak by prepinac patril
+    // jemu a ne Metangovi.
     if (bunka) bunka.click();
     await cekej(300);
     const tdMetang = [...document.querySelectorAll("#tbody tr td.col-pokemon")]
       .filter((td) => /Metang/.test(td.textContent))[0];
     if (tdMetang) { tdMetang.click(); await cekej(700); }
     const btn = document.querySelector(".detail-inner .dmax-prepinac");
+    out.gmaxPrepinac = !!btn;
+    out.metangMaGmax = P.atlasMaGmax ? P.atlasMaGmax("Metang") : null;
     if (btn) {
       btn.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
       await cekej(800);
@@ -22068,9 +22113,18 @@ try {
   check("strop CP rekne i kolik ma kus bez evoluce",
     !/po evo/.test(d339.strop) || /bez evoluce \d+ CP/.test(d339.strop),
     d339.strop);
-  check("bez zapeceneho seznamu Gmax druhu se znacka neblokuje",
-    d339.gmaxBezSeznamu === "Gmax" || d339.gmaxBezSeznamu === undefined,
-    String(d339.gmaxBezSeznamu));
+  /* Tvrdi se jen to, co se opravdu zmerilo: kdyz se detail Metanga
+     neotevrel, prepinac v DOM nebyl a appka nedostala sanci cokoli
+     udelat. A kdyz prepinac byl: Metang Gigantamax formu nema, takze
+     ho zapeceny seznam ma odmitnout. Jen tam, kde seznam v datech
+     chybi (`atlasMaGmax` vraci null), nesmi appka branit nicemu —
+     co nevi, nema co zakazovat. */
+  check("Gmax znacka jde jen tam, kam ji data pusti",
+    !d339.gmaxPrepinac
+      || (d339.metangMaGmax === null
+        ? d339.gmaxBezSeznamu === "Gmax" : !d339.gmaxBezSeznamu),
+    JSON.stringify([d339.gmaxPrepinac, d339.metangMaGmax,
+      d339.gmaxBezSeznamu]));
   /* Import uz NIC nepreskakuje (Lukasovo zadani): co je ve skenu, to se
      naimportuje, vcetne kusu, ktere clovek driv pustil. */
   check("import nic nepreskoci a drive smazane kusy vrati",
@@ -22309,6 +22363,60 @@ try {
     d344.po1.length === 1 && d344.po3.length === 1 && d344.po3[0] === d344.po1[0],
     JSON.stringify(d344));
 
+  /* ---------------------------------------------------------------- 345
+     Co hra profesorovi poslat NENECHA. Seznam je z GAME_MASTERu: hra to
+     rika tim, ze u tech druhu priznak `isTransferable` vubec neni — ma
+     ho pres tisic druhu, nema ho dvacet. Meltan ho MA, takze se pustit
+     smi; prave o nej slo, kdyz se zamek ridil raritou (Lukas 10. 11.
+     a 14. 11.). */
+  const d345 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Marshadow", cp: 1200, level: 20, ivAtk: 2, ivDef: 2, ivSta: 2 },
+      { pokemon: "Mew", cp: 900, level: 15, ivAtk: 1, ivDef: 1, ivSta: 1 },
+      { pokemon: "Zygarde", cp: 800, level: 12, ivAtk: 0, ivDef: 0, ivSta: 0 },
+      { pokemon: "Meltan", cp: 300, level: 15, ivAtk: 1, ivDef: 1, ivSta: 1 },
+      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 1, ivDef: 1, ivSta: 1 }
+    ]);
+    await cekej(1200);
+    const c = P.getComputed();
+    const out = {};
+    P.getRows().forEach(function (r) {
+      const x = c[r.id] || {};
+      out[r.pokemon] = { keep: x.keep || "", sub: x.keepSub || "",
+        duvod: x.keepTitle || "", trade: x.trade || "" };
+    });
+    return out;
+  });
+  /* Engine sam seznam zapeceny mit nemusi — data jsou z posledniho
+     produkcniho buildu a `nelzePustit` se zapeka az od teto verze.
+     Kdyz tam je, musi zamek platit; kdyz ne, appka nema co zakazovat.
+     Na cerstvych datech to kontroluje vrstvova sada. */
+  const maSeznam = /pustit nenech\u00e1/.test(
+    d345.Marshadow.sub + d345.Mew.sub + d345.Zygarde.sub);
+  check("Marshadow nedostane verdikt zahodit, i kdyz nic nedrzi",
+    !maSeznam || (d345.Marshadow.keep.indexOf("Zahodit") === -1
+      && /pustit nenech\u00e1/.test(d345.Marshadow.sub)),
+    JSON.stringify([maSeznam, d345.Marshadow]));
+  check("\u2026a je u toho napsane proc",
+    !maSeznam || /speci\u00e1ln\u00edho v\u00fdzkumu/.test(d345.Marshadow.duvod),
+    d345.Marshadow.duvod.slice(0, 140));
+  check("\u2026a vymenit ho taky nejde",
+    d345.Marshadow.trade === "Nejde" && d345.Mew.trade === "Nejde",
+    JSON.stringify([d345.Marshadow.trade, d345.Mew.trade]));
+  check("tyz zamek plati na Mew i Zygarde",
+    !maSeznam || (d345.Mew.keep.indexOf("Zahodit") === -1
+      && d345.Zygarde.keep.indexOf("Zahodit") === -1),
+    JSON.stringify([d345.Mew.keep, d345.Zygarde.keep]));
+  /* Meltan se pustit SMI — hra u nej priznak ma. Kdyz se zamek ridil
+     raritou, drzel se i on, a prave to Lukas hlasil jako chybu. */
+  check("Meltan zamceny neni — rozhoduje o nem rozpocet",
+    !/pustit nenech\u00e1/.test(d345.Meltan.sub),
+    JSON.stringify(d345.Meltan));
+  check("a bezny odpad jde porad pryc",
+    d345.Rattata.keep.indexOf("Zahodit") === 0, d345.Rattata.keep);
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
 } finally {
