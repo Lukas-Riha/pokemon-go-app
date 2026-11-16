@@ -435,5 +435,30 @@
       "**Na shiny přepínači stojí, co je právě vidět** — u běžného obrázku „Běžný“, u shiny „Shiny“. Co klik udělá, řekne bublina.",
       "**Šipky u Import CSV a Export jsou prohozené.** Teď jdou podle směru dat: import míří dovnitř, export ven."
     ]
+  },
+  "2.15": {
+    "nadpis": "Co je nového",
+    "body": [
+      {
+        "sekce": "Rozpočet rolí"
+      },
+      "**Strop kopií počítá formy téhož druhu jako jednu řadu.** Kyurem, Kyurem (Black) a Kyurem (White) jsou v boxu tři různé kusy, ale ve hře je to jeden tvor ve třech podobách — a každá podoba si držela vlastní strop, takže šest Kyuremů obsadilo celý Ice. Teď se počítají dohromady. Nastavení se jmenuje **Kolik kusů z evoluční řady si nechat**, výchozí jsou dva a jde to přepsat.",
+      {
+        "sekce": "Seznam přání"
+      },
+      "**Seznam přání jde sdílet odkazem.** V Transferu přibyl příkaz **Vyrobit odkaz na můj seznam**: appka ho položí do své složky na OneDrivu a udělá k němu odkaz **jen pro čtení**. Ten pošleš kamarádovi jednou a jeho appka si pak sama stahuje, co zrovna sháníš. Je v něm jediná věc — jména druhů; žádný roster, žádná CP, žádná IV. Odkaz vzniká až na kliknutí, protože kdo ho má, přečte si ho.",
+      "**A naopak: „Co shání Anet“.** Vložíš odkaz, který ti někdo poslal, a jeho seznam se objeví jako vlastní blok — u každého druhu stojí, kolik kusů té řady v rosteru máš. Obnovuje se sám při otevření a pak po pár minutách.",
+      {
+        "sekce": "Detail kusu"
+      },
+      "**Jinou podobu téhož kusu jde přepnout přímo v detailu.** Zacian s Rusted Sword, Zamazenta se štítem, Kyurem na Black nebo White — klikneš na podobu v sekci **Jiné formy** a appka se zeptá stejně jako u evoluce. IV ani level se nemění, staty a typy ano, takže se přepočítá CP. Útoky se přeměnou přehodí, proto se vymažou. Zpátky to jde stejným klikem.",
+      "**Kyurem (White) je zpátky v nabídce.** S Blackem má na kus stejné typy i staty a liší se jen podpisovým útokem, takže ho appka brala za tutéž podobu a jednu z nich zahodila. Teď se u forem s vlastní sestavou počítá i ta — a kosmetické vzory (devětadvacet Unownů) se do nabídky pořád nesypou.",
+      "**U útoku, který se má nechat, už nestojí šipka na jiný.** U Freeze Shocku na Black Kyuremovi appka říká „tenhle nech“ a žádnou náhradu nenabízí — jenže pod ním svítilo **Outrage**, půjčené z doporučené sestavy pro jinou roli. Proti ledovým cílům je o pětinu slabší. Oranžový útok dostane šipku jen tehdy, když náhradu opravdu někdo našel; červený ji má dál.",
+      "**Bublina s kusy druhu se už nerozteče přes celou obrazovku.** U dvaceti Magikarpů se výpis usekne, zalomí do dvou sloupců a na poslední řádek přijde ten kus, o kterém bublina je — i když je dvacátý. Čísla řádků zůstávají pravdivá, takže je pořád vidět, kolikátý vlastně je.",
+      {
+        "sekce": "Drobnosti"
+      },
+      "**V nadpisu karty Roster stojí, kolik kusů v něm máš.** Filtr s tím číslem nehýbe: je to odpověď na „kolik jich mám“, ne na „kolik jich zrovna vidím“."
+    ]
   }
 }

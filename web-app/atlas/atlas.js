@@ -1268,6 +1268,13 @@ new MutationObserver(readonly).observe($('#tbody'),{childList:true});readonly();
        const poradi={preucit:0,dobry:1};
        jmena.map((jm,i)=>({jm,i,stav:stavUtoku(String(jm).trim())}))
         .filter(x=>poradi[x.stav]!==undefined)
+        /* Utok, u ktereho engine zadnou nahradu nenasel a rika
+           „tenhle nech“, sipku nedostane. Driv si ji pujcil z doporucene
+           sestavy pro JINOU roli — pod Freeze Shockem Black Kyurema tak
+           stalo „Outrage“, utok proti ledovym cilum o petinu slabsi (Lukas
+           16. 11.). Cerveny utok sipku ma dal: tam je rada na miste. */
+        .filter(x=>x.stav!=='dobry'
+          ||!!nahrady.get(cisteJmeno(String(x.jm)).trim().toLowerCase()))
         .sort((a2,b2)=>poradi[a2.stav]-poradi[b2.stav])
         .forEach(x=>{
          const cist=cisteJmeno(String(x.jm)).trim().toLowerCase();

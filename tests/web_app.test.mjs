@@ -22417,6 +22417,355 @@ try {
     JSON.stringify(d345.Meltan));
   check("a bezny odpad jde porad pryc",
     d345.Rattata.keep.indexOf("Zahodit") === 0, d345.Rattata.keep);
+  /* ---------------------------------------------------------------- 346
+     Pocet kusu v rosteru. Lukas ho chtel "nad spravu rosteru" (13. 11.),
+     takze stoji v nadpisu karty. Filtr s nim nehybe: ptas se "kolik jich
+     mam", ne "kolik jich zrovna vidim". */
+  console.log("\n346) Pocet kusu v nadpisu rosteru");
+  const d346 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    const text = () => {
+      const el = document.getElementById("rosterPocet");
+      return el ? { txt: (el.textContent || "").trim(), skryty: !!el.hidden } : null;
+    };
+    P.setDiscarded([]);
+    P.setRows([]);
+    await cekej(500);
+    const prazdny = text();
+    P.setRows([
+      { pokemon: "Machamp", cp: 2400, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13 },
+      { pokemon: "Gyarados", cp: 2100, level: 28, ivAtk: 12, ivDef: 12, ivSta: 12 },
+      { pokemon: "Snorlax", cp: 2000, level: 26, ivAtk: 10, ivDef: 10, ivSta: 10 }
+    ]);
+    await cekej(900);
+    const tri = text();
+    // Filtr schova radky, ale cislo je o rosteru, ne o tabulce.
+    const inp = document.getElementById("searchInput");
+    inp.value = "Machamp";
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(700);
+    const poFiltru = text();
+    const radku = document.querySelectorAll("#tbody tr").length;
+    inp.value = "";
+    inp.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(500);
+    return { prazdny, tri, poFiltru, radku };
+  });
+  check("u prazdneho rosteru se cislo nepise",
+    !!d346.prazdny && d346.prazdny.skryty === true && d346.prazdny.txt === "",
+    JSON.stringify(d346.prazdny));
+  check("...a u tri kusu stoji v nadpisu spravne sklonovane",
+    !!d346.tri && d346.tri.skryty === false && d346.tri.txt === "3 kusy",
+    JSON.stringify(d346.tri));
+  check("filtr tim cislem nehybe, i kdyz tabulka ukazuje min",
+    d346.radku < 3 && !!d346.poFiltru && d346.poFiltru.txt === "3 kusy",
+    JSON.stringify([d346.radku, d346.poFiltru]));
+
+  /* ---------------------------------------------------------------- 347
+     Premena na jinou formu primo v detailu (Lukas 13. 11.: "kdyz udelam
+     zaciana crown, slo by to i v appce?"). Neni to evoluce: IV a level
+     zustavaji, staty a typy se meni, takze se prepocita CP. Utoky se
+     premenou prehodi, proto se mazou. */
+  console.log("\n347) Premena formy v detailu kusu");
+  const d347 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    const premen = async (jmeno) => {
+      P.setRows([{ pokemon: jmeno, cp: 3000, level: 30,
+        ivAtk: 14, ivDef: 13, ivSta: 15,
+        fastMove: "Quick Attack", charged1: "Play Rough" }]);
+      await cekej(1200);
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      P.atlasDetail(P.getRows()[0].id, host);
+      await cekej(700);
+      const chip = host.querySelector(".d-evo-forma[data-forma]");
+      if (!chip) { host.remove(); return { z: jmeno, chip: false }; }
+      const cil = chip.getAttribute("data-forma");
+      const klikaci = chip.classList.contains("evo-klikaci");
+      chip.click();
+      await cekej(500);
+      const nadpis = (document.getElementById("hraNadpis") || {}).textContent || "";
+      const ul = document.getElementById("hraUlozit");
+      if (ul) ul.click();
+      await cekej(900);
+      const r = P.getRows()[0];
+      host.remove();
+      return { z: jmeno, chip: true, cil, klikaci, nadpis,
+        na: r.pokemon, cp: +r.cp, lvl: r.level,
+        iv: [r.ivAtk, r.ivDef, r.ivSta],
+        utoky: (r.fastMove || "") + (r.charged1 || "") };
+    };
+    const tam = await premen("Zacian");
+    const zpet = await premen("Zacian (Crowned Sword)");
+    const zama = await premen("Zamazenta");
+    return { tam, zpet, zama };
+  });
+  check("chip jine formy jde kliknout a nabidne Crowned Sword",
+    d347.tam.chip === true && d347.tam.klikaci === true
+      && /Crowned Sword/.test(d347.tam.cil || ""),
+    JSON.stringify([d347.tam.chip, d347.tam.klikaci, d347.tam.cil]));
+  check("...zepta se, jestli jsi ho premenil",
+    /P\u0159em\u011bnil jsi ho na/.test(d347.tam.nadpis || ""), d347.tam.nadpis);
+  check("...a po ulozeni je z kusu Crowned Sword s vyssim CP",
+    /Crowned Sword/.test(d347.tam.na || "") && d347.tam.cp > 3000,
+    JSON.stringify([d347.tam.na, d347.tam.cp]));
+  check("IV a level se premenou nemeni",
+    d347.tam.lvl === 30 && String(d347.tam.iv) === "14,13,15",
+    JSON.stringify([d347.tam.lvl, d347.tam.iv]));
+  check("...utoky se naopak smazou, protoze se premenou prehodi",
+    d347.tam.utoky === "", JSON.stringify(d347.tam.utoky));
+  check("zpatky to jde taky, Zamazenta stejne",
+    d347.zpet.na === "Zacian" && /Crowned Shield/.test(d347.zama.na || ""),
+    JSON.stringify([d347.zpet.na, d347.zama.na]));
+
+  /* ---------------------------------------------------------------- 348
+     Sdileni seznamu prani odkazem (Lukasovo zadani z 9. 11.). Sit se tu
+     nevola: `fetch` je po dobu testu podvrzeny, takze se da zkontrolovat
+     i to, CO appka posila — a hlavne to, ze v tom neni nic jineho nez
+     jmena druhu. */
+  console.log("\n348) Sdileni seznamu prani odkazem");
+  const d348 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    const puvodniFetch = window.fetch;
+    const volani = [];
+    window.fetch = function (url, opt) {
+      volani.push({ url: String(url), opt: opt || {} });
+      if (/createLink/.test(String(url))) {
+        return Promise.resolve({ ok: true, status: 200,
+          json: () => Promise.resolve({ link: { webUrl: "https://1drv.ms/u/s!TEST" } }) });
+      }
+      if (/api\.onedrive\.com/.test(String(url))) {
+        return Promise.resolve({ ok: true, status: 200,
+          json: () => Promise.resolve({ pgoPrani: 1, jmeno: "Anet",
+            ulozeno: "2026-11-15T10:00:00Z", druhy: ["Machop", "Gastly"] }) });
+      }
+      return Promise.resolve({ ok: true, status: 200,
+        json: () => Promise.resolve({}) });
+    };
+    try {
+      localStorage.removeItem("pgo_prani_odkaz");
+      localStorage.removeItem("pgo_prani_pratele");
+      localStorage.setItem("pgo_cloud_token", JSON.stringify(
+        { access: "TESTTOKEN", plati: Date.now() + 3600000 }));
+      P.setDiscarded([]);
+      P.setRows([
+        { pokemon: "Machop", cp: 800, level: 20, ivAtk: 10, ivDef: 10, ivSta: 10 },
+        { pokemon: "Rattata", cp: 120, level: 8, ivAtk: 2, ivDef: 3, ivSta: 4 },
+        { pokemon: "Pidgey", cp: 110, level: 7, ivAtk: 1, ivDef: 2, ivSta: 3 }
+      ]);
+      await cekej(1400);
+      document.getElementById("hledaniBtn").click();
+      await cekej(1200);
+      const out = {};
+      const blok = () => document.querySelector(".hled-prani");
+      out.blok = !!blok();
+      out.sdiletBtn = !!blok().querySelector("[data-prani-sdilet]");
+
+      // 1) vyrobit odkaz
+      blok().querySelector("[data-prani-sdilet]").click();
+      await cekej(900);
+      out.ulozeny = JSON.parse(localStorage.getItem("pgo_prani_odkaz") || "null");
+      const put = volani.filter((v) => /prani\.json:\/content/.test(v.url))[0];
+      out.putTelo = put ? JSON.parse(put.opt.body) : null;
+      const link = volani.filter((v) => /createLink/.test(v.url))[0];
+      out.linkTelo = link ? JSON.parse(link.opt.body) : null;
+
+      // 2) pridat kamaraduv odkaz
+      await cekej(400);
+      blok().querySelector("[data-prani-jmeno]").value = "Anet";
+      blok().querySelector("[data-prani-odkaz]").value = "https://1drv.ms/u/s!ANET";
+      blok().querySelector("[data-prani-pridat]").click();
+      await cekej(1200);
+      out.stahovaci = (volani.filter((v) => /api\.onedrive\.com/.test(v.url))[0] || {}).url || "";
+      out.kamaradi = [...blok().querySelectorAll(".prani-kamarad-h b")]
+        .map((e) => e.textContent);
+      out.druhy = [...blok().querySelectorAll(".prani-kamarad .hled-pred-druh")]
+        .map((e) => e.textContent.trim());
+      out.mam = [...blok().querySelectorAll(".prani-kamarad .prani-mam")]
+        .map((e) => e.textContent.trim());
+
+      // 3) spatny odkaz se nepridava
+      blok().querySelector("[data-prani-odkaz]").value = "tohle neni adresa";
+      blok().querySelector("[data-prani-pridat]").click();
+      await cekej(500);
+      out.poSpatnem = JSON.parse(localStorage.getItem("pgo_prani_pratele") || "[]").length;
+
+      // 4) odebrat
+      blok().querySelector("[data-prani-pryc]").click();
+      await cekej(700);
+      out.poOdebrani = JSON.parse(localStorage.getItem("pgo_prani_pratele") || "[]").length;
+      const krizek = document.querySelector("#hledaniOkno .hled-krizek");
+      if (krizek) krizek.click();
+      await cekej(400);
+      return out;
+    } finally {
+      window.fetch = puvodniFetch;
+      localStorage.removeItem("pgo_cloud_token");
+      localStorage.removeItem("pgo_prani_odkaz");
+      localStorage.removeItem("pgo_prani_pratele");
+    }
+  });
+  check("v Transferu je blok se sdilenim seznamu prani",
+    d348.blok === true && d348.sdiletBtn === true, JSON.stringify(d348.blok));
+  check("...a tlacitko vyrobi odkaz jen pro cteni",
+    !!d348.ulozeny && d348.ulozeny.odkaz === "https://1drv.ms/u/s!TEST"
+      && !!d348.linkTelo && d348.linkTelo.type === "view"
+      && d348.linkTelo.scope === "anonymous",
+    JSON.stringify([d348.ulozeny, d348.linkTelo]));
+  /* Tohle je ta nejdulezitejsi kontrola cele funkce: na verejnou adresu
+     smi jit JEN jmena druhu. Zadny roster, zadna CP, zadne IV. */
+  check("na odkaz jde jen seznam jmen druhu, nic z rosteru",
+    !!d348.putTelo && d348.putTelo.pgoPrani === 1
+      && Array.isArray(d348.putTelo.druhy)
+      && Object.keys(d348.putTelo).sort().join(",") === "druhy,jmeno,pgoPrani,ulozeno"
+      && JSON.stringify(d348.putTelo).indexOf("ivAtk") === -1,
+    JSON.stringify(d348.putTelo));
+  check("cizi seznam se stahuje z adresy odvozene z odkazu, bez prihlaseni",
+    /^https:\/\/api\.onedrive\.com\/v1\.0\/shares\/u!/.test(d348.stahovaci || "")
+      && (d348.stahovaci || "").indexOf("/root/content") > -1,
+    d348.stahovaci);
+  check("...a ukaze se jako blok Co shani",
+    (d348.kamaradi || []).join("|") === "Co shání Anet",
+    JSON.stringify(d348.kamaradi));
+  check("...s druhy, ktere shani, a znackou u toho, co mas",
+    (d348.druhy || []).length === 2
+      && /Machop/.test((d348.mam || []).join(" "))
+      && !/Gastly/.test((d348.mam || []).join(" ")),
+    JSON.stringify([d348.druhy, d348.mam]));
+  check("odkaz, ktery neni adresa, se neprida",
+    d348.poSpatnem === 1, String(d348.poSpatnem));
+  check("odebrat kamarada jde",
+    d348.poOdebrani === 0, String(d348.poOdebrani));
+  /* ---------------------------------------------------------------- 349
+     Strop kopii plati na evolucni radu a FORMY tehoz druhu jsou jedna
+     rada. Kyurem, Kyurem (Black) a Kyurem (White) jsou tri klice, ale ve
+     hre jeden tvor ve trech podobach — driv si kazda drzela vlastni
+     strop a sest Kyuremu obsadilo cely Ice (Lukas 16. 11.). */
+  console.log("\n349) Strop kopii: formy tehoz druhu jsou jedna rada");
+  const d349 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    document.getElementById("resetSettingsBtn").click();
+    const radky = [];
+    ["Kyurem", "Kyurem (Black)", "Kyurem (White)"].forEach((jm, j) => {
+      for (let i = 0; i < 3; i++) {
+        radky.push({ pokemon: jm, cp: 3000 - j * 50 - i * 20, level: 35 - i,
+          ivAtk: 15 - i, ivDef: 15, ivSta: 14 });
+      }
+    });
+    P.setRows(radky);
+    await cekej(2000);
+    const c = P.getComputed();
+    const vTypu = {};
+    P.getRows().forEach((r) => {
+      /* Typ role je v `filtr` („Ice"), klic ho nese jako „raid:Ice".
+         Duvod dostane jen kus, ktery slot opravdu drzi. */
+      ((c[r.id] || {}).duvody || []).forEach((d) => {
+        if (!d || d.druh !== "raid") return;
+        const t = d.filtr || d.klic || "?";
+        vTypu[t] = (vTypu[t] || 0) + 1;
+      });
+    });
+    const strop = +document.getElementById("keepCopies").value;
+    return { vTypu, strop, kusu: P.getRows().length,
+      nejvic: Math.max.apply(null, [0].concat(Object.keys(vTypu).map((t) => vTypu[t]))) };
+  });
+  check("devet Kyuremu v boxu, ale v jednom typu drzi nejvys strop kopii",
+    d349.kusu === 9 && d349.strop === 2 && d349.nejvic <= 2,
+    JSON.stringify(d349));
+
+  /* ---------------------------------------------------------------- 350
+     Kyurem (White) z nabidky forem vypadl: s Blackem ma na kus stejne
+     typy i staty (Dragon/Ice, 310/183/245) a lisi se jen podpisovym
+     utokem. Otisk nabidky proto u forem s vlastni sestavou pocita i ji —
+     ale jen tam, kde to nerozsype kosmeticke vzory. */
+  console.log("\n350) Nabidka forem: obe podoby Kyurema");
+  const d350 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    const formy = async (jmeno) => {
+      P.setRows([{ pokemon: jmeno, cp: 2500, level: 25, ivAtk: 15, ivDef: 15, ivSta: 14 }]);
+      await cekej(1100);
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      P.atlasDetail(P.getRows()[0].id, host);
+      await cekej(600);
+      const out = [...host.querySelectorAll(".d-evo-forma[data-forma]")]
+        .map((e) => e.getAttribute("data-forma"));
+      host.remove();
+      return out;
+    };
+    return { kyurem: await formy("Kyurem"), unown: await formy("Unown"),
+      zacian: await formy("Zacian") };
+  });
+  check("Kyurem nabizi obe podoby, Black i White",
+    d350.kyurem.length === 2 && d350.kyurem.some((x) => /Black/.test(x))
+      && d350.kyurem.some((x) => /White/.test(x)),
+    JSON.stringify(d350.kyurem));
+  check("...a kosmeticke vzory se do nabidky nesypou",
+    d350.unown.length === 0, JSON.stringify(d350.unown.slice(0, 5)));
+  check("...Zacian ma dal jen Crowned Sword, ne i svuj druhy klic",
+    d350.zacian.length === 1 && /Crowned/.test(d350.zacian[0] || ""),
+    JSON.stringify(d350.zacian));
+  /* ---------------------------------------------------------------- 351
+     Bublina s kusy druhu: dvacet Magikarpu pod sebou se na obrazovku
+     nevejde. Vypis se useka, zalomi do dvou sloupcu — a ten kus,
+     o kterem bublina je, stoji vzdycky, i kdyz je az dvacaty
+     (Lukas 13. 11.). */
+  console.log("\n351) Dlouhy vypis kusu druhu v bubline");
+  const d351 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    const radky = [];
+    for (let i = 0; i < 20; i++) {
+      radky.push({ pokemon: "Magikarp", cp: 400 - i * 10, level: 20,
+        ivAtk: Math.max(0, 15 - i), ivDef: Math.max(0, 15 - i),
+        ivSta: Math.max(0, 14 - i) });
+    }
+    P.setRows(radky);
+    await cekej(2000);
+    const bublina = async (idx) => {
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      P.atlasDetail(P.getRows()[idx].id, host);
+      await cekej(700);
+      const el = host.querySelector(".d-kopie");
+      const d = document.createElement("div");
+      d.innerHTML = el ? el.getAttribute("data-tip") || "" : "";
+      const ol = d.querySelector("ol");
+      const li = [...d.querySelectorAll("li")];
+      const out = { trida: ol ? ol.className : "", radku: li.length,
+        cisla: li.map((x) => x.getAttribute("value") || "-"),
+        vynechano: li.filter((x) => /a dal\u0161\u00edch/.test(x.textContent)).length,
+        posledni: li.length ? li[li.length - 1].textContent.trim() : "",
+        tenNaKonci: li.length
+          ? /tenhle kus/.test(li[li.length - 1].textContent) : false };
+      host.remove();
+      return out;
+    };
+    // Kusy jsou serazene kvalitou, takze prvni radek je nejlepsi kus
+    // a posledni radek rosteru je ten nejhorsi.
+    return { nejlepsi: await bublina(0), nejhorsi: await bublina(19) };
+  });
+  check("vypis se usekne a rekne, kolik kusu nevypsal",
+    d351.nejlepsi.radku <= 12 && d351.nejlepsi.vynechano === 1
+      && d351.nejhorsi.radku <= 12 && d351.nejhorsi.vynechano === 1,
+    JSON.stringify([d351.nejlepsi.radku, d351.nejhorsi.radku]));
+  check("...a zalomi se do dvou sloupcu",
+    /tip-seznam-sloupce/.test(d351.nejlepsi.trida), d351.nejlepsi.trida);
+  check("kus, o kterem bublina je, stoji vzdycky — i kdyz je dvacaty",
+    d351.nejhorsi.tenNaKonci === true
+      && d351.nejhorsi.cisla[d351.nejhorsi.cisla.length - 1] === "20",
+    JSON.stringify([d351.nejhorsi.posledni.slice(0, 60),
+      d351.nejhorsi.cisla.slice(-3)]));
+  check("...a cisla radku zustavaji pravdiva",
+    d351.nejlepsi.cisla[0] === "1" && d351.nejlepsi.cisla[1] === "2",
+    JSON.stringify(d351.nejlepsi.cisla.slice(0, 4)));
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
 } finally {

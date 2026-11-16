@@ -1924,8 +1924,11 @@ await pNaz.close();
 check("příkaz se jmenuje „Projít pokémony“",
   dNaz.tlacitka.length > 0 && dNaz.tlacitka.every((t) => t === "Projít pokémony")
     && dNaz.starky === false, JSON.stringify(dNaz.tlacitka));
-check("nadpis tabulky je jen „Roster“",
-  dNaz.roster.length === 1 && dNaz.roster[0] === "Roster", JSON.stringify(dNaz.roster));
+/* Od 2.15 za názvem stojí ještě počet kusů (Lukáš 13. 11.) — nic
+   jiného tam ale přibýt nemá. */
+check("nadpis tabulky je „Roster“ a za ním nanejvýš počet kusů",
+  dNaz.roster.length === 1 && /^Roster(\d+ kus(|y|ů))?$/.test(dNaz.roster[0]),
+  JSON.stringify(dNaz.roster));
 
 // ------------- „Ne" červeně, sjednocené příkazy a značky bez posunu
 console.log("\n12) Červená u „Ne“, sjednocené příkazy a stabilní značky");
@@ -2540,9 +2543,13 @@ check("uložení zapíše dopočítaný level",
 
 /* Šipka k doporučenému útoku: v plachtě vede shora dolů a pak doprava,
    protože doporučení stojí pod útokem, ke kterému patří. */
+/* Musí to být útok, u kterého engine opravdu nabízí náhradu. Zapdos
+   s Charge Beamem už šipku nedostane: zisk z Thunder Shocku je pod pěti
+   procenty, tedy pod cenou TM, takže engine mlčí. Shadow Claw na Black
+   Kyuremovi je proti tomu jasný kandidát na přeučení. */
 const pSip = await otevri(1800, [
-  { pokemon: "Zapdos", cp: 3056, level: 31.5, ivAtk: 15, ivDef: 14, ivSta: 10,
-    fastMove: "Charge Beam", charged1: "Zap Cannon" }
+  { pokemon: "Kyurem (Black)", cp: 4190, level: 40, ivAtk: 15, ivDef: 15, ivSta: 14,
+    fastMove: "Shadow Claw", charged1: "Freeze Shock", charged2: "Fusion Bolt" }
 ]);
 const dSip2 = await pSip.evaluate(async () => {
   const P = window.__pgo, A = window.__atlasTest;
@@ -7578,6 +7585,45 @@ check("Meltan zamceny neni",
 check("a bezny odpad jde porad pryc",
   d112.Rattata.keep.indexOf("Zahodit") === 0, d112.Rattata.keep);
 
+// ------------------------------- 113) sipka u utoku, ktery se ma nechat
+/* Engine u Freeze Shocku na Black Kyuremovi rika "tenhle nech" a zadnou
+   nahradu nenabizi. Vrstva si ji driv pujcila z doporucene sestavy pro
+   JINOU roli (Dragon Tail + Outrage) — a pod Freeze Shockem stalo
+   "Outrage", utok proti ledovym cilum o petinu slabsi (Lukas 16. 11.). */
+console.log("\n113) sipka u utoku, ktery se ma nechat");
+const p113 = await otevri(1600, [
+  { pokemon: "Kyurem (Black)", cp: 4190, level: 40, ivAtk: 15, ivDef: 15, ivSta: 14,
+    fastMove: "Shadow Claw", charged1: "Freeze Shock", charged2: "Fusion Bolt" }
+]);
+const d113 = await p113.evaluate(async () => {
+  const P = window.__pgo, A = window.__atlasTest;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  A.openDetail(P.getRows()[0].id);
+  await cekej(1400);
+  const box = document.querySelector("#atlasModal .atlas-ident-utoky");
+  if (!box) return { box: false };
+  const radky = [...box.querySelectorAll(".atlas-utok-radek")].map((r) => {
+    const t = r.querySelector(".atlas-utok-tecka[data-stav]");
+    const jm = r.querySelector(".d-move-jm");
+    const sip = r.querySelector(".atlas-utok-lepsi");
+    return { stav: t ? t.dataset.stav : "", jm: jm ? jm.textContent.trim() : "",
+      sipka: sip ? sip.textContent.trim() : "" };
+  }).filter((x) => x.jm);
+  const eng = (P.getComputed()[P.getRows()[0].id] || {}).utoky || [];
+  return { box: true, radky,
+    engine: eng.map((u) => u.jm + ":" + u.stav + ":" + (u.nahrada || "-")) };
+});
+await p113.close();
+check("engine u Freeze Shocku zadnou nahradu nenabizi",
+  (d113.engine || []).some((x) => /^Freeze Shock:dobry:-$/.test(x)),
+  JSON.stringify(d113.engine));
+check("...takze pod nim nestoji sipka na jiny utok",
+  d113.box === true && (d113.radky || []).some((r) => /Freeze Shock/.test(r.jm)
+    && r.sipka === ""),
+  JSON.stringify(d113.radky));
+check("...a cerveny utok svou sipku porad ma",
+  (d113.radky || []).some((r) => r.stav === "preucit" && r.sipka !== ""),
+  JSON.stringify(d113.radky));
 await browser.close();
 server.close();
 console.log(`\n${passed} kontrol prošlo, ${failures.length} selhalo`);

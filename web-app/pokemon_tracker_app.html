@@ -77,6 +77,8 @@
     margin-bottom: 16px;
   }
   .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 0 0 12px; font-weight: 700; }
+  /* Počet kusů stojí v nadpisu karty, ne v liště s tlačítky: ta se při užším okně láme a číslo by skákalo mezi řádky. */
+  .card.roster h2 .roster-pocet { margin-left: 10px; opacity: .72; font-weight: 600; text-transform: none; letter-spacing: 0; }
 
   /* stat tiles */
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
@@ -1582,6 +1584,23 @@
   .hled-pred-kus button:hover { color: var(--status-critical); }
   .hled-pred-nove { font-family: ui-monospace, monospace; font-size: 12px;
     padding: 4px 8px; width: 150px; }
+  /* Seznam přání živě: můj odkaz, cizí seznamy a pole na přidání.
+     Stojí ve stejném rámečku jako předfiltry, jen místo zaškrtávátek
+     nese jména druhů a adresu. */
+  .prani-prikazy { display: flex; gap: 8px; flex-wrap: wrap;
+    align-items: center; margin: 6px 0 2px; }
+  .prani-prikazy .hint { margin: 0; flex: 1 1 260px; }
+  .prani-kamarad { border-top: 1px solid var(--border); margin-top: 10px;
+    padding-top: 8px; }
+  .prani-kamarad-h { display: flex; align-items: center; gap: 8px;
+    margin: 0 0 6px; }
+  .prani-kamarad-h b { font-size: 13px; }
+  /* Druh, který v rosteru opravdu máš — jinak je to jen seznam cizích jmen. */
+  .prani-mam { border-color: var(--status-good); }
+  .prani-pridat { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .prani-pridat input { font-size: 12px; padding: 4px 8px; }
+  .prani-pridat input[data-prani-jmeno] { width: 150px; }
+  .prani-pridat input[data-prani-odkaz] { flex: 1 1 260px; min-width: 180px; }
   .hled-overeni { border: 1px dashed var(--border); border-radius: 8px;
     padding: 8px 10px; margin: 6px 0 10px; }
   .hled-overeni .hint { margin: 0 0 6px; display: block; }
@@ -2717,6 +2736,12 @@
   .tip-posun.nahoru { color: var(--status-good); }
   .tip-posun.dolu { color: var(--status-critical); }
   .tip-seznam { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.55; }
+  /* Dlouhý výpis kusů druhu se zalomí do dvou sloupců. `break-inside`
+     drží řádek pohromadě — jinak se CP ocitlo v jednom sloupci a IV
+     ve druhém. */
+  .tip-seznam-sloupce { columns: 2; column-gap: 20px; }
+  .tip-seznam-sloupce li { break-inside: avoid; }
+  .tip-vynechano { list-style: none; margin-left: -18px; color: var(--text-muted); }
   /* Kus, který do žádného z těch seznamů nepatří: stejný řádek, ale bez
      čísla — jeho pořadí je z jiného měřítka (mezi všemi kusy rosteru). */
   .tip-mimo { list-style: none; padding-left: 18px; }
@@ -3354,9 +3379,14 @@
         <span class="setting-warn" id="rankThreshWarn"></span>
       </div>
       <div class="setting">
-        <label for="keepCopies">Kolik kopií druhu si nechat</label>
+        <label for="keepCopies">Kolik kusů z <b>evoluční řady</b> si nechat</label>
         <input type="number" id="keepCopies" min="1" max="10" value="2" />
-        <span class="hint">Zbylé horší kopie stejného druhu engine označí k zahození. Dvojka nechá od každého užitečného druhu zálohu; trojka už přidá skoro nic.</span>
+        <span class="hint">Strop platí na celou řadu, ne na jeden druh —
+          a <b>formy téhož druhu</b> jsou jedna řada: Kyurem, Kyurem (Black)
+          i Kyurem (White) se počítají dohromady, jinak by šest Kyuremů
+          obsadilo celý Ice. Platí zvlášť v každém typu v raidech a jednou
+          dohromady u gymů. Zbylé horší kusy řady jdou k zahození. Dvojka
+          nechá zálohu, trojka už přidá skoro nic.</span>
       </div>
       <div class="setting">
         <label for="dmaxKeep">Kolik Dynamax kusů z evoluční řady držet</label>
@@ -3744,7 +3774,7 @@
   </div>
 
   <div class="card roster">
-    <h2>Roster</h2>
+    <h2>Roster<span class="roster-pocet" id="rosterPocet" hidden></span></h2>
     <div class="zal-warn" id="zalWarn" style="display:none">
       <div>
         <b>Roster je jen v tomhle prohlížeči.</b>
@@ -7835,6 +7865,195 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     renderCloud();
   }
 
+  /* ---------- seznam přání kamaráda ----------
+   *
+   *  Seznam druhů, za které chceš bonbóny z výměny, je krátký text — jména
+   *  druhů a nic jiného. Appka ho umí položit do své vlastní složky na
+   *  OneDrivu (té, do které už ukládá roster) a vyrobit k němu odkaz
+   *  JEN PRO ČTENÍ. Ten odkaz pošleš kamarádovi jednou; jeho appka si ho
+   *  uloží a sama si ho stahuje, takže vidí živě, co sháníš.
+   *
+   *  Co to znamená: odkaz je nehádatelný, ale veřejný — kdo ho má, přečte
+   *  si ten soubor. Proto vzniká až na kliknutí, je u něj napsané, co v něm
+   *  je, a dá se zrušit. Nové oprávnění to nevyžaduje: `AppFolder` stačí.
+   */
+  var PRANI_SOUBOR = "prani.json";
+  var PRANI_ODKAZ = "pgo_prani_odkaz";
+  var PRANI_PRATELE = "pgo_prani_pratele";
+  var PRANI_OBNOVA_MS = 5 * 60 * 1000;
+  var praniTimer = null;
+
+  function praniMujOdkaz() {
+    try { return JSON.parse(localStorage.getItem(PRANI_ODKAZ) || "null"); }
+    catch (e) { return null; }
+  }
+
+  function praniUlozMujOdkaz(o) {
+    try {
+      if (o) localStorage.setItem(PRANI_ODKAZ, JSON.stringify(o));
+      else localStorage.removeItem(PRANI_ODKAZ);
+    } catch (e) { /* soukromé okno — odkaz nepřežije zavření */ }
+  }
+
+  function praniPratele() {
+    try {
+      var l = JSON.parse(localStorage.getItem(PRANI_PRATELE) || "[]");
+      return Array.isArray(l) ? l : [];
+    } catch (e) { return []; }
+  }
+
+  function praniUlozPratele(list) {
+    try { localStorage.setItem(PRANI_PRATELE, JSON.stringify(list || [])); }
+    catch (e) { /* soukromé okno */ }
+  }
+
+  /** Co se posílá: jména druhů a nic víc. Žádné CP, IV ani roster. */
+  function praniObsah() {
+    return {
+      pgoPrani: 1,
+      jmeno: activeProfile || "",
+      ulozeno: new Date().toISOString(),
+      druhy: vymenaDruhyJmena()
+    };
+  }
+
+  /** Adresa, ze které jde sdílený soubor stáhnout BEZ přihlášení.
+   *
+   *  OneDrive to umí ze samotného odkazu: base64url z celé adresy
+   *  s předponou „u!". Druhá appka tedy nemusí být přihlášená k ničemu —
+   *  a hlavně se nedostane nikam jinam než k tomuhle jednomu souboru. */
+  function praniAdresa(odkaz) {
+    var b = "";
+    try { b = window.btoa(unescape(encodeURIComponent(String(odkaz || "")))); }
+    catch (e) { return ""; }
+    b = b.replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
+    return "https://api.onedrive.com/v1.0/shares/u!" + b + "/root/content";
+  }
+
+  /** Položí seznam do cloudu a vyrobí k němu odkaz jen pro čtení. */
+  function praniSdilet() {
+    return cloudPlatnyToken().then(function (token) {
+      if (!token) {
+        appHlaska("Nejdřív se v Nastavení přihlas k OneDrivu — odkaz vzniká"
+          + " v tvé vlastní složce, takže bez přihlášení není kam ho dát.");
+        return null;
+      }
+      return window.fetch(CLOUD_GRAPH + PRANI_SOUBOR + ":/content", {
+        method: "PUT",
+        headers: { Authorization: "Bearer " + token,
+          "Content-Type": "application/json" },
+        body: JSON.stringify(praniObsah())
+      }).then(function (r) {
+        if (!r.ok) throw new Error("uložení HTTP " + r.status);
+        /* Odkaz se dělá až po zápisu: kdyby zápis selhal, nemá cenu
+           vyrábět veřejnou adresu k ničemu. */
+        return window.fetch(CLOUD_GRAPH + PRANI_SOUBOR + ":/createLink", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token,
+            "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "view", scope: "anonymous" })
+        });
+      }).then(function (r) {
+        if (!r.ok) throw new Error("odkaz HTTP " + r.status);
+        return r.json();
+      }).then(function (d) {
+        var url = d && d.link && d.link.webUrl;
+        if (!url) throw new Error("odkaz se nevrátil");
+        praniUlozMujOdkaz({ odkaz: url, kdy: new Date().toISOString(),
+          druhu: praniObsah().druhy.length });
+        return url;
+      });
+    }).catch(function (e) {
+      appHlaska("Odkaz se nepodařilo vyrobit: "
+        + (e && e.message ? e.message : "chyba") + ". Zkus to znovu, nebo"
+        + " se v Nastavení přihlas k OneDrivu znovu.");
+      return null;
+    });
+  }
+
+  /** Znovu nahraje obsah pod už existující odkaz — adresa se nemění. */
+  function praniAktualizovat(tise) {
+    var muj = praniMujOdkaz();
+    if (!muj || !muj.odkaz) return Promise.resolve(false);
+    return cloudPlatnyToken().then(function (token) {
+      if (!token) return false;
+      return window.fetch(CLOUD_GRAPH + PRANI_SOUBOR + ":/content", {
+        method: "PUT",
+        headers: { Authorization: "Bearer " + token,
+          "Content-Type": "application/json" },
+        body: JSON.stringify(praniObsah())
+      }).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        muj.kdy = new Date().toISOString();
+        muj.druhu = praniObsah().druhy.length;
+        praniUlozMujOdkaz(muj);
+        return true;
+      });
+    }).catch(function (e) {
+      if (!tise) {
+        appHlaska("Seznam se nepodařilo obnovit: "
+          + (e && e.message ? e.message : "chyba"));
+      }
+      return false;
+    });
+  }
+
+  /** Stáhne seznam jednoho kamaráda. Nepřihlašuje se k ničemu. */
+  function praniStahni(odkaz) {
+    var adr = praniAdresa(odkaz);
+    if (!adr) return Promise.resolve({ chyba: "Odkaz nevypadá jako adresa." });
+    return window.fetch(adr).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (d) {
+      if (!d || !d.pgoPrani) {
+        return { chyba: "Na tom odkazu není seznam přání z téhle appky." };
+      }
+      return { jmeno: String(d.jmeno || ""),
+        druhy: (d.druhy || []).map(String).filter(Boolean),
+        ulozeno: String(d.ulozeno || "") };
+    }).catch(function (e) {
+      return { chyba: "Stažení selhalo: " + (e && e.message ? e.message : "chyba") };
+    });
+  }
+
+  /** Projde uložené odkazy a doplní, co kdo shání. */
+  function praniObnovVse(poHotovu) {
+    var list = praniPratele();
+    if (!list.length) { if (poHotovu) poHotovu(false); return; }
+    var zbyva = list.length, zmena = false;
+    list.forEach(function (k, i) {
+      praniStahni(k.odkaz).then(function (v) {
+        var puvodni = (k.druhy || []).join("|");
+        if (v.chyba) { k.chyba = v.chyba; }
+        else {
+          k.chyba = "";
+          k.druhy = v.druhy;
+          k.kdy = new Date().toISOString();
+          if (!k.jmeno && v.jmeno) k.jmeno = v.jmeno;
+        }
+        if ((k.druhy || []).join("|") !== puvodni || v.chyba) zmena = true;
+        list[i] = k;
+        if (--zbyva === 0) {
+          praniUlozPratele(list);
+          if (poHotovu) poHotovu(zmena);
+        }
+      });
+    });
+  }
+
+  /** Kolik kusů té evoluční řady mám v rosteru — kamarád se ptá na druh,
+   *  ale bonbóny drží celá řada, takže odpověď taky. */
+  function praniKolikMam(jmeno) {
+    var rada = radaKlic(dexKey(jmeno));
+    if (!rada) return 0;
+    var n = 0;
+    rows.forEach(function (r) {
+      if (radaKlic(dexKey(r.pokemon)) === rada) n++;
+    });
+    return n;
+  }
+
   function renderCloud() {
     var box = document.getElementById("cloudStav");
     if (!box) return;
@@ -9635,7 +9854,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var videlRadu = {}, videlNaplast = {};
       var vsichniRaid = kand;
       kand = kand.filter(function (k) {
-        var rada = (k.b.dex && k.b.dex.finalKey) || k.b.groupKey;
+        var rada = rozpoctovaRada(k.b);
         if (!s.bezStropuDruhu
             && (videlRadu[rada] || 0) >= Math.max(1, s.keepCopies)) return false;
         /* Naplast se pocita na DRUH, ne na radu. Pres radu by shadow
@@ -9936,7 +10155,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
          druh než Metagross, takže si dřív vzal vlastní gymový slot a držel se
          jako „díra“, i když bránit umí až po evoluci — a Metagrossů bylo
          v rosteru deset lepších (Lukáš 14. 11.). */
-      var g = (b.dex && b.dex.finalKey) || b.groupKey;
+      var g = rozpoctovaRada(b);
       if ((videlGym[g] || 0) >= Math.max(1, s.keepCopies)) return false;
       // A náplast (kus pod prahem užitečnosti) smí od druhu držet jen jedna —
       // stejné pravidlo jako u raidů. Díru zalepenou sourozencem nemá cenu
@@ -13981,6 +14200,24 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       : cycleDps(b.dex.types, protejsek, m)) || 0;
   }
 
+  /** Klíč „evoluční řada" pro strop kopií.
+   *
+   *  Strop platí na celou řadu, ne na druh — a FORMY téhož druhu jsou
+   *  jedna řada. Kyurem, Kyurem (Black) a Kyurem (White) jsou v boxu tři
+   *  kusy, ale ve hře je to jeden tvor ve třech podobách; kdyby si každá
+   *  držela vlastní strop, obsadilo by šest Kyuremů celý Ice (Lukáš
+   *  16. 11.). Rozhoduje proto číslo druhu na KONCI řady: tím vyjde
+   *  Pikachu i Raichu na totéž a formy se slijí samy, protože konec řady
+   *  mají společný.
+   */
+  function rozpoctovaRada(b) {
+    var d = b && b.dex;
+    if (!d) return (b && b.groupKey) || "";
+    var konec = d.finalKey ? dexByKey(d.finalKey) : null;
+    var id = (konec && konec.id) || d.id || 0;
+    return id ? "#" + id : ((b && b.groupKey) || "");
+  }
+
   function nejlepsiVolnaNahrada(b, rychly, jmenoTed) {
     var l = learnset(b.key);
     if (!l || !b.dex) return null;
@@ -14954,6 +15191,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         });
       });
 
+    /* Jiná forma téhož kusu (Zacian → Crowned Sword). Evoluce to není,
+       ale pro člověka je to tatáž věc: „ve hře jsem s ním něco udělal".
+       Proto týž dialog — jen se nemění řada, nýbrž forma. */
+    Array.prototype.forEach.call(
+      kontejner.querySelectorAll(".d-evo-forma[data-forma]"), function (el) {
+        if (!radek) return;
+        var cilF = el.getAttribute("data-forma");
+        if (!cilF || cilF === radek.pokemon) return;
+        el.classList.add("evo-klikaci");
+        el.addEventListener("click", function () {
+          hraOtevri(radek.id, "forma", cilF);
+        });
+      });
+
     var dmaxBtn = kontejner.querySelector(".dmax-prepinac");
     if (dmaxBtn && radek) {
       dmaxBtn.addEventListener("click", sZmenou(function () {
@@ -15031,6 +15282,30 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return (e[2] || []).join("/") + "|" + e[3] + "|" + e[4] + "|" + e[5];
   }
 
+  /** Otisk formy pro NABÍDKU jiných podob téhož druhu.
+   *
+   *  Typy a staty samy nestačí: Kyurem (Black) a Kyurem (White) je mají
+   *  na kus stejné (Dragon/Ice, 310/183/245) a liší se jen podpisovým
+   *  útokem — Freeze Shock proti Ice Burn. Jedna z nich proto z nabídky
+   *  vypadla (Lukáš 16. 11.).
+   *
+   *  Sestava se do otisku přidává jen tam, kde to nic nerozbije:
+   *   * forma se statlinem jako základní podoba JE ta základní podoba pod
+   *     jiným klíčem (`zacian-hero`) nebo kosmetický vzor — a těch je
+   *     u Unowna devětadvacet,
+   *   * forma bez vlastní sestavy (Zygardovy složeniny) o sobě nic
+   *     dalšího neříká.
+   */
+  function otiskNabidky(klic, e, sp) {
+    var o = formaOtisk(e);
+    var i = String(klic).indexOf("-");
+    if (i < 0) return o;
+    var zaklad = sp[String(klic).slice(0, i)];
+    if (zaklad && formaOtisk(zaklad) === o) return o;
+    var l = (MOVES.learn || {})[klic];
+    return l ? o + "|" + l.join(";") : o;
+  }
+
   /** Formy téhož druhu, které se opravdu liší.
    *
    *  Pokédex má pro Zaciana tři klíče — `zacian`, `zacian-hero` a
@@ -15055,10 +15330,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        v datech i složeniny („Complete_Ten_Percent"), které se bijí přesně
        jako „Ten_Percent" — v nabídce by stálo jméno, které nikomu nic
        neřekne. Kratší klíč je ten základní. */
-    var muj = formaOtisk(me), podleOtisku = {};
+    var muj = otiskNabidky(klic, me, sp), podleOtisku = {};
     (_formyPodleId[me[0]] || []).forEach(function (k) {
       if (k === klic) return;
-      var o = formaOtisk(sp[k]);
+      var o = otiskNabidky(k, sp[k], sp);
       if (o === muj) return;
       if (!podleOtisku[o] || k.length < podleOtisku[o].length) podleOtisku[o] = k;
     });
@@ -17139,11 +17414,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         + " je na tobě. Rozpočet proto počítá s tou nejlepší z nich.</div>";
     }
 
-    /* Jiné formy téhož druhu (Zygarde 10 % / 50 % / Complete, Giratina).
-       Evoluce to NENÍ — ve hře se mezi nimi přepíná jinak a appka o tom, jak,
-       nic neví. Proto stojí pod řadou, nejdou kliknout jako „vyvinul jsem ho"
-       a je u nich napsané, co to je. Řadí se podle součtu základních statů,
-       protože to je jediné pořadí, které z dat plyne. */
+    /* Jiné formy téhož druhu (Zacian Crowned, Giratina, Zygarde).
+       Evoluce to NENÍ: ve hře se mění předmětem a dá se vzít zpátky, proto
+       to stojí pod řadou a ne v ní. Kliknout na ně ale jde — znamená to
+       „přeměnil jsem ho ve hře", stejně jako klik na stupeň v řadě znamená
+       „vyvinul jsem ho". Řadí se podle součtu základních statů, protože
+       to je jediné pořadí, které z dat plyne. */
     var jineFormy = formyDruhu(mujKlic) || [];
     if (jineFormy.length) {
       var soucet = function (k) {
@@ -17155,11 +17431,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       jineFormy.forEach(function (k) {
         var fd = dexByKey(k);
         if (!fd) return;
-        h += '<span class="d-evo-kus d-evo-forma" data-tip="'
+        h += '<span class="d-evo-kus d-evo-forma" data-forma="'
+          + escHtml(jmenoFormy(k)) + '" data-tip="'
           + escHtml('<div class="tip-hlava">' + escHtml(jmenoFormy(k)) + "</div>"
-            + '<div class="tip-radek">Jiná forma téhož druhu — má vlastní staty'
-            + " i pořadí. Není to evoluce a jak se na ni ve hře přepnout,"
-            + " appka z dat neví.</div>") + '">'
+            + '<div class="tip-radek">Jiná forma téhož druhu — má vlastní staty,'
+            + " typy i pořadí. Není to evoluce: ve hře se mění předmětem"
+            + " a dá se vzít zpátky.</div>"
+            + '<div class="tip-pozn">Klikni, když jsi ho na tohle ve hře'
+            + " přeměnil.</div>") + '">'
           + obrazekHtml(jmenoFormy(k), fd, "")
           + "<b>" + escHtml(jmenoFormy(k)) + "</b>"
           + "<i>" + (fd.a + "/" + fd.d + "/" + fd.s) + "</i>"
@@ -17722,11 +18001,29 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + " pořadí v lize, pak IV mínus prach na dotažení na strop. Rozpočet"
       + " drží nejlepší " + strop + (strop === 1 ? " kopii" : (strop < 5 ? " kopie" : " kopií"))
       + ", zbytek jen když drží vlastní roli.</div>";
-    h += '<ol class="tip-seznam">';
-    rad.forEach(function (o) {
+    /* Dvacet Magikarpů pod sebou je spíš doklad než informace a bublina
+       se pak na obrazovku nevejde. Výpis se proto usekne — ale ten kus,
+       o kterém bublina je, musí být vidět vždycky: když stojí až někde
+       vzadu, přijde na POSLEDNÍ řádek a nad něj „a dalších N". Čísla
+       řádků zůstávají pravdivá, takže je i tak poznat, kolikátý je. */
+    var LIMIT_KOPII = 12;
+    var mojeIdx = -1;
+    rad.forEach(function (o, i) { if (o.row.id === b.row.id) mojeIdx = i; });
+    var ukaz = rad, vynechano = 0, naKonec = null;
+    if (rad.length > LIMIT_KOPII) {
+      if (mojeIdx >= LIMIT_KOPII - 1) {
+        ukaz = rad.slice(0, LIMIT_KOPII - 2);
+        naKonec = rad[mojeIdx];
+        vynechano = rad.length - ukaz.length - 1;
+      } else {
+        ukaz = rad.slice(0, LIMIT_KOPII - 1);
+        vynechano = rad.length - ukaz.length;
+      }
+    }
+    var radekKusu = function (o) {
       var oc = comp[o.row.id] || {};
       var ten = o.row.id === b.row.id;
-      h += '<li value="' + (o.dupIndex || 1) + '"' + (ten ? ' class="tip-ten"' : "") + "><b>"
+      return '<li value="' + (o.dupIndex || 1) + '"' + (ten ? ' class="tip-ten"' : "") + "><b>"
         + escHtml(String(o.cp || "?")) + " CP</b>"
         + (o.row.level ? " L" + escHtml(String(o.row.level)) : "")
         + (o.ivPct === null || o.ivPct === undefined
@@ -17734,7 +18031,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         + (oc.keep ? ' <span class="tip-znak">' + escHtml(oc.keep) + "</span>" : "")
         + (ten ? ' <span class="tip-znak">← tenhle kus</span>' : "")
         + "</li>";
-    });
+    };
+    /* Dva sloupce až od sedmi řádků: u čtyř by druhý sloupec stál prázdný. */
+    h += '<ol class="tip-seznam' + (rad.length > 6 ? " tip-seznam-sloupce" : "") + '">';
+    ukaz.forEach(function (o) { h += radekKusu(o); });
+    if (vynechano) {
+      h += '<li class="tip-vynechano">a dalších ' + vynechano + "</li>";
+    }
+    if (naKonec) h += radekKusu(naKonec);
     return h + "</ol>";
   }
 
@@ -18776,6 +19080,32 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       }
     }
     document.getElementById("hraUlozit").hidden = false;
+    /* Přeměna formy: Zacian → Zacian (Crowned Sword). Proti evoluci se
+       liší dvěma věcmi — jde to vzít zpátky (ve hře i tady, dalším
+       kliknutím) a nic to nestojí, takže se o bonbónech nemluví. Staty
+       a typy se ale mění, proto se CP přepočítá jako u evoluce. */
+    if (akce === "forma") {
+      if (!cil || !dexEntry(cil)) { hraKus = null; hraAkce = null; return false; }
+      nadpis.textContent = "Přeměnil jsi ho na " + cil + "?";
+      popis.innerHTML = "Jiná forma téhož kusu, ne evoluce. <b>IV ani level"
+        + " se nemění</b>, ale staty i typy ano — proto se přepočítá CP"
+        + " a celý rozbor. <b>Útoky se přeměnou přehodí</b>, takže se"
+        + " vymažou; doplň je, až je ve hře uvidíš. Zpátky to jde stejným"
+        + " klikem na původní formu.";
+      var poPremene = { pokemon: cil, level: r.level,
+        ivAtk: r.ivAtk, ivDef: r.ivDef, ivSta: r.ivSta };
+      var cpP = cpPodleUdaju(poPremene);
+      telo.innerHTML = '<div class="rb-grid">'
+        + '<label>Z<input type="text" value="' + escHtml(jmeno) + '" disabled></label>'
+        + '<label>Na<input type="text" id="hraCil" value="' + escHtml(cil)
+        + '" disabled></label>'
+        + '<label>Nové CP<input type="number" id="hraCp" min="10" step="1" value="'
+        + (cpP === null ? "" : cpP) + '"></label></div>';
+      document.getElementById("hraBox").hidden = false;
+      var prvniP = telo.querySelector("input:not([disabled])");
+      if (prvniP) { prvniP.focus(); prvniP.select(); }
+      return true;
+    }
     if (akce === "evoluce") {
       if (!cil || !dexEntry(cil)) { hraKus = null; hraAkce = null; return false; }
       var pres = (evoCile(r).filter(function (e) { return e.jmeno === cil; })[0] || {}).pres || [];
@@ -18858,6 +19188,15 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       r.fastMove = ""; r.charged1 = ""; r.charged2 = "";
       var cpEvo = cp !== null ? cp : cpPodleUdaju(r);
       if (cpEvo !== null) r.cp = cpEvo;
+    } else if (hraAkce === "forma") {
+      var cilF = (document.getElementById("hraCil") || {}).value;
+      if (!cilF || !dexEntry(cilF)) return "Formu se nepodařilo dohledat.";
+      r.pokemon = cilF;
+      // Přeměnou se útoky přehodí stejně jako evolucí — stará sestava
+      // by patřila formě, kterou ten kus už nemá.
+      r.fastMove = ""; r.charged1 = ""; r.charged2 = "";
+      var cpPrem = cp !== null ? cp : cpPodleUdaju(r);
+      if (cpPrem !== null) r.cp = cpPrem;
     } else if (hraAkce === "vylepseni") {
       var lvlPole = document.getElementById("hraLevel");
       var lvl = lvlPole ? num(lvlPole.value) : null;
@@ -18890,7 +19229,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var boxEl = document.getElementById("boxMode");
     if (boxEl && !boxEl.hidden) {
       bmObnovAktualni({ evoluce: "Evoluce", vylepseni: "Vylep\u0161en\u00ed",
-        ocista: "O\u010di\u0161t\u011bn\u00ed" }[hraAkce] || "");
+        ocista: "O\u010di\u0161t\u011bn\u00ed", forma: "P\u0159em\u011bna" }[hraAkce] || "");
     } else {
       zamerKus(r.id);
     }
@@ -18940,8 +19279,22 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   /** Plné překreslení těla tabulky (přidání/smazání/import/řazení/filtr). */
+  /** Kolik kusů je v rosteru celkem — v nadpisu karty, nad ovládáním.
+   *
+   *  Filtr ani řazení s tím číslem nehnou: otázka zní „kolik jich mám“,
+   *  ne „kolik jich zrovna vidím“. U prázdného rosteru se nepíše nic
+   *  — to řekne prázdná karta sama. */
+  function vypisPocetRosteru() {
+    var el = document.getElementById("rosterPocet");
+    if (!el) return;
+    var n = rows.length;
+    el.hidden = !n;
+    el.textContent = n ? kusu(n) : "";
+  }
+
   function renderBody() {
     obnovZrusitFiltry();
+    vypisPocetRosteru();
     // Překreslení maže celé tělo tabulky. Když se přitom stránka na okamžik
     // zkrátí, prohlížeč sroluje nahoru — a člověk, který u dvoustého řádku
     // rozbalil detail, skončí na začátku. Pozice se proto zapamatuje a hned
@@ -23851,6 +24204,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     vymenaPokryto = r.pokryto;
     el.value = JSON.stringify(r.klice);
     persist(true);
+    /* Když je seznam sdílený odkazem, musí se na odkazu změnit taky —
+       jinak by kamarád koukal na to, cos chtěl minulý týden. Adresa
+       zůstává stejná, mění se jen obsah souboru. Tiše: když zrovna
+       nejde síť, člověk o tom vědět nepotřebuje. */
+    praniAktualizovat(true);
   }
 
   /** Jména druhů ze seznamu, jak je zná pokédex (pro výpis a pro okno). */
@@ -28641,6 +28999,16 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     }
     window.addEventListener("focus", cloudKontrolaPriNavratu);
     document.addEventListener("visibilitychange", cloudKontrolaPriNavratu);
+
+    /* Cizí seznamy přání: stáhnout při otevření a pak po pár minutách.
+       Žádné přihlášení k tomu není potřeba — je to veřejný odkaz
+       a stahuje se jediný malý soubor. Okno Transferu se samo nepřekresluje:
+       kdyby se pod rukama měnilo, člověk by nevěděl, na co kouká. */
+    praniObnovVse(null);
+    praniTimer = window.setInterval(function () {
+      if (document.hidden) return;
+      praniObnovVse(null);
+    }, PRANI_OBNOVA_MS);
   })();
 
   document.getElementById("eventsCard").addEventListener("toggle", function () {
@@ -31966,6 +32334,77 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + (iv === null ? "" : " · " + Math.round(iv * 100) + " %") + "</span></div>";
   }
 
+  /** Blok „Co shání kamarád" do Transferu: můj odkaz a cizí seznamy. */
+  function praniHtml() {
+    var muj = praniMujOdkaz();
+    var pratele = praniPratele();
+    var h = '<div class="hled-pred hled-prani"><span class="hint"'
+      + ' title="Odkaz vede do tvé vlastní složky na OneDrivu a je JEN PRO'
+      + ' ČTENÍ. Je v něm jediná věc: jména druhů, za které chceš bonbóny.'
+      + ' Kdo odkaz má, přečte si ho — proto ho pošli jen tomu, komu chceš.">'
+      + "Seznam přání <b>živě</b> — tvůj odkaz a to, co shánějí ostatní</span>";
+
+    /* Můj odkaz. Vzniká až na kliknutí: je to veřejná adresa, i když
+       nehádatelná, a appka ji nemá vyrábět sama od sebe. */
+    if (muj && muj.odkaz) {
+      h += '<div class="hled-radek"><span class="hled-cislo"></span>'
+        + '<textarea class="hled-text" readonly rows="1">'
+        + escHtml(muj.odkaz) + "</textarea>"
+        + '<button class="primary hled-kopie">Kopírovat</button>'
+        + '<span class="hled-pocet">tvůj odkaz</span></div>'
+        + '<div class="prani-prikazy">'
+        + '<button type="button" data-prani-obnov="1">Obnovit obsah</button>'
+        + '<button type="button" data-prani-zrus="1">Zrušit odkaz</button>'
+        + '<span class="hint">Obsah se obnovuje při každé změně seznamu,'
+        + ' adresa zůstává stejná. „Zrušit odkaz“ ho smaže jen tady'
+        + " v appce — aby přestal fungovat úplně, smaž soubor prani.json"
+        + " v OneDrivu.</span></div>";
+    } else {
+      h += '<div class="prani-prikazy">'
+        + '<button type="button" class="primary" data-prani-sdilet="1">'
+        + "Vyrobit odkaz na můj seznam</button>"
+        + '<span class="hint">Appka seznam položí do své složky na OneDrivu'
+        + " a vyrobí k němu odkaz jen pro čtení. Pošli ho kamarádovi jednou;"
+        + " jeho appka si pak sama stahuje, co zrovna sháníš."
+        + " Potřebuje to přihlášení k OneDrivu (Nastavení).</span></div>";
+    }
+
+    /* Cizí seznamy. */
+    pratele.forEach(function (k, i) {
+      var jm = k.jmeno || "kamarád";
+      h += '<div class="prani-kamarad"><div class="prani-kamarad-h">'
+        + "<b>Co shání " + escHtml(jm) + "</b>"
+        + '<button type="button" data-prani-pryc="' + i + '">Odebrat</button>'
+        + "</div>";
+      if (k.chyba) {
+        h += '<span class="hint warn">' + escHtml(k.chyba) + "</span>";
+      } else if (!(k.druhy || []).length) {
+        h += '<span class="hint">Seznam je zatím prázdný.</span>';
+      } else {
+        h += '<div class="hled-pred-sez">' + k.druhy.map(function (jmeno) {
+          var dd = dexEntry(jmeno);
+          var mam = praniKolikMam(jmeno);
+          /* Má smysl ukázat, kolik kusů té řady vůbec mám — bez toho
+             je to jen seznam cizích jmen. */
+          return '<span class="hled-pred-kus hled-pred-druh'
+            + (mam ? " prani-mam" : "") + '" title="'
+            + escHtml(mam ? "V rosteru máš " + kusu(mam) + " z téhle řady."
+                : "Z téhle řady nemáš nic.") + '">'
+            + (dd ? obrazekHtml(jmeno, dd, "") : "") + escHtml(jmeno)
+            + (mam ? ' <small>máš ' + mam + "</small>" : "")
+            + "</span>";
+        }).join("") + "</div>";
+      }
+      h += "</div>";
+    });
+
+    h += '<div class="prani-pridat">'
+      + '<input type="text" data-prani-jmeno placeholder="Jméno kamaráda">'
+      + '<input type="text" data-prani-odkaz placeholder="Odkaz, který ti poslal">'
+      + '<button type="button" data-prani-pridat="1">Přidat</button></div>';
+    return h + "</div>";
+  }
+
   /** Druhy, za které chceš bonbóny z výměny, a hotový filtr na všechno,
    *  co se po výměně vyvine zdarma. */
   function hledaniVymenaHtml() {
@@ -32190,7 +32629,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
                 ? "Z posledního importu appka nepouští ani jeden kus."
                 : "V rosteru není ani jeden kus, který by appka pouštěla.")
               + " Transfer dělá filtry jen na kusy s verdiktem <b>pustit</b>.")
-        + "</span>";
+        + "</span>"
+        /* Co shání kamarád, platí i tehdy, když zrovna není co pouštět —
+           je to informace, ne filtr. */
+        + praniHtml();
     } else {
       var kusu = (rH ? rH.kusu : 0) + (rP ? rP.kusu : 0) + (rT ? rT.kusu : 0);
       /* Úvod jsou dvě věty. Proč se tomu dá věřit a co appka neví,
@@ -32251,7 +32693,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + (rucne.length > 15 ? " a další " + (rucne.length - 15) : "")
           + ".</span>"
         : "";
-      telo = uvod + hledaniVymenaHtml() + hledaniPredponyHtml() + overeni
+      telo = uvod + hledaniVymenaHtml() + praniHtml()
+        + hledaniPredponyHtml() + overeni
         + hledaniSekce("Nejdřív vyměnit",
             "Po výměně se vyvinou za nula bonbónů.", rT, "t")
         + hledaniSekce("Hromadným výběrem", "", rH, "h")
@@ -32276,6 +32719,69 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       if (e.key !== "Escape") return;
       document.removeEventListener("keydown", esc);
       if (document.getElementById("hledaniOkno")) zavriHledani();
+    });
+    /* Seznam přání: můj odkaz a cizí seznamy. Odkaz vzniká jen na
+       kliknutí — je to veřejná adresa a appka ji nemá dělat sama. */
+    var praniBtn = box.querySelector("[data-prani-sdilet]");
+    if (praniBtn) {
+      praniBtn.addEventListener("click", function () {
+        praniBtn.disabled = true;
+        praniBtn.textContent = "Vyrábím odkaz…";
+        praniSdilet().then(function (url) {
+          if (url) appHlaska("Odkaz je hotový — pošli ho kamarádovi."
+            + " Je jen pro čtení a je v něm jenom seznam jmen druhů.");
+          vykresliHledani();
+        });
+      });
+    }
+    var praniObnovBtn = box.querySelector("[data-prani-obnov]");
+    if (praniObnovBtn) {
+      praniObnovBtn.addEventListener("click", function () {
+        praniObnovBtn.disabled = true;
+        praniAktualizovat(false).then(function (ok) {
+          if (ok) appHlaska("Seznam na odkazu je aktuální.");
+          vykresliHledani();
+        });
+      });
+    }
+    var praniZrusBtn = box.querySelector("[data-prani-zrus]");
+    if (praniZrusBtn) {
+      praniZrusBtn.addEventListener("click", function () {
+        praniUlozMujOdkaz(null);
+        appHlaska("Odkaz je z appky pryč. Soubor prani.json zůstal v tvém"
+          + " OneDrivu — kdo si adresu uložil, pořád ji přečte. Smaž ho tam,"
+          + " jestli to chceš utnout úplně.");
+        vykresliHledani();
+      });
+    }
+    var praniPridatBtn = box.querySelector("[data-prani-pridat]");
+    if (praniPridatBtn) {
+      praniPridatBtn.addEventListener("click", function () {
+        var jm = (box.querySelector("[data-prani-jmeno]") || {}).value || "";
+        var od = (box.querySelector("[data-prani-odkaz]") || {}).value || "";
+        od = od.trim();
+        if (!/^https?:\/\//.test(od)) {
+          appHlaska("Vlož celý odkaz, včetně https:// na začátku.");
+          return;
+        }
+        var list = praniPratele();
+        if (list.some(function (k) { return k.odkaz === od; })) {
+          appHlaska("Tenhle odkaz už v seznamu je.");
+          return;
+        }
+        list.push({ jmeno: jm.trim(), odkaz: od, druhy: [], kdy: "", chyba: "" });
+        praniUlozPratele(list);
+        praniObnovVse(function () { vykresliHledani(); });
+        vykresliHledani();
+      });
+    }
+    box.querySelectorAll("[data-prani-pryc]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var list = praniPratele();
+        list.splice(+btn.getAttribute("data-prani-pryc"), 1);
+        praniUlozPratele(list);
+        vykresliHledani();
+      });
     });
     hledaniKopirovat(box);
     /* Sprity mají každý vlastní měřítko a bez tohohle sedí v rámečku
