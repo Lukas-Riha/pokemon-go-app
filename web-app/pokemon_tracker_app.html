@@ -3288,8 +3288,9 @@
           jedním výběrem. <b>Shadow</b> je zvlášť, protože je to jiná úvaha: očista
           stojí prach a bonbóny, a než se rozhodneš, chceš je vidět pohromadě
           (kusy se značkou 100 % nebo CUTE mezi ně nepatří — ty se nepouští).
-          <b>Po jednom</b> jsou shiny, legendární a mytické, které hra do hromadného
-          výběru nepustí. Při <b>dvou sekcích</b> se shadow vrátí mezi hromadné —
+          <b>Po jednom</b> jsou shiny, legendární, mytické a Gigantamax — zvláštní
+          kusy, u kterých hromadný výběr buď nejde, nebo je to stejně jiná úvaha
+          (u Gmaxu i výměna je speciální). Při <b>dvou sekcích</b> se shadow vrátí mezi hromadné —
           zvlášť zůstane jen „po jednom“.</span>
       </div>
       <div class="setting">
@@ -11275,7 +11276,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // Appka to měla dlouho špatně: nejdřív držela natvrdo všechno vzácné,
       // pak už jen mytické — a u Meltana, kterých má člověk z Mystery Boxu
       // desítky, psávala „Nejde pustit". Hra je profesorovi poslat nechá.
-      // Co hra opravdu nedovolí, je VÜMĚNA (`nelzeVymenit`) a hromadný
+      // Co hra opravdu nedovolí, je VÝMĚNA (`nelzeVymenit`) a hromadný
       // výběr; o ponechání proto u všech druhů rozhoduje rozpočet rolí
       // a pořadí kopií stejně jako u Rattaty.
       var RARITY_LABEL = { L: "legendární", M: "mytický", U: "Ultra Beast" };
@@ -30940,6 +30941,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (rar === "L" || rar === "U") {
       return (rar === "U" ? "Ultra Beast" : "legendární")
         + " — hromadně až po zapnutí „Expanded Group Transfer“";
+    }
+    /* Gigantamax řeší Lukáš pohromadě s legendárními: ve hře je to taky
+       zvláštní kus — výměna je u něj speciální (jedna denně). Je to tedy
+       jiná úvaha než u běžného boxu a chce je vidět v jedné sekci
+       (Lukáš 16. 11.). */
+    if (jeGmax(r.dynamax)) {
+      return "Gigantamax — zvláštní kus jako legendární, i výměna je speciální";
     }
     return null;
   }

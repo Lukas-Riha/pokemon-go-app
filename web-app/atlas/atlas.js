@@ -42,16 +42,22 @@
    znacce Lucky: kus, ktery drzi misto v rozpoctu, je zeleny — role vazi vic
    nez sleva na prach. Zlutou si lucky zaslouzi jen tam, kde ma jit pryc, a
    presne to engine sam nastavuje ("Zahodit – ale je Lucky"). */
+/* CUTE uz verdikt NEPREBIJI. Driv stalo misto nej „CUTE · sbirka",
+   takze z karty zmizelo i poradi, kdyz kus krome znacky drzi treba
+   pojistku na cupy. Znacka ma vlastni stitek hned za verdiktem —
+   rict to dvakrat a misto neceho jineho nema smysl (Lukas 16. 11.). */
 window.AtlasVerdict=c=>({
-  label:c.validationIssues?.length?'Ověřit data':c.cuteOnly?'CUTE · sbírka':c.keep||'K posouzení',
-  tone:c.validationIssues?.length?'warning':c.cuteOnly?'collection':['good','warning','critical'].includes(c.keepTone)?c.keepTone:c.keepGood?'good':'critical'
+  label:c.validationIssues?.length?'Ověřit data':c.keep||'K posouzení',
+  tone:c.validationIssues?.length?'warning':['good','warning','critical'].includes(c.keepTone)?c.keepTone:c.keepGood?'good':'critical'
 });
 window.AtlasPohlavi=(r={})=>{const g=__pgo.atlasPohlavi?__pgo.atlasPohlavi(r):null;
  return g?` <span class="atlas-pohlavi atlas-pohlavi-${g}" aria-label="${g==='f'?'Samice':'Samec'}">${g==='f'?'♀':'♂'}</span>`:''};
-window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+[['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],[c.gmax?'GM':'D',c.gmax?'GMAX':'DMAX',c.dynamax],['C','CUTE',c.cute],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
+window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+/* CUTE prvni: je to jedina znacka, kterou si clovek nastavuje sam,
+   a chce ji videt driv nez to, co appka dopocitala (Lukas 16. 11.). */
+[['C','CUTE',c.cute],['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],[c.gmax?'GM':'D',c.gmax?'GMAX':'DMAX',c.dynamax],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
   .replace(/^(.+)$/,'<span class="atlas-tag-vlastni">$1</span>');
 
-window.AtlasRole=function(c){if(c.cuteOnly)return 'Osobní sbírka · bez investičního cíle';const roles=[];if(c.pvpRec&&!['Ne','–'].includes(c.pvpRec))roles.push(c.pvpRec);if(c.raidRec&&!['Ne','Slabý','Slabý útok','–'].includes(c.raidRec))roles.push('Raid · '+c.raidRec);if(c.gymRec&&!['Ne','Slabý','–'].includes(c.gymRec))roles.push('Gym · '+c.gymRec);return roles.join(' / ')||(c.megaKandidat?'Mega evoluce':'Sbírka a další využití');};
+window.AtlasRole=function(c){const roles=[];if(c.pvpRec&&!['Ne','–'].includes(c.pvpRec))roles.push(c.pvpRec);if(c.raidRec&&!['Ne','Slabý','Slabý útok','–'].includes(c.raidRec))roles.push('Raid · '+c.raidRec);if(c.gymRec&&!['Ne','Slabý','–'].includes(c.gymRec))roles.push('Gym · '+c.gymRec);return roles.join(' / ')||(c.megaKandidat?'Mega evoluce':'Sbírka a další využití');};
 window.AtlasJourney=(c,r)=>{
  const p=c.activePlan,issues=c.validationIssues||[],missing=[];
  if(issues.length)missing.push('ověřit CP, level a IV');

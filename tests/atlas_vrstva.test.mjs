@@ -452,11 +452,13 @@ const d7 = await vzhled.evaluate(async () => {
 });
 check("tmavý režim je výchozí", d7.tema === "dark", String(d7.tema));
 check("nad seznamem už není popisek „Zobrazení rosteru“", !/Zobrazení rosteru/.test(d7.modeText), d7.modeText);
+// CUTE je první (Lukáš 16. 11.): jediná značka, kterou si člověk
+// nastavuje sám, takže ji chce vidět dřív než to, co appka dopočítala.
 // 100 % je až za přepínači: plyne z IV, nedá se přepnout, a kdyby stálo
 // mezi nimi, posunulo by u dokonalého kusu všechny ostatní značky.
-const PORADI_TAGU = ["SHADOW", "PURIFIED", "DMAX", "CUTE", "SHINY", "100%", "LUCKY"];
+const PORADI_TAGU = ["CUTE", "SHADOW", "PURIFIED", "DMAX", "SHINY", "100%", "LUCKY"];
 const vPoradi = (t) => { const i = t.map((x) => PORADI_TAGU.indexOf(x)).filter((x) => x > -1); return i.every((v, k) => !k || v > i[k - 1]); };
-check("značky u jména v kartě: DMAX, 100%, CUTE",
+check("značky u jména v kartě: CUTE první, pak DMAX a 100%",
   d7.tagy.indexOf("DMAX") > -1 && d7.tagy.indexOf("100%") > -1 && d7.tagy.indexOf("CUTE") > -1 && vPoradi(d7.tagy),
   JSON.stringify(d7.tagy));
 // V hlavičce detailu jdou automatické značky (LEG, MYT, UB, 100 %) až za
@@ -7624,6 +7626,54 @@ check("...takze pod nim nestoji sipka na jiny utok",
 check("...a cerveny utok svou sipku porad ma",
   (d113.radky || []).some((r) => r.stav === "preucit" && r.sipka !== ""),
   JSON.stringify(d113.radky));
+// ------------------------------- 114) CUTE neprebiji zbytek karty
+/* Kus, ktereho drzi jen znacka, mel misto verdiktu "CUTE . sbirka"
+   a misto roli "Osobni sbirka - bez investicniho cile" — tim z karty
+   zmizelo vsechno, co o nem appka jinak rika. Lukas chce stitky jako
+   u kusu bez znacky, jen CUTE prvni (16. 11.). */
+console.log("\n114) CUTE neprebiji zbytek karty");
+const p114 = await otevri(1600, [
+  { pokemon: "Azumarill", cp: 1480, level: 28, ivAtk: 1, ivDef: 15, ivSta: 14,
+    cute: "Ano", fastMove: "Bubble", charged1: "Ice Beam", charged2: "Play Rough" },
+  { pokemon: "Rattata", cp: 120, level: 8, ivAtk: 2, ivDef: 3, ivSta: 4,
+    cute: "Ano", fastMove: "Quick Attack", charged1: "Body Slam", charged2: "Hyper Fang" },
+  { pokemon: "Machamp", cp: 2400, level: 30, ivAtk: 15, ivDef: 14, ivSta: 13,
+    cute: "Ano", shiny: "Ano", fastMove: "Counter",
+    charged1: "Dynamic Punch", charged2: "Rock Slide" }
+]);
+const d114 = await p114.evaluate(async () => {
+  const P = window.__pgo;
+  const c = P.getComputed();
+  const out = { kusy: {} };
+  P.getRows().forEach((r) => {
+    const x = c[r.id] || {};
+    const d = document.createElement("div");
+    d.innerHTML = window.AtlasTags(x, r);
+    out.kusy[r.pokemon] = {
+      cuteOnly: !!x.cuteOnly,
+      verdikt: window.AtlasVerdict(x).label,
+      role: window.AtlasRole(x),
+      stitky: [...d.querySelectorAll(".atlas-roster-tag")].map((e) => e.textContent)
+    };
+  });
+  return out;
+});
+await p114.close();
+check("kus drzeny jen znackou ma dal verdikt od enginu, ne \u201eCUTE \u00b7 sb\u00edrka\u201c",
+  !!d114.kusy.Rattata && d114.kusy.Rattata.cuteOnly === true
+    && !/CUTE/.test(d114.kusy.Rattata.verdikt),
+  JSON.stringify(d114.kusy.Rattata));
+check("...a role uz neni prebita \u201eOsobn\u00ed sb\u00edrka\u201c",
+  !!d114.kusy.Rattata && !/Osobn\u00ed sb\u00edrka/.test(d114.kusy.Rattata.role),
+  JSON.stringify(d114.kusy.Rattata.role));
+check("CUTE stoji mezi stitky prvni",
+  Object.keys(d114.kusy).every((k) => {
+    const s = d114.kusy[k].stitky;
+    return !s.length || s[0] === "CUTE";
+  }), JSON.stringify(d114.kusy));
+check("...a dalsi znacky za nim nezmizi",
+  !!d114.kusy.Machamp && d114.kusy.Machamp.stitky.indexOf("SHINY") > 0,
+  JSON.stringify(d114.kusy.Machamp.stitky));
 await browser.close();
 server.close();
 console.log(`\n${passed} kontrol prošlo, ${failures.length} selhalo`);

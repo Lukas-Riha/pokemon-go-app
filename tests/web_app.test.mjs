@@ -22766,6 +22766,46 @@ try {
   check("...a cisla radku zustavaji pravdiva",
     d351.nejlepsi.cisla[0] === "1" && d351.nejlepsi.cisla[1] === "2",
     JSON.stringify(d351.nejlepsi.cisla.slice(0, 4)));
+  /* ---------------------------------------------------------------- 352
+     Gigantamax patri v cisteni k legendarnim a mytickym: ve hre je to
+     taky zvlastni kus a vymena je u nej specialni, takze je Lukas chce
+     resit pohromade, ne v hromadnem vyberu (16. 11.). Fronta je serazena
+     po sekcich, takze staci kouknout, kdo stoji prvni. */
+  console.log("\n352) Gigantamax v cisteni stoji k legendarnim");
+  const d352 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const P = window.__pgo;
+    P.setDiscarded([]);
+    const sada = (gmax) => [
+      { pokemon: "Gastly", cp: 300, level: 12, ivAtk: 3, ivDef: 4, ivSta: 5,
+        dynamax: gmax ? "Gmax" : "", fastMove: "Lick",
+        charged1: "Sludge Bomb", charged2: "Shadow Ball" },
+      { pokemon: "Rattata", cp: 120, level: 8, ivAtk: 2, ivDef: 3, ivSta: 4,
+        fastMove: "Quick Attack", charged1: "Body Slam", charged2: "Hyper Fang" },
+      { pokemon: "Pidgey", cp: 110, level: 7, ivAtk: 1, ivDef: 2, ivSta: 3,
+        fastMove: "Tackle", charged1: "Air Cutter", charged2: "Twister" }
+    ];
+    const prvniVeFronte = async (gmax) => {
+      const bm = document.getElementById("boxMode");
+      if (bm && !bm.hidden) {
+        const z = [...document.querySelectorAll("button")]
+          .filter((e) => /Konec|Zav\u0159\u00edt|\u2715/.test(e.textContent || ""))[0];
+        if (z) z.click();
+        await cekej(600);
+      }
+      P.setRows(sada(gmax));
+      await cekej(1800);
+      document.getElementById("boxModeBtn").click();
+      await cekej(1500);
+      const jm = document.querySelector("#boxMode .d-name, #boxMode h2");
+      return jm ? jm.textContent.trim().slice(0, 24) : "?";
+    };
+    return { sGmaxem: await prvniVeFronte(true), bezGmaxu: await prvniVeFronte(false) };
+  });
+  check("Gmax kus nestoji v prvni sekci (hromadne), ale az za ni",
+    d352.sGmaxem === "Rattata", JSON.stringify(d352));
+  check("...a bez te znacky je tyz kus zase prvni",
+    d352.bezGmaxu === "Gastly", JSON.stringify(d352));
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
 } finally {

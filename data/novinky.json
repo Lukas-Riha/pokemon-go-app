@@ -455,6 +455,8 @@
       "**Kyurem (White) je zpátky v nabídce.** S Blackem má na kus stejné typy i staty a liší se jen podpisovým útokem, takže ho appka brala za tutéž podobu a jednu z nich zahodila. Teď se u forem s vlastní sestavou počítá i ta — a kosmetické vzory (devětadvacet Unownů) se do nabídky pořád nesypou.",
       "**U útoku, který se má nechat, už nestojí šipka na jiný.** U Freeze Shocku na Black Kyuremovi appka říká „tenhle nech“ a žádnou náhradu nenabízí — jenže pod ním svítilo **Outrage**, půjčené z doporučené sestavy pro jinou roli. Proti ledovým cílům je o pětinu slabší. Oranžový útok dostane šipku jen tehdy, když náhradu opravdu někdo našel; červený ji má dál.",
       "**Bublina s kusy druhu se už nerozteče přes celou obrazovku.** U dvaceti Magikarpů se výpis usekne, zalomí do dvou sloupců a na poslední řádek přijde ten kus, o kterém bublina je — i když je dvacátý. Čísla řádků zůstávají pravdivá, takže je pořád vidět, kolikátý vlastně je.",
+      "**Gigantamax kusy stojí v čištění u legendárních.** Ve hře je to taky zvláštní kus — výměna je u něj speciální —, takže patří do stejné sekce „po jednom“ jako legendární, mytické a shiny, ne do hromadného výběru.",
+      "**CUTE už nepřebíjí zbytek karty.** U kusu, kterého drží jen ta značka, stálo místo verdiktu „CUTE · sbírka“ a místo role „Osobní sbírka — bez investičního cíle“, takže z karty zmizelo všechno ostatní. Teď je tam normální verdikt i pořadí a **CUTE stojí mezi štítky první** — je to jediná značka, kterou si nastavuješ sám.",
       {
         "sekce": "Drobnosti"
       },
