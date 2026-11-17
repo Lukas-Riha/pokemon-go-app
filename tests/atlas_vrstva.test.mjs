@@ -730,8 +730,12 @@ check("při listování detailem nic nemění pozici ani velikost",
   nestabilni.length === 0,
   JSON.stringify(nestabilni.map((k) => k + ": " + d9.kusy.map((x) => x.jm.slice(0, 8) + " " + x[k]).join(" | "))));
 check("sekce „Typové pokrytí“ v detailu není", d9.pokryti === 0, String(d9.pokryti));
-check("cena vylepšení je krátká a na jednom řádku",
-  d9.cena.length > 0 && d9.cena.every((c) => /^L\d+ · .+ \+ \d+ candy( \+ \d+ XL)?$/.test(c.text) && c.radku === 1),
+// Cena se mezitím rozdělila na dva řádky („do L40" a „L41–50"), protože
+// XL se platí až nad čtyřicítkou. Krátká být pořád musí: jen čísla
+// a jednotky, celá věta patří do bubliny.
+check("cena vylepšení je krátká (jen čísla a jednotky)",
+  d9.cena.length > 0 && d9.cena.every((c) => /^(do )?L[\d–-]+ · .*\d+ (candy|XL)/.test(c.text)
+    && c.text.length <= 80 && c.radku <= 2),
   JSON.stringify(d9.cena));
 
 // ------------------------------- čištění boxu ukazuje stejný rozbor jako detail
@@ -1181,8 +1185,12 @@ check("popis pod ikonou v evoluční řadě se neořezává",
 // ---------------------------------- nadpisy, tečky u útoků, rozvětvená řada
 console.log("\n9) Nadpisy, tečky u útoků, rozvětvená řada");
 const pMix = await otevri(1720, [
+  /* Karate Chop + Cross Chop tu stávaly jako „slabá sestava" — jenže
+     PvPoke je dnes Machampovi v Great i Ultra League doporučuje, takže
+     u obou svítí zeleně „nejlepší útok" a appka má pravdu. Bullet Punch
+     a Payback v doporučené sestavě nejsou. */
   { pokemon: "Machamp", cp: 3000, level: 35, ivAtk: 15, ivDef: 14, ivSta: 13,
-    fastMove: "Karate Chop", charged1: "Cross Chop" },
+    fastMove: "Bullet Punch", charged1: "Payback" },
   { pokemon: "Eevee", cp: 900, level: 20, ivAtk: 14, ivDef: 15, ivSta: 15,
     fastMove: "Quick Attack", charged1: "Last Resort" },
   { pokemon: "Azumarill", cp: 1500, level: 30, ivAtk: 0, ivDef: 15, ivSta: 15 },
@@ -1219,8 +1227,13 @@ check("„GO ATLAS · TESTOVACÍ VERZE“ nad nadpisem už není",
   dMix.eyebrowRoster === 0 && dMix.eyebrowHome === 0, JSON.stringify(dMix));
 check("tlačítko „Projít pokémony“ u nadpisu je jen na Přehledu",
   dMix.ctaHome === 1 && dMix.ctaRoster === 0, JSON.stringify(dMix));
+// Který stav zrovna vyjde, hýbe se s žebříčky; co platit musí: tečka je
+// vždycky některý ze známých stavů a u útoku mimo doporučenou sestavu
+// nesvítí „nejlepší".
 check("u útoku svítí tečka podle jeho kvality",
-  dMix.tecky.some((x) => x.startsWith("dobry|")) && dMix.tecky.some((x) => x.startsWith("preucit|")),
+  dMix.tecky.length >= 2
+    && dMix.tecky.every((x) => /^(nej|dobry|preucit|nezna|poEvoluci)\|/.test(x))
+    && dMix.tecky.every((x) => !x.startsWith("nej|")),
   JSON.stringify(dMix.tecky));
 check("rozvětvená řada má čitelně široké dlaždice i podmínky",
   dMix.sirkaDlazdic.length >= 6 && dMix.sirkaDlazdic.every((v) => v >= 95)
@@ -7674,6 +7687,73 @@ check("CUTE stoji mezi stitky prvni",
 check("...a dalsi znacky za nim nezmizi",
   !!d114.kusy.Machamp && d114.kusy.Machamp.stitky.indexOf("SHINY") > 0,
   JSON.stringify(d114.kusy.Machamp.stitky));
+// ------------------------------- 115) 0 %, popisek utoku a sirsi bublina
+/* Lukas 17. 11.: znacka 0 % hned za stovkou, popisek rady utoku na stredu
+   svych chipu (stal u horniho) a bublina se seznamem smi byt sirsi, aby
+   se radky nelamaly na dva. */
+console.log("\n115) Znacka 0 %, popisek utoku na stredu, sirsi bublina");
+const p115 = await otevri(1538, [
+  { pokemon: "Onix", cp: 217, level: 9, ivAtk: 0, ivDef: 0, ivSta: 0 },
+  { pokemon: "Machamp", cp: 2400, level: 30, ivAtk: 15, ivDef: 15, ivSta: 15,
+    fastMove: "Counter", charged1: "Dynamic Punch", charged2: "Rock Slide" }
+]);
+const d115 = await p115.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  const P = window.__pgo, A = window.__atlasTest, c = P.getComputed();
+  const out = { stitky: {} };
+  P.getRows().forEach((r) => {
+    const d = document.createElement("div");
+    d.innerHTML = window.AtlasTags(c[r.id] || {}, r);
+    out.stitky[r.pokemon] = [...d.querySelectorAll(".atlas-roster-tag")]
+      .map((e) => e.textContent);
+  });
+  const onix = P.getRows().filter((r) => r.pokemon === "Onix")[0];
+  A.openDetail(onix.id);
+  await cekej(1400);
+  const stred = (el) => { const b = el.getBoundingClientRect();
+    return Math.round((b.top + b.bottom) / 2); };
+  out.sestavy = [...document.querySelectorAll(".atlas-ident-utoky .atlas-sestava")]
+    .map((s) => ({
+      popisek: (s.querySelector(".atlas-sestava-kdy") || {}).textContent,
+      chipu: s.querySelectorAll(".d-move").length,
+      rozdil: Math.abs(stred(s.querySelector(".atlas-sestava-kdy"))
+        - stred(s.querySelector(".atlas-sestava-utoky")))
+    }));
+  // Radek ligove tabulky: obsah stoji na stredu bunky, ne u leveho kraje.
+  const bunka = [...document.querySelectorAll(".d-ligy-tab td .d-lg-in")]
+    .filter((e) => e.querySelector(".d-lg-sestava"))[0];
+  if (bunka) {
+    const b = bunka.getBoundingClientRect();
+    const h = bunka.querySelector(".d-lg-hlava").getBoundingClientRect();
+    out.liga = { vlevo: Math.round(h.left - b.left), vpravo: Math.round(b.right - h.right) };
+  }
+  // Bublina se seznamem: sirsi nez obycejna.
+  const b1 = document.createElement("div");
+  b1.className = "tip-bublina vidno";
+  b1.innerHTML = '<ol class="tip-seznam"><li>x</li></ol>';
+  const b2 = document.createElement("div");
+  b2.className = "tip-bublina vidno";
+  b2.textContent = "x";
+  document.body.append(b1, b2);
+  out.sirka = { seznam: getComputedStyle(b1).maxWidth, bezSeznamu: getComputedStyle(b2).maxWidth };
+  b1.remove(); b2.remove();
+  return out;
+});
+await p115.close();
+check("0/0/0 ma v karte znacku 0%",
+  (d115.stitky.Onix || []).indexOf("0%") >= 0, JSON.stringify(d115.stitky.Onix));
+check("stovka ma dal svou a nulu nedostane",
+  (d115.stitky.Machamp || []).indexOf("100%") >= 0
+    && (d115.stitky.Machamp || []).indexOf("0%") < 0, JSON.stringify(d115.stitky.Machamp));
+check("popisek rady utoku stoji na stredu svych chipu",
+  d115.sestavy.length > 0 && d115.sestavy.every((s) => s.rozdil <= 2),
+  JSON.stringify(d115.sestavy));
+check("obsah ligove bunky stoji na stredu",
+  !!d115.liga && Math.abs(d115.liga.vlevo - d115.liga.vpravo) <= 2,
+  JSON.stringify(d115.liga));
+check("bublina se seznamem je sirsi nez obycejna",
+  parseFloat(d115.sirka.seznam) > parseFloat(d115.sirka.bezSeznamu),
+  JSON.stringify(d115.sirka));
 await browser.close();
 server.close();
 console.log(`\n${passed} kontrol prošlo, ${failures.length} selhalo`);

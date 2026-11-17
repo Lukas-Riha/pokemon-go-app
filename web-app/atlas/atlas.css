@@ -428,8 +428,11 @@ body.atlas-compact[data-atlas-view=roster] :is(#atlasRoster,.atlas-smazane) .atl
 .atlas-test .atlas-ident-stats .d-box{border:0;background:none;padding:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start}
 .atlas-test .atlas-ident-stats .d-box-h{margin:0 0 5px}
 .atlas-test .atlas-detail-identity .atlas-ident-utoky{flex:0 0 330px;min-width:300px;height:150px;align-self:center}
-.atlas-ident-utoky .atlas-sestava{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:start;gap:0 6px;font-size:11px;cursor:help}
-.atlas-ident-utoky .atlas-sestava-kdy{flex:0 0 auto;align-self:start;padding-top:3px;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
+/* Popisek rady (ONIX, STEELIX, MA, PO EVO) stal u PRVNIHO chipu, ne
+   uprostred dvojice — vedle dvou chipu pod sebou to vypadalo, ze patri
+   jen k hornimu (Lukas 17. 11.). Ted stoji na stredu sveho sloupce. */
+.atlas-ident-utoky .atlas-sestava{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:0 6px;font-size:11px;cursor:help}
+.atlas-ident-utoky .atlas-sestava-kdy{flex:0 0 auto;align-self:center;padding-top:0;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
 .atlas-ident-utoky .atlas-sestava-utoky{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;max-width:100%}
 .atlas-ident-utoky .d-move{display:inline-flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;max-width:100%;margin:0;gap:5px}
 .atlas-ident-utoky .d-move .d-type{flex:0 0 auto;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;font-size:10px;padding:1px 7px}
@@ -1749,6 +1752,11 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    plachtu, upravy a vyber utoku az na 3000 — bublina "Elitni utok" se pod
    nimi kreslila a bylo z ni videt jen proužek. */
 .atlas-test .tip-bublina{z-index:4000}
+/* Bublina se seznamem (drzitele slotu, lepsi kopie) mela 430 px a radek
+   „Darumaka (Galarian) 642 CP 80 % <- tenhle kus az jako Darmanitan“ se
+   lamal na dva radky. Siroka bublina je citelnejsi nez uzka a vysoka
+   (Lukas 17. 11.). */
+.atlas-test .tip-bublina:has(.tip-seznam){max-width:min(660px,calc(100vw - 24px))}
 
 /* Claude 27. 9. (35): pohlavi za jmenem, ne mezi stitky.
 
@@ -3153,7 +3161,7 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
    a těsnější řádkování ho do ní vejde celý; podklad má vlastní výšku,
    takže se musí omezit i ta. */
 .atlas-test .d-ligy-tab td span.d-lg-strop{font-size:9.5px;line-height:1.25;
-  display:flex;align-items:center;min-height:14px}
+  display:flex;align-items:center;justify-content:center;min-height:14px}
 .atlas-test .d-ligy-tab td .d-lg-strop em{margin-left:5px;
   display:inline-flex;align-items:center;gap:2px}
 .atlas-test .d-ligy-tab td .d-lg-strop em b{font-size:9.5px;line-height:1.3;

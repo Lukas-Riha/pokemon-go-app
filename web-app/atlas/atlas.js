@@ -54,7 +54,7 @@ window.AtlasPohlavi=(r={})=>{const g=__pgo.atlasPohlavi?__pgo.atlasPohlavi(r):nu
  return g?` <span class="atlas-pohlavi atlas-pohlavi-${g}" aria-label="${g==='f'?'Samice':'Samec'}">${g==='f'?'♀':'♂'}</span>`:''};
 window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+/* CUTE prvni: je to jedina znacka, kterou si clovek nastavuje sam,
    a chce ji videt driv nez to, co appka dopocitala (Lukas 16. 11.). */
-[['C','CUTE',c.cute],['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],[c.gmax?'GM':'D',c.gmax?'GMAX':'DMAX',c.dynamax],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
+[['C','CUTE',c.cute],['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],[c.gmax?'GM':'D',c.gmax?'GMAX':'DMAX',c.dynamax],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['N','0%',c.nulaProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
   .replace(/^(.+)$/,'<span class="atlas-tag-vlastni">$1</span>');
 
 window.AtlasRole=function(c){const roles=[];if(c.pvpRec&&!['Ne','–'].includes(c.pvpRec))roles.push(c.pvpRec);if(c.raidRec&&!['Ne','Slabý','Slabý útok','–'].includes(c.raidRec))roles.push('Raid · '+c.raidRec);if(c.gymRec&&!['Ne','Slabý','–'].includes(c.gymRec))roles.push('Gym · '+c.gymRec);return roles.join(' / ')||(c.megaKandidat?'Mega evoluce':'Sbírka a další využití');};
@@ -4653,7 +4653,7 @@ const top=document.createElement('div');top.className='atlas-setting-top';field.
     }else if(input.tagName==='SELECT'||input.type==='checkbox'){
      control.classList.add('atlas-segments');input.hidden=true;field.append(input);
      const choices=input.type==='checkbox'?[['1','Ano'],['0','Ne']]:[...input.options].map(o=>[o.value,o.textContent]);
-     const short={pvpStovka:['Ano','Ne'],boxSekce:['Tři','Dvě','Jedna']};
+     const short={pvpStovka:['Ano','Ne'],nulaDrzet:['Ano','Ne'],boxSekce:['Tři','Dvě','Jedna']};
      const buttons=choices.map(([value,text],i)=>{const btn=document.createElement('button');btn.type='button';btn.textContent=short[input.id]?.[i]||text;btn.title=text;btn.onclick=()=>{if(input.type==='checkbox')input.checked=value==='1';else input.value=value;input.dispatchEvent(new Event(input.type==='checkbox'?'change':'input',{bubbles:true}));if(input.type!=='checkbox')input.dispatchEvent(new Event('change',{bubbles:true}));sync()};control.append(btn);return btn});
      const sync=()=>buttons.forEach((b,i)=>{b.disabled=input.disabled;b.setAttribute('aria-pressed',String(choices[i][0]===(input.type==='checkbox'?(input.checked?'1':'0'):input.value)))});syncs.push(sync);sync();
     }else control.append(input);

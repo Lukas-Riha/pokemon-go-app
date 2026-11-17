@@ -443,6 +443,7 @@
         "sekce": "Rozpočet rolí"
       },
       "**Strop kopií počítá formy téhož druhu jako jednu řadu.** Kyurem, Kyurem (Black) a Kyurem (White) jsou v boxu tři různé kusy, ale ve hře je to jeden tvor ve třech podobách — a každá podoba si držela vlastní strop, takže šest Kyuremů obsadilo celý Ice. Teď se počítají dohromady. Nastavení se jmenuje **Kolik kusů z evoluční řady si nechat**, výchozí jsou dva a jde to přepsat.",
+      "**Kus 0/0/0 má vlastní značku a drží se jako stovka.** Nula ze všech je stejná vzácnost jako 15/15/15 — jeden kus ze 4096 —, jen ve hře neumí nic. Značka **0 %** u jména svítí vždycky; jestli se takový kus nepouští, si přepneš v nastavení (**Držet kus 0/0/0**, sekce Pojistky proti puštění). Zapnuté to je od začátku.",
       {
         "sekce": "Seznam přání"
       },
@@ -457,10 +458,14 @@
       "**Bublina s kusy druhu se už nerozteče přes celou obrazovku.** U dvaceti Magikarpů se výpis usekne, zalomí do dvou sloupců a na poslední řádek přijde ten kus, o kterém bublina je — i když je dvacátý. Čísla řádků zůstávají pravdivá, takže je pořád vidět, kolikátý vlastně je.",
       "**Gigantamax kusy stojí v čištění u legendárních.** Ve hře je to taky zvláštní kus — výměna je u něj speciální —, takže patří do stejné sekce „po jednom“ jako legendární, mytické a shiny, ne do hromadného výběru.",
       "**CUTE už nepřebíjí zbytek karty.** U kusu, kterého drží jen ta značka, stálo místo verdiktu „CUTE · sbírka“ a místo role „Osobní sbírka — bez investičního cíle“, takže z karty zmizelo všechno ostatní. Teď je tam normální verdikt i pořadí a **CUTE stojí mezi štítky první** — je to jediná značka, kterou si nastavuješ sám.",
+      "**Bublina se seznamem je širší.** Řádek „Darumaka (Galarian) 642 CP 80 % ← tenhle kus až jako Darmanitan“ se lámal na dva řádky; teď se vejde na jeden.",
+      "**Útoky stojí na středu.** Popisek řady (ONIX, STEELIX) stál vedle horního chipu, jako by k tomu dolnímu nepatřil, a řádek ligy s pořadím a sestavou se lepil k levému kraji buňky. Obojí je teď vystředěné.",
       {
         "sekce": "Drobnosti"
       },
-      "**V nadpisu karty Roster stojí, kolik kusů v něm máš.** Filtr s tím číslem nehýbe: je to odpověď na „kolik jich mám“, ne na „kolik jich zrovna vidím“."
+      "**V nadpisu karty Roster stojí, kolik kusů v něm máš.** Filtr s tím číslem nehýbe: je to odpověď na „kolik jich mám“, ne na „kolik jich zrovna vidím“.",
+      "**Hledání přežije přidání kusu.** Dřív se po přidání zrušily filtry celé, aby bylo vidět, že se kus přidal — kdo přidává kusy s hledáním v ruce, ho ale psal po každém kuse znovu. Teď hledání zůstává a projde jím jen ten jeden nově přidaný kus; zmizí, jakmile hledáním pohneš.",
+      "**Do hledání jde napsat CP.** Samotné číslo appka zkusí i jako CP (stačí jeho začátek — „27“ najde 2763) a jako číslo z pokédexu (to musí sedět celé). Jména s číslem fungují dál."
     ]
   }
 }

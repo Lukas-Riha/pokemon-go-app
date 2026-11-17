@@ -1641,6 +1641,9 @@
      jinak by pořád svítily a vypadaly jako stav, který platí. */
   /* 100 % má vlastní barvu, ať se neplete s ručními značkami. */
   .rarity-chip.r-H { background: var(--status-good); color: #fff; }
+  /* 0 % je druhá strana téže mince: stejná rarita, opačný konec škály.
+     Proto stejně výrazná značka, jen v barvě „nic z toho nebude“. */
+  .rarity-chip.r-N { background: var(--status-critical); color: #fff; }
   /* Poslední naskenovaný kus — odtud se ve hře pokračuje. */
   .rarity-chip.r-SKEN { background: color-mix(in srgb, var(--series-3, #7aa2ff) 30%, transparent);
     color: var(--text-primary); border: 1px dashed var(--series-3, #7aa2ff); }
@@ -2519,8 +2522,11 @@
   .tip-bublina.vidno { opacity: 1; transform: translateY(0); }
   /* Bublina se seznamem (liga: držitelé a „pod čarou") je širší — ve 320 px
      se řádek „Fennekin 440 CP #38 — kvalita 94,2 %, potřeba 95,3 %" lámal
-     a procento zůstávalo samo na dalším řádku. */
-  .tip-bublina:has(.tip-seznam) { max-width: min(460px, calc(100vw - 16px)); }
+     a procento zůstávalo samo na dalším řádku. Ani 460 px nestačilo:
+     „Darumaka (Galarian) 642 CP 80 % ← tenhle kus až jako Darmanitan"
+     se pořád lámal na dva řádky. Široká bublina se čte líp než úzká
+     a vysoká (Lukáš 17. 11.). */
+  .tip-bublina:has(.tip-seznam) { max-width: min(660px, calc(100vw - 16px)); }
   .tip-hlava { font-weight: 700; font-size: 13.5px; margin-bottom: 6px;
     padding-bottom: 6px; border-bottom: 1px solid var(--grid); color: var(--text-primary); }
   /* Seznam utoku v bublině: odrážky pryč, typ jako malá plaketka. */
@@ -2906,6 +2912,12 @@
   .d-ligy-tab td.d-lg-evo b { color: var(--series-1); }
   .d-ligy-tab td.d-lg-x { color: var(--text-muted); text-align: center; }
   .d-ligy-tab td.d-lg-x .d-lg-in { justify-content: center; }
+  /* Obsah buňky na střed. Nadpis sloupce i křížky stojí na středu, jen
+     řádek s pořadím a sestavou se lepil doleva — u sestavy útoků to bylo
+     nejvíc vidět (Lukáš 17. 11.). Šířku to nemění, takže zkracování
+     dlouhých řádků (ellipsis) funguje dál. */
+  .d-ligy-tab td .d-lg-in { text-align: center; }
+  .d-ligy-tab td .d-lg-hlava { justify-content: center; }
   /* Nadpis formy nad její tabulkou lig. */
   .d-liga-forma { display: flex; align-items: center; gap: 7px;
     margin: 12px 0 2px; font-size: 13.5px; }
@@ -3314,6 +3326,17 @@
         </select>
         <span class="hint">Nejlepší možná kombinace IV pro ligu, kterou ten druh hraje.
           Je to stejná vzácnost jako 15/15/15, jen měřená tím, co v lize rozhoduje.</span>
+      </div>
+      <div class="nast-pole">
+        <label for="nulaDrzet">Držet kus 0/0/0</label>
+        <select id="nulaDrzet">
+          <option value="1" selected>ano — nula ze všech se nepouští</option>
+          <option value="0">ne — rozhoduje o něm rozpočet jako o každém jiném</option>
+        </select>
+        <span class="hint">0/0/0 je stejná vzácnost jako 15/15/15 — jeden kus ze 4096.
+          Ve hře ale neumí nic, takže je to čistě sběratelská věc: tímhle přepínačem
+          si řekneš, jestli ho appka drží jako stovku, nebo ho posuzuje jako každý
+          jiný kus. Značka <b>0 %</b> u jména svítí tak jako tak.</span>
       </div>
       <div class="nast-pole">
         <label for="pvpPojistka">Pojistka na cupy (%)</label>
@@ -3746,6 +3769,7 @@
     <label><input type="checkbox" data-znacka="GM" /> Gigantamax</label>
     <label><input type="checkbox" data-znacka="C" /> CUTE</label>
     <label><input type="checkbox" data-znacka="H" /> 100&nbsp;%</label>
+    <label><input type="checkbox" data-znacka="N" /> 0&nbsp;%</label>
     <label><input type="checkbox" data-znacka="S" /> Shiny</label>
     <label><input type="checkbox" data-znacka="K" /> Lucky</label>
     <label><input type="checkbox" data-znacka="VP" /> Ponechat</label>
@@ -6306,6 +6330,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
   function zrusitVsechnyFiltry() {
     search = "";
+    vyjimkaFiltru = null;
     var hledej = document.getElementById("searchInput");
     if (hledej) hledej.value = "";
     typeFilter = null;
@@ -6365,6 +6390,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (c.dynamax) z.push(c.gmax ? "GM" : "D");
     if (c.cute) z.push("C");
     if (c.stoProcent) z.push("H");
+    if (c.nulaProcent) z.push("N");
     if (c.shiny) z.push("S");
     if (c.lucky) z.push("K");
     if (c.keep) {
@@ -6524,6 +6550,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   var viewMode = "verdict";
   var typeFilter = null;
   var search = "";
+  /* Kus, který se smí ukázat i přes filtr.
+
+     Dřív se po přidání kusu filtry zrušily celé — jinak by právě přidaný kus
+     nebylo vidět a vypadalo by to, že se přidání nepovedlo. Jenže kdo přidává
+     kusy s hledáním v ruce, přišel po každém přidání o filtr a musel ho psát
+     znovu (Lukáš 17. 11.). Filtr proto zůstává a výjimku dostane jen ten
+     jediný kus; padne, jakmile člověk filtrem hne. */
+  var vyjimkaFiltru = null;
   var lastBase = [], pomocnyBase = [];
   /* Prohlídka cizího kusu: rozbor běží nad seznamem o jednom kuse, takže by
      každý slot vyšel „1. z 6" a věty o rozpočtu by lhaly. S tímhle příznakem
@@ -6660,7 +6694,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "hledaniDavka", "hledaniZdroj", "chciBonbony", "vymenaDruhy", "pvpStovka", "pvpPojistka", "pvpPojistkaRank", "roleThresh", "dmaxKeep", "megaIvPrah", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce", "radaPojistka", "bezStropuDruhu"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "hledaniDavka", "hledaniZdroj", "chciBonbony", "vymenaDruhy", "pvpStovka", "nulaDrzet", "pvpPojistka", "pvpPojistkaRank", "roleThresh", "dmaxKeep", "megaIvPrah", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce", "radaPojistka", "bezStropuDruhu"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -9592,6 +9626,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       rankThresh: num(nastaveniHodnota("rankThresh")) || 0,
       // „PvP stovka" a pojistka na cupy: pojistky podle kvality kombinace IV.
       pvpStovka: nastaveniHodnota("pvpStovka") !== "0",
+      // Nula ze všech: sběratelská pojistka, která jde vypnout.
+      nulaDrzet: nastaveniHodnota("nulaDrzet") !== "0",
       pvpPojistka: num(nastaveniHodnota("pvpPojistka")) || 0,
       pvpPojistkaRank: num(nastaveniHodnota("pvpPojistkaRank")) || 0,
       spThresh: (num(nastaveniHodnota("spThresh")) || 0) / 100,
@@ -10898,6 +10934,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         // jen se nenastavuje ručně, plyne z IV. Podmínka na jistá IV je
         // podstatná: sken, který dá jen rozsah, o 100 % nic neříká.
         stoProcent: !ivUncertain && atk === 15 && def === 15 && sta === 15,
+        // Nula ze všech (0/0/0) je stejná rarita jako stovka — jeden kus
+        // ze 4096 —, jenže čistě sběratelská: do hry nepřinese nic. Proto
+        // je značka vidět vždycky, ale o držení rozhoduje přepínač
+        // v nastavení (Lukáš 17. 11.).
+        nulaProcent: !ivUncertain && atk === 0 && def === 0 && sta === 0,
         // Shiny se ze skenu nepozná — Calcy ho v exportu nemá. Je to ruční
         // značka jako CUTE, ale chová se jinak: kus pouštět jde, jen ho hra
         // nepustí do hromadného výběru.
@@ -12271,6 +12312,21 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + " místo nemá.";
       }
 
+      /* Nula ze všech se drží stejnou úvahou jako stovka, jen si ji člověk
+         zapíná. Stojí až za stovkou: kus nemůže být obojím, takže se ty dvě
+         větve nikdy nepotkají. */
+      var nulaZachranila = false;
+      if (b.nulaProcent && s.nulaDrzet && !keepGood) {
+        nulaZachranila = true;
+        keepGood = true;
+        keepLabel = "Ponechat";
+        keepTone = "good";
+        keepSubLate = "Protože 0%";
+        keepTitle = "Nula ze všech — 0/0/0. Stejná vzácnost jako 15/15/15"
+          + " a v nastavení máš zapnuté, že se nepouští. Jiný důvod ho tu"
+          + " nedrží: v rozpočtu místo nemá.";
+      }
+
       /* PvP stovka: kombinace #1 ze 4096 pro ligu, kterou ten druh hraje.
          Je to stejná vzácnost jako 15/15/15, jen měřená tím, co v lize
          doopravdy rozhoduje. */
@@ -12466,6 +12522,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         tradeSub = "100%";
         tradeTitle = "Dokonalý kus. Výměna IV přehází a je nevratná, takže"
           + " tenhle se nevyměňuje za nic.";
+        tradeTone = "muted";
+      } else if (b.nulaProcent && s.nulaDrzet) {
+        // Výměna IV přehází — z nuly ze všech by zbyl obyčejný slabý kus
+        // a zpátky už ji nikdo nevyrobí.
+        trade = "Ne";
+        tradeSub = "0%";
+        tradeTitle = "Nula ze všech. Výměna IV přehází a je nevratná, takže"
+          + " by z té vzácnosti zbyl obyčejný slabý kus.";
         tradeTone = "muted";
       } else if (b.cute) {
         trade = "Ne";
@@ -12679,7 +12743,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // Kus, který drží jen značka (CUTE) nebo dokonalé IV, žádnou roli
       // nezastává. Do prachového plánu proto nepatří: sype se do role,
       // a tenhle žádnou nemá.
-      var jenZnamka = cuteZachranil || stoZachranil || pvpStoZachranil || pvpPojistka;
+      var jenZnamka = cuteZachranil || stoZachranil || nulaZachranila
+        || pvpStoZachranil || pvpPojistka;
       // …a proto se do něj ani nesype prach. Dokonalé IV samo o sobě
       // roli nedělá, což appka píše všude jinde — jen sloupec Vylepšit
       // na to zapomínal a u 100% Rattaty svítilo „Zvážit".
@@ -12687,6 +12752,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         powerup = "Ne";
         powerupTone = "muted";
         powerupSub = cuteZachranil ? "drží ho značka, ne role"
+          : nulaZachranila ? "drží ho vzácná nula, ne role"
           : "drží ho dokonalé IV, ne role";
       }
       // Rezerva ligy a paměť pořadí: nechat, ale prach až se vrátí do šestky.
@@ -12897,6 +12963,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         cute: b.cute,
         megaKus: b.megaKus,
         stoProcent: b.stoProcent,
+        nulaProcent: b.nulaProcent,
+        /* Drží se ta nula doopravdy? Rozhoduje přepínač — a sekce
+           „Co s ním“ se podle toho chovají jinak. */
+        nulaDrzena: !!(b.nulaProcent && s.nulaDrzet),
         /* Poslední kus, který prošel skenováním — od něj se pokračuje. */
         posledniSken: b.row === posledniSkenRadek,
         /* Forma (Shadow / Purified / Lucky) — filtr podle značek na ni
@@ -12929,6 +12999,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           kusId: b.row.id,
           keepLabel: keepLabel, keepGood: !!keepGood, shinyZachranil: shinyZachranil,
           stoZachranil: stoZachranil, cuteZachranil: cuteZachranil,
+          nulaZachranila: nulaZachranila,
           pvpStoZachranil: pvpStoZachranil, pvpPojistka: pvpPojistka,
           pvpKomb: pvpKomb })), b, s)),
         // Pouštěný kus: kde se nevešel (liga s pořadím, kvalita, raid typ,
@@ -13855,6 +13926,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   function passesFilter(c, row) {
+    // Právě přidaný (nebo právě upravený) kus se ukáže i tehdy, když ho
+    // filtr schovává — jinak by zmizel a vypadalo by to jako chyba.
+    if (row && vyjimkaFiltru && row.id === vyjimkaFiltru) return true;
     var megaTyp = megaTypDotaz(search);
     if (megaTyp) {
       /* Jen kus, který tu megu doopravdy drží. K Mega Gyaradosovi vede
@@ -13887,6 +13961,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     }
   }
 
+  /** Samotné číslo v hledání: CP kusu, nebo číslo z pokédexu.
+   *
+   *  Lukáš píše do hledání CP, protože podle něj kus v boxu pozná (17. 11.).
+   *  CP stačí napsat od začátku — „27" najde i 2763 —, číslo z pokédexu musí
+   *  sedět celé: jinak by „25" nabídlo každé CP s dvojkou a pětkou. Číslo
+   *  ve JMÉNU (Porygon2) řeší hledání textu samo. */
+  function cisloSedi(dotaz, r) {
+    if (!/^[0-9]+$/.test(dotaz)) return false;
+    var cp = r.cp === null || r.cp === undefined ? "" : String(r.cp);
+    if (cp && cp.indexOf(dotaz) === 0) return true;
+    var e = typeof dexEntry === "function" ? dexEntry(r.pokemon) : null;
+    return !!(e && String(e.id) === dotaz);
+  }
+
   /**
    * Hledá se jméno — a k tomu všechno, co u kusu stojí napsané.
    *
@@ -13897,6 +13985,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    * doporučení výměny vlastní štítek nemá vždycky.
    */
   function rosterNajde(dotaz, r, c) {
+    if (cisloSedi(dotaz, r)) return true;
     var kusy = [r.pokemon, r.poznamka, r.forma,
       c ? c.keep : "", c ? c.keepSub : ""];
     if (c) {
@@ -15966,7 +16055,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    *  mega, elitní útok, 100 %, CUTE, zbytek. Stabilní — uvnitř skupiny drží
    *  pořadí, které dal duvodyZeSlotu / duvodyZnacky. */
   var ZNACKA_PORADI = { "PvP stovka": 1, "Pojistka na cupy": 1, "Dynamax": 4,
-    "Gigantamax": 4, "Elitní útok": 6, "100 %": 7, "CUTE": 8 };
+    "Gigantamax": 4, "Elitní útok": 6, "100 %": 7, "0 %": 7, "CUTE": 8 };
   function seradDuvody(list) {
     var rank = function (d) {
       if (d.druh === "znacka") return ZNACKA_PORADI[d.filtr] || 9;
@@ -16013,6 +16102,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (b.stoProcent) {
       zn("100 %", "Dokonalý kus 15/15/15 — nikdy se nepouští ani nemění."
         + (x.stoZachranil ? " Jiný důvod ho nedrží." : ""));
+    }
+    if (b.nulaProcent) {
+      zn("0 %", "Nula ze všech 0/0/0 — stejná vzácnost jako stovka."
+        + (x.nulaZachranila ? " Drží ho tu jenom to; vypnout to jde v nastavení."
+            : " O držení rozhoduje přepínač v nastavení."));
     }
     if (b.cute) {
       zn("CUTE", "Označil sis ho jako CUTE, appka ho nikdy nenabídne k vyhození."
@@ -17767,7 +17861,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       { nazev: "Rozpočet rolí", popis: "Kolik kusů od role a od druhu si vůbec držet.",
         ids: ["keepCopies", "roleThresh", "ligaRezerva", "pametPoradi", "dmaxKeep", "dmaxSlotu", "keepRare"] },
       { nazev: "Pojistky proti puštění", popis: "Co se nepustí, ani když se do rozpočtu nevejde.",
-        ids: ["pvpStovka", "pvpPojistka", "pvpPojistkaRank", "tradeThresh"] },
+        ids: ["pvpStovka", "nulaDrzet", "pvpPojistka", "pvpPojistkaRank", "tradeThresh"] },
       { nazev: "Raidy a gymy", popis: "Kolik útočníků a obránců si držet.",
         ids: ["raidSlotu", "raidSlotuMimo", "gymSlotu"] },
       { nazev: "Prach a vylepšování", popis: "Za co se vyplatí utrácet.",
@@ -18143,6 +18237,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     }
     if (c.stoProcent) {
       chips += '<span class="rarity-chip r-H sto-znacka" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
+    }
+    if (c.nulaProcent) {
+      chips += '<span class="rarity-chip r-N sto-znacka" title="Nula ze všech —'
+        + ' 0/0/0. Stejná vzácnost jako stovka, jen bez užitku v boji.">0%</span>';
     }
     h += '<div class="detail-title"><span class="d-name">' + r.pokemon + "</span>" + chips
       + hraPruhHtml(r)
@@ -19259,7 +19357,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     otevrenyDetail = id;
     renderBody();
     if (!jeMezi()) {
-      zrusitVsechnyFiltry();     // překreslí samo
+      // Filtr zůstává, jen tenhle jediný kus se skrz něj pustí. Tím je
+      // vidět, že se přidání povedlo, a hledání se nemusí psát znovu.
+      vyjimkaFiltru = id;
       otevrenyDetail = id;
       renderBody();
     }
@@ -19634,7 +19734,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           var formaTag = r.forma === "Shadow" || r.forma === "Purified"
             ? r.forma : "";
           if (col.key === "pokemon"
-              && (c.rarity || c.dynamax || c.cute || c.stoProcent || c.shiny
+              && (c.rarity || c.dynamax || c.cute || c.stoProcent || c.nulaProcent || c.shiny
                   || c.lucky || formaTag || pohlaviKusu(r))) {
             var chips = "";
             // Shadow a Purified bývaly vlastním sloupcem „Forma“. Jako značka
@@ -19668,6 +19768,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
             // u dokonalého kusu všechny ostatní.
             if (c.stoProcent) {
               chips += '<span class="rarity-chip r-H" title="Dokonalý kus — 15/15/15. Appka ho nikdy nenabídne k vyhození ani k výměně.">100%</span>';
+            }
+            if (c.nulaProcent) {
+              chips += '<span class="rarity-chip r-N" title="Nula ze všech — 0/0/0.'
+                + ' Stejná vzácnost jako stovka, jen bez užitku v boji.'
+                + ' Jestli se drží, rozhoduje přepínač v nastavení.">0%</span>';
             }
             if (c.lucky) {
               chips += '<span class="rarity-chip r-L2" title="Lucky — vylepšení'
@@ -29024,10 +29129,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   // neměla co přidat.
   document.getElementById("searchInput").addEventListener("input", function (e) {
     search = deaccent(e.target.value).toLowerCase().trim();
+    // Člověk hledáním hnul — výjimka pro naposled přidaný kus padá.
+    vyjimkaFiltru = null;
     renderBody(); persist(true);
   });
   document.getElementById("filterSelect").addEventListener("change", function (e) {
     filterMode = e.target.value;
+    vyjimkaFiltru = null;
     renderBody(); persist(true);
   });
   SETTING_IDS.forEach(function (id) {
@@ -29806,6 +29914,16 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + "nevratná. Rozdíl proti CUTE je jen v tom, že se nepřepíná ručně. "
       + "Na kus, u kterého sken dal IV jen jako <b>rozsah</b>, se značka "
       + "nedává — z rozsahu se 100 % tvrdit nedá.</td></tr>"
+      + "<tr><td><b>Značka 0%</b></td><td>druhá strana téže mince: nasadí se "
+      + "sama každému kusu s <b>0/0/0</b>. Je to stejná vzácnost jako "
+      + "stovka — jeden kus ze 4096 —, jenže ve hře neumí nic, takže je to "
+      + "čistě sběratelská věc. Značka svítí vždycky; jestli se takový kus "
+      + "<b>nepouští</b>, rozhoduje přepínač <b>Držet kus 0/0/0</b> "
+      + "v nastavení (sekce Pojistky proti puštění, výchozí zapnuto). "
+      + "Se zapnutým přepínačem dostane <b>Ponechat · Protože 0%</b>, "
+      + "k tradu se nenabízí a prach se do něj nesype; s vypnutým ho "
+      + "rozpočet posuzuje jako každý jiný kus. Z rozsahu IV se značka "
+      + "nedává, stejně jako u stovky.</td></tr>"
       + "<tr><td><b>Strop CP před evolucí</b></td><td>evoluce <b>nemění level</b>, "
       + "mění staty. Omezení je proto na LEVEL: najde se nejvyšší, kde se "
       + "<b>vyvinutá</b> forma ještě vejde pod cap ligy — a k němu se dopočítá, "
@@ -30970,6 +31088,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (String(r.forma || "").toLowerCase().indexOf("shadow") !== 0) return false;
     if (r.cute === "Ano") return false;
     if (x.c && x.c.stoProcent) return false;
+    if (x.c && x.c.nulaDrzena) return false;
     return true;
   }
 
@@ -31465,6 +31584,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + (c.dynamax ? '<span class="rarity-chip r-' + (c.gmax ? "GM" : "D")
           + '">' + (c.gmax ? "GMAX" : "DMAX") + "</span>" : "")
       + (c.stoProcent ? '<span class="rarity-chip r-H">100%</span>' : "")
+      + (c.nulaProcent ? '<span class="rarity-chip r-N">0%</span>' : "")
       + (c.cute ? '<span class="rarity-chip r-C">CUTE</span>' : "")
       + (c.shiny ? '<span class="rarity-chip r-S">SHINY</span>' : "")
       + (c.lucky ? '<span class="rarity-chip r-L2">LUCKY</span>' : "")
@@ -33954,6 +34074,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         GM: { trida: "rarity-chip r-GM", stitek: "GMAX" },
         C: { trida: "rarity-chip r-C", stitek: "CUTE" },
         H: { trida: "rarity-chip r-H", stitek: "100 %" },
+        N: { trida: "rarity-chip r-N", stitek: "0 %" },
         S: { trida: "rarity-chip r-S", stitek: "SHINY" },
         K: { trida: "rarity-chip r-L2", stitek: "LUCKY" },
         VP: { trida: "rarity-chip r-verdikt r-VP", stitek: "PONECHAT" },
