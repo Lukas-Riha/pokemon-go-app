@@ -546,3 +546,8 @@ Viz docs/navrhy/a059/transfer.html a dva PNG. Zdroj → skupina → jeden filtr 
 ## A060 — Na výměnu, vzhledová vrstva (18. 11. 2026)
 Pouze atlas.css, blok Astra (142), scope .atlas-test #naVymenuCard. Hlavní průnik vizuálně první, pravidla kompaktní, šest decentních barev zdrojů, výstup bez vnitřního scrollu. Ověřeno na skutečném HTML izolovaně v Chromium při 1440/900/500 px: bez vodorovného přetečení, průnik nad pravidly. Nejde o end-to-end test s osobními daty.
 DOM požadavek: pro stejné pořadí klávesnice a čteček přesunout .nv-mriz-obracena před .nv-mriz i v enginu; CSS mění jen vizuální pořadí. Čísla 3/4/1/2 v původních nadpisech zůstala beze změny, doporučuji odstranit číslování v enginu. Moderní Chromium používá ::details-content pro flex rozložení. Starší prohlížeče bez této podpory mohou zachovat původní pořadí. Žádný JS, markup ani engine upraven. TEST nebyl přegenerován, aby se do sestavy nepřimíchaly současné rozpracované změny enginu.
+
+
+## A061 — Na výměnu: modal a grafické doladění
+Blok Astra (143) v atlas.css navazuje na Claude A058. Scope pouze .atlas-test; nové styly obálky #nvPlachta, hlavičky a rolovacího těla. Výstup má horní akcent, druhy čitelnější jméno a oddělený tichý počet, podpůrná správa hrobů méně výrazné pozadí. Sjednocené summary a pravidla. Žádný engine, markup ani JS změněn.
+Kontrola skutečného aktuálního HTML s připojeným CSS v izolovaném Chromium: světlý/tmavý režim × 1440/900/500 px; bez vodorovného přetečení. Kontrola prázdného výstupu i dočasné DOM fixture 14 druhů (včetně dlouhého názvu); fixture není změna aplikace ani osobních dat. TEST sestava nebyla generována. A060 požadavek na DOM pořadí a číslování nadpisů stále platí.

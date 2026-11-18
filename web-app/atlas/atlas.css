@@ -4230,3 +4230,55 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
  .atlas-test #naVymenuCard .nv-duvody{flex-basis:100%;order:3}
  .atlas-test #naVymenuCard .nv-druh{font-size:14px;padding:7px 9px}
 }
+
+/* Astra (143): Na vymenu v samostatnem okne — pracovni plocha a ciste stitky. */
+.atlas-test #nvPlachta{padding:24px;background:color-mix(in srgb,var(--page) 78%,transparent);backdrop-filter:blur(10px)}
+.atlas-test #nvPlachta .hled-okno{width:min(1280px,100%);max-height:92dvh;border:1px solid var(--border);border-radius:22px;background:var(--page);color:var(--text-primary);box-shadow:0 24px 80px #0004;overflow:hidden}
+.atlas-test #nvPlachta .hled-hlava{gap:20px;padding:22px 26px;border-bottom:1px solid var(--border);background:var(--surface-1);align-items:center}
+.atlas-test #nvPlachta .hled-hlava h3{margin:0;max-width:none;font-size:clamp(18px,1.6vw,23px);line-height:1.35;letter-spacing:-.025em;font-weight:700;color:var(--text-primary)}
+.atlas-test #nvPlachta .hled-krizek{flex:0 0 44px;width:44px;height:44px;min-height:44px;border:1px solid var(--border);border-radius:12px;background:var(--page);color:var(--text-secondary);font-size:24px;display:grid;place-items:center;padding:0}
+.atlas-test #nvPlachta .hled-krizek:hover{background:var(--atlas-soft);color:var(--series-1)}
+.atlas-test #nvPlachta .hled-telo{padding:24px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent;scrollbar-gutter:stable}
+.atlas-test #naVymenuCard .nv-mriz{gap:16px;align-items:start}
+.atlas-test #naVymenuCard .nv-blok{border-radius:16px;padding:20px}
+.atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child{padding:24px;background:linear-gradient(135deg,var(--atlas-soft),var(--surface-1) 75%);box-shadow:inset 0 3px var(--series-1),0 6px 22px #00000008}
+.atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child h3{font-size:21px;letter-spacing:-.025em;line-height:1.4;text-wrap:pretty}
+.atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child .hint{max-width:70ch;margin-bottom:20px;font-size:13px}
+.atlas-test #naVymenuCard .nv-pocet:not(:empty){padding:3px 8px;border-radius:6px;background:var(--atlas-soft);color:var(--text-secondary);vertical-align:middle;letter-spacing:0}
+.atlas-test #naVymenuCard .nv-druhy{gap:8px}
+.atlas-test #naVymenuCard .nv-druh{align-items:center;min-height:40px;padding:8px 11px;background:var(--surface-1);border-color:color-mix(in srgb,var(--series-1) 22%,var(--border));box-shadow:0 2px 3px #00000005;border-radius:10px;line-height:1.35}
+.atlas-test #naVymenuCard .nv-druh span{padding-left:8px;border-left:1px solid var(--border);font-size:12px;color:var(--text-secondary);font-weight:400}
+.atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:last-child{background:transparent;border-left:1px solid var(--border);border-radius:0;padding:16px 0 16px 20px}
+.atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:last-child h3{font-size:14px}
+.atlas-test #naVymenuCard .nv-pravidlo+.nv-pravidlo{padding-top:12px;border-top:1px solid var(--border)}
+.atlas-test #naVymenuCard .nv-volba{border-radius:9px}
+.atlas-test #naVymenuCard .nv-pravidlo>label{padding:2px 6px;border-radius:6px}
+.atlas-test #naVymenuCard .nv-pravidlo>label:has(input:checked){background:var(--atlas-soft);color:var(--text-primary)}
+.atlas-test #naVymenuCard .nv-sekce>summary{display:list-item;padding:12px 8px;font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--text-primary);border-radius:8px;cursor:pointer}
+.atlas-test #naVymenuCard .nv-sekce>summary::marker{color:var(--series-1);font-size:11px}
+.atlas-test #naVymenuCard .nv-sekce>summary:hover{background:var(--atlas-soft)}
+.atlas-test #naVymenuCard .nv-radek:nth-child(even){background:color-mix(in srgb,var(--atlas-soft) 42%,transparent)}
+.atlas-test #naVymenuCard .nv-radek{padding:7px 8px}
+.atlas-test #naVymenuCard .nv-chip{font-size:11px;border-radius:5px}
+.atlas-test #naVymenuCard .nv-kos-radek{min-height:44px;line-height:1.5}
+.atlas-test #naVymenuCard>.plan-intro{padding:16px 4px 0;border-top:1px solid var(--border);max-width:none;line-height:1.7}
+.atlas-test #nvPlachta :is(button,summary,input):focus-visible{outline:2px solid var(--series-1);outline-offset:3px}
+@media(max-width:900px){
+ .atlas-test #nvPlachta{padding:16px}
+ .atlas-test #nvPlachta .hled-hlava{padding:18px 20px}
+ .atlas-test #nvPlachta .hled-telo{padding:18px}
+ .atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:last-child{border-left:0;border-bottom:1px solid var(--border);padding:12px 4px 18px}
+ .atlas-test #naVymenuCard .nv-pravidlo+.nv-pravidlo{padding-top:0;border-top:0}
+}
+@media(max-width:560px){
+ .atlas-test #nvPlachta{padding:8px}
+ .atlas-test #nvPlachta .hled-okno{max-height:calc(100dvh - 16px);border-radius:16px}
+ .atlas-test #nvPlachta .hled-hlava{padding:16px;gap:12px}
+ .atlas-test #nvPlachta .hled-telo{padding:12px;scrollbar-gutter:auto}
+ .atlas-test #naVymenuCard .nv-blok{padding:16px}
+ .atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child{padding:18px}
+ .atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child h3{font-size:19px}
+ .atlas-test #naVymenuCard .nv-druhy{gap:6px}
+ .atlas-test #naVymenuCard .nv-druh{padding:7px 9px;font-size:14px}
+ .atlas-test #naVymenuCard .nv-pravidlo+.nv-pravidlo{padding-top:12px;border-top:1px solid var(--border)}
+}
