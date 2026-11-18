@@ -541,3 +541,8 @@ Nahrazuje A056/A057: oba soubory mají shodnou SVG cestu, tah i gradient. Jedin�
 
 ## A059 — Grafický návrh Transferu, zatím bez implementace
 Viz docs/navrhy/a059/transfer.html a dva PNG. Zdroj → skupina → jeden filtr s počtem a jednoznačnou akcí. Pomocné výměnné seznamy zvlášť. V reálné verzi zachovat Po jednom, ruční kontrolu, nedostupné kusy a podmíněné ověření podle dat; potvrzení puštění jen pro odpovídající smazanou dávku, nikdy po kopírování. Před přepisem schválit návrh s Lukášem.
+
+
+## A060 — Na výměnu, vzhledová vrstva (18. 11. 2026)
+Pouze atlas.css, blok Astra (142), scope .atlas-test #naVymenuCard. Hlavní průnik vizuálně první, pravidla kompaktní, šest decentních barev zdrojů, výstup bez vnitřního scrollu. Ověřeno na skutečném HTML izolovaně v Chromium při 1440/900/500 px: bez vodorovného přetečení, průnik nad pravidly. Nejde o end-to-end test s osobními daty.
+DOM požadavek: pro stejné pořadí klávesnice a čteček přesunout .nv-mriz-obracena před .nv-mriz i v enginu; CSS mění jen vizuální pořadí. Čísla 3/4/1/2 v původních nadpisech zůstala beze změny, doporučuji odstranit číslování v enginu. Moderní Chromium používá ::details-content pro flex rozložení. Starší prohlížeče bez této podpory mohou zachovat původní pořadí. Žádný JS, markup ani engine upraven. TEST nebyl přegenerován, aby se do sestavy nepřimíchaly současné rozpracované změny enginu.

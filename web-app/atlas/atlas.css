@@ -4170,3 +4170,63 @@ html[data-theme=dark] .atlas-test:is([data-atlas-view=home],[data-atlas-view=eve
   .atlas-test .atlas-ivp{margin-left:0;width:100%;flex-wrap:wrap}
   .atlas-test .atlas-ivp-pole input{width:46px}
 }
+
+/* Astra (142): Na vymenu — vysledek prvni, podpurne panely v pozadi. */
+.atlas-test #naVymenuCard[open]{display:flex;flex-direction:column;gap:18px}
+.atlas-test #naVymenuCard::details-content{display:flex;flex-direction:column;gap:18px}
+.atlas-test #naVymenuCard>summary{order:0}
+.atlas-test #naVymenuCard>.nv-mriz-obracena{order:1}
+.atlas-test #naVymenuCard>.nv-mriz:not(.nv-mriz-obracena){order:2}
+.atlas-test #naVymenuCard>.plan-intro{order:3;margin:0;max-width:90ch;font-size:12px;color:var(--text-muted)}
+.atlas-test #naVymenuCard .nv-mriz{margin:0;gap:20px;grid-template-columns:minmax(250px, .75fr) minmax(0,2fr)}
+.atlas-test #naVymenuCard .nv-mriz-obracena{grid-template-columns:minmax(0,2fr) minmax(250px,.75fr)}
+.atlas-test #naVymenuCard .nv-blok{min-width:0;padding:18px;border:0;border-radius:14px;background:var(--surface-1);box-shadow:none}
+.atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child{background:linear-gradient(125deg,var(--atlas-soft),var(--surface-1));box-shadow:inset 3px 0 var(--series-1);padding:22px}
+.atlas-test #naVymenuCard .nv-blok h3{margin:0 0 12px;font-size:15px;line-height:1.5;text-wrap:balance}
+.atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child h3{font-size:20px}
+.atlas-test #naVymenuCard .hint{font-size:12px;line-height:1.65;color:var(--text-secondary);margin:8px 0 14px}
+.atlas-test #naVymenuCard .nv-pocet{display:inline-block;margin-left:6px;font-size:12px;font-weight:500;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.atlas-test #naVymenuCard #nvPrunikBox{max-height:none;overflow:visible}
+.atlas-test #naVymenuCard .nv-druhy{gap:7px}
+.atlas-test #naVymenuCard .nv-druh{max-width:100%;gap:8px;min-height:38px;box-sizing:border-box;padding:7px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface-1);font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+.atlas-test #naVymenuCard .nv-druh b{font-weight:650}
+.atlas-test #naVymenuCard .nv-druh span{font-size:12px;white-space:nowrap;color:var(--text-muted);opacity:1}
+.atlas-test #naVymenuCard .nv-pravidla{gap:14px}
+.atlas-test #naVymenuCard .nv-pravidlo{gap:6px}
+.atlas-test #naVymenuCard .nv-pravidlo-nazev{font-size:10px;letter-spacing:.06em;opacity:1;margin-bottom:2px}
+.atlas-test #naVymenuCard .nv-pravidlo label{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:12px;min-height:32px}
+.atlas-test #naVymenuCard .nv-volba{display:inline-flex;flex:0 0 auto;flex-wrap:nowrap;gap:6px;max-width:100%;padding:2px 7px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2,var(--surface-1))}
+.atlas-test #naVymenuCard .nv-volba:has(input:checked){border-color:color-mix(in srgb,var(--series-1) 40%,var(--border));background:var(--atlas-soft)}
+.atlas-test #naVymenuCard input[type=checkbox]{accent-color:var(--series-1);flex-shrink:0;width:16px;height:16px;margin:0}
+.atlas-test #naVymenuCard .nv-volba input[type=number]{flex:0 0 52px;width:52px;min-width:0;height:30px;padding:3px 4px;box-sizing:border-box;border:0;border-left:1px solid var(--border);border-radius:0;background:transparent;color:var(--text-primary);font-size:13px;text-align:center}
+.atlas-test #naVymenuCard .actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.atlas-test #naVymenuCard .actions button{min-height:38px;padding:8px 12px;font-size:12px;border-radius:9px;white-space:normal}
+.atlas-test #naVymenuCard #nvSeznamBox{max-height:460px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.atlas-test #naVymenuCard .nv-sekce{margin-top:4px;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;padding:0}
+.atlas-test #naVymenuCard .nv-sekce>summary{padding:12px 4px;margin:0;min-height:40px;box-sizing:border-box;font-size:11px;letter-spacing:.06em;color:var(--text-secondary);opacity:1}
+.atlas-test #naVymenuCard .nv-radek{gap:6px 10px;padding:8px;border-radius:8px;font-size:13px}
+.atlas-test #naVymenuCard .nv-jmeno{flex:1 1 120px;font-weight:600}
+.atlas-test #naVymenuCard .nv-chip{--nv-accent:var(--series-1);background:color-mix(in srgb,var(--nv-accent) 12%,var(--surface-1));color:color-mix(in srgb,var(--nv-accent) 60%,var(--text-primary));border:0;border-radius:5px;padding:3px 6px;font-size:10px;line-height:1.4}
+.atlas-test #naVymenuCard .nv-z-rucne{--nv-accent:#b58a22}
+.atlas-test #naVymenuCard .nv-z-max{--nv-accent:#d85d9e}
+.atlas-test #naVymenuCard .nv-z-liga{--nv-accent:#7d7de0}
+.atlas-test #naVymenuCard .nv-z-raid{--nv-accent:#dc8857}
+.atlas-test #naVymenuCard .nv-z-gym{--nv-accent:#49a49a}
+.atlas-test #naVymenuCard .nv-z-vzacne{--nv-accent:#b29b4a}
+.atlas-test #naVymenuCard .nv-hrob{font-size:11px;color:var(--text-muted)}
+.atlas-test #naVymenuCard .nv-x{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:4px;border-radius:8px;opacity:1}
+.atlas-test #naVymenuCard .nv-x:hover{background:var(--atlas-soft);color:var(--text-primary)}
+.atlas-test #naVymenuCard .nv-kos-radek{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary)}
+.atlas-test #naVymenuCard :is(button,input,summary):focus-visible{outline:2px solid var(--series-1);outline-offset:3px}
+@media(max-width:900px){
+ .atlas-test #naVymenuCard .nv-mriz{grid-template-columns:minmax(0,1fr);gap:12px}
+ .atlas-test #naVymenuCard .nv-mriz:not(.nv-mriz-obracena)>.nv-blok:first-child{order:2}
+ .atlas-test #naVymenuCard .nv-blok{padding:16px}
+ .atlas-test #naVymenuCard .nv-mriz-obracena>.nv-blok:first-child{padding:18px}
+ .atlas-test #naVymenuCard .nv-pravidla{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+}
+@media(max-width:560px){
+ .atlas-test #naVymenuCard .nv-pravidla{grid-template-columns:minmax(0,1fr)}
+ .atlas-test #naVymenuCard .nv-duvody{flex-basis:100%;order:3}
+ .atlas-test #naVymenuCard .nv-druh{font-size:14px;padding:7px 9px}
+}
