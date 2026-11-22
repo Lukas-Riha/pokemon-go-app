@@ -36,6 +36,14 @@ ROOT = Path(__file__).resolve().parent.parent
 RAW_TYP = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "dmax.json"
 URL_TYP = "https://db.pokemongohub.net/pokemon-list/best-dynamax-per-type/%s"
+# Druhy, ktere Dynamax umi, ale Hub je nevede (Pikachu, Vespiquen, …).
+NAVIC = ROOT / "data" / "dmax_navic.json"
+POKEDEX = ROOT / "data" / "pokedex.json"
+MOVES = ROOT / "data" / "moves.json"
+# Gigantamax radek Hub hodnoti vys nez tyz druh jako Dynamax; namereno
+# na Toxtricity (284 vs 221 = 1,285). Pouziva se jen na zarazeni
+# dopocitanych radku mezi Hubove, ne na cislo samotne.
+GMAX_BONUS = 1.285
 
 # Pořadí odpovídá hře; velké písmeno je klíč, pod kterým typ zná appka.
 TYPY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug",
@@ -94,13 +102,28 @@ def _stahni(url, cesta, refresh):
     return cesta.read_text(encoding="utf-8")
 
 
+# Hub pise jmeno formy pred druh („Crowned Sword Zacian"), appka za nej.
+PREJMENOVANI = {
+    "Crowned Sword Zacian": "Zacian Crowned Sword",
+    "Crowned Shield Zamazenta": "Zamazenta Crowned Shield",
+}
+
+
 def rozloz_jmeno(cele):
-    """„Gigantamax Snorlax" → (Snorlax, Gigantamax). Bez předpony to není
-    Max útočník, ale normální druh — takový řádek se zahazuje."""
+    """„Gigantamax Snorlax" → (Snorlax, Gigantamax).
+
+    Tri radky ze 317 predponu nemaji: Eternatus (Dragon #1, SS),
+    Crowned Sword Zacian a Crowned Shield Zamazenta (Steel). Driv se
+    zahazovaly jako „normalni druh" — Eternatus tak v appce chybel uplne
+    a dopocet mu dal S misto Hubova SS (Lukas 21. 11. 2026). Radek v tehle
+    tabulce je VZDYCKY Max utocnik, takze bez predpony je to Dynamax.
+    """
+    cele = cele.strip()
     for forma in ("Gigantamax", "Dynamax"):
         if cele.lower().startswith(forma.lower() + " "):
-            return cele[len(forma) + 1:].strip(), forma
-    return cele.strip(), ""
+            jm = cele[len(forma) + 1:].strip()
+            return PREJMENOVANI.get(jm, jm), forma
+    return PREJMENOVANI.get(cele, cele), "Dynamax"
 
 
 def radky_typu(html):
@@ -125,16 +148,101 @@ def radky_typu(html):
         if not druh or not forma or poradi is None:
             continue
         om = ODKAZ.search(bunky["attacker_name"])
+        # Sloupec „DMG": poskozeni jednoho Max utoku, podle nej Hub radi.
+        sila = cislo(text(bunky.get("dynamax_maxMoveDamage", "")))
         out.append({
             "poradi": int(poradi),
             "druh": druh,
             "forma": forma,
+            "sila": int(sila) if sila is not None else None,
             "rychly": text(bunky.get("qm_name", "")),
             "nabity": text(bunky.get("cm_name", "")),
             "znamka": znamka,
             "odkaz": om.group(1) if om else "",
         })
     return out
+
+
+def _data(cesta):
+    return json.loads(cesta.read_text(encoding="utf-8"))
+
+
+def doplnit_navic(typy):
+    """Druhy, ktere Hub nevede, ale ve hre Dynamax maji.
+
+    Hubove cislo („damage of one Max Attack") je utok druhu krat STAB:
+    na vsech 15 radcich Electricu sedi model na 2,5 %. Pro chybejici
+    druhy se tedy spocita tataz sila a radek se zaradi tam, kam podle
+    ni patri. Poradi i znamka pak nejsou Hubovy — radek si nese
+    `dopocitano`, aby to appka mohla rict.
+    """
+    if not NAVIC.exists():
+        return 0
+    navic = _data(NAVIC).get("druhy") or []
+    if not navic:
+        return 0
+    pd, mv = _data(POKEDEX), _data(MOVES)
+    sp, learn, fast = pd["species"], mv["learn"], mv["fast"]
+    cpm40 = pd["cpm"]["40"]
+
+    def klic(jmeno):
+        j = jmeno.split(" (")[0].strip().lower()
+        for k in (j, j.replace(" ", "_"), j.replace(" ", ""), j.replace("-", "")):
+            if k in sp:
+                return k
+        return None
+
+    def sila(k, typ, forma):
+        """Model Hubova „Max Attack damage": utok kusu s 15 IV na L40,
+        bonus 1,2 za vlastni typ. Na Hubovych radcich sedi do 2,5 %,
+        proto se jeste nasobi 0,976 — at se da porovnavat s jeho cisly."""
+        if not k:
+            return 0.0
+        atk, vlastni = sp[k][3], sp[k][2]
+        v = (atk + 15) * cpm40 * (1.2 if typ in vlastni else 1.0) * 0.976
+        return v * (GMAX_BONUS if forma == "Gigantamax" else 1.0)
+
+    def typy_utoku(k):
+        """Typ Max utoku jde po rychlych utocich a po vlastnim typu —
+        na Hubovych radcich to plati 314x ze 314."""
+        z = learn.get(k) or [[], [], [], []]
+        idx = list(z[0]) + list(z[2] if len(z) > 2 else [])
+        ven = {fast[i][0] for i in idx if i < len(fast)}
+        return ven | set(sp[k][2])
+
+    pridano = 0
+    for jmeno in navic:
+        k = klic(jmeno)
+        if not k:
+            print("  %s: appka ten druh nezna, preskakuji" % jmeno)
+            continue
+        for typ in sorted(typy_utoku(k)):
+            seznam = typy.get(typ)
+            if seznam is None:
+                continue
+            if any(r["druh"] == jmeno for r in seznam):
+                continue   # Hub ho uz vede, dopocet nema co delat
+            moje = sila(k, typ, "Dynamax")
+            kam = len(seznam)
+            for i, r in enumerate(seznam):
+                # Hubovo cislo ma prednost; model se bere, jen kdyz chybi.
+                jeho = r.get("sila")
+                if jeho is None:
+                    jeho = sila(klic(r["druh"]), typ, r.get("forma"))
+                if jeho < moje:
+                    kam = i
+                    break
+            znamka = (seznam[kam - 1]["znamka"] if kam else
+                      (seznam[0]["znamka"] if seznam else ""))
+            seznam.insert(kam, {"poradi": 0, "druh": jmeno, "forma": "Dynamax",
+                                "sila": int(round(moje)), "rychly": "",
+                                "nabity": "", "znamka": znamka, "odkaz": "",
+                                "dopocitano": True})
+            pridano += 1
+    for seznam in typy.values():
+        for i, r in enumerate(seznam):
+            r["poradi"] = i + 1
+    return pridano
 
 
 def main():
@@ -158,6 +266,10 @@ def main():
               % (len(typy), celkem, MIN_TYPU, MIN_RADKU_CELKEM))
         return 1
 
+    pridano = doplnit_navic(typy)
+    if pridano:
+        print("dopočítáno řádků (druhy, které Hub nevede): %d" % pridano)
+
     # Index podle druhu: kde všude stojí a jak vysoko. Z něj appka pozná
     # i to, že druh Dynamax vůbec umí.
     druhy = {}
@@ -170,8 +282,11 @@ def main():
             # Forma je u KAŽDÉHO záznamu: Charizard stojí ve Fire dvakrát —
             # jako Gigantamax #2 a jako Dynamax #10. Bez toho by to vypadalo
             # jako tentýž pokémon na dvou místech.
-            z["role"].append({"typ": typ, "poradi": r["poradi"],
-                              "znamka": r["znamka"], "forma": r["forma"]})
+            role = {"typ": typ, "poradi": r["poradi"],
+                    "znamka": r["znamka"], "forma": r["forma"]}
+            if r.get("dopocitano"):
+                role["dopocitano"] = True
+            z["role"].append(role)
     for z in druhy.values():
         z["role"].sort(key=lambda x: x["poradi"])
 
@@ -179,7 +294,10 @@ def main():
         "_meta": {
             "zdroj": URL_TYP % "<typ>",
             "staženo": date.today().isoformat(),
-            "model": "Pořadí i známku (SS…F) počítá Pokémon GO Hub, ne appka.",
+            "model": "Pořadí i známku (SS…F) počítá Pokémon GO Hub, ne appka."
+                     " Řádky s `dopocitano` jsou druhy, které Hub nevede:"
+                     " jejich sílu počítá appka podle útoku a STAB"
+                     " (viz data/dmax_navic.json).",
             "pozn": "Regeneruj přes: python tools/build_dmax.py --refresh",
         },
         "typy": typy,
@@ -187,7 +305,8 @@ def main():
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n",
                    encoding="utf-8")
-    print("typů: %d, druhů: %d, řádků: %d" % (len(typy), len(druhy), celkem))
+    print("typů: %d, druhů: %d, řádků: %d"
+          % (len(typy), len(druhy), sum(len(v) for v in typy.values())))
     print("zapsáno: %s" % OUT)
     return 0
 

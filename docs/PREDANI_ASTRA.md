@@ -2891,6 +2891,210 @@ k raidům a nad položkami stojí název skupiny („Six-Star Max Battles",
 „Dynamax Dialga and Dynamax Palkia"). Vzhledu se to netýká, jen ať víš, proč
 v detailu akce přibyly řádky.
 
+## A058 — Na výměnu se otevírá jako okno, ne jako sekce rosteru
+
+Tvůj blok 142 platí dál beze změny: karta má pořád `id="naVymenuCard"`, pořád
+je to `<details open>` a všechny třídy uvnitř zůstaly. Změnilo se jen to, KDE
+stojí. Lukášovi vadilo, že se stránka mačká nad rosterem („tohle vypadá fakt
+blbě"), takže je z ní okno nad appkou — stejné jako Transfer.
+
+Nová obálka (engine):
+
+```
+#nvPlachta.hled-plachta.nv-plachta     ← plachta, `hidden`, když je zavřeno
+  .hled-okno                           ← panel, min(1280px, 100%), max-height 92vh
+    .hled-hlava > h3#nvOknoNadpis + button#nvZavritBtn.hled-krizek
+    .hled-telo                         ← tady se roluje
+      details#naVymenuCard[open]       ← tvůj blok 142 beze změny
+```
+
+* `summary` karty schovává engine, nadpis nese hlava okna. Karta už nemá třídu
+  `card` — rámeček a pozadí dělá `.hled-okno`.
+* Otevírá se tlačítkem **Na výměnu** v horní liště, zavírá křížkem, Escapem
+  nebo kliknutím vedle okna. V rail-shellu už to není položka skupiny `roster`.
+* Volné pro tebe: `.nv-plachta`, `#nvPlachta .hled-okno`, `.hled-hlava`,
+  `.hled-telo`. Transfer má svoje `#hledaniOkno`, takže si nepřekážíte — ale
+  kdybys chtěla obě okna stejná, dělá se to tam.
+* Skládání dlouhých textů („víc") tu engine schválně nespouští: tlačítko se
+  vkládá ZA odstavec, nedostane `order` a tvoje řazení ho vyplavilo nad celý
+  obsah okna.
+
+## A059 — Na výměnu: nová stavba okna (18. 11. 2026)
+
+Obě věci z A060 jsou hotové a Lukáš k tomu přidal přestavbu. **Blok 142 a 143
+bude chtít projít** — co platí dál a co je teď naprázdno, je níž.
+
+**Jak okno vypadá teď** (pořadí v DOM = pořadí na obrazovce):
+
+```
+.hled-hlava
+  h3#nvOknoNadpis
+  .nv-prikazy > button#nvSmazatHrobyBtn + button#nvKosBtn   ← nové
+  button#nvZavritBtn.hled-krizek
+.hled-telo > details#naVymenuCard[open]
+  #nvKosPanel[hidden]              ← koš, rozbaluje ho #nvKosBtn
+  .nv-mriz                         ← Pravidla (úzce) | „Na trade" (široce)
+    .nv-blok                       ← Pravidla
+    .nv-blok.nv-hlavni             ← „Na trade", hlavní výstup
+  .nv-blok                         ← Seznam řad
+  .plan-intro
+```
+
+* **Čísla z nadpisů jsou pryč** a sekce „Zahozené kusy" se zrušila celá —
+  její dva příkazy stojí v hlavě okna vedle křížku. Zbyly tři nadpisy:
+  Pravidla, Na trade, Seznam řad.
+* **Pořadí drží DOM.** Engine má `#nvPlachta #naVymenuCard>*{order:0}`, takže
+  `order` z vrstvy už nic nepřehazuje. Tvoje pravidla s `order` můžeš smazat —
+  je to přesně to, cos chtěla v A060.
+* **Seznam řad je ze štítků.** `.nv-radek` / `.nv-jmeno` / `.nv-duvody` se
+  přestaly kreslit; místo nich je `.nv-rady > .nv-rada`, uvnitř `b` (jméno),
+  `small` (poslední stupeň evoluce), tvoje `.nv-chip.nv-z-*`, `.nv-hrob`
+  (kolik kusů té řady leží v zahozených) a `button.nv-x`. Vyškrtnuté mají
+  `button.nv-zpet`. Sekce `.nv-sekce` jsou nově **otevřené**.
+
+**Co z tvých bloků zůstalo v platnosti:** všechno na `.nv-blok`, `.nv-pravidlo`,
+`.nv-volba`, `.nv-pocet`, `.nv-druhy`/`.nv-druh`, `.nv-sekce>summary`,
+`.nv-chip`, `.nv-kos-radek` (koš je pořád uvnitř `#naVymenuCard`) a celý
+blok 143 na `#nvPlachta`.
+
+**Co je naprázdno:** `.nv-mriz-obracena` (třída z markupu zmizela), a s ní
+i akcent `>.nv-blok:first-child` — hlavní výstup se teď pozná podle
+`.nv-blok.nv-hlavni`, tam by ten akcent patřil. Dál `.nv-radek`, `.nv-jmeno`
+a `order`.
+
+**Co mě na tom tahá za oko a nechávám na tobě:** sloupec s pravidly je vysoký
+a „Na trade" nízký, takže vpravo pod výstupem zůstává velká díra.
+
+## A060 — Na výměnu: širší okno, obyčejný křížek, seznam na jednom místě
+
+Pokračování A059, všechno v enginu. **Dvě věci ti engine přebíjí** — obojí na
+Lukášovu žádost, obojí si rád vezmeš zpátky do svého bloku a já je pak smažu:
+
+* `#nvPlachta.hled-plachta.nv-plachta .hled-okno{width:min(1680px,100%)}` —
+  okno je širší než Transfer, protože se do něj musí vejít seznam řad.
+* `#nvPlachta.hled-plachta.nv-plachta .hled-krizek{…}` — zpátky na obyčejný
+  křížek jako v Transferu. Tvoje orámované tlačítko 44×44 si podle Lukáše
+  bralo pozornost, kterou má mít obsah.
+
+Třídy se v obou selektorech opakují jen proto, aby přebily `.atlas-test #nvPlachta …`.
+
+**Co přibylo v markupu:**
+
+* `button#nvBonbonyBtn` v akcích u Seznamu řad — otevírá editor seznamu
+  „chci bonbóny z výměny". Ten seznam se dřív upravoval v Transferu; tam po
+  něm nezbylo nic (zmizel blok `.hled-vymena`, jeho CSS v enginu je smazané).
+  `.hled-evo` a `.hled-prani` v Transferu zůstávají.
+* `.nv-chip.nv-z-bonbony` — značka u řady, která na tom seznamu je. Tvoje
+  pravidlo `.nv-chip{--nv-accent:var(--series-1)}` jí dá výchozí barvu;
+  kdyby sis pro ni chtěla vybrat vlastní, je to sedmý zdroj.
+* Čísla v nadpisech a popisek „zděděno z Transferu" jsou pryč.
+
+**Pro zajímavost:** bublina u druhu v „Na trade" je teď hodnocení celé
+evoluční řady seřazené od nejlepšího pořadí — totéž, co stavíš v hlavičce
+Vyhledávání, jen textem. Kdyby se to mělo jednou ukazovat i bez najetí,
+budeme potřebovat tvůj návrh; zatím je to jen `title`.
+
+## A061 — bublina s hodnocením řady (19. 11. 2026)
+
+Bublina u druhu v „Na trade" už není řádek textu, ale rozpis celé evoluční
+řady. Staví ji engine (používá ji i holá appka), **ikony rolí jsou ale
+tvoje** — praporky lig, štít gymu i značka Dmaxu/Gmaxu. Vytáhl jsem proto
+`roleIcon` z vnitřku `hodnoceniHtml` o úroveň výš a pověsil ho na
+`window.AtlasRoleIkona` / `window.AtlasMaxZnacka` (zapsáno i v
+`docs/ATLAS_KONTRAKT.md`). Samotné SVG jsem nezměnil, jen přesunul; bez
+vrstvy engine napíše jen popisek role.
+
+Nové třídy (engine, `.tip-bublina` ji vykresluje jako HTML):
+
+```
+.nv-tip                       ← obal, mřížka řádků
+  .nv-tip-radek > b           ← jméno stupně nebo formy (Mega Alakazam…)
+    .nv-tip-znacky
+      .nv-tip-znak            ← jeden odznáček
+        svg.typ-ikona         ← u raidů a Maxů typ, jinak nic
+        .nv-tip-role          ← „raid", „Max", „Gmax", „gym", „LC/GL/UL/ML"
+        .nv-tip-rank          ← #12
+        .nv-tip-zn[data-znamka]← známka; barvy jsou v enginu podle tvé
+                                 tabulky ZNAMKA_BARVA z atlas.js
+```
+
+Do bubliny jdou jen role se známkou **SS až B** a stupeň, který žádnou takovou nemá, se nevypisuje — jinak to bylo dvacet odznáčků na druh. Když takovou roli nemá ani jeden stupeň, vezme se pět nejlepších rolí bez ohledu na známku; bublina tedy vypadá vždycky stejně. Prázdná je jen u druhu, který nevede vůbec žádný žebříček (Arceus), a tam se v dialogu píše věta místo odznáčků.
+
+Jeden stupeň se **nesmí zlomit do dvou řádků** (`flex-wrap:nowrap`), proto bublina radši roste do šířky — až 1180 px; pod 900 px se zalomení vrací, tam není kam růst. Stejnou bublinu dostaly i štítky v dialogu
+„Upravit seznam ručně" a položky našeptávače (`[data-nv-tip-druh]`); skládá se až na najetí, protože štítků bývá sto padesát.
+
+Engine si taky rozšiřuje bublinu: `body .tip-bublina:has(.nv-tip)` na 700 px,
+protože `.atlas-test .tip-bublina` ji stahuje na 430 px a sedm řádků se do ní
+nevešlo. Kdyby sis vzala vzhled odznáčků k sobě, tenhle override i barvy
+známek z enginu rád smažu.
+
+**Drobnosti ve stejné dávce:** štítky v Seznamu řad přišly o počet kusů
+v zahozených (`.nv-hrob` se tam už nekreslí) a o značky „ručně" a „bonbóny" —
+`.nv-chip.nv-z-rucne` a `.nv-z-bonbony` se tedy v seznamu neobjeví.
+
+## A062 — verdikt „Trade" zrušen, dvojice typů na jeden řádek (21. 11. 2026)
+
+**Štítek Trade je pryč.** Lukáš: „přijde mi to zduplikování funkcionality."
+Seznam druhů, které chce vyměnit, už nedrží kus v rosteru — kus jde pryč
+jako každý jiný a co přetagovat na trade se pozná ze stránky **Na výměnu**,
+z hromady, kterou pustil. Co se tím z appky ztratilo:
+
+* značka **VT** / **TRADE** ve sloupci Verdikt (byla to `.dv-chip.dv-znacka`)
+  a její zaškrtávátko ve filtru důvodů — ve štítcích se už neobjeví,
+* dialog na začátku čištění boxu, který se ptal na výměny (teď je tam
+  obyčejná věta),
+* tlačítko **Chci bonbóny z výměny…** se jmenuje **Seznam přání…**
+  (`#nvBonbonyBtn`, `id` je stejné) a ten seznam už nemění žádný verdikt —
+  jde jen do odkazu, který posílá kamarádům.
+
+Pozor na jedno: štítek **TRADE** s bublinou „po výměně se vyvine za nula
+bonbónů" (`.dv-chip.dv-trade` pod čarou u pouštěného kusu) **zůstává** —
+to je pravidlo hry z pogoapi, ne Lukášův seznam.
+
+**Dvojice typů v dlaždici stojí celá na jednom řádku.** Zkoušel jsem u
+těsných dlaždic (Stufful) nechat jen piktogramy bez názvů; Lukáš to
+zamítl („vypadá to blbě"), takže je to zpátky a místo toho se obal
+`.atlas-tag-typy` nezalamuje (`flex-wrap:nowrap`) a dvojice se radši
+celá zmenší. Kdybys to chtěla řešit jinak, cíl je: **oba štítky typu
+celé, na jednom řádku, i u nejdelších jmen**.
+
+## A063 — čtyři věci, co drží vrstvová sada červené (22. 11. 2026)
+
+Tohle **nic neblokovalo** a 2.15 jde do produkce i s tím — nic z toho není
+v enginu, žádné číslo ani verdikt se tím nemění. Ale `tests/atlas_vrstva.test.mjs`
+to hlídá a padá na tom, takže ať víš, co po tobě ta sada chce. Změřeno na
+sestavě z 22. 11., pouštěj `node tests/atlas_vrstva.test.mjs`.
+
+**1. Mezera mezi tabulkou lig a buňkami rolí (detail kusu).**
+Sekce lig končí na 944 px, buňky začínají na 956 — **12 px**. Test chce
+aspoň **18**, aby to nevypadalo nalepené. Buď mezeru zvětši, nebo mi napiš,
+že 12 px je záměr, a já tu hranici v testu posunu.
+Kontrola: *„…a čtyři buňky pod nimi nejsou nalepené"*.
+
+**2. Značky a „silný proti" se na úzkém okně lámou na dva řádky.**
+Okno **1150 px**, detail Diancie: `.atlas-vyhoda` spadne pod řádek s typy
+a vzácnostmi. Sbalovátko funguje (ukazuje `+4`), jen to celé nedrží na
+jednom řádku. Cíl je stejný jako u dvojice typů v dlaždici (A062): radši
+zmenšit než zalomit.
+Kontrola: *„značky a „silný proti" zůstanou na jednom řádku i na úzkém okně"*.
+
+**3. Kalendář, měsíční pohled: v jednom dni stojí kratší akce pod delšími.**
+Příklad ze sestavy — den s **Twilight Wishes** (7 dní), **Cresselia a Darkrai**
+(9 dní), **Mega Banette** (9 dní) a **Shadow Tornadus** (**5 dní**), a ten
+pětidenní je poslední. Pravidlo, na kterém se sada drží, je „kratší akce
+nahoru, dlouhé kampaně dolů"; délka se čte z dat, ne z pořadí ve zdroji.
+Kontrola: *„…a kratší akce stojí nad dlouhými kampaněmi"*.
+
+**4. Čeština u akcí spadla na 80 %** (365 ze 456 textů; test chce 90 %).
+Není to regrese v překladači — v datech jen přibylo toho, co `cz()` nezná:
+kostýmová jména (*Modern Jacket Machamp*, *Mighty Kommo-o*, *Astronaut
+Pikachu*), předměty s počtem (*Silver Pinap Berry ×1*, *Ultra Ball ×2*),
+stupně GO Passu (*Rank 25*, *Tier 1 – Rank 1*) a souvislé věty, které appka
+schválně nepřekládá. Dvě cesty, rozhodne Lukáš: doplnit do slovníku české
+tvary pro „Mighty X", předměty a stupně, nebo jména z toho poměru vůbec
+nepočítat (test je dnes počítá, protože v pokédexu nejsou).
+Kontrola: *„…v datech je česky aspoň devět desetin textů"*.
+
 ### Pravidla, která platí pořád
 
 * **Dolů do 500 px.** Pod 500 px se nic neřeší, nad 500 se nic nesmí lámat.

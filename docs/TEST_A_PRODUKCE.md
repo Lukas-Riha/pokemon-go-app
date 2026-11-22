@@ -73,9 +73,11 @@ běží kontrola: kdyby v souboru zůstalo `pgo_test_`, `LOKÁLNÍ TEST`,
 
    Bez toho neprojde ani další `--test`.
 
-2. `tools/deploy.ps1` volá `sync_reference.py` **bez** `--vzhled`. Dokud se
-   to nezmění, nasadí se produkce v původním vzhledu, i kdyby se předtím
-   ručně pustil `--vzhled` — deploy si appku přepeče znovu.
+2. `tools/deploy.ps1` volá `sync_reference.py` **s** `--vzhled` (platí od
+   překlopení produkce na Atlas), takže appku si přepeče sám i se
+   vzhledovou vrstvou — ruční build před ním nemá smysl. Po nasazení si
+   engine sám vrátí přes `git checkout`, proto musí být **všechno
+   zacommitované dřív**: co v enginu není v commitu, ten krok zahodí.
 
 ## Kde je hranice
 

@@ -59,7 +59,7 @@ await stranka.evaluate(async (rows) => {
  * Výřez kolem prvků — ne podle pevných souřadnic: ty se s každou úpravou
  * rozvržení rozejdou a snímek pak ukazuje prázdno.
  */
-async function snimek(jmeno, selektory, okraj = 10, sirkaPodle = null) {
+async function snimek(jmeno, selektory, okraj = 10, sirkaPodle = null, maxVyska = 0) {
   const vyrez = await stranka.evaluate(([sel, o, cap]) => {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const s of sel) for (const el of document.querySelectorAll(s)) {
@@ -81,6 +81,9 @@ async function snimek(jmeno, selektory, okraj = 10, sirkaPodle = null) {
       width: Math.round(x1 - x0 + 2 * o), height: Math.round(y1 - y0 + 2 * o) };
   }, [selektory, okraj, sirkaPodle]);
   if (!vyrez) { console.log(jmeno, 'PŘESKOČENO — prvek nenalezen'); return; }
+  // Vysoký prvek (okno přes celý displej) se v novinkách nehodí — ořízne
+  // se na horní patro, ne aby z něj byla mapa světa.
+  if (maxVyska && vyrez.height > maxVyska) vyrez.height = maxVyska;
   const cesta = path.join(CIL, jmeno + '.png');
   await stranka.screenshot({ path: cesta, clip: vyrez });
   const kb = Math.round(fs.statSync(cesta).size / 1024);
@@ -333,6 +336,54 @@ await stranka.evaluate(async () => {
   await new Promise((r) => setTimeout(r, 600));
 });
 await snimek('nastaveni-vyklad', ['.atlas-help-pop-box', '[data-snimek]'], 14);
+
+/* Na vymenu: okno nad rosterem. Snima se CELE okno oriznute na horni
+   patro — slozeny vyrez ze dvou kousku (hlava + mrizka) rozstrihl 21. 11.
+   hlavicku napul a text v nem byl rozmazany. Okno se taky musi nechat
+   dojet: dokud se vysouva, je rozmazane. */
+await stranka.evaluate(async () => {
+  /* Výklad z předchozího snímku musí jít pryč: jeho clona pod sebou
+     ROZMAZÁVÁ celou stránku, takže okno Na výměnu vyšlo rozmazané
+     a hlavička v něm zdvojená (21. 11. 2026). */
+  document.querySelector('.atlas-help-pop-zavrit')?.click();
+  await new Promise((r) => setTimeout(r, 500));
+  document.querySelectorAll('.atlas-help-pop').forEach((e) => e.remove());
+  // Okno novinek svítí přes horní okraj — do snímku novinky nepatří.
+  document.getElementById('novinkyOkno')?.remove();
+  /* Cokoli, co kreslí přes horní okraj okna (proužky appky, karty
+     z dřívějších snímků), se na čas schová — jinak leží ve snímku
+     jako barevný pruh nad hlavičkou. */
+  const okno0 = document.querySelector('#nvPlachta .hled-okno');
+  if (okno0) {
+    const r0 = okno0.getBoundingClientRect();
+    document.elementsFromPoint(r0.left + r0.width / 2, r0.top + 2)
+      .filter((e) => !e.closest('#nvPlachta') && e !== document.body
+        && e !== document.documentElement)
+      .forEach((e) => { e.style.visibility = 'hidden'; });
+  }
+  document.querySelectorAll('[data-snimek]').forEach((e) => delete e.dataset.snimek);
+  const P = window.__pgo;
+  P.setDiscarded(['Beldum', 'Abra', 'Abra', 'Gible', 'Eevee', 'Deino', 'Swinub']
+    .map((n, i) => ({ k: n.toLowerCase() + '|' + i, n, del: Date.now(),
+      r: { pokemon: n, cp: 100 + i } })));
+  await new Promise((r) => setTimeout(r, 1200));
+  document.getElementById('nvOtevritBtn').click();
+  await new Promise((r) => setTimeout(r, 2500));
+  // Plovouci karty nastaveni a bubliny ze snimku pryc — do novinky nepatri.
+  document.querySelectorAll('.atlas-undo, .atlas-toast, .tip-bublina')
+    .forEach((e) => e.remove());
+  window.scrollTo(0, 0);
+  await new Promise((r) => setTimeout(r, 500));
+});
+await snimek('navymenu-okno', ['#nvPlachta .hled-okno'], 0, null, 900);
+
+// …a bublina s hodnocenim cele evolucni rady u druhu v „Na trade".
+await stranka.evaluate(async () => {
+  const d = document.querySelector('#nvPrunikBox .nv-druh');
+  if (d) d.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 1200));
+});
+await snimek('navymenu-bublina', ['.tip-bublina.vidno'], 6);
 
 await prohlizec.close();
 console.log('hotovo →', CIL);

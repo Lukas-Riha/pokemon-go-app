@@ -121,7 +121,9 @@ async function karty(page) {
       const r = rows.filter((x) => x.id === k.dataset.atlasDetail)[0];
       if (!r) return null;
       const c = comp[r.id], vic = k.querySelector(".dv-vic");
-      return { jmeno: r.pokemon, keepGood: !!c.keepGood, duvodu: (c.duvody || []).length,
+      return { jmeno: r.pokemon, keepGood: !!c.keepGood,
+        // Kus drzeny jen znackou nese v radku i stitky „pod carou".
+        duvodu: (c.duvody || []).length + (c.podCarou || []).length,
         videt: [...k.querySelectorAll(".dv-chip:not(.dv-vic)")].filter((e) => !e.hidden).length,
         vic: vic && !vic.hidden ? Number(vic.textContent.replace("+", "")) : 0,
         vicTip: vic && !vic.hidden ? vic.getAttribute("data-tip") || "" : "",
@@ -146,7 +148,8 @@ async function detail(page) {
       stejnyRadek: bar && edit ? Math.abs(bar.getBoundingClientRect().top - edit.getBoundingClientRect().top) < 12 : null,
       souhrn: !!document.querySelector(".atlas-role-summary"),
       stitku: document.querySelectorAll(".atlas-verdict-first .d-duvody .dv-chip:not(.dv-vic)").length,
-      duvodu: (P.getComputed()[beldum.id].duvody || []).length,
+      duvodu: (P.getComputed()[beldum.id].duvody || []).length
+        + (P.getComputed()[beldum.id].podCarou || []).length,
       subVedle: !!document.querySelector(".atlas-verdict-first .d-sub"),
       evoNadpisu: [...document.querySelectorAll(".atlas-evolution-column .d-box-h")]
         .filter((e) => e.getClientRects().length).length,
@@ -1605,8 +1608,13 @@ const dSt = await pSt.evaluate(async () => {
   return out;
 });
 await pSt.close();
-check("paměť smazaných drží 3 dny, ne měsíc",
-  dSt.pamet === "3" && dSt.moznosti.indexOf("3") === 0, JSON.stringify(dSt.moznosti));
+/* Paměť smazaných se dřív sama zahazovala po třech dnech. Od stránky
+   Na výměnu se z ní bere průnik („tohle jsi pustil"), takže se drží, dokud
+   ji nesmažeš sám — mazání po dnech zůstává jako volba pro toho, kdo ho chce. */
+check("paměť smazaných se sama nemaže, dokud si to nenastavíš",
+  dSt.pamet === "0" && dSt.moznosti.indexOf("0") !== -1
+    && dSt.moznosti.indexOf("3") !== -1,
+  JSON.stringify({ pamet: dSt.pamet, moznosti: dSt.moznosti }));
 check("pruh statů a IV je stejně dlouhý",
   dSt.staty.pruh === dSt.iv.pruh && dSt.staty.pruh >= 70,
   JSON.stringify({ staty: dSt.staty, iv: dSt.iv }));
@@ -5759,7 +5767,17 @@ const d81 = await p81.evaluate(async () => {
   out.filtru = filtry().length;
   out.delky = filtry().map((t) => t.length);
   out.kopii = okno.querySelectorAll(".hled-kopie").length;
-  out.zdroj = /smazané dnes z rosteru/.test((okno.querySelector(".hint") || {}).textContent || "");
+  /* Odkud se kusy berou, si uz vybira uzivatel prepinacem; driv to
+     stala jedna veta v uvodu („smazane dnes z rosteru"). Merit se
+     tedy musi prepinac a jeho vybrana volba. */
+  {
+    const vybrany = okno.querySelector('.hled-zdroj input[name="hledZdroj"]:checked');
+    /* Bublinu si vrstva stehuje z `title` do `data-tip`, takze se
+       meri popisek volby — ten je enginovy a stoji v okne. */
+    const stitek = vybrany ? vybrany.closest("label") : null;
+    out.zdroj = !!vybrany && vybrany.value === "smazane"
+      && /Smazané dnes z rosteru/.test((stitek && stitek.textContent) || "");
+  }
   out.rucne = /Najdi si je sám/.test(okno.textContent);
 
   /* To hlavní: žádný filtr nesmí najít kus, který zůstal v rosteru.
@@ -6925,7 +6943,12 @@ await p102.close();
 
 /* 103) Prázdná záložka Max říkala jen „žádné pořadí nemá“ a u Cottonee
    i Feebase to člověk četl jako „tenhle druh Dynamax neumí“. Žebříček Hubu
-   je přitom top 10 na typ — to je úplně jiné tvrzení. */
+   je přitom úplný, takže se to říct dá — jen jinými slovy.
+
+   Cottonee tu 21. 11. 2026 jako příklad dosloužilo: je mezi druhy,
+   kterým si appka pořadí dopočítala sama, takže tabulku má. Měří se
+   proto na Bidoofovi, který není ani v Hubově žebříčku, ani mezi
+   dopočítanými. */
 const p103 = await otevri(1500, []);
 const d103 = await p103.evaluate(async () => {
   const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -6940,15 +6963,22 @@ const d103 = await p103.evaluate(async () => {
     const telo = document.querySelector(".atlas-vysledek-telo");
     return telo ? telo.textContent.replace(/\s+/g, " ") : "";
   };
-  return { cottonee: await hledej("Cottonee"), machamp: await hledej("Machamp") };
+  return { mimo: await hledej("Bidoof"), machamp: await hledej("Machamp"),
+    dopocet: await hledej("Cottonee") };
 });
 check("Max záložka u druhu mimo žebříček řekne, že Dynamax neumí",
-  /nevede/.test(d103.cottonee) && /Žebříček je úplný/.test(d103.cottonee),
-  d103.cottonee.slice(0, 220));
+  /nevede/.test(d103.mimo) && /Žebříček je úplný/.test(d103.mimo),
+  d103.mimo.slice(0, 220));
+/* Druh, kterému pořadí spočítala appka, to musí mít napsané u čísla —
+   je to jiný model než Hubův a všude, kde se čísla ukazují, to podle
+   kontraktu stát musí. */
+check("…a u dopočítaného pořadí stojí, že si ho appka spočítala sama",
+  /#\d/.test(d103.dopocet) && /dopočítala appka/.test(d103.dopocet),
+  d103.dopocet.slice(0, 220));
 /* Věta „Gigantamax formu tenhle druh má/nemá" je pryč — Lukáš nechce pod
    tabulkami výkladové věty. Kdo Gmax umí, pozná se ze značky GMAX u řádku. */
 check("…a druh, který v žebříčku je, má místo věty řádky",
-  !/Gigantamax formu tenhle druh/.test(d103.cottonee)
+  !/Gigantamax formu tenhle druh/.test(d103.mimo)
     && !/Gigantamax formu tenhle druh/.test(d103.machamp)
     && /#\d/.test(d103.machamp),
   d103.machamp.slice(0, 160));
@@ -7229,15 +7259,25 @@ const d109 = await p109.evaluate(async () => {
       radky: Math.abs(a.top - b.top) < 3 ? 1 : 2,
     });
   });
+  /* Dva typy patri na jeden radek CELE — i kdyz se k nim v radku tlaci
+     znacka. Zalomit se smi cela dvojice, ne jen jeden z nich; zkracovat
+     je na ikonu se neosvedcilo (Lukas 21. 11. 2026). */
+  out.typy = [...document.querySelectorAll("#atlasRoster .atlas-tag-typy")]
+    .map((o) => {
+      const ch = [...o.querySelectorAll(".atlas-roster-type")];
+      const tops = new Set(ch.map((c) => Math.round(c.getBoundingClientRect().top)));
+      return { typu: ch.length, radku: tops.size,
+        jmena: ch.every((c) => c.textContent.trim().length > 1) };
+    });
   const P = window.__pgo;
   (P.vymenaDruhy() || []).slice().forEach((k) => P.vymenaDruhOdeber(k));
   P.vymenaDruhPridej("Beedrill");
   await cekej(500);
-  const tr = [...document.querySelectorAll("button")]
-    .filter((b) => b.textContent.trim() === "Transfer")[0];
-  if (tr) tr.click();
-  await cekej(1500);
-  const up = document.querySelector(".hled-vymena-pridat");
+  /* Seznam „chci bonbony z vymeny" se spravuje jen na strance
+     Na vymenu — v Transferu po nem nezbylo nic. */
+  document.getElementById("nvOtevritBtn").click();
+  await cekej(1300);
+  const up = document.getElementById("nvBonbonyBtn");
   if (!up) return out;
   up.click();
   await cekej(800);
@@ -7258,11 +7298,24 @@ const d109 = await p109.evaluate(async () => {
   const cipy = [...document.querySelectorAll(".app-okno-cip")];
   out.pridano = cipy.length;
   out.cipBlikl = cipy.some((c) => c.hasAttribute("data-blik"));
+  document.getElementById("appOknoZrusit").click();
+  await cekej(400);
+  document.getElementById("nvZavritBtn").click();
+  await cekej(300);
+  document.getElementById("hledaniBtn").click();
+  await cekej(1500);
+  const okno = document.getElementById("hledaniOkno");
+  out.transfer = { seznam: okno ? okno.querySelectorAll(".hled-vymena").length : -1,
+    evo: okno ? okno.querySelectorAll(".hled-evo").length : -1,
+    prani: okno ? okno.querySelectorAll(".hled-prani").length : -1 };
   return out;
 });
 check("dva typy se v dlazdici rosteru vejdou na jeden radek",
   d109.dlazdice.length >= 2 && d109.dlazdice.every((t) => t.radky === 1),
   JSON.stringify(d109.dlazdice));
+check("dvojice typu v dlazdici stoji cela na jednom radku",
+  d109.typy.length > 0 && d109.typy.every((t) => t.radku <= 1 && t.jmena),
+  JSON.stringify(d109.typy));
 check("nabidka seznamu prani ukaze i to, co uz seznam pokryva",
   !!d109.nabidka.beedril && /u\u017e v seznamu/.test(d109.nabidka.beedril.stav)
     && !!d109.nabidka.weedle && /pokr\u00fdv\u00e1/.test(d109.nabidka.weedle.stav),
@@ -7270,6 +7323,9 @@ check("nabidka seznamu prani ukaze i to, co uz seznam pokryva",
 check("...kliknuti nic neprida, jen rozsviti stitek, ktery to drzi",
   d109.pridano === 1 && d109.cipBlikl === true,
   JSON.stringify([d109.pridano, d109.cipBlikl]));
+check("v Transferu uz seznam druhu neni, evoluce zdarma a prani ano",
+  d109.transfer && d109.transfer.seznam === 0 && d109.transfer.evo === 1
+    && d109.transfer.prani === 1, JSON.stringify(d109.transfer));
 await p109.close();
 
 /* 110) Hodnocení v hlavičce patří k VYBRANÉ formě. U „Shadow Beedrill"
@@ -7754,6 +7810,183 @@ check("obsah ligove bunky stoji na stredu",
 check("bublina se seznamem je sirsi nez obycejna",
   parseFloat(d115.sirka.seznam) > parseFloat(d115.sirka.bezSeznamu),
   JSON.stringify(d115.sirka));
+/* 116) Na vymenu se otevira jako okno z horni listy.
+
+   Vrstva skryva podzalozky sekce (`.atlas-test #atlasSubnav{display:none}`),
+   takze karta nemela v rail-shellu zadnou cestu — Lukas ji hledal
+   a nenasel. Stoji proto v horni liste hned vedle Transferu a otevira
+   se jako okno nad tim, co je na obrazovce: pohled se nema prepnout. */
+console.log("\n116) Na vymenu z horni listy");
+const p116 = await otevri(1500, []);
+const d116 = await p116.evaluate(async () => {
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.__atlasTest.go("home");
+  await cekej(900);
+  const lista = document.querySelector(".atlas-top-actions");
+  const tl = lista.querySelector('[data-click="nvOtevritBtn"]');
+  const poradi = [...lista.querySelectorAll("button")].map((b) => b.textContent.trim());
+  const out = { popisek: tl ? tl.textContent.trim() : null, poradi: poradi,
+    zPrehledu: document.body.dataset.atlasView };
+  if (tl) tl.click();
+  await cekej(1200);
+  const karta = document.getElementById("naVymenuCard");
+  const plachta = document.getElementById("nvPlachta");
+  const okno = document.querySelector("#nvPlachta .hled-okno");
+  out.pohled = document.body.dataset.atlasView;
+  out.otevrena = !!karta && !!plachta && !plachta.hidden
+    && karta.getBoundingClientRect().height > 0;
+  out.sirkaOkna = okno ? Math.round(okno.getBoundingClientRect().width) : 0;
+  /* Bublina u druhu v „Na trade" si bere odznaky roli z vrstvy —
+     praporky lig, stit gymu a znacku Dmaxu. Engine je jen pozada
+     (`window.AtlasRoleIkona`), takze bez vrstvy by tam byl jen text. */
+  const P116 = window.__pgo;
+  P116.setDiscarded([{ k: "beldum|1", n: "Beldum", del: Date.now(),
+    r: { pokemon: "Beldum", cp: 300 } }]);
+  await cekej(900);
+  const druh = document.querySelector("#nvPrunikBox .nv-druh");
+  const tip116 = druh ? druh.getAttribute("data-tip") || "" : "";
+  out.bublina = { jeHtml: /^<div class="nv-tip"/.test(tip116),
+    roleIkon: (tip116.match(/atlas-role-icon/g) || []).length,
+    typIkon: (tip116.match(/typ-ikona/g) || []).length };
+  /* Jeden stupen se nesmi zlomit do dvou radku — pak se neda cist,
+     co komu patri. Bublina radsi roste do sirky. */
+  if (druh) druh.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+  await cekej(500);
+  const bub = [...document.querySelectorAll(".tip-bublina")]
+    .filter((x) => !x.classList.contains("atlas-evo-tooltip"))[0];
+  const radky = bub ? [...bub.querySelectorAll(".nv-tip-radek")] : [];
+  out.bublina.radku = radky.length;
+  out.bublina.zlomene = radky.filter((r) => {
+    const tops = new Set([...r.querySelectorAll(".nv-tip-znak")]
+      .map((z) => Math.round(z.getBoundingClientRect().top)));
+    return tops.size > 1;
+  }).length;
+  const bubR = bub ? bub.getBoundingClientRect() : null;
+  out.bublina.vejdeSe = !!bubR && bubR.right <= window.innerWidth + 1
+    && bubR.left >= -1;
+  out.nadpis = (document.querySelector("#nvOknoNadpis") || {}).textContent || "";
+  const krizek = document.getElementById("nvZavritBtn");
+  if (krizek) krizek.click();
+  await cekej(500);
+  out.zavrene = !!plachta && plachta.hidden;
+  return out;
+});
+await p116.close();
+check("tlacitko Na vymenu stoji hned za Transferem",
+  d116.popisek === "Na výměnu"
+    && d116.poradi.indexOf("Na výměnu") === d116.poradi.indexOf("Transfer") + 1,
+  JSON.stringify(d116.poradi));
+check("...a otevre okno nad Prehledem, aniz by prepnul pohled",
+  d116.zPrehledu === "home" && d116.pohled === "home" && d116.otevrena
+    && d116.sirkaOkna > 700, JSON.stringify(d116));
+check("...a krizek okno zavre",
+  d116.zavrene === true, JSON.stringify(d116));
+check("bublina u druhu nese odznaky roli z vrstvy",
+  d116.bublina.jeHtml && d116.bublina.roleIkon >= 1
+    && d116.bublina.typIkon >= 1, JSON.stringify(d116.bublina));
+check("...a zadny stupen v ni nestoji na dvou radcich",
+  d116.bublina.radku >= 2 && d116.bublina.zlomene === 0
+    && d116.bublina.vejdeSe === true, JSON.stringify(d116.bublina));
+
+/* 117) Druhy, ktere zebricek Pokemon GO Hubu v Max Battle nevede.
+
+   Hub pise „only Pokemon marked available in our data are included" a
+   Pikachu, Vespiquen ani Eternatus mezi nimi nejsou — v appce to pak
+   vypadalo, ze ten druh Dynamax neumi. Seznam navic je v
+   data/dmax_navic.json a poradi si u nich appka dopocita sama z utoku
+   a STAB; musi to u toho rict (21. 11. 2026).
+
+   Tri radky navic pise Hub bez predpony „Dynamax" — Eternatus (Dragon)
+   a korunovany Zacian se Zamazentou (Steel). Parser je zahazoval jako
+   „normalni druh", takze Eternatus v appce chybel uplne.
+
+   Proc tady a ne v enginove sade: Max zebricek je ZAPECENY v souboru
+   a enginovy soubor nese data z posledniho produkcniho buildu. Tyhle
+   kontroly se daji merit jen na TEST buildu. */
+console.log("\n117) druhy, ktere Hub v Max Battle nevede");
+const p117 = await otevri(1500, []);
+const d117 = await p117.evaluate(async () => {
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  P.setRows([
+    { pokemon: "Pikachu", cp: 900, level: 25, ivAtk: 15, ivDef: 15,
+      ivSta: 15, dynamax: "Ano" },
+    { pokemon: "Eternatus", cp: 4000, level: 30, ivAtk: 15, ivDef: 15,
+      ivSta: 15, dynamax: "Ano" },
+    { pokemon: "Zacian Crowned Sword", cp: 4000, level: 30, ivAtk: 15,
+      ivDef: 15, ivSta: 15, dynamax: "Ano" }
+  ]);
+  await cekej(2600);
+  const ven = {};
+  P.getRows().forEach((r) => {
+    const box = document.createElement("div");
+    document.body.append(box);
+    P.atlasDetail(r.id, box);
+    const chip = [...box.querySelectorAll(".dv-chip")]
+      .find((e) => /Dynamax/.test(e.textContent));
+    ven[r.pokemon] = chip ? chip.getAttribute("data-tip") || "" : "";
+    box.remove();
+  });
+  const cisty = (t) => t.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  return {
+    pikachu: {
+      role: /Dynamax útočník:/.test(ven.Pikachu || ""),
+      dopocet: /dopočítala appka/.test(ven.Pikachu || ""),
+      hub: /žebříček Pokémon GO Hub/.test(ven.Pikachu || ""),
+      text: cisty(ven.Pikachu || "").slice(0, 160)
+    },
+    eternatus: {
+      prvni: /Dragon #1 \(SS\)/.test(ven.Eternatus || ""),
+      hub: /žebříček Pokémon GO Hub/.test(ven.Eternatus || ""),
+      text: cisty(ven.Eternatus || "").slice(0, 160)
+    },
+    zacian: {
+      prvni: /Steel #1 \(SS\)/.test(ven["Zacian Crowned Sword"] || ""),
+      text: cisty(ven["Zacian Crowned Sword"] || "").slice(0, 160)
+    }
+  };
+});
+await p117.close();
+check("Pikachu ma poradi v Max Battle, i kdyz ho Hub nevede",
+  d117.pikachu.role === true, JSON.stringify(d117.pikachu));
+check("...a appka rekne, ze si ho dopocitala sama",
+  d117.pikachu.dopocet === true && d117.pikachu.hub === false,
+  JSON.stringify(d117.pikachu));
+check("radky bez predpony Dynamax se uz nezahazuji (Eternatus, Zacian)",
+  d117.eternatus.prvni === true && d117.eternatus.hub === true
+    && d117.zacian.prvni === true,
+  JSON.stringify([d117.eternatus, d117.zacian]));
+
+/* 118) Druhy, ktere hra profesorovi poslat nenecha.
+
+   Zakaz ze hry stoji u zakladniho druhu („meloetta"), ale v rosteru je
+   kus „Meloetta Aria" — a tu hra nepusti stejne jako zaklad, takze
+   zakaz dedi i formy (Lukas 21. 11. 2026). Mythicti maji navic vetu
+   o nevratnem transferu; verdikt ale musi byt Ponechat u OBOU kusu,
+   i u toho horsiho.
+
+   Proc tady: seznam je ZAPECENY (`POKEDEX.nelzePustit`) a enginovy
+   soubor nese data z posledniho produkcniho buildu. */
+console.log("\n118) formu mytickeho druhu hra taky nepusti");
+const p118 = await otevri(1500, []);
+const d118 = await p118.evaluate(async () => {
+  const P = window.__pgo;
+  const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+  P.setDiscarded([]);
+  P.setRows([
+    { pokemon: "Meloetta Aria", cp: 1666, level: 15, ivAtk: 11, ivDef: 13, ivSta: 14 },
+    { pokemon: "Meloetta Aria", cp: 1200, level: 10, ivAtk: 1, ivDef: 1, ivSta: 1 }
+  ]);
+  await cekej(2200);
+  const c = P.getComputed();
+  return P.getRows().map((r) => ({ cp: r.cp, keep: (c[r.id] || {}).keep,
+    sub: (c[r.id] || {}).keepSub || "" }));
+});
+await p118.close();
+check("horsi Meloetta Aria se nenabizi k pusteni — hra ji nepusti",
+  d118.length === 2 && d118.every((x) => x.keep === "Ponechat"
+    && /pustit nenech/.test(x.sub)), JSON.stringify(d118));
+
 await browser.close();
 server.close();
 console.log(`\n${passed} kontrol prošlo, ${failures.length} selhalo`);

@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "popis": "Druhy, ktere v Pokemon GO Dynamax umi, ale zebricek Pokemon GO Hubu je nevede. Hub sam na strankach pise: 'Only Pokemon marked available in our data are included.'",
+    "zdroj": "https://pokemondb.net/go/dynamax-attackers (overeno 21. 11. 2026)",
+    "model": "Poradi u techto druhu dopocitava appka: (utok + 15) x CPM(40) x 1,2 za STAB. Na 314 Hubovych radcich sedi typ utoku v 312 pripadech a sila do 2,5 %.",
+    "pravidlo": "Jakmile druh zacne vest Hub, build ho odtud ignoruje a radek se muze smazat. Opacne: kdyz pribude dalsi Dmax druh, ktery Hub nevede, pridej ho sem. Eternatus, Zacian a Zamazenta odsud 21. 11. odesli: Hub je vede, jen bez predpony Dynamax v nazvu radku."
+  },
+  "druhy": [
+    "Pikachu",
+    "Raichu",
+    "Combee",
+    "Vespiquen",
+    "Cottonee",
+    "Whimsicott",
+    "Espurr",
+    "Meowstic",
+    "Magmar",
+    "Magmortar"
+  ]
+}

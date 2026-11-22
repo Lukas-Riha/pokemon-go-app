@@ -1554,8 +1554,6 @@
   .hled-pred-druh img { width: 22px; height: 22px; object-fit: contain;
     vertical-align: middle; }
   /* Blok s druhy na výměnu: hotový filtr v něm má vlastní řádek. */
-  .hled-vymena .hled-radek { margin-top: 8px; }
-  .hled-vymena .hint:last-child { margin: 6px 0 0; display: block; }
   .hled-hotovo { display: flex; align-items: baseline; gap: 8px;
     flex-wrap: wrap; margin: 2px 0 8px; }
   .hled-hotovo .hint { margin: 0; flex: 1 1 260px; }
@@ -2527,6 +2525,40 @@
      se pořád lámal na dva řádky. Široká bublina se čte líp než úzká
      a vysoká (Lukáš 17. 11.). */
   .tip-bublina:has(.tip-seznam) { max-width: min(660px, calc(100vw - 16px)); }
+  /* Hodnocení řady: řádek na stupeň, odznáčky za jménem. Širší než
+     běžná bublina — vzhledová vrstva ji jinak stahuje na 430 px. */
+  /* Jeden stupeň se nesmí zlomit do dvou řádků — pak se v tom nedá číst,
+     co komu patří (Lukáš 19. 11. 2026). Bublina radši roste do šířky;
+     na úzké obrazovce se zalomení vrací, tam není kam růst. */
+  body .tip-bublina:has(.nv-tip) { max-width: min(1180px, calc(100vw - 16px)); }
+  .nv-tip { display: grid; gap: 5px; }
+  .nv-tip-radek { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; }
+  .nv-tip-radek > b { flex: 0 0 auto; min-width: 104px; }
+  .nv-tip-znacky { display: flex; flex-wrap: nowrap; gap: 4px; }
+  @media (max-width: 900px) {
+    .nv-tip-radek, .nv-tip-znacky { flex-wrap: wrap; }
+  }
+  .nv-tip-znak { display: inline-flex; align-items: center; gap: 3px;
+    padding: 1px 6px; border-radius: 999px; font-size: 11px;
+    white-space: nowrap; background: rgba(128, 128, 128, .2); }
+  .nv-tip-znak .typ-ikona { width: 13px; height: 13px; }
+  /* Odznaky z vrstvy: v hlavičce Vyhledávání jsou velké, tady se musí
+     vejít do řádku odznáčku. */
+  body .tip-bublina .nv-tip-znak .atlas-role-icon { width: 15px; height: 15px;
+    flex: none; display: inline-block; vertical-align: middle; }
+  .nv-tip-role { opacity: .8; }
+  .nv-tip-rank { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .nv-tip-zn { padding: 0 4px; border-radius: 4px; font-size: 10px;
+    font-weight: 700; color: #fff; }
+  .nv-tip-zn[data-znamka="SS"] { background: #b45cff; }
+  .nv-tip-zn[data-znamka="S"] { background: #2f9e44; }
+  .nv-tip-zn[data-znamka="A+"] { background: #3f9f69; }
+  .nv-tip-zn[data-znamka="A"] { background: #4c9f4c; }
+  .nv-tip-zn[data-znamka="B"] { background: #8a9a2b; }
+  .nv-tip-zn[data-znamka="C"] { background: #b08a1e; }
+  .nv-tip-zn[data-znamka="D"] { background: #b06a1e; }
+  .nv-tip-zn[data-znamka="E"] { background: #a2552a; }
+  .nv-tip-zn[data-znamka="F"] { background: #7a4040; }
   .tip-hlava { font-weight: 700; font-size: 13.5px; margin-bottom: 6px;
     padding-bottom: 6px; border-bottom: 1px solid var(--grid); color: var(--text-primary); }
   /* Seznam utoku v bublině: odrážky pryč, typ jako malá plaketka. */
@@ -2691,7 +2723,8 @@
   /* Pole s naseptavanim v dialogu: stitky nad polem, nabidka pod nim.
      Nabidka je `absolute`, aby dialogem nehybala, jak se seznam meni. */
   .app-okno-vstup { position: relative; }
-  .app-okno-cipy { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+  .app-okno-cipy { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;
+    max-height: min(42vh, 320px); overflow: auto; }
   .app-okno-cipy:empty { display: none; }
   .app-okno-cip { display: inline-flex; align-items: center; gap: 4px;
     font-size: 12px; font-weight: 700; padding: 2px 4px 2px 5px;
@@ -2994,7 +3027,12 @@
   .app-okno[hidden] { display: none; }
   .app-okno-panel { width: min(520px, 100%); background: var(--surface-1);
     border: 1px solid var(--border); border-radius: 14px; padding: 22px;
-    box-shadow: 0 18px 50px #0006; }
+    box-shadow: 0 18px 50px #0006;
+    max-height: calc(100vh - 40px); display: flex; flex-direction: column; }
+  /* Okno se stovkou štítků: širší panel a rolování uvnitř. Jinak panel
+     přeroste obrazovku a tlačítko Uložit se nedá doklikat. */
+  .app-okno-panel.je-cipy { width: min(820px, 100%); }
+  .app-okno-panel > .app-okno-text { overflow: auto; min-height: 0; }
   .app-okno-text { font-size: 14px; line-height: 1.6; white-space: pre-line; }
   .app-okno-vstup { display: block; margin-top: 14px; }
   .app-okno-vstup[hidden] { display: none; }
@@ -3206,6 +3244,70 @@
     .toolbar { flex-wrap: wrap; }
   }
 
+    /* ---- Na výměnu: seznam řad, průnik s hroby a koš ---- */
+    /* Okno nad rosterem. Plachta má stejné třídy jako Transfer, tady se
+       jen schovává a karta uvnitř nepotřebuje vlastní rámeček ani nadpis. */
+    /* Okno je širší než Transfer — vedle sebe v něm stojí pravidla,
+       výstup i seznam řad. Křížek je naopak stejný jako v Transferu:
+       velké orámované tlačítko si bralo pozornost, kterou má mít
+       obsah (Lukáš 18. 11. 2026). Třídy se v selektoru opakují
+       schválně: vzhledová vrstva má na obojí vlastní pravidlo. */
+    #nvPlachta[hidden]{display:none}
+    #nvPlachta.hled-plachta.nv-plachta .hled-okno{width:min(1680px,100%)}
+    #nvPlachta.hled-plachta.nv-plachta .hled-krizek{flex:none;display:inline-block;width:auto;height:auto;min-height:0;padding:4px 6px;border:0;border-radius:0;background:none;color:var(--text-muted);font-size:17px}
+    #nvPlachta.hled-plachta.nv-plachta .hled-krizek:hover{background:none;color:var(--text-primary)}
+    #nvPlachta #naVymenuCard{margin:0;border:0;background:none;padding:0;box-shadow:none}
+    #nvPlachta #naVymenuCard>summary{display:none}
+    /* Pořadí sekcí drží DOM, ne vzhledová vrstva: ta ho přehazovala
+       přes `order`, takže klávesnice se čtečkou chodily jinudy než oko. */
+    #nvPlachta #naVymenuCard>*{order:0}
+    #nvPlachta .nv-mriz{margin:0 0 14px}
+    .nv-blok{border:1px solid rgba(128,128,128,.32);border-radius:12px;padding:14px;margin:0}
+    .nv-blok h3{margin:0 0 6px;font-size:15px}
+    /* Pravidla jsou úzký sloupec, seznam široký — dřív byly obě části přes
+       celou stránku a řádky se nevešly. */
+    .nv-mriz{display:grid;grid-template-columns:minmax(0,330px) minmax(0,1fr);gap:14px;align-items:start;margin:14px 0}
+    .nv-mriz-obracena{grid-template-columns:minmax(0,1fr) minmax(0,330px)}
+    @media(max-width:900px){.nv-mriz,.nv-mriz-obracena{grid-template-columns:1fr}}
+    .nv-pravidla{display:grid;gap:9px}
+    .nv-pravidlo{display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px}
+    .nv-pravidlo-nazev{flex:1 1 100%;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.75}
+    .nv-pravidlo input[type=number]{width:62px}
+    .nv-volba{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+    .nv-volba>label{display:inline-flex;align-items:center;gap:4px}
+    #nvSeznamBox{max-height:430px;overflow:auto}
+    #nvPrunikBox{max-height:300px;overflow:auto}
+    .nv-druhy{display:flex;flex-wrap:wrap;gap:6px}
+    .nv-druh{display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(128,128,128,.16);border:1px solid rgba(128,128,128,.28);font-size:13px}
+    .nv-druh b{font-weight:600}
+    .nv-druh span{font-variant-numeric:tabular-nums;opacity:.75;font-size:12px}
+    .nv-sekce{margin-top:14px}
+    .nv-sekce>summary{cursor:pointer;margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.8;list-style:revert}
+    /* Řady stojí jako štítky vedle sebe, stejně jako druhy v „Na trade".
+       Řádek na každou řadu zabíral celou šířku a sto padesát řad se
+       nedalo přehlédnout (Lukáš 18. 11. 2026). */
+    .nv-rady{display:flex;flex-wrap:wrap;gap:6px}
+    .nv-rada{display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:4px 4px 4px 10px;border-radius:999px;background:rgba(128,128,128,.14);border:1px solid rgba(128,128,128,.28);font-size:13px}
+    .nv-rada b{font-weight:600}
+    .nv-rada small{font-size:11px;opacity:.7}
+    .nv-rada .nv-x,.nv-rada .nv-zpet{padding:2px 7px;border:0;border-radius:999px;background:none;color:inherit;font-size:11px;cursor:pointer;opacity:.6}
+    .nv-rada .nv-x:hover,.nv-rada .nv-zpet:hover{opacity:1;background:rgba(128,128,128,.28)}
+    .nv-chip{font-size:11px;padding:2px 7px;border-radius:999px;background:rgba(128,128,128,.2)}
+    .nv-chip.nv-z-rucne{background:rgba(255,186,0,.28)}
+    .nv-hrob{font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}
+    .nv-x{border:0;background:none;cursor:pointer;opacity:.55;font-size:13px;line-height:1}
+    .nv-x:hover{opacity:1}
+    .nv-pocet{font-weight:400;opacity:.7;font-size:12px}
+    .nv-kos-radek{display:flex;align-items:center;gap:8px;padding:4px 0}
+    .nv-sekce-ven .nv-rada b{opacity:.65;text-decoration:line-through}
+    /* Správa zahozených patří k oknu, ne mezi sekce — vlastní sekce
+       kradla místo hlavnímu výpisu. */
+    .nv-prikazy{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+    .nv-prikazy button{font-size:12px;white-space:nowrap}
+    .nv-kos-panel{margin:0 0 14px;padding:12px;border:1px solid rgba(128,128,128,.32);border-radius:12px}
+    .nv-kos-panel[hidden]{display:none}
+    .nv-blok.nv-hlavni{border-color:rgba(128,128,128,.5)}
+
   /* === ATLAS CSS START === */
   /* === ATLAS CSS END === */
 </style>
@@ -3317,6 +3419,21 @@
           <b>rozpočet rolí</b> (záložka Role). U shadow kusu se měří hodnota
           <b>po očistě</b>.</span>
         <span class="setting-warn" id="ivThreshWarn"></span>
+      </div>
+      <div class="nast-pole">
+        <label for="bbPoradi">Pořadí IV počítat s best buddy</label>
+        <select id="bbPoradi">
+          <option value="0" selected>ne — do L50</option>
+          <option value="1">ano — do L51</option>
+        </select>
+        <span class="hint">Best buddy dá kusu <b>+1 level</b>. V lize se stropem CP to
+          pořadím kombinací zamíchá: kus s nižším útokem se pod strop vejde až na L51
+          a tam je silnější. <b>Tinkaton 14/15/15 v Ultra League</b> je bez best buddy
+          <b>#12</b> (99,4 %), s ním <b>#54</b> (98,35 %). pvpivs počítá s best buddy,
+          takže tímhle přepínačem si vybereš, jestli chceš vidět stejná čísla jako tam,
+          nebo jen to, co si koupíš. <b>Platí i pro procenta kvality</b>, podle kterých
+          jedou pojistky a rozpočet — po zapnutí všem kusům o kousek klesnou.
+          Plán vylepšení (level, CP, prach) se tím nemění: best buddy se za prach nekupuje.</span>
       </div>
       <div class="nast-pole">
         <label for="pvpStovka">Držet „PvP stovku“</label>
@@ -3577,7 +3694,9 @@
         PvP potenciál 96 % se slevou 5 bodů, elitní rank 100,
         <b>pořadí druhu v lize do #50</b>, práh užitečnosti role 50 %,
         50 tis. prachu za bod IV, 2 Dynamax kusy druhu a 3 na roli,
-        dotahovat na L40, paměť smazaných 3 dny. O ponechání ale rozhoduje <b>rozpočet rolí</b> —
+        dotahovat na L40. <b>Ruční seznamy nechává být</b> — druhy na výměnu
+        i to, cos na stránce Na výměnu sám přidal nebo vyškrtl; pravidla téhle
+        stránky se srovnají taky. O ponechání rozhoduje <b>rozpočet rolí</b> —
         prahy jen určují, kdo se o roli uchází a kdo ji drží jen jako náplast.</span>
     </div>
   </details>
@@ -3698,6 +3817,100 @@
     <div class="proh-out" id="prohOut"></div>
   </details>
 
+  <!-- Na výměnu je solo okno nad rosterem, stejně jako Transfer. Jako karta
+       mezi záložkami se stránka mačkala vedle rosteru, neměla vlastní
+       rolování a nebylo ji kde najít (Lukáš 18. 11. 2026). Plachta i okno
+       mají schválně stejné třídy jako Transfer, ať to i stejně vypadá.
+       Karta zůstává <details open> — vzhledová vrstva na tom staví
+       rozvržení; nadpis nese hlava okna, takže je summary schované. -->
+  <div class="hled-plachta nv-plachta" id="nvPlachta" hidden>
+    <div class="hled-okno" role="dialog" aria-modal="true" aria-labelledby="nvOknoNadpis">
+      <div class="hled-hlava">
+        <h3 id="nvOknoNadpis">Na výměnu — co z puštěných kusů přetagovat na trade</h3>
+        <div class="nv-prikazy">
+          <button type="button" id="nvSmazatHrobyBtn" title="Vyprázdní paměť zahozených kusů. Dávka se odloží do koše, odkud jde vrátit.">Smazat zahozené <span class="nv-pocet" id="nvHrobyPocet"></span></button>
+          <button type="button" id="nvKosBtn" aria-expanded="false" title="Poslední tři smazané dávky. Vrátit jde libovolná kombinace.">Vrátit smazané <span class="nv-pocet" id="nvKosPocet"></span></button>
+        </div>
+        <button type="button" class="hled-krizek" id="nvZavritBtn" aria-label="Zavřít">&#10005;</button>
+      </div>
+      <div class="hled-telo">
+        <details class="nv-card" id="naVymenuCard" open>
+          <summary>Na výměnu — co z puštěných kusů přetagovat na trade</summary>
+          <div class="nv-kos-panel" id="nvKosPanel" hidden>
+            <p class="hint">Zahozené kusy jsou paměť toho, cos pustil — z nich
+              se bere <b>Na trade</b>. Smazané dávky si appka pamatuje tři
+              a vrátit jde klidně několik najednou.</p>
+            <div id="nvKosBox"></div>
+          </div>
+
+          <div class="nv-mriz">
+          <section class="nv-blok">
+            <h3>Pravidla — kdo se na seznam dostane sám</h3>
+            <p class="hint">Zaškrtni, co chceš řešit, a dopiš od jakého pořadí.
+              Co přidáš nebo vyškrtneš ručně, má vždycky přednost.</p>
+            <div class="nv-pravidla">
+              <div class="nv-pravidlo">
+                <span class="nv-pravidlo-nazev">Max Battle — známka</span>
+                <label><input type="checkbox" id="nvMaxSS" checked /> SS</label>
+                <label><input type="checkbox" id="nvMaxS" checked /> S</label>
+                <label><input type="checkbox" id="nvMaxA" checked /> A</label>
+                <label><input type="checkbox" id="nvMaxB" /> B</label>
+              </div>
+              <div class="nv-pravidlo">
+                <span class="nv-pravidlo-nazev">Ligy — do pořadí</span>
+                <span class="nv-volba"><label><input type="checkbox" id="nvLigaLCOn" checked /> LC</label>
+                  <input type="number" id="nvLigaLC" min="0" max="500" value="50" aria-label="LC do pořadí" /></span>
+                <span class="nv-volba"><label><input type="checkbox" id="nvLigaGLOn" checked /> GL</label>
+                  <input type="number" id="nvLigaGL" min="0" max="500" value="50" aria-label="GL do pořadí" /></span>
+                <span class="nv-volba"><label><input type="checkbox" id="nvLigaULOn" checked /> UL</label>
+                  <input type="number" id="nvLigaUL" min="0" max="500" value="50" aria-label="UL do pořadí" /></span>
+                <span class="nv-volba"><label><input type="checkbox" id="nvLigaMLOn" checked /> ML</label>
+                  <input type="number" id="nvLigaML" min="0" max="500" value="50" aria-label="ML do pořadí" /></span>
+              </div>
+              <div class="nv-pravidlo">
+                <span class="nv-pravidlo-nazev">Raidy a gymy — do pořadí</span>
+                <span class="nv-volba"><label><input type="checkbox" id="nvRaidOn" /> útočníci na typ</label>
+                  <input type="number" id="nvRaid" min="0" max="100" value="20" aria-label="Raidoví útočníci do pořadí" /></span>
+                <span class="nv-volba"><label><input type="checkbox" id="nvGymOn" /> obránci</label>
+                  <input type="number" id="nvGym" min="0" max="200" value="20" aria-label="Obránci gymů do pořadí" /></span>
+              </div>
+              <div class="nv-pravidlo">
+                <span class="nv-pravidlo-nazev">Zvláštní kusy</span>
+                <label><input type="checkbox" id="nvVzacne" /> legendární a mytičtí</label>
+              </div>
+            </div>
+          </section>
+
+          <section class="nv-blok nv-hlavni">
+            <h3>Na trade <span class="nv-pocet" id="nvPrunikPocet"></span></h3>
+            <p class="hint">Druhy z toho, cos pustil, které patří na tvůj seznam —
+              u každého stojí, kolikrát. Tyhle ve hře přetaguj na <b>trade</b>,
+              zbytek jde pryč.</p>
+            <div id="nvPrunikBox"></div>
+          </section>
+          </div>
+
+          <section class="nv-blok">
+            <h3>Seznam řad <span class="nv-pocet" id="nvPocet"></span></h3>
+            <div class="actions">
+              <button class="primary" id="nvUpravitBtn">Upravit seznam ručně…</button>
+              <button id="nvZpetBtn" title="Zahodí ruční úpravy a nechá jen to, co drží pravidla">Vrátit se k pravidlům</button>
+              <button id="nvBonbonyBtn" title="Druhy, které sháníš od ostatních. Jde jen o seznam přání — verdikty v rosteru nemění. Posílá se v odkazu, který si kamarád otevře v Transferu.">Seznam přání… <span class="nv-pocet" id="nvBonbonyPocet"></span></button>
+            </div>
+            <div id="nvSeznamBox"></div>
+            <input type="hidden" id="nvRucni" value="" />
+          </section>
+
+          <p class="plan-intro">Po čištění je ve hře celá hromada označená <b>trade?</b>
+            a musí se rozdělit: co přetagovat na <b>trade</b> a vyměnit, a co poslat
+            profesorovi. Rozhoduje o tom <b>tvůj seznam evolučních řad</b>, ne appka —
+            ta ho jen protne s kusy, které jsi pustil, a vypíše <b>druhy</b>, které
+            v té hromadě opravdu jsou. Verdikty v rosteru tenhle seznam nemění.</p>
+        </details>
+      </div>
+    </div>
+  </div>
+
   <details class="card friend-card" id="friendCard">
     <summary>Výměna s kamarádem — co má a co si tradovat</summary>
     <p class="plan-intro">Jeho kusy ve stejné tabulce jako tvůj roster, navíc
@@ -3775,7 +3988,6 @@
     <label><input type="checkbox" data-znacka="VP" /> Ponechat</label>
     <label><input type="checkbox" data-znacka="VN" /> Nechat</label>
     <label><input type="checkbox" data-znacka="VZ" /> Zahodit</label>
-    <label><input type="checkbox" data-znacka="VT" /> Trade</label>
     <label><input type="checkbox" data-znacka="SH" /> Shadow</label>
     <label><input type="checkbox" data-znacka="PU" /> Purified</label>
     <label><input type="checkbox" data-znacka="SKEN" /> Poslední sken</label>
@@ -3818,6 +4030,8 @@ u nich útoky jeden po druhém">Doplnit útoky</button>
       <button id="exportBtn">Exportovat CSV</button>
       <button id="hledaniBtn" title="Vyrobí filtry do herního vyhledávání
 z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">Transfer</button>
+      <button id="nvOtevritBtn" title="Druhy z puštěných kusů, které patří
+na tvůj seznam na výměnu — co ve hře přetagovat na trade.">Na výměnu</button>
       <input type="search" id="searchInput" placeholder="Hledat pokémona…" autocomplete="off"
         title="Hledá jméno, verdikt, poznámku i štítky důvodů (GL #4, Rock 7/8, trade, shiny).
 Štítek Mega a za ním „:steel“ vypíše kusy, které po vymegování budou Steel — jen držitele té megy, ne celé evoluční řady." />
@@ -3998,21 +4212,23 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       <div class="db-hlava"><b>Smazané kusy</b>
         <button class="db-x" id="discardClose" title="Zavřít (Esc)">&#10005;</button></div>
       <p class="discard-intro">
-        Tyhle kusy jsi tady smazal, takže je import přeskakuje. <b>Vrátit</b> je dá rovnou zpátky
-        do rosteru i s IV. U zápisů z dřívějška, kde se data neukládala, je místo toho
-        <b>Odblokovat</b> — ty se vrátí až s dalším importem CSV.
+        Tyhle kusy jsi tady smazal. <b>Import je nepřeskakuje</b> — sken je pravda o boxu,
+        takže kus, kterého máš ve hře pořád, se vrátí. Je to <b>paměť toho, cos pustil</b>:
+        bere se z ní výpis na stránce <b>Na výměnu</b>. <b>Vrátit</b> dá kus rovnou zpátky
+        do rosteru i s IV; u zápisů z dřívějška, kde se data neukládala, je místo toho
+        <b>Odblokovat</b> — ten jen smaže zápis a kus se vrátí s dalším importem CSV.
       </p>
       <div class="discard-tools">
         <input type="search" id="discardSearch" placeholder="Hledat mezi smazanými…" autocomplete="off" />
         <label for="discardKeepDays">Paměť držet</label>
-        <select id="discardKeepDays" title="Jak dlouho si pamatovat, žes kus smazal. Čím kratší, tím menší šance, že blokace sedne na nově chycený kus.">
-          <option value="3" selected>3 dny</option>
+        <select id="discardKeepDays" title="Jak dlouho si pamatovat, žes kus smazal. Výchozí je nechat je, dokud je sám nesmažeš — bere se z nich výpis na stránce Na výměnu.">
+          <option value="3">3 dny</option>
           <option value="7">7 dní</option>
           <option value="14">14 dní</option>
           <option value="30">30 dní</option>
           <option value="60">60 dní</option>
           <option value="90">90 dní</option>
-          <option value="0">navždy</option>
+          <option value="0" selected>dokud je nesmažu sám</option>
         </select>
         <button class="danger" id="forgetAllBtn">Zapomenout vše</button>
       </div>
@@ -4601,7 +4817,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var seznam = POKEDEX.nelzePustit || [];
     if (!seznam.length) return false;
     var k = dexKey(jmeno);
-    return !!k && seznam.indexOf(k) !== -1;
+    if (!k) return false;
+    if (seznam.indexOf(k) !== -1) return true;
+    /* Zákaz platí i na formy: ve hře stojí příznak u „meloetta", ale
+       v rosteru je kus „Meloetta Aria" — a tu hra taky nepustí
+       (Lukáš 21. 11. 2026). Týká se to i Arceuse, Urshifu, Zygarde,
+       Shaymina a Keldea. */
+    var zaklad = k.split("-")[0];
+    return zaklad !== k && seznam.indexOf(zaklad) !== -1;
   }
 
   function maGmaxFormu(jmeno) {
@@ -4838,12 +5061,15 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Buňky, po jejichž změně má smysl zkusit dopočítat level. */
   var DOPOCET_LEVELU = ["pokemon", "cp", "ivAtk", "ivDef", "ivSta"];
 
-  /** Index nejvyššího levelu, na kterém se pokémon ještě vejde do CP limitu ligy (-1 = nevejde). */
-  function bestLevelIndex(dex, iva, ivd, ivs, cap) {
-    var lo = 0, hi = CPM_LEVELS.length - 1, ans = -1;
+  /** Index nejvyššího levelu, na kterém se pokémon ještě vejde do CP limitu ligy (-1 = nevejde).
+   *  `tab` je tabulka levelů; bez ní se bere ta, co jde koupit prachem a XL
+   *  (dnes do L50). Pořadí IV umí počítat i s best buddy — viz `tabulkaPoradi`. */
+  function bestLevelIndex(dex, iva, ivd, ivs, cap, tab) {
+    var T = tab || CPM_LEVELS;
+    var lo = 0, hi = T.length - 1, ans = -1;
     while (lo <= hi) {
       var mid = (lo + hi) >> 1;
-      if (cpAt(dex, iva, ivd, ivs, CPM_LEVELS[mid][1]) <= cap) { ans = mid; lo = mid + 1; }
+      if (cpAt(dex, iva, ivd, ivs, T[mid][1]) <= cap) { ans = mid; lo = mid + 1; }
       else { hi = mid - 1; }
     }
     return ans;
@@ -4858,7 +5084,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Nejlepší stat product, jaký ten druh v lize může mít. Proti němu se
    *  měří kvalita kusu. */
   function speciesProfil(key, dex, cap) {
-    var cacheKey = key + "|" + cap;
+    /* Proti čemu se kus poměřuje, musí stát na stejné tabulce levelů jako
+       jeho vlastní pořadí — jinak by se procento počítalo z jiné mřížky,
+       než ze které vyjde číslo vedle něj. */
+    var TAB = tabulkaPoradi();
+    var cacheKey = key + "|" + cap + (TAB === CPM_LEVELS ? "" : "|bb");
     if (spMaxCache[cacheKey] !== undefined) return spMaxCache[cacheKey];
 
     var best = 0, nej = null;
@@ -4870,14 +5100,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     for (var a = 0; a <= 15; a++) {
       for (var d = 0; d <= 15; d++) {
         for (var s = 0; s <= 15; s++) {
-          var idx = bestLevelIndex(dex, a, d, s, cap);
+          var idx = bestLevelIndex(dex, a, d, s, cap, TAB);
           if (idx < 0) continue;
-          var sp = statProduct(dex, a, d, s, CPM_LEVELS[idx][1]);
+          var sp = statProduct(dex, a, d, s, TAB[idx][1]);
           if (sp > best) { best = sp; nej = { a: a, d: d, s: s, idx: idx }; }
         }
       }
     }
-    spMaxCache[cacheKey] = { sp: best, nej: nej };
+    spMaxCache[cacheKey] = { sp: best, nej: nej, tab: TAB };
     return spMaxCache[cacheKey];
   }
 
@@ -4889,8 +5119,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var profil = speciesProfil(dexKey(jmeno), dex, cap);
     var n = profil && profil.nej;
     if (!n) return null;
-    var cpm = CPM_LEVELS[n.idx][1];
-    return { iv: n.a + "/" + n.d + "/" + n.s, level: CPM_LEVELS[n.idx][0],
+    var TAB = profil.tab || CPM_LEVELS;
+    var cpm = TAB[n.idx][1];
+    return { iv: n.a + "/" + n.d + "/" + n.s, level: TAB[n.idx][0],
       cp: cpAt(dex, n.a, n.d, n.s, cpm) };
   }
 
@@ -4903,6 +5134,28 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
      pvpivs na něm staví pořadí kombinací a appka ho používá na totéž —
      do ceny vylepšení ale nepatří, protože se nekupuje prachem. */
   var CPM_BEST_BUDDY = 0.84529999;
+
+  /* Tabulka levelů pro POŘADÍ IV, když se počítá i s best buddy: k tomu, co
+     jde koupit (dnes do L50), přibude L50,5 a L51.
+     V lize se stropem CP to pořadím pořádně zamíchá — kus s nižším útokem se
+     pod strop vejde až na L51 a tam má větší stat product. Tinkaton 14/15/15
+     v Ultra League je bez best buddy #12 (99,4 %), s ním #54 (98,35 %) —
+     a to druhé číslo ukazuje pvpivs, protože best buddy počítá ve výchozím
+     nastavení. Ani jedno není chyba, je to jiná otázka.
+     Do ceny vylepšení tahle tabulka NEPATŘÍ: best buddy se nekupuje prachem,
+     takže plán „na jaký level a za kolik" jede dál po CPM_LEVELS. */
+  var CPM_LEVELS_BB = (function () {
+    var t = CPM_LEVELS.slice();
+    [[50.5, 0.84279999], [51, CPM_BEST_BUDDY]].forEach(function (r) {
+      if (r[0] > t[t.length - 1][0]) t.push(r);
+    });
+    return t;
+  })();
+
+  /** Tabulka levelů, na které stojí pořadí IV a kvalita kusu v lize. */
+  function tabulkaPoradi() {
+    return nastaveniHodnota("bbPoradi") === "1" ? CPM_LEVELS_BB : CPM_LEVELS;
+  }
 
   /** Kvalita kusu v Master League: stat product téhle kombinace proti
    *  nejlepší možné u toho druhu. Je to stejné číslo, jaké ukazuje tabulka
@@ -4945,9 +5198,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (cisla.some(function (x) { return !isFinite(x) || x < 0 || x > 15; })) return null;
     var strop = liga.cap || Infinity;
     // Bez stropu CP se pořadí počítá na nejvyšším levelu, jaký jde mít —
-    // tedy s best buddy. Se stropem rozhoduje level, který se pod něj vejde.
+    // tedy s best buddy. Se stropem rozhoduje level, který se pod něj vejde,
+    // a jestli se do něj počítá i best buddy, říká nastavení.
+    var TAB = tabulkaPoradi();
     var cpmBezStropu = liga.cap ? null : CPM_BEST_BUDDY;
-    var klic = dKlic + "|" + strop + (cpmBezStropu ? "|bb" : "");
+    var klic = dKlic + "|" + strop
+      + (cpmBezStropu ? "|bb" : (TAB === CPM_LEVELS ? "" : "|bbStrop"));
     var mrizka = spMrizkaCache[klic];
     if (!mrizka) {
       mrizka = [];
@@ -4958,8 +5214,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
               mrizka.push(statProduct(dex, i, j, k, cpmBezStropu));
               continue;
             }
-            var idx = bestLevelIndex(dex, i, j, k, strop);
-            mrizka.push(idx < 0 ? 0 : statProduct(dex, i, j, k, CPM_LEVELS[idx][1]));
+            var idx = bestLevelIndex(dex, i, j, k, strop, TAB);
+            mrizka.push(idx < 0 ? 0 : statProduct(dex, i, j, k, TAB[idx][1]));
           }
         }
       }
@@ -4971,14 +5227,16 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       muj = statProduct(dex, cisla[0], cisla[1], cisla[2], cpmBezStropu);
       /* Bez stropu se počítá na nejvyšším levelu, jaký jde mít — tedy
          best buddy. CP z něj je to, co kus v Master League opravdu ukáže. */
-      mujLevel = CPM_LEVELS[CPM_LEVELS.length - 1][0];
+      /* Level se musí jmenovat podle toho, čím se počítal: CP vedle něj je
+         z best buddy, tak ať tam nestojí padesátka. */
+      mujLevel = CPM_LEVELS_BB[CPM_LEVELS_BB.length - 1][0];
       mujCp = cpAt(dex, cisla[0], cisla[1], cisla[2], cpmBezStropu);
     } else {
-      var mujIdx = bestLevelIndex(dex, cisla[0], cisla[1], cisla[2], strop);
+      var mujIdx = bestLevelIndex(dex, cisla[0], cisla[1], cisla[2], strop, TAB);
       if (mujIdx < 0) return null;    // do limitu se ten kus nevejde vůbec
-      muj = statProduct(dex, cisla[0], cisla[1], cisla[2], CPM_LEVELS[mujIdx][1]);
-      mujLevel = CPM_LEVELS[mujIdx][0];
-      mujCp = cpAt(dex, cisla[0], cisla[1], cisla[2], CPM_LEVELS[mujIdx][1]);
+      muj = statProduct(dex, cisla[0], cisla[1], cisla[2], TAB[mujIdx][1]);
+      mujLevel = TAB[mujIdx][0];
+      mujCp = cpAt(dex, cisla[0], cisla[1], cisla[2], TAB[mujIdx][1]);
     }
     var lepsich = 0;
     for (var q = 0; q < mrizka.length; q++) {
@@ -6394,10 +6652,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (c.shiny) z.push("S");
     if (c.lucky) z.push("K");
     if (c.keep) {
-      // „Trade" je vlastní rozhodnutí, ne odrůda „Zahodit" — ať se podle
-      // něj dá filtrovat i hledat.
-      if (String(c.keep).indexOf("Trade") === 0) z.push("VT");
-      else if (c.keepTone === "good") z.push("VP");
+      if (c.keepTone === "good") z.push("VP");
       else if (c.keepTone === "warning") z.push("VN");
       else z.push("VZ");
     }
@@ -6569,6 +6824,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   // Proti komu se měří. Typy samy o sobě neřeknou, který druh to vyvolal.
   var counterBossJmeno = "";
   var discarded = [];   // klíče skenů, které jsem už jednou smazal (= ve hře transferoval)
+  /* Koš na hroby: poslední tři smazané dávky. Smazat zahozené je jinak
+     nevratné — a kdo si to rozmyslí, přijde o jedinou paměť toho, co pustil. */
+  var hrobyKos = [];
+  var HROBY_KOSU = 3;
+  /* Hroby se dřív samy mazaly po pár dnech. Od stránky Na výměnu se drží,
+     dokud je nesmažeš sám — tahle vlaječka přepne starý profil jednou. */
+  var pametNavzdy = false;
   /* Kusy, které přihrál POSLEDNÍ import — Transfer si je umí vzít jako svůj
      zdroj („pustit jen to, co jsem teď naskenoval"). Drží se ID, ne řádky:
      řádek se dalším slučováním přepisuje, ID zůstává. Co se mezitím
@@ -6694,7 +6956,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /* Pohlaví: buď ze jména (Calcy píše „Jellicent ♂"), nebo ručně v úpravě
      kusu. Používá se jen pro obrázek — samec a samice mají u některých
      druhů jinou ikonu. */
-  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "hledaniDavka", "hledaniZdroj", "chciBonbony", "vymenaDruhy", "pvpStovka", "nulaDrzet", "pvpPojistka", "pvpPojistkaRank", "roleThresh", "dmaxKeep", "megaIvPrah", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce", "radaPojistka", "bezStropuDruhu"];
+  var SETTING_IDS = ["ivThresh", "tradeThresh", "rankThresh", "keepCopies", "spThresh", "discardKeepDays", "weatherSelect", "rankLimit", "ligaRezerva", "pametPoradi", "raidSlotu", "raidSlotuMimo", "gymSlotu", "hledaniDelka", "hledaniPriorita", "hledaniPredpony", "hledaniDavka", "hledaniZdroj", "chciBonbony", "vymenaDruhy", "pvpStovka", "nulaDrzet", "bbPoradi", "nvMaxSS", "nvMaxS", "nvMaxA", "nvMaxB", "nvLigaLC", "nvLigaGL", "nvLigaUL", "nvLigaML", "nvLigaLCOn", "nvLigaGLOn", "nvLigaULOn", "nvLigaMLOn", "nvRaid", "nvRaidOn", "nvGym", "nvGymOn", "nvVzacne", "nvRucni", "pvpPojistka", "pvpPojistkaRank", "roleThresh", "dmaxKeep", "megaIvPrah", "dmaxSlotu", "krokyPlan", "dustBudget", "keepRare", "bezXL", "prahSleva", "prachZaBod", "cilLevel", "ligaVaha", "boxSekce", "radaPojistka", "bezStropuDruhu"];
   var saveTimer = null, saveFlashTimer = null;
   var activeProfile = DEFAULT_PROFILE;
 
@@ -8757,7 +9019,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     });
     return { v: 2, rows: rows, settings: settings, filterMode: filterMode, sortKey: sortKey,
       sortDir: sortDir, discarded: discarded, rucniUtoky: rucniUtoky, historie: historie,
-      pametZkracena: pametZkracena, posledniImport: posledniImport };
+      pametZkracena: pametZkracena, posledniImport: posledniImport,
+      hrobyKos: hrobyKos, pametNavzdy: pametNavzdy };
   }
 
   /* Prázdný roster se přes uložený neprázdný NIKDY nepřepíše sám od sebe.
@@ -8945,7 +9208,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var d = dexEntry(jm);
       /* `blik` = štítek, který právě pokryl něco, co se přidávalo. Prvek
          se kreslí znovu, takže animace naskočí sama. */
-      return '<span class="app-okno-cip"'
+      return '<span class="app-okno-cip" data-nv-tip-druh="' + escHtml(jm) + '"'
         + (st.blik && dexKey(st.blik) === dexKey(jm) ? ' data-blik="1"' : "")
         + ">"
         + (d ? obrazekHtml(jm, d, "") : "") + escHtml(jm)
@@ -9005,7 +9268,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var kryje = jeTam || !st.pokryva ? "" : st.pokryva(m.jmeno, st.vybrane);
       return '<button type="button" class="druh-polozka'
         + (i === st.aktivni ? " je" : "") + (jeTam || kryje ? " uz-v-seznamu" : "")
-        + '" data-cip-pridat="' + escHtml(m.jmeno) + '">'
+        + '" data-cip-pridat="' + escHtml(m.jmeno) + '"'
+        + ' data-nv-tip-druh="' + escHtml(m.jmeno) + '">'
         + (d ? obrazekHtml(m.jmeno, d, "") : "")
         + '<span class="dn-jmeno">' + escHtml(m.jmeno) + "</span>"
         + '<span class="dn-typy">' + escHtml(d ? d.types.join(" / ") : "") + "</span>"
@@ -9085,7 +9349,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return out.sort(function (a, b) {
       // Moje napřed — jinak by se v nabídce ztratily mezi tisícovkou druhů.
       if (!!a.pocet !== !!b.pocet) return a.pocet ? -1 : 1;
-      return String(a.jmeno).localeCompare(String(b.jmeno), "cs");
+      return poradiJmen(a.jmeno, b.jmeno);
     });
   }
   function appOknoZavri(potvrzeno, hodnota) {
@@ -9123,6 +9387,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           pokryva: volby.cipy.pokryva || null,
           blik: "",
           nabidka: [], aktivni: 0 };
+    /* Štítkové okno je širší a jeho seznam se roluje — u sto padesáti
+       řad by panel jinak přerostl obrazovku. */
+    var panelOkna = box.querySelector(".app-okno-panel");
+    if (panelOkna) panelOkna.classList.toggle("je-cipy", !!appOknoCipyStav);
     if (appOknoCipyStav && appOknoCipyStav.vybrane.length) vstup.value = "";
     vstup.placeholder = (volby.cipy && volby.cipy.placeholder) || "";
     appOknoCipyVykreslit();
@@ -9288,6 +9556,19 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       pametZkracena = true;
     }
     discarded = normalizeDiscarded(snap && snap.discarded);
+    hrobyKos = (snap && Array.isArray(snap.hrobyKos) ? snap.hrobyKos : [])
+      .map(function (k) {
+        return { kdy: Number(k && k.kdy) || 0,
+          polozky: normalizeDiscarded(k && k.polozky) };
+      }).filter(function (k) { return k.polozky.length; }).slice(0, HROBY_KOSU);
+    pametNavzdy = !!(snap && snap.pametNavzdy);
+    if (!pametNavzdy) {
+      /* Jednorázový přechod: hroby teď drží, dokud je nesmažeš. Kdo si chce
+         mazání po dnech nechat, přepne si ho v panelu smazaných zpátky. */
+      var pametEl = document.getElementById("discardKeepDays");
+      if (pametEl) pametEl.value = "0";
+      pametNavzdy = true;
+    }
     posledniImport = normalizujImport(snap && snap.posledniImport);
     rucniUtoky = (snap && snap.rucniUtoky && typeof snap.rucniUtoky === "object")
       ? snap.rucniUtoky : {};
@@ -10640,8 +10921,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // starý výsledek z paměti a v čištění svítilo dál „Zahodit".
       return JSON.stringify(rows) + "|" + nast + "|" + JSON.stringify(discarded)
         + "|" + (soloProhlidka ? "1" : "0")
-        + "|" + (counterMode ? bossTypes.join(",") : "")
-        + "|" + Object.keys(bmTrade || {}).sort().join(",");
+        + "|" + (counterMode ? bossTypes.join(",") : "");
     } catch (e) { return ""; }
   }
   function analyze(list) {
@@ -12863,48 +13143,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + " shadow má o 20 % vyšší útok a ten je cennější než ta IV.";
       }
 
-      /* Druh, který si člověk na začátku čištění nechal na výměnu, se
-         nepouští — a musí to být vidět VŠUDE, ne jen v pruhu čištění.
-         Vzhledová vrstva si verdikt bere z rozboru, takže dokud to stálo jen
-         v čištění, ukazovala u takového kusu dál „Zahodit". Platí to jen
-         po dobu toho jednoho čištění. */
-      /* Druh ze seznamu na výměnu: kus z boxu odejde, ale k profesorovi
-         ne. Zůstává proto červený (není to ponechání), jen s jiným slovem
-         a bez nabídky k puštění. */
-      /* Seznam na výměnu je po DRUZÍCH, ale výměna se děje po KUSECH —
-         a některé kusy hra do výměny nepustí (lucky už po výměně je,
-         shadow se musí očistit, mytický nejde vůbec). U lucky Gastlyho
-         pak stálo zelenomodré „Trade" a hned vedle „Tradovat: Nejde".
-         Takový kus patří zpátky k původnímu verdiktu. */
-      var vymenaZed = nelzeVymenit(b);
-      if (vymenaJeNaSeznamu(r) && !vymenaZed && String(keepLabel).indexOf("Zahodit") === 0) {
-        keepTitle = "Tenhle druh máš v seznamu na výměnu — chceš za něj"
-          + " bonbóny. Appka ho proto nenabídne k puštění. Původní verdikt: "
-          + keepLabel + ". " + (keepTitle || "");
-        keepLabel = "Trade";
-        keepTone = "critical";
-        keepSub = "na výměnu";
-        keepSubLate = "";
-      }
-      if (bmTrade && bmTrade[dexKey(r.pokemon)] && !vymenaZed
-          && String(keepLabel).indexOf("Zahodit") === 0) {
-        keepTitle = "Nechal sis tenhle druh na výměnu — platí jen pro tohle"
-          + " čištění, pak zase rozhoduje rozpočet. Původní verdikt: "
-          + keepLabel + ". " + (keepTitle || "");
-        keepLabel = "Nechat na výměnu";
-        keepTone = "good";
-        keepGood = true;
-        keepSub = "Tvoje volba";
-        keepSubLate = "";
-      }
-      // Druh je na seznamu, kus se ale vyměnit nedá. Bez téhle věty vypadá
-      // appka nedůsledně: u jednoho Gastlyho „Trade", u druhého „Zahodit".
-      if (vymenaZed && String(keepLabel).indexOf("Zahodit") === 0
-          && (vymenaJeNaSeznamu(r) || (bmTrade && bmTrade[dexKey(r.pokemon)]))) {
-        keepTitle = (keepTitle || "") + " Tenhle druh máš na výměnu, ale"
-          + " TENHLE kus vyměnit nejde: " + vymenaZed + ". Na bonbóny z výměny"
-          + " použij jinou kopii.";
-      }
+      /* Verdikt „Trade" se 21. 11. 2026 zrušil. Držet kus v rosteru kvůli
+         bonbónům z výměny dělalo totéž, co stránka Na výměnu — jen dřív
+         a hůř: appka kus vůbec nenabídla k puštění, takže se o něm
+         nerozhodovalo. Teď jde pryč jako každý jiný a v hromadě
+         označené `trade?` se podle Na výměnu rozhodne, co přetagovat.
+         (Lukáš: „přijde mi to zduplikování funkcionality".) */
 
       var dupText = b.copies > 1 ? ("#" + b.dupIndex + " z " + b.copies) : "jediný kus";
 
@@ -13002,9 +13246,18 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           nulaZachranila: nulaZachranila,
           pvpStoZachranil: pvpStoZachranil, pvpPojistka: pvpPojistka,
           pvpKomb: pvpKomb })), b, s)),
-        // Pouštěný kus: kde se nevešel (liga s pořadím, kvalita, raid typ,
-        // gym, Dynamax) — štítky „pod čarou" místo věty.
-        podCarou: keepGood ? [] : podCarouKusu(b, s),
+        /* Kde se kus nevešel (liga s pořadím, kvalita, raid typ, gym,
+           Dynamax) — štítky „pod čarou" místo věty.
+
+           Počítají se i u kusu, kterého se appka drží jen kvůli značce.
+           Dokud se nepočítaly, přebila jedna značka všechno ostatní:
+           u stoprocentního Conkeldurra svítilo pod verdiktem jediné
+           „100 %", zatímco u jeho horší kopie stálo „ML #112" a
+           „Fighting 25/8". Kus, který roli drží, zůstává beze změny —
+           tam štítky nic nepřebíjí. */
+        podCarou: (keepGood && ((b.sloty || []).length
+          || (b.dynamax && (b.dmaxIndex || 1) <= s.dmaxKeep)))
+          ? [] : podCarouKusu(b, s),
         /* Kus, který se po výměně vyvine zadarmo. Verdikt je pustit;
            Transfer si ho podle toho dá do sekce „Nejdřív vyměnit". */
         tradeEvoVolny: !!b.tradeEvoVolny,
@@ -13584,19 +13837,27 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + " je k ničemu. Megy s nízkou raidovou prioritou slot nedostávají.</li>"
       + "</ul>"
       + "<p><strong>Proč je kus držený, ukazují štítky u verdiktu</strong> — jeden"
-      + " na každý důvod, všude ve stejném pořadí: ligy od nejmenší (LC, GL, UL,"
-      + " ML), raid typy, Gym, Dynamax, Mega, pak značky elitní útok, 100 %, CUTE a"
+      + " na každý důvod, všude ve stejném pořadí: napřed vzácnost, kterou"
+      + " ostatní kusy jen tak nemají (100 %, 0 %, CUTE), pak ligy od nejmenší"
+      + " (LC, GL, UL, ML), raid typy, Gym, Dynamax, Mega, elitní útok a"
       + " ostatní (Lucky, shiny, mytický zámek…). Náplast a rezerva mají"
       + " přerušovaný okraj. Co se do buňky nevejde, je ve štítku „+N“. Po najetí"
       + " ukáže štítek ligy, raid typu nebo gymu, kdo místa drží a v jakém pořadí;"
       + " štítek Dynamax ukáže strop Dmax kusů druhu a pořadí v Max Battle ve všech"
       + " typech i jako tank; značky krátce řeknou, proč kus drží. Podle štítků jde"
       + " filtrovat přes šipku ve sloupci Verdikt.</p>"
-      + "<p><strong>Pouštěný kus má štítky „pod čarou“</strong> (čárkované) — kde"
-      + " se nevešel: liga s pořadím (když je druh za tvým limitem nebo místa drží"
+      + "<p><strong>Štítky „pod čarou“</strong> (čárkované) říkají, kde se kus"
+      + " nevešel: liga s pořadím (když je druh za tvým limitem nebo místa drží"
       + " jiné kusy), procento kvality, když je pod prahem (v bublině kolik je"
       + " potřeba a kolik má), raid typ a gym s místem, kam by patřil, a Dynamax"
-      + " nad stropem. Ligy, které kus přerostl, se nepočítají.</p>"
+      + " nad stropem. Ligy, které kus přerostl, se nepočítají. Má je pouštěný"
+      + " kus — a taky kus, kterého se appka drží <em>jen kvůli značce</em>"
+      + " (100 %, 0 %, pojistka na cupy, PvP stovka, shiny, CUTE). Jinak by"
+      + " jedna značka přebila všechno, co kus umí: u stoprocentního"
+      + " Conkeldurra svítilo jediné „100 %“, zatímco u jeho horší kopie stálo"
+      + " „ML #112“ a „Fighting 25/8“. Značka v takovém řádku stojí až za nimi."
+      + " Kus, který roli opravdu drží, se nemění — tam štítky nic"
+      + " nepřebíjí.</p>"
       + "<p><strong>Verdikty jsou jen dva druhy: nechat, nebo pustit.</strong>"
       + " Dřív tu bylo „Zvážit“, což je příkaz, který nic neříká — rozhodnutí"
       + " zůstalo na tobě. Když ale appka vidí celý roster, ví, jestli lepší kus"
@@ -16054,11 +16315,22 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Jedno pořadí pro sloty i značky: ligy, raid, gym, Max (i značka Dynamax),
    *  mega, elitní útok, 100 %, CUTE, zbytek. Stabilní — uvnitř skupiny drží
    *  pořadí, které dal duvodyZeSlotu / duvodyZnacky. */
-  var ZNACKA_PORADI = { "PvP stovka": 1, "Pojistka na cupy": 1, "Dynamax": 4,
-    "Gigantamax": 4, "Elitní útok": 6, "100 %": 7, "0 %": 7, "CUTE": 8 };
+  /* 100 %, 0 % a CUTE jdou PRVNÍ. Je to vzácnost, kterou ostatní kusy jen
+     tak nemají, a podle ní se kus poznává na první pohled — role se dá
+     dopočítat, stovka ne (Lukáš 18. 11. 2026). Uvnitř stejného čísla
+     drží pořadí, v jakém je dává `duvodyZnacky`: 100 %, 0 %, CUTE. */
+  var ZNACKA_PORADI = { "100 %": 0, "0 %": 0, "CUTE": 0,
+    "PvP stovka": 1, "Pojistka na cupy": 1, "Dynamax": 4,
+    "Gigantamax": 4, "Elitní útok": 6 };
+  /** Pořadí značky. Nula je platné číslo (100 %, 0 %, CUTE jdou první),
+   *  takže se nesmí testovat `|| 9` — vrátilo by devítku. */
+  function znackaPoradi(filtr) {
+    var r = ZNACKA_PORADI[filtr];
+    return r === undefined ? 9 : r;
+  }
   function seradDuvody(list) {
     var rank = function (d) {
-      if (d.druh === "znacka") return ZNACKA_PORADI[d.filtr] || 9;
+      if (d.druh === "znacka") return znackaPoradi(d.filtr);
       return DUVOD_PORADI[d.druh] || 9;
     };
     return list.map(function (d, i) { return { d: d, i: i }; })
@@ -16174,12 +16446,19 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        nepočítá sama. */
     var dz = d.kusId ? dmaxZaznam((radekPodleId(d.kusId) || {}).pokemon) : null;
     if (dz && dz.role.length) {
+      var trojka = dz.role.slice(0, 3);
+      /* Druh, který Hub nevede (Pikachu, Vespiquen, Eternatus…), má
+         pořadí dopočítané appkou z útoku a STAB. Musí to být vidět —
+         je to jiný model než Hubův. */
+      var dopocet = trojka.every(function (r) { return !!r.dopocitano; });
       h += '<div class="tip-radek">' + escHtml(dz.forma) + " útočník: "
-        + dz.role.slice(0, 3).map(function (r) {
+        + trojka.map(function (r) {
             return escHtml(r.typ) + " #" + r.poradi
               + (r.znamka ? " (" + escHtml(r.znamka) + ")" : "");
           }).join(" · ")
-        + ' <span class="tip-znak">žebříček Pokémon GO Hub</span></div>';
+        + ' <span class="tip-znak">' + (dopocet
+            ? "dopočítala appka — Hub ten druh nevede"
+            : "žebříček Pokémon GO Hub") + "</span></div>";
     } else {
       /* Chybějící řádek vypadal jako chyba, tak ať je napsaný. Žebříček je
          od 8. 11. 2026 úplný (všech 149 druhů, i ti úplně vzadu se známkou
@@ -16194,7 +16473,18 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        která z nich platí. Platí ta se sloty; kus, který se do ní nedostal,
        se k ní připíše jako řádek navíc i s důvodem. */
     var skupiny = [];
-    Object.keys(maxPoradi.typy).forEach(function (typ) {
+    /* Typy, ve kterých kus figuruje — i když v nich nikdo slot nedrží.
+       Dmax kus druhu, který není raidový útočník (Grookey), se dřív
+       do bubliny nedostal vůbec a vypadalo to, že o něm appka nic neví
+       (Lukáš 21. 11. 2026). */
+    var typyKusu = {};
+    Object.keys(maxPoradi.typy).forEach(function (t) { typyKusu[t] = true; });
+    Object.keys(maxPoradi.typyVse).forEach(function (t) {
+      (maxPoradi.typyVse[t] || []).forEach(function (x) {
+        if (x.id === d.kusId) typyKusu[t] = true;
+      });
+    });
+    Object.keys(typyKusu).forEach(function (typ) {
       var list = maxPoradi.typy[typ] || [];
       var i = -1;
       list.forEach(function (x, k) { if (x.id === d.kusId) i = k; });
@@ -16205,6 +16495,16 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       var mimo = null;
       (maxPoradi.typyVse[typ] || []).forEach(function (x) { if (x.id === d.kusId) mimo = x; });
       if (!mimo) return;
+      /* V tomhle typu nikdo slot nedrží (žádný tvůj Dmax kus na něj
+         nestačí ani jako raidový útočník). Tabulka slotů by byla
+         prázdná, tak se ukáže pořadí mezi všemi tvými Dmax kusy. */
+      if (!list.length) {
+        var vseTypu = maxPoradi.typyVse[typ] || [];
+        var j = -1;
+        vseTypu.forEach(function (x, k) { if (x.id === d.kusId) j = k; });
+        skupiny.push({ nazev: "Max " + typ, list: vseTypu, i: j, vsechny: true });
+        return;
+      }
       var lepsi = null;
       list.forEach(function (y) { if (!lepsi && y.rodina === mimo.rodina) lepsi = y; });
       skupiny.push({ nazev: "Max " + typ, list: list, i: -1, mimo: mimo, lepsi: lepsi });
@@ -16235,8 +16535,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     skupiny.forEach(function (g) {
       var mimo = g.mimo;
       h += '<div class="tip-radek"><b>' + escHtml(g.nazev) + " "
-        + (mimo ? "" : (g.i + 1) + "/" + slotu) + "</b>"
-        + (!mimo && g.i >= slotu ? ' <span class="tip-znak">pod čarou</span>' : "")
+        + (mimo ? "" : (g.i + 1) + "/" + (g.vsechny ? g.list.length : slotu)) + "</b>"
+        + (g.vsechny ? ' <span class="tip-znak">mezi tvými Dmax kusy'
+            + " — slot v tomhle typu nikdo nedrží</span>" : "")
+        + (!mimo && !g.vsechny && g.i >= slotu
+            ? ' <span class="tip-znak">pod čarou</span>' : "")
         + (mimo ? ' <span class="tip-znak">tenhle kus místo nedrží</span>' : "")
         + "</div>"
         + '<ol class="tip-seznam">'
@@ -16360,6 +16663,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
   /** Štítky „pod čarou": čárkované, s pořadím, bez filtru. */
   function podCarouHtml(list, kusId) {
+    var chipy = podCarouChipy(list, kusId);
+    return chipy ? '<span class="dv-radek dv-radek-pod">' + chipy
+      + '<span class="dv-chip dv-vic" hidden></span></span>' : "";
+  }
+
+  /** Samotné čárkované štítky bez obalu — ponechaný kus je staví do
+   *  jednoho řádku se svými důvody. */
+  function podCarouChipy(list, kusId) {
     if (!list || !list.length) return "";
     var pct = function (v) { return String(Math.round(v * 1000) / 10).replace(".", ",") + "\u00a0%"; };
     var stitek = function (x) {
@@ -16435,14 +16746,27 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       return '<span class="dv-chip ' + trida + '"' + styl + ' data-tip="' + escHtml(tip) + '">'
         + escHtml(text) + "</span>";
     };
-    return '<span class="dv-radek dv-radek-pod">' + list.map(stitek).join("")
-      + '<span class="dv-chip dv-vic" hidden></span></span>';
+    return list.map(stitek).join("");
   }
 
-  /** Štítky k verdiktu: ponechaný kus důvody, pouštěný kus „pod čarou". */
+  /** Štítky k verdiktu: ponechaný kus důvody, pouštěný kus „pod čarou".
+   *
+   *  Kus, kterého se appka drží jen kvůli značce, dostane obojí v jednom
+   *  řádku: značka říká, PROČ zůstává, čárkované štítky to, co umí.
+   *  Pořadí je stejné jako všude jinde — ligové pojistky, pak pořadí
+   *  v ligách a rolích, teprve za nimi 100 %, CUTE a zbytek značek. */
   function stitkyVerdiktu(c) {
     if (!c) return "";
-    return c.keepGood ? duvodyHtml(c.duvody) : podCarouHtml(c.podCarou);
+    if (!c.keepGood) return podCarouHtml(c.podCarou);
+    var pod = podCarouChipy(c.podCarou);
+    if (!pod) return duvodyHtml(c.duvody);
+    var pred = [], za = [];
+    (c.duvody || []).forEach(function (d) {
+      (znackaPoradi(d.filtr) <= 1 ? pred : za).push(d);
+    });
+    return '<span class="dv-radek">' + pred.map(duvodChipHtml).join("")
+      + pod + za.map(duvodChipHtml).join("")
+      + '<span class="dv-chip dv-vic" hidden></span></span>';
   }
 
   /** Bublina jednoho štítku: krátké „proč" a u raidu, gymu a lig pořadí držitelů. */
@@ -16766,8 +17090,14 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   /** Co o druhu říká Dmax žebříček. `null` = v žebříčku není, což u Max
    *  Battle znamená „appka o něm nic neví", ne „je špatný". */
   function dmaxZaznam(jmenoNeboKlic) {
-    var k = dataKlic(dexKey(jmenoNeboKlic));
-    return dmaxIndex()[k] || null;
+    var k = dexKey(jmenoNeboKlic);
+    var i = dmaxIndex();
+    /* Nejdřív vlastní klíč formy. `dataKlic` posílá formu na tu, která
+       má ligová data — a Max žebříček je vedený pod vlastním jménem,
+       takže Pikachu (v lize nic nemá) i Eternatus skončili mimo
+       tabulku a bublina u nich psala „Hub tenhle druh nevede"
+       (21. 11. 2026). */
+    return i[k] || i[dataKlic(k)] || null;
   }
 
   /** Má ten druh shadow formu? Seznam je z pogoapi (druhy, které Raketa
@@ -16834,7 +17164,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var podlePoradi = function (a, b) {
       var ra = a.rank == null ? Infinity : a.rank, rb = b.rank == null ? Infinity : b.rank;
       if (ra !== rb) return ra - rb;
-      return String(a.jmeno).localeCompare(String(b.jmeno), "cs");
+      return poradiJmen(a.jmeno, b.jmeno);
     };
 
     var pvp = {}, poradiLig = [];
@@ -17045,8 +17375,12 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         var zdroj = (((DMAX || {}).typy || {})[r.typ] || []).filter(function (y) {
           return y.druh === dz.jmeno && (!r.forma || y.forma === r.forma);
         })[0] || {};
+        /* `dopocitano` jede s řádkem dál: pořadí, které si appka
+           spočítala sama (druh, co Hub nevede), se musí poznat
+           všude, kde se ukazuje — ne jen v bublině štítku. */
         max.push({ klic: x.klic, jmeno: x.jmeno, vztah: x.vztah, typ: r.typ,
           rank: r.poradi, pct: null, znamka: r.znamka || "",
+          dopocitano: !!r.dopocitano,
           utoky: zdroj.rychly && zdroj.nabity ? zdroj.rychly + " + " + zdroj.nabity : "",
           maxForma: r.forma || dz.forma });
       });
@@ -17061,7 +17395,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        Y je #1 Fire a stál pod X. */
     mega.sort(function (a, b) {
       var pa = a.pct == null ? -1 : a.pct, pb = b.pct == null ? -1 : b.pct;
-      return (pb - pa) || String(a.megaForma).localeCompare(String(b.megaForma), "cs");
+      return (pb - pa) || poradiJmen(a.megaForma, b.megaForma);
     });
     raid.sort(function (a, b) {
       var pa = a.pct == null ? -1 : a.pct, pb = b.pct == null ? -1 : b.pct;
@@ -17716,7 +18050,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       });
       nalez.sort(function (a, b) {
         return a.kde - b.kde || a.jm.length - b.jm.length
-          || a.jm.localeCompare(b.jm);
+          || poradiJmen(a.jm, b.jm);
       });
       nalez = nalez.slice(0, 40);
       if (!nalez.length) { zavrit(); return; }
@@ -17857,7 +18191,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     if (!rada || rada.dataset.rozdeleno) return;
     var SEKCE = [
       { nazev: "Kvalita kusu", popis: "Kdy je kus dost dobrý na to, aby o roli soupeřil.",
-        ids: ["ivThresh", "spThresh", "prahSleva", "rankThresh", "rankLimit"] },
+        ids: ["ivThresh", "spThresh", "bbPoradi", "prahSleva", "rankThresh", "rankLimit"] },
       { nazev: "Rozpočet rolí", popis: "Kolik kusů od role a od druhu si vůbec držet.",
         ids: ["keepCopies", "roleThresh", "ligaRezerva", "pametPoradi", "dmaxKeep", "dmaxSlotu", "keepRare"] },
       { nazev: "Pojistky proti puštění", popis: "Co se nepustí, ani když se do rozpočtu nevejde.",
@@ -20327,7 +20661,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     });
     Object.keys(podleTypu).forEach(function (typ) {
       podleTypu[typ].sort(function (a, b) {
-        return (b.skore - a.skore) || String(a.jmeno).localeCompare(String(b.jmeno), "cs");
+        return (b.skore - a.skore) || poradiJmen(a.jmeno, b.jmeno);
       });
     });
     megaRankCache = podleTypu;
@@ -20482,7 +20816,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         megaEnergie: m.energie, aura: !!m.aura });
     });
     out.sort(function (a, b) {
-      return (b.skore - a.skore) || String(a.jmeno).localeCompare(String(b.jmeno), "cs");
+      return (b.skore - a.skore) || poradiJmen(a.jmeno, b.jmeno);
     });
     var strop = out.length ? out[0].skore : 0;
     out.forEach(function (x, i) {
@@ -22601,7 +22935,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       return { jmeno: jmeno, tier: tier, typy: typy, shiny: !!shiny,
         dex: d, skore: skore, duvody: duvody };
     }).sort(function (a, z) {
-      return z.skore - a.skore || String(a.jmeno).localeCompare(String(z.jmeno), "cs");
+      return z.skore - a.skore || poradiJmen(a.jmeno, z.jmeno);
     });
   }
 
@@ -23532,7 +23866,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // shadow verze až za normální — jsou to jiné souboje
       var sa = /^shadow/i.test(a[0]) ? 1 : 0, sz = /^shadow/i.test(z[0]) ? 1 : 0;
       if (sa !== sz) return sa - sz;
-      return String(a[0]).localeCompare(String(z[0]), "cs");
+      return poradiJmen(a[0], z[0]);
     });
     raidySerazene.forEach(function (r) {
       var jmeno = r[0], tier = r[1], typy = r[2] || [], cp = r[3] || [];
@@ -24263,11 +24597,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   /* ================================================================
-     DRUHY NA VÝMĚNU
+     SEZNAM PŘÁNÍ
 
-     Trvalý seznam: „z tohohle druhu chci bonbóny za výměnu". Kus takového
-     druhu, který by jinak šel pryč, se nepouští — jde na výměnu. Klíč je
-     s formou, takže Graveler Alolan jde označit zvlášť od Gravelera.
+     Druhy, které člověk shání od ostatních. Posílají se v odkazu
+     (`praniObsah`) a upravují se na stránce Na výměnu. Verdikty NEMĚNÍ:
+     verdikt „Trade" se 21. 11. 2026 zrušil, protože dělal totéž co ta
+     stránka — jen dřív a bez rozhodnutí. Klíč je s formou, takže
+     Graveler Alolan jde zapsat zvlášť od Gravelera.
      ================================================================ */
   function vymenaDruhyList() {
     var txt = nastaveniHodnota("vymenaDruhy") || "";
@@ -24281,11 +24617,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        čtení, ať se to spraví samo a nemusí se na to sahat. */
     return vymenaBezDuplicit(out).klice;
   }
-
-  /** Které řádky seznamu přání právě pokryly něco, co se přidávalo.
-   *  Vrstva je při nejbližším vykreslení probliknutím ukáže — jinak to
-   *  vypadá, že přidání neudělalo nic. */
-  var vymenaPokryto = [];
 
   /** Jeden stupeň platí na celou evoluční řadu, takže druhý stupeň téže
    *  řady už nic nepřidá — do seznamu se nedostane. */
@@ -24306,10 +24637,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   function vymenaDruhyUloz(list) {
     var el = document.getElementById("vymenaDruhy");
     if (!el) return;
-    var r = vymenaBezDuplicit(list);
-    vymenaPokryto = r.pokryto;
-    el.value = JSON.stringify(r.klice);
+    el.value = JSON.stringify(vymenaBezDuplicit(list).klice);
     persist(true);
+    // Seznam je vidět na stránce Na výměnu — po změně se musí překreslit.
+    nvVykresli();
     /* Když je seznam sdílený odkazem, musí se na odkazu změnit taky —
        jinak by kamarád koukal na to, cos chtěl minulý týden. Adresa
        zůstává stejná, mění se jen obsah souboru. Tiše: když zrovna
@@ -24360,11 +24691,11 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    * u každého druhu. Ať se seznam upravuje odkudkoli stejně.
    */
   function vymenaOknoUprav(poZmene) {
-    appOknoOtevri("Druhy, za které chceš bonbóny z výměny.\n\nJejich kusy se"
-      + " nepouštějí — dostanou verdikt Trade. Platí to na CELOU evoluční"
-      + " řadu, takže stačí napsát jeden stupeň: „Machamp“ pokryje i Machopa"
-      + " a Machokea — bonbóny jsou stejně společné. Seznam platí trvale,"
-      + " dokud ho nezměníš.",
+    appOknoOtevri("Druhy, které sháníš od ostatních.\n\nJe to jen seznam"
+      + " přání — verdikty v rosteru nemění a nic ti nedrží. Posílá se"
+      + " v odkazu, který si kamarád otevře v Transferu. Platí na CELOU"
+      + " evoluční řadu, takže stačí jeden stupeň: „Machamp“ pokryje"
+      + " i Machopa a Machokea.",
       { potvrdit: true, vstup: "", okText: "Uložit seznam",
         zrusitText: "Nechat beze změn",
         cipy: { moznosti: appOknoDruhyKVyberu(), placeholder: "Např. Eevee",
@@ -24406,19 +24737,648 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     return out;
   }
 
-  /** Je tenhle kus z řady, kterou si necháváš na výměnu?
+  /* ================================================================
+     NA VÝMĚNU
+
+     Co tahle stránka obsluhuje: v appce se projde čištění, ve hře se celá
+     hromada označí „trade?" a pak se musí rozdělit na „přetagovat na trade"
+     a „poslat profesorovi". Appka o tom NEROZHODUJE — rozhoduje tvůj seznam
+     evolučních řad, které sbíráš na výměnu. Tady se ten seznam protne
+     s hroby (kusy, které jsi pustil) a vypíšou se DRUHY, ne kusy: „Abra 4×"
+     stačí, ve hře stejně hledáš podle jména.
+
+     Seznam má dvě vrstvy:
+       1. pravidla — plní ho sama (známka z Maxů, top N v lize, raidy, gymy,
+          vzácní). Každé číslo i známka jdou přenastavit, 0 pravidlo vypne.
+       2. ruční — co přidáš, platí vždycky; co vyškrtneš, zůstane vyškrtnuté,
+          i když na to pravidlo pořád sedí. Bez toho by se vyškrtnuté vracelo
+          při každém obnovení žebříčků.
+
+     Se seznamem „chci bonbóny z výměny" to NEMÁ nic společného: ten mění
+     verdikty (kus dostane Trade a nepustí se), tenhle je čistě pohled na to,
+     co už pustíš. Při prvním otevření se z něj jen zdědí obsah, ať se
+     nezačíná od nuly.
+     ================================================================ */
+
+  var NV_ZDROJE = [
+    { klic: "rucne", nazev: "Ručně přidané" },
+    { klic: "max", nazev: "Max Battle" },
+    { klic: "liga", nazev: "Ligy" },
+    { klic: "raid", nazev: "Raidy" },
+    { klic: "gym", nazev: "Gymy" },
+    { klic: "vzacne", nazev: "Legendární a mytičtí" }
+  ];
+
+  var NV_LIGY = [
+    { id: "nvLigaLC", on: "nvLigaLCOn", meta: "little", label: "LC" },
+    { id: "nvLigaGL", on: "nvLigaGLOn", meta: "great", label: "GL" },
+    { id: "nvLigaUL", on: "nvLigaULOn", meta: "ultra", label: "UL" },
+    { id: "nvLigaML", on: "nvLigaMLOn", meta: "master", label: "ML" }
+  ];
+
+  var NV_ZNAMKY = [
+    { id: "nvMaxSS", znamka: "SS" }, { id: "nvMaxS", znamka: "S" },
+    { id: "nvMaxA", znamka: "A" }, { id: "nvMaxB", znamka: "B" }
+  ];
+
+  /** Číslo z pravidla; 0 (nebo nesmysl) znamená „pravidlo neplatí". */
+  function nvCislo(id) {
+    var v = parseInt(nastaveniHodnota(id), 10);
+    return isFinite(v) && v > 0 ? v : 0;
+  }
+
+  function nvZapnuto(id) {
+    var v = nastaveniHodnota(id);
+    return v === true || v === "1" || v === "true";
+  }
+
+  /** Hranice pravidla. Nezaškrtnuté = tuhle ligu (raid, gym) neřeším —
+   *  číslo se u ní ani neukazuje, aby řádek nebyl zbytečně dlouhý. */
+  function nvHranice(p) {
+    return p.on && !nvZapnuto(p.on) ? 0 : nvCislo(p.id);
+  }
+
+  /** Čísla patří jen k zaškrtnutým pravidlům. */
+  function nvSrovnejPravidla() {
+    NV_LIGY.concat([{ id: "nvRaid", on: "nvRaidOn" }, { id: "nvGym", on: "nvGymOn" }])
+      .forEach(function (p) {
+        var pole = document.getElementById(p.id);
+        if (pole) pole.hidden = !nvZapnuto(p.on);
+      });
+  }
+
+  /** Ruční vrstva: co jsi přidal a co vyškrtl. */
+  function nvRucniCti() {
+    var txt = nastaveniHodnota("nvRucni");
+    if (txt === "" || txt === undefined || txt === null) {
+      /* Než se tady poprvé něco uloží, platí starý seznam „chci bonbóny",
+         ať se nezačíná od nuly. Pak se ruční vrstva osamostatní. */
+      return { pridane: vymenaDruhyList(), odebrane: [], zdedeno: true };
+    }
+    var out = { pridane: [], odebrane: [], zdedeno: false };
+    try {
+      var o = JSON.parse(txt) || {};
+      if (Array.isArray(o.pridane)) out.pridane = o.pridane.map(String);
+      if (Array.isArray(o.odebrane)) out.odebrane = o.odebrane.map(String);
+    } catch (e) { /* pokažené = prázdné, ať se to nerozbije celé */ }
+    return out;
+  }
+
+  function nvRucniUloz(o) {
+    var el = document.getElementById("nvRucni");
+    if (!el) return;
+    el.value = JSON.stringify({ pridane: (o && o.pridane) || [],
+      odebrane: (o && o.odebrane) || [] });
+    persist(true);
+    nvVykresli();
+  }
+
+  var nvCache = null, nvCacheOtisk = null;
+
+  function nvOtisk() {
+    var ids = ["nvRaid", "nvRaidOn", "nvGym", "nvGymOn", "nvVzacne", "nvRucni"]
+      .concat(NV_LIGY.map(function (l) { return l.id; }))
+      .concat(NV_LIGY.map(function (l) { return l.on; }))
+      .concat(NV_ZNAMKY.map(function (z) { return z.id; }));
+    return ids.map(function (id) { return id + "=" + nastaveniHodnota(id); }).join(";");
+  }
+
+  /**
+   * Co na seznam sypou pravidla.
    *
-   *  Platí CELÁ EVOLUČNÍ ŘADA, ne jen napsaný druh. Bonbóny jsou společné:
-   *  kdo chce bonbóny na Machampa, chce vyměnit i Machopa a Machokea.
-   *  Seznam přání proto stačí krátký — jeden stupeň pokryje celou řadu. */
-  function vymenaJeNaSeznamu(r) {
-    if (!r || !r.pokemon) return false;
-    var list = vymenaDruhyList();
-    if (!list.length) return false;
-    var k = dexKey(r.pokemon);
-    if (list.indexOf(k) !== -1) return true;
-    var rada = radaKlic(k);
-    return list.some(function (x) { return radaKlic(x) === rada; });
+   * Klíčem je evoluční ŘADA (`radaKlic`), ne druh: „Abra" a „Alakazam" jsou
+   * jeden řádek, protože ve hře je to jedna hromada bonbónů i jeden průchod
+   * boxem. Výsledek se cachuje na otisk pravidel — bez toho by se celá
+   * mřížka počítala při každém překreslení.
+   */
+  function nvZPravidel() {
+    var otisk = nvOtisk();
+    if (nvCache && nvCacheOtisk === otisk) return nvCache;
+    var out = {};
+    var pridej = function (klic, zdroj, duvod) {
+      if (!klic || !dexByKey(klic)) return;
+      var rk = radaKlic(klic);
+      if (!out[rk]) out[rk] = { klic: klic, zdroje: [], duvody: [] };
+      if (out[rk].zdroje.indexOf(zdroj) === -1) {
+        out[rk].zdroje.push(zdroj);
+        out[rk].duvody.push(duvod);
+      }
+    };
+
+    // --- Max Battle: známka z Hubu, jeden druh může stát u víc typů -------
+    var znamky = {};
+    NV_ZNAMKY.forEach(function (z) { if (nvZapnuto(z.id)) znamky[z.znamka] = true; });
+    if (Object.keys(znamky).length) {
+      Object.keys((typeof DMAX === "object" && DMAX && DMAX.typy) || {}).forEach(function (typ) {
+        (DMAX.typy[typ] || []).forEach(function (e) {
+          if (!e || !znamky[e.znamka]) return;
+          pridej(dexKey(e.druh), "max", "Max " + e.znamka);
+        });
+      });
+    }
+
+    // --- ligy: top N z PvPoke žebříčku -----------------------------------
+    NV_LIGY.forEach(function (l) {
+      var n = nvHranice(l);
+      if (!n) return;
+      var tabulka = ((typeof META === "object" && META && META.leagues) || {})[l.meta] || {};
+      Object.keys(tabulka).forEach(function (klic) {
+        var rank = tabulka[klic] && tabulka[klic][0];
+        if (!rank || rank > n) return;
+        pridej(klic, "liga", l.label + " #" + rank);
+      });
+    });
+
+    // --- raidy: top N útočníků na typ ------------------------------------
+    var nRaid = nvHranice({ id: "nvRaid", on: "nvRaidOn" });
+    if (nRaid) {
+      var ri = raidRankIndex();
+      Object.keys(ri).forEach(function (klic) {
+        var nej = null;
+        (ri[klic] || []).forEach(function (r) {
+          if (r.rank <= nRaid && (!nej || r.rank < nej.rank)) nej = r;
+        });
+        if (nej) pridej(klic, "raid", "raid " + nej.type + " #" + nej.rank);
+      });
+    }
+
+    // --- gymy: top N obránců ----------------------------------------------
+    var nGym = nvHranice({ id: "nvGym", on: "nvGymOn" });
+    if (nGym) {
+      var gi = gymRankIndex();
+      Object.keys(gi).forEach(function (klic) {
+        if (gi[klic].poradi <= nGym) pridej(klic, "gym", "gym #" + gi[klic].poradi);
+      });
+    }
+
+    // --- legendární a mytičtí ---------------------------------------------
+    if (nvZapnuto("nvVzacne")) {
+      Object.keys(POKEDEX.species || {}).forEach(function (klic) {
+        var d = dexByKey(klic);
+        if (!d || (d.rarity !== "L" && d.rarity !== "M")) return;
+        pridej(klic, "vzacne", d.rarity === "M" ? "mytický" : "legendární");
+      });
+    }
+
+    nvCache = out;
+    nvCacheOtisk = otisk;
+    return out;
+  }
+
+  /** Celý seznam i s ruční vrstvou: mapa klíč řady -> {klic, zdroje, duvody}. */
+  function nvSeznamMapa() {
+    var z = nvZPravidel(), rucni = nvRucniCti(), out = {};
+    Object.keys(z).forEach(function (rk) {
+      out[rk] = { klic: z[rk].klic, zdroje: z[rk].zdroje.slice(),
+        duvody: z[rk].duvody.slice() };
+    });
+    rucni.pridane.forEach(function (k) {
+      if (!dexByKey(k)) return;
+      var rk = radaKlic(k);
+      if (!out[rk]) out[rk] = { klic: k, zdroje: [], duvody: [] };
+      if (out[rk].zdroje.indexOf("rucne") === -1) {
+        out[rk].zdroje.unshift("rucne");
+        out[rk].duvody.unshift("ručně");
+      }
+    });
+    rucni.odebrane.forEach(function (k) {
+      if (dexByKey(k)) delete out[radaKlic(k)];
+    });
+    return out;
+  }
+
+  /** Jméno řady do výpisu: první stupeň tučně, zbytek drobně. */
+  function nvJmenoRady(klic) {
+    var jm = radaJmena(klic) || [];
+    if (!jm.length) jm = [jmenoFormy(klic) || klic];
+    return { prvni: jm[0], zbytek: jm.slice(1) };
+  }
+
+  /** Kolikrát je která řada v hrobech — a pod jakými jmény. */
+  function nvHrobyPodleRad() {
+    var out = {};
+    discarded.forEach(function (d) {
+      var jmeno = d.n || (d.r && d.r.pokemon) || "";
+      if (!jmeno) return;
+      var k = dexKey(jmeno);
+      if (!k || !dexByKey(k)) return;
+      var rk = radaKlic(k);
+      var zobrazit = jmenoFormy(k) || jmeno;
+      if (!out[rk]) out[rk] = { pocet: 0, druhy: {} };
+      out[rk].pocet++;
+      out[rk].druhy[zobrazit] = (out[rk].druhy[zobrazit] || 0) + 1;
+    });
+    return out;
+  }
+
+  /**
+   * Průnik: které DRUHY z hrobů patří na seznam.
+   *
+   * Schválně po druzích, ne po kusech — ve hře jdeš boxem podle jména
+   * a je jedno, jestli ta Abra byla 10/10/10 nebo 2/8/4: pustil jsi ji tak
+   * jako tak a teď jde jen o to, jestli ji přetagovat na trade.
+   */
+  function nvPrunik() {
+    var mapa = nvSeznamMapa(), hroby = nvHrobyPodleRad(), out = [];
+    Object.keys(hroby).forEach(function (rk) {
+      if (!mapa[rk]) return;
+      Object.keys(hroby[rk].druhy).forEach(function (jmeno) {
+        out.push({ jmeno: jmeno, pocet: hroby[rk].druhy[jmeno], rada: rk,
+          zdroje: mapa[rk].zdroje.slice(), duvody: mapa[rk].duvody.slice() });
+      });
+    });
+    out.sort(function (a, b) { return poradiJmen(a.jmeno, b.jmeno); });
+    return out;
+  }
+
+  // ------------------------------------------------------------- koš na hroby
+  /** Smaže zahozené kusy, ale odloží je — poslední tři dávky jdou vrátit. */
+  function hrobyDoKose() {
+    if (!discarded.length) return 0;
+    var n = discarded.length;
+    hrobyKos.unshift({ kdy: Date.now(), polozky: discarded.slice() });
+    hrobyKos = hrobyKos.slice(0, HROBY_KOSU);
+    discarded = [];
+    persist(true);
+    renderDiscardBtn();
+    nvVykresli();
+    return n;
+  }
+
+  /** Vrátí vybrané dávky z koše zpátky mezi zahozené. Klidně několik najednou. */
+  function hrobyZKose(indexy) {
+    var vybrane = (indexy || []).map(Number).filter(function (i) {
+      return isFinite(i) && hrobyKos[i];
+    });
+    if (!vybrane.length) return 0;
+    var videno = {}, vraceno = 0;
+    discarded.forEach(function (d) { videno[d.k] = true; });
+    vybrane.slice().sort(function (a, b) { return b - a; }).forEach(function (i) {
+      (hrobyKos[i].polozky || []).forEach(function (d) {
+        if (!d || !d.k || videno[d.k]) return;   // mezitím se vrátil jinudy
+        videno[d.k] = true;
+        discarded.push(d);
+        vraceno++;
+      });
+    });
+    hrobyKos = hrobyKos.filter(function (_, i) { return vybrane.indexOf(i) === -1; });
+    discarded = normalizeDiscarded(discarded);
+    persist(true);
+    renderDiscardBtn();
+    nvVykresli();
+    return vraceno;
+  }
+
+  // ---------------------------------------------------------------- výpis
+  function nvKusu(n) {
+    return n + "\u00d7";
+  }
+
+  /** Hodnocení celé evoluční řady do bubliny: řádek na každý stupeň
+   *  i formu, za jménem odznáčky rolí s pořadím a známkou — totéž, co
+   *  stojí v hlavičce Vyhledávání. Jeden dlouhý řádek textu se nedal
+   *  číst (Lukáš 19. 11. 2026). Žebříčky jsou zapečená data, takže
+   *  hotová bublina vydrží v paměti napořád. */
+  var nvHodnoceniCache = {};
+  var NV_LIGA_ZKRATKA = { little: "LC", great: "GL", ultra: "UL", master: "ML" };
+  /* Do bubliny jdou jen role, které za něco stojí — známka SS až B.
+     Céčko a horší udělalo z každého druhu dvacet odznáčků a to
+     podstatné se v nich ztratilo (Lukáš 19. 11. 2026). Chceš-li to
+     posunout, stačí přidat nebo ubrat známku tady. */
+  var NV_ZNAMKA_STOJI_ZA_TO = { SS: 1, S: 1, "A+": 1, A: 1, B: 1 };
+
+  function nvHodnoceniHtml(jmeno) {
+    var kl = radaKlic(dexKey(jmeno));
+    if (nvHodnoceniCache[kl] !== undefined) return nvHodnoceniCache[kl];
+    var model = null;
+    try { model = prohlidkaModel(jmeno); } catch (e) { model = null; }
+    if (!model || !model.role) { nvHodnoceniCache[kl] = ""; return ""; }
+
+    /* Řádky jdou po JMÉNECH, ne po klíčích: Mega Alakazam i Shadow
+       Hydreigon jsou vlastní řádek, protože ve hře je to vlastní kus
+       a vlastní pořadí. Drží se pořadí evoluce, pak abeceda. */
+    var poradiDruhu = {};
+    (model.druhy || []).forEach(function (x, i) { poradiDruhu[x.klic] = i; });
+    var vse = [];
+    var pridej = function (r, popis, ikona) {
+      if (!r || r.rank == null) return;
+      vse.push({ jmeno: r.jmeno || "", klic: r.klic, rank: r.rank,
+        popis: popis, ikona: ikona || "", znamka: r.znamka || "" });
+    };
+    /* Raid i Max mají pořadí na každý typ zvlášť. Tři nejlepší typy na
+       jeden řádek stačí — zbytek je ve Vyhledávání. */
+    var nejPoTypu = function (radky, razeni) {
+      var out = {};
+      (radky || []).forEach(function (r) {
+        if (!r || r.rank == null) return;
+        var k = (r.jmeno || "") + "|" + (r.typ || "");
+        if (!out[k] || r.rank < out[k].rank) out[k] = r;
+      });
+      var podle = {};
+      Object.keys(out).forEach(function (k) {
+        var r = out[k], jm = r.jmeno || "";
+        (podle[jm] = podle[jm] || []).push(r);
+      });
+      var ven = [];
+      Object.keys(podle).forEach(function (jm) {
+        podle[jm].sort(razeni).slice(0, 3).forEach(function (r) { ven.push(r); });
+      });
+      return ven;
+    };
+    var podleRanku = function (a1, b1) { return a1.rank - b1.rank; };
+    /* Odznaky rolí (praporky lig, štít gymu, značka Dmaxu) kreslí
+       vzhledová vrstva — ať jsou tady tytéž jako v hlavičce
+       Vyhledávání. Bez vrstvy zůstane jen popisek role. */
+    var roleIkona = function (k) {
+      return (window.AtlasRoleIkona && window.AtlasRoleIkona(k)) || "";
+    };
+    var maxZnacka = function (f) {
+      return (window.AtlasMaxZnacka && window.AtlasMaxZnacka(f)) || "";
+    };
+    nejPoTypu(model.role.raid.radky, podleRanku).forEach(function (r) {
+      pridej(r, "raid", typIkonaHtml(r.typ));
+    });
+    // Gmax před Dmaxem: je to vzácnější forma a shání se hůř.
+    nejPoTypu(model.role.max.radky, function (a1, b1) {
+      return ((b1.maxForma === "Gigantamax") - (a1.maxForma === "Gigantamax"))
+        || (a1.rank - b1.rank);
+    }).forEach(function (r) {
+      pridej(r, r.maxForma === "Gigantamax" ? "Gmax" : "Max",
+        maxZnacka(r.maxForma) + typIkonaHtml(r.typ));
+    });
+    (model.role.gym.radky || []).forEach(function (r) {
+      pridej(r, "gym", roleIkona("gym"));
+    });
+    (model.poradiLig || []).forEach(function (lg) {
+      ((model.role.pvp[lg] || {}).radky || []).forEach(function (r) {
+        pridej(r, NV_LIGA_ZKRATKA[lg] || lg, roleIkona(lg));
+      });
+    });
+
+    if (!vse.length) { nvHodnoceniCache[kl] = ""; return ""; }
+    /* Napřed jen role, které za něco stojí (SS až B). Když řada žádnou
+       takovou nemá, ukáže se aspoň pět nejlepších, co má — u Barboacha
+       by jinak nezbylo nic a místo odznáčků svítil holý text
+       (Lukáš 19. 11. 2026). Stupeň bez jediné role se nevypisuje:
+       „Azurill nic, Marill nic" nikomu nepomůže. */
+    var dobre = vse.filter(function (x) {
+      return NV_ZNAMKA_STOJI_ZA_TO[x.znamka];
+    });
+    var skupiny = {}, jmena = [];
+    (dobre.length ? dobre : vse.slice().sort(podleRanku).slice(0, 5))
+      .forEach(function (x) {
+        if (!skupiny[x.jmeno]) {
+          skupiny[x.jmeno] = { klic: x.klic, znaky: [] };
+          jmena.push(x.jmeno);
+        }
+        skupiny[x.jmeno].znaky.push(x);
+      });
+    jmena.sort(function (x, y) {
+      var px = poradiDruhu[skupiny[x].klic], py = poradiDruhu[skupiny[y].klic];
+      if (px === undefined) px = 99;
+      if (py === undefined) py = 99;
+      return px - py || poradiJmen(x, y);
+    });
+    var html = '<div class="nv-tip">' + jmena.map(function (jm) {
+      var z = skupiny[jm].znaky.slice().sort(podleRanku);
+      return '<div class="nv-tip-radek"><b>' + escHtml(jm) + "</b>"
+        + '<span class="nv-tip-znacky">' + z.map(function (x) {
+            return '<span class="nv-tip-znak">' + x.ikona
+              + (x.popis ? '<span class="nv-tip-role">' + escHtml(x.popis)
+                  + "</span>" : "")
+              + '<span class="nv-tip-rank">#' + x.rank + "</span>"
+              + (x.znamka ? '<span class="nv-tip-zn" data-znamka="'
+                  + escHtml(x.znamka) + '">' + escHtml(x.znamka) + "</span>" : "")
+              + "</span>";
+          }).join("") + "</span></div>";
+    }).join("") + "</div>";
+    nvHodnoceniCache[kl] = html;
+    return html;
+  }
+
+  /* Štítky v dialogu „Upravit seznam" (a v nabídce našeptávače) mají
+     tutéž bublinu, ale staví se až na najetí: seznam jich má sto
+     padesát a předem by to dialog otevíralo vteřiny. Posluchač chytá
+     myš v průchodu dolů, aby `data-tip` stálo dřív, než si ho vezme
+     bublina. */
+  document.addEventListener("mouseover", function (e) {
+    var t = e.target && e.target.closest
+      ? e.target.closest("[data-nv-tip-druh]") : null;
+    if (!t || t.getAttribute("data-tip")) return;
+    /* Druh, který nevede ani jeden žebříček, to má říct — v nabídce
+       při přidávání je to půlka rozhodnutí. */
+    t.setAttribute("data-tip", nvHodnoceniHtml(t.getAttribute("data-nv-tip-druh"))
+      || "Tenhle druh nevede ani jeden žebříček — nikde se neumisťuje.");
+  }, true);
+
+  function nvChipy(zdroje, duvody) {
+    return (duvody || []).map(function (d, i) {
+      /* „Ručně" se nepíše: taková řada stojí v sekci Ručně přidané
+         a dvakrát totéž na jednom štítku je jen šum. */
+      if (zdroje[i] === "rucne") return "";
+      return '<span class="nv-chip nv-z-' + escHtml(zdroje[i] || "") + '">'
+        + escHtml(d) + "</span>";
+    }).join("");
+  }
+
+  function nvVykresli() {
+    var box = document.getElementById("nvSeznamBox");
+    if (!box) return;
+    /* Zavřené okno není co kreslit — při každé obnově rosteru by se
+       zbytečně skládalo ze sta padesáti řádků. Otevření si vykreslení
+       vyžádá samo. */
+    var plachtaNv = document.getElementById("nvPlachta");
+    if (plachtaNv && plachtaNv.hidden) return;
+    nvSrovnejPravidla();
+    var mapa = nvSeznamMapa(), hroby = nvHrobyPodleRad();
+    /* Kolik řad je na seznamu „chci bonbóny z výměny". Číslo jde na
+       tlačítko, které ten seznam otevírá; značku u řady Lukáš nechtěl
+       (důvod výměny je u všech stejný). */
+    var bonbony = {};
+    vymenaDruhyList().forEach(function (k) { bonbony[radaKlic(k)] = true; });
+    var rady = Object.keys(mapa).map(function (rk) {
+      var jm = nvJmenoRady(mapa[rk].klic);
+      return { rada: rk, klic: mapa[rk].klic, jmeno: jm.prvni, zbytek: jm.zbytek,
+        zdroje: mapa[rk].zdroje, duvody: mapa[rk].duvody,
+        vHrobech: hroby[rk] ? hroby[rk].pocet : 0 };
+    });
+    rady.sort(function (a, b) { return poradiJmen(a.jmeno, b.jmeno); });
+
+    var html = "";
+    NV_ZDROJE.forEach(function (z) {
+      var tady = rady.filter(function (r) {
+        // Řádek stojí v sekci podle PRVNÍHO zdroje v pořadí NV_ZDROJE —
+        // ručně přidané napřed, ať je vidět, co je tvoje rozhodnutí.
+        for (var i = 0; i < NV_ZDROJE.length; i++) {
+          if (r.zdroje.indexOf(NV_ZDROJE[i].klic) !== -1) return NV_ZDROJE[i].klic === z.klic;
+        }
+        return false;
+      });
+      if (!tady.length) return;
+      /* Sekce jsou otevrene: stitky zaberou par radku a smysl seznamu je,
+         aby bylo videt, co ktera rada drzi. Sbalit je jde kliknutim. */
+      html += '<details class="nv-sekce" open><summary>' + escHtml(z.nazev)
+        + ' <span class="nv-pocet">' + tady.length + "</span></summary>";
+      /* Štítek nese jméno řady, poslední stupeň (podle něj se řada pozná),
+         značky zdrojů a kolik kusů té řady leží v zahozených. Celá řada
+         i důvody jsou v bublině — na štítek by se nevešly. */
+      html += '<div class="nv-rady">' + tady.map(function (r) {
+        var cela = [r.jmeno].concat(r.zbytek).join(" · ");
+        return '<span class="nv-rada" data-nv-rada="' + escHtml(r.rada) + '"'
+          + ' title="' + escHtml(cela
+              + (r.duvody.length ? " — " + r.duvody.join(" · ") : "")) + '">'
+          + "<b>" + escHtml(r.jmeno) + "</b>"
+          + (r.zbytek.length ? "<small>\u2192 "
+              + escHtml(r.zbytek[r.zbytek.length - 1]) + "</small>" : "")
+          + nvChipy(r.zdroje, r.duvody)
+          + '<button type="button" class="nv-x" data-nv-ven="' + escHtml(r.klic)
+          + '" title="Vyškrtnout ze seznamu">&#10005;</button></span>';
+      }).join("") + "</div>";
+      html += "</details>";
+    });
+
+    var rucni = nvRucniCti();
+    var ven = rucni.odebrane.filter(function (k) { return !!dexByKey(k); });
+    if (ven.length) {
+      html += '<details class="nv-sekce nv-sekce-ven" open><summary>Vyškrtnuté'
+        + ' <span class="nv-pocet">' + ven.length + "</span></summary>"
+        + '<p class="hint">Tyhle se na seznam nedostanou, ani když na ně pravidlo'
+        + " sedí. Vrátit je jde kdykoli.</p>";
+      html += '<div class="nv-rady">' + ven.map(function (k) {
+        var jm = nvJmenoRady(k);
+        return '<span class="nv-rada"><b>' + escHtml(jm.prvni) + "</b>"
+          + '<button type="button" class="nv-zpet" data-nv-zpet="' + escHtml(k)
+          + '">Vrátit</button></span>';
+      }).join("") + "</div>";
+      html += "</details>";
+    }
+
+    if (!rady.length && !ven.length) {
+      html = '<p class="hint">Seznam je prázdný — zapni některé pravidlo'
+        + " nahoře, nebo si druhy přidej ručně.</p>";
+    }
+    box.innerHTML = html;
+
+    var bp = document.getElementById("nvBonbonyPocet");
+    if (bp) {
+      var kolikB = Object.keys(bonbony).length;
+      bp.textContent = kolikB ? String(kolikB) : "";
+    }
+    var pocet = document.getElementById("nvPocet");
+    // Odkud se seznam poprvé vzal, je historie — na stránce nemá co dělat.
+    if (pocet) pocet.textContent = String(rady.length);
+
+    // ------------------------------------------------------------ průnik
+    var pbox = document.getElementById("nvPrunikBox");
+    if (pbox) {
+      var p = nvPrunik();
+      var kusu = 0;
+      p.forEach(function (r) { kusu += r.pocet; });
+      if (!discarded.length) {
+        pbox.innerHTML = '<p class="hint">Zatím jsi nic nepustil — až projdeš'
+          + " čištění boxu, objeví se tady druhy, které patří na tvůj seznam.</p>";
+      } else if (!p.length) {
+        pbox.innerHTML = '<p class="hint">Z ' + nvKusu(discarded.length)
+          + " zahozených nepatří na seznam ani jeden druh. Všechno jde pryč.</p>";
+      } else {
+        /* Druhy jsou štítky vedle sebe, ne řádek na každý: ve hře je hledáš
+           podle jména a na jeden řádek se jich vejde deset. Proč je druh
+           na seznamu, je v bublině — na štítku by to byl román. */
+        pbox.innerHTML = '<div class="nv-druhy">' + p.map(function (r) {
+          /* V bublině stojí hodnocení CELÉ řady od nejlepšího pořadí —
+             ne to, proč je druh na seznamu. Ve hře se rozhoduje podle
+             toho, co ta řada umí, a seznam sám je ten důvod. */
+          var hodn = nvHodnoceniHtml(r.jmeno);
+          return '<span class="nv-druh" data-tip="'
+            + escHtml(hodn || r.duvody.join(" · ")) + '"><b>'
+            + escHtml(r.jmeno) + "</b><span>" + nvKusu(r.pocet) + "</span></span>";
+        }).join("") + "</div>";
+      }
+      var pp = document.getElementById("nvPrunikPocet");
+      if (pp) {
+        pp.textContent = discarded.length
+          ? kusu + " z " + discarded.length + " zahozených kusů · "
+            + p.length + (p.length === 1 ? " druh" : (p.length < 5 ? " druhy" : " druhů"))
+          : "";
+      }
+    }
+
+    // -------------------------------------------------------------- koš
+    /* Čísla sedí na tlačítkách v hlavě okna. Prázdná hodnota je schválně
+       prázdný text: „Smazat zahozené žádné" by se nedalo přečíst. */
+    var hp = document.getElementById("nvHrobyPocet");
+    if (hp) hp.textContent = discarded.length ? nvKusu(discarded.length) : "";
+    var kp = document.getElementById("nvKosPocet");
+    if (kp) kp.textContent = hrobyKos.length ? String(hrobyKos.length) : "";
+    var kbox = document.getElementById("nvKosBox");
+    if (kbox) {
+      if (!hrobyKos.length) {
+        kbox.innerHTML = '<p class="hint">V koši nic není. Co smažeš, se sem'
+          + " odloží — poslední tři dávky.</p>";
+      } else {
+        kbox.innerHTML = '<div class="nv-kos">' + hrobyKos.map(function (k, i) {
+          return '<label class="nv-kos-radek"><input type="checkbox"'
+            + ' data-nv-kos="' + i + '" /> <b>' + nvKusu(k.polozky.length)
+            + "</b> <span>smazáno " + escHtml(k.kdy
+              ? new Date(k.kdy).toLocaleString("cs-CZ") : "") + "</span></label>";
+        }).join("") + "</div>"
+          + '<div class="actions"><button type="button" id="nvVratitBtn">'
+          + "Vrátit vybrané</button></div>";
+      }
+    }
+  }
+
+  /** Okno na ruční úpravu seznamu — tytéž štítky jako všude jinde.
+   *
+   *  Uloží se DIFF proti pravidlům: co v seznamu zůstalo navíc, je ruční
+   *  přidání; co z pravidel zmizelo, je vyškrtnutí. Díky tomu se pravidla
+   *  dál obnovují sama a ruční rozhodnutí přesto vydrží. */
+  function nvOknoUprav() {
+    var mapa = nvSeznamMapa();
+    var jmena = Object.keys(mapa).map(function (rk) {
+      return nvJmenoRady(mapa[rk].klic).prvni;
+    }).sort(poradiJmen);
+    appOknoOtevri("Evoluční řady, které sbíráš na výměnu.\n\nPlatí to na CELOU"
+      + " řadu, takže stačí jeden stupeň: „Alakazam“ pokryje i Abru a Kadabru."
+      + " Co přidáš, zůstane na seznamu i proti pravidlům; co odebereš, zůstane"
+      + " vyškrtnuté. Verdikty v rosteru to nemění — je to jen pohled na to,"
+      + " co pouštíš.",
+      { potvrdit: true, vstup: "", okText: "Uložit seznam",
+        zrusitText: "Nechat beze změn",
+        cipy: { moznosti: appOknoDruhyKVyberu(), placeholder: "Např. Eevee",
+          vybrane: jmena, pokryva: nvKdoPokryva },
+        ok: function (hodnota) {
+          var vyber = bmTradeZeSeznamu(hodnota);
+          var zPravidel = nvZPravidel();
+          var rucni = { pridane: [], odebrane: [] };
+          var mamRady = {};
+          Object.keys(vyber.druhy).forEach(function (k) {
+            if (!dexByKey(k)) return;
+            var rk = radaKlic(k);
+            if (mamRady[rk]) return;
+            mamRady[rk] = true;
+            if (!zPravidel[rk]) rucni.pridane.push(k);
+          });
+          Object.keys(zPravidel).forEach(function (rk) {
+            if (!mamRady[rk]) rucni.odebrane.push(zPravidel[rk].klic);
+          });
+          nvRucniUloz(rucni);
+          if (vyber.nezname.length) {
+            appHlaska("Tyhle druhy appka nezná a do seznamu se nedostaly: "
+              + vyber.nezname.join(", "));
+          }
+        } });
+  }
+
+  /** Který řádek seznamu už tenhle druh drží? Okno ho pak rozsvítí místo
+   *  toho, aby ho přidalo podruhé. */
+  function nvKdoPokryva(jmeno, vybrane) {
+    var rada = radaKlic(dexKey(jmeno));
+    var kryje = "";
+    (vybrane || []).forEach(function (x) {
+      if (!kryje && radaKlic(dexKey(x)) === rada) kryje = x;
+    });
+    return kryje;
   }
 
   /** Druhy, které se po výměně vyvinou zdarma — celá hra, ne jen roster.
@@ -25597,6 +26557,17 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   /** Jméno z importu může nést cokoli, do innerHTML se tedy nesmí dostat syrové. */
+  /** Pořadí jmen druhů v abecedě.
+   *
+   *  Jména jsou anglická, takže se řadí anglickou abecedou: „ch" je
+   *  c + h, ne české písmeno za h. S českým řazením končil Chansey až
+   *  za Hitmonleem a nikdo ho tam nehledal (Lukáš 21. 11. 2026).
+   *  České texty (typy, verdikty, filtry) se řadí dál podle `cs`. */
+  function poradiJmen(a, b) {
+    return String(a === null || a === undefined ? "" : a)
+      .localeCompare(String(b === null || b === undefined ? "" : b), "en");
+  }
+
   function escHtml(v) {
     return String(v === null || v === undefined ? "" : v)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -25877,6 +26848,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   }
 
   function renderDiscardBtn() {
+    // Stránka Na výměnu stojí na hrobech, takže se překresluje s nimi.
+    if (document.getElementById("nvSeznamBox")) nvVykresli();
     var b = document.getElementById("forgetDiscardedBtn");
     if (!b) return;
     var dropped = pruneDiscarded();
@@ -28141,7 +29114,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // „Ne" patří dolů — je to skoro vždy většina a hledá se opak.
       if (a === "Ne") return 1;
       if (b === "Ne") return -1;
-      return a.localeCompare(b, "cs");
+      // Ve sloupci se jmény jsou to druhy, takže anglická abeceda.
+      return poradiJmen(a, b);
     });
     document.getElementById("hodnotaFiltrSeznam").innerHTML = seznam.length
       ? seznam.map(function (v) {
@@ -28504,8 +29478,30 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     // Změna druhu mění i to, které útoky se dají nabídnout.
     pole.name.addEventListener("input", omezUtokyNaDruh);
     pole.name.addEventListener("change", omezUtokyNaDruh);
+    /* Okno se zavírá i Zrušit, a tam se dřív nic nemazalo — po dalším
+       otevření v něm stál cizí kus a stačilo kliknout na Přidat
+       (Lukáš 21. 11. 2026). */
+    function vycistitFormular() {
+      ["cp", "a", "d", "st"].forEach(function (k) { pole[k].value = ""; });
+      pole.name.value = "";
+      if (pole.pohlavi) pole.pohlavi.value = "";
+      ["rbFast", "rbCh1", "rbCh2", "rbNote"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      nastavRucniFormu("");
+      ["rbDmax", "rbGmax", "rbMega", "rbShiny", "rbCute"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.checked = false;
+      });
+      out.className = "rb-out ok";
+      out.textContent = "";
+      pridat.textContent = "Přidat do rosteru";
+      pridat.disabled = true;
+    }
     window.__pgoOtevritPridat = function () {
       naplnitDruhy();
+      vycistitFormular();
       box.hidden = false;
       prekreslit();
       obnovitNahled();
@@ -28552,22 +29548,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       // dovyplňuje (útoky, značky) a hledat ho pak v rosteru je zbytečná
       // práce navíc.
       zamerKus(rows[rows.length - 1].id);
-      ["cp", "a", "d", "st"].forEach(function (k) { pole[k].value = ""; });
-      pole.name.value = "";
-      // Vyčistit i doplňková pole, ať se další kus nepřidá s cizími útoky.
-      ["rbFast", "rbCh1", "rbCh2", "rbNote"].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.value = "";
-      });
-      nastavRucniFormu("");
-      ["rbDmax", "rbGmax", "rbMega", "rbShiny", "rbCute"].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.checked = false;
-      });
-      out.className = "rb-out ok";
-      out.textContent = "";
-      pridat.textContent = "Přidat do rosteru";
-      pridat.disabled = true;
+      vycistitFormular();
       // Okno se zavírá samo. Kus je v rosteru, detail se mu otevřel — nechat
       // nad tím viset formulář znamená, že se na přidaný kus není jak podívat.
       box.hidden = true;
@@ -28887,13 +29868,28 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     obnov();
   })();
 
+  /* Vybraný soubor zmenší plochu na přetažení na jeden řádek — vedle
+     náhledu dat by jinak zabírala půl okna. Když se ale okno zavře
+     nedokončené, zůstávala zmáčknutá i při dalším otevření a nedalo
+     se do ní trefit (Lukáš 21. 11. 2026). Úklid je proto na jednom
+     místě a volá se při otevření i při zrušení. */
+  function importUklid() {
+    var box = document.getElementById("importBox");
+    if (box) box.classList.remove("ma-soubor");
+    var mapa = document.getElementById("mapBox");
+    if (mapa) mapa.style.display = "none";
+    var vstup = document.getElementById("fileInput");
+    if (vstup) vstup.value = "";
+    pending = null;
+  }
   document.getElementById("toggleImportBtn").addEventListener("click", function () {
-    document.getElementById("importBox").classList.toggle("open");
+    var box = document.getElementById("importBox");
+    if (!box.classList.contains("open")) importUklid();
+    box.classList.toggle("open");
   });
   document.getElementById("cancelImportBtn").addEventListener("click", function () {
     document.getElementById("importBox").classList.remove("open");
-    document.getElementById("mapBox").style.display = "none";
-    pending = null;
+    importUklid();
   });
   document.getElementById("mapMergeBtn").addEventListener("click", function () { finishImport("merge"); });
   document.getElementById("mapReplaceBtn").addEventListener("click", function () {
@@ -29047,9 +30043,138 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
   document.getElementById("forgetAllBtn").addEventListener("click", function () {
     if (!discarded.length) return;
     appPotvrdit("Zapomenout " + discarded.length + " smazaných kusů?"
-      + " Při dalším importu se zase objeví všechny.",
-      function () { discarded = []; persist(true); renderDiscardBtn(); }, "Zapomenout");
+      + " Odloží se do koše na stránce Na výměnu — poslední tři dávky jdou vrátit.",
+      function () { hrobyDoKose(); }, "Zapomenout");
   });
+
+  /* ------------------------------------------------------- Na výměnu */
+  (function () {
+    var karta = document.getElementById("naVymenuCard");
+    if (!karta) return;
+    var plachta = document.getElementById("nvPlachta");
+    var otevritBtn = document.getElementById("nvOtevritBtn");
+    /* Posluchače drží celé okno, ne karta: příkazy k zahozeným kusům
+       stojí v hlavě okna, tedy nad kartou. */
+    var okno = plachta ? plachta.querySelector(".hled-okno") : karta;
+
+    function nvKosPrepni(otevrit) {
+      var panel = document.getElementById("nvKosPanel");
+      var btn = document.getElementById("nvKosBtn");
+      if (!panel) return;
+      if (otevrit === undefined) otevrit = panel.hidden;
+      panel.hidden = !otevrit;
+      if (btn) btn.setAttribute("aria-expanded", otevrit ? "true" : "false");
+      // Panel sedí na začátku okna — kdo je dole, jinak by ho nenašel.
+      var telo = plachta && plachta.querySelector(".hled-telo");
+      if (otevrit && telo) telo.scrollTop = 0;
+    }
+
+    function nvOtevri() {
+      if (!plachta) return;
+      plachta.hidden = false;
+      karta.open = true;
+      nvKosPrepni(false);
+      nvVykresli();
+      /* Skládání dlouhých textů sem nepatří: tlačítko „víc" se vkládá
+         za odstavec a vzhledová vrstva řadí obsah okna po svém,
+         takže by samo vyplavalo nahoru. Úvod je tu stejně krátký. */
+      var krizek = document.getElementById("nvZavritBtn");
+      if (krizek) krizek.focus();
+    }
+    function nvZavri() {
+      if (!plachta || plachta.hidden) return;
+      plachta.hidden = true;
+      if (otevritBtn) otevritBtn.focus();
+    }
+    if (otevritBtn) otevritBtn.addEventListener("click", nvOtevri);
+    if (plachta) {
+      // Klik vedle okna zavírá, uvnitř okna se nepočítá.
+      plachta.addEventListener("click", function (e) {
+        if (e.target === plachta) nvZavri();
+      });
+    }
+    var zavritBtn = document.getElementById("nvZavritBtn");
+    if (zavritBtn) zavritBtn.addEventListener("click", nvZavri);
+    /* Escape patří tomu, co je nejvýš: nad oknem může stát dialog
+       „Upravit seznam" a ten se zavírá sám. Posluchač proto zachytává
+       klávesu v průchodu dolů (`capture`) — na pořadí, v jakém se kdo
+       v appce přihlásil, se spoléhat nedá. */
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape" || !plachta || plachta.hidden) return;
+      var dialog = document.getElementById("appOkno");
+      if (dialog && !dialog.hidden) return;
+      nvZavri();
+    }, true);
+    // Pravidla se přepočítají, jakmile se s nimi hne — čísla i známky.
+    okno.addEventListener("change", function (e) {
+      if (e.target && /^nv(Max|Liga|Raid|Gym|Vzacne)/.test(e.target.id || "")) nvVykresli();
+    });
+    okno.addEventListener("input", function (e) {
+      if (e.target && /^nv(Liga|Raid|Gym)/.test(e.target.id || "")) nvVykresli();
+    });
+    okno.addEventListener("click", function (e) {
+      var t = e.target;
+      if (!t) return;
+      // Tlačítko s číslem uvnitř: klik přijde na to číslo, ne na tlačítko.
+      var tl = t.closest ? t.closest("button") : null;
+      if (tl) t = tl;
+      if (t.id === "nvKosBtn") { nvKosPrepni(); return; }
+      var ven = t.getAttribute && t.getAttribute("data-nv-ven");
+      if (ven) {
+        var r1 = nvRucniCti();
+        r1.pridane = r1.pridane.filter(function (k) {
+          return radaKlic(k) !== radaKlic(ven);
+        });
+        /* Co drží pravidlo, musí jít vyškrtnout natrvalo — jinak by se to
+           vrátilo při nejbližší obnově žebříčků. */
+        if (nvZPravidel()[radaKlic(ven)] && r1.odebrane.indexOf(ven) === -1) {
+          r1.odebrane.push(ven);
+        }
+        nvRucniUloz(r1);
+        return;
+      }
+      var zpet = t.getAttribute && t.getAttribute("data-nv-zpet");
+      if (zpet) {
+        var r2 = nvRucniCti();
+        r2.odebrane = r2.odebrane.filter(function (k) {
+          return radaKlic(k) !== radaKlic(zpet);
+        });
+        nvRucniUloz(r2);
+        return;
+      }
+      if (t.id === "nvUpravitBtn") { nvOknoUprav(); return; }
+      if (t.id === "nvBonbonyBtn") {
+        vymenaOknoUprav(function () { nvVykresli(); });
+        return;
+      }
+      if (t.id === "nvZpetBtn") {
+        appPotvrdit("Zahodit ruční úpravy seznamu? Zůstane jen to, co drží"
+          + " pravidla nahoře.", function () {
+            nvRucniUloz({ pridane: [], odebrane: [] });
+          }, "Zahodit úpravy");
+        return;
+      }
+      if (t.id === "nvSmazatHrobyBtn") {
+        if (!discarded.length) { appHlaska("Žádné zahozené kusy tu nejsou."); return; }
+        appPotvrdit("Smazat " + discarded.length + " zahozených kusů?"
+          + " Odloží se do koše a půjdou vrátit — koš si pamatuje poslední"
+          + " tři dávky.", function () {
+            var n = hrobyDoKose();
+            appHlaska("Smazáno " + n + " zahozených kusů. V koši je najdeš dole.");
+          }, "Smazat");
+        return;
+      }
+      if (t.id === "nvVratitBtn") {
+        var vybrane = [];
+        karta.querySelectorAll("[data-nv-kos]").forEach(function (el) {
+          if (el.checked) vybrane.push(parseInt(el.getAttribute("data-nv-kos"), 10));
+        });
+        if (!vybrane.length) { appHlaska("Vyber, kterou dávku vrátit."); return; }
+        var vraceno = hrobyZKose(vybrane);
+        appHlaska("Vráceno " + vraceno + " zahozených kusů.");
+      }
+    });
+  })();
   document.getElementById("profileSelect").addEventListener("change", function (e) {
     switchProfile(e.target.value);
   });
@@ -29870,6 +30995,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + "brala jako procento a dávala o tři stupně víc: Machampovi A tam, "
       + "kde Hub dává C. "
       + "U <b>gymu</b> je pořadí i známka taky od Hubu; vlastní podíl na výdrži špičky řekne bublina. "
+      + "U druhu, který Hub v Max Battle <b>nevede vůbec</b> (Pikachu, "
+      + "Vespiquen, Eternatus a dalších jedenáct), si pořadí dopočítá "
+      + "appka z útoku a bonusu za vlastní typ — a napíše to u toho. "
       + "U <b>Max Battle</b> je to známka <b>Pokémon GO Hubu</b> z jeho "
       + "vlastního žebříčku. "
       + "V <b>rosteru</b> (rozpočet rolí, štítky „Fire 2/6“) se počítá "
@@ -30281,6 +31409,19 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + "že optimum je vždycky nahoře. U malých druhů pod 500 CP to neplatí: "
       + "nižší stat drží CP při zemi a pustí kus o půl levelu výš, což ten "
       + "rozdíl přebije. Výsledek se cachuje, takže to nic nestojí.</li>"
+      + "<li><b>Best buddy v pořadí IV.</b> Kamarádský bonus dá kusu "
+      + "<b>+1 level</b> a v lize se stropem CP to pořadím kombinací zamíchá: "
+      + "kus s nižším útokem se pod strop vejde až na L51 a tam má větší stat "
+      + "product. <b>Tinkaton 14/15/15 v Ultra League</b> je bez best buddy "
+      + "<b>#12</b> (99,4 %), s ním <b>#54</b> (98,35 %) — a to druhé číslo "
+      + "ukazuje pvpivs, protože best buddy počítá rovnou. Ani jedno není chyba, "
+      + "je to jiná otázka: <i>co z kusu vymáčknu</i> proti <i>co si koupím</i>. "
+      + "Přepínač <b>Pořadí IV počítat s best buddy</b> (sekce Kvalita kusu) "
+      + "vybírá, které číslo appka ukazuje; výchozí je bez něj. Platí i pro "
+      + "<b>procenta kvality</b>, podle kterých jedou pojistky a rozpočet, takže "
+      + "po zapnutí všem kusům o kousek klesnou. Plán vylepšení se tím nemění: "
+      + "best buddy se za prach nekupuje. Master League strop nemá, tam se "
+      + "počítá na nejvyšším levelu tak jako tak.</li>"
       + "<li><b>Omezený formát není otevřená liga.</b> „Great League: Mega "
       + "Edition“ chce v týmu megu, „Willpower Cup: Great League Edition“ má "
       + "vlastní seznam povolených druhů — pořadí z PvPoke, které appka ukazuje, "
@@ -30351,6 +31492,59 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + "v bublině.</li>"
       + "</ul></div>";
 
+    h += "<h3>7i. Na výměnu — co z puštěných kusů ještě nabídnout</h3>"
+      + "<div class=\"docs-vzorec\"><ul>"
+      + "<li><b>Co to řeší.</b> Po čištění je ve hře celá hromada označená "
+      + "<b>trade?</b> a musí se rozdělit: co přetagovat na <b>trade</b> "
+      + "a co poslat profesorovi. Appka o tom nerozhoduje — rozhoduje "
+      + "<b>tvůj seznam evolučních řad</b>, které sbíráš na výměnu. Stránka "
+      + "ho protne s hroby a vypíše <b>druhy</b>, které v té hromadě "
+      + "opravdu jsou (<i>Abra 3×</i>), ne výpis kusů s IV: ve hře stejně "
+      + "hledáš podle jména.</li>"
+      + "<li><b>Kde ji najdeš.</b> Nahoře v liště tlačítko <b>Na výměnu</b>, "
+      + "hned vedle Transferu. Otevře se jako <b>okno nad rosterem</b>, "
+      + "stejně jako Transfer — zavřeš ho křížkem, klávesou Esc nebo "
+      + "kliknutím vedle okna.</li>"
+      + "<li><b>Co v okně je.</b> Nahoře vedle sebe <b>Pravidla</b> a "
+      + "<b>Na trade</b> — druhy z puštěných kusů, které patří na seznam; "
+      + "to je to, co ve hře odklikáváš. Pod tím <b>Seznam řad</b>: každá "
+      + "řada je štítek s posledním stupněm evoluce a se značkami, které "
+      + "ji na seznamu drží. Správa zahozených kusů sedí v <b>hlavě "
+      + "okna</b> vedle křížku.</li>"
+      + "<li><b>Po najetí na druh v Na trade</b> se ukáže hodnocení "
+      + "<b>celé evoluční řady</b>: řádek na každý stupeň i formu "
+      + "(i Shadow a Mega), za jménem odznáčky rolí s pořadím a známkou — "
+      + "tytéž, co stojí v hlavičce Vyhledávání. Je to <b>jen to, co za "
+      + "něco stojí</b>: role se známkou <b>SS až B</b>, a stupeň, který "
+      + "žádnou takovou nemá, se vůbec nevypíše. Když takovou roli nemá "
+      + "ani jeden stupeň, ukáže se aspoň to nejlepší, co řada má. "
+      + "Z Beldumu v ruce tak "
+      + "poznáš, co umí Metagross, a nečteš u toho dvacet déček. Tatáž "
+      + "bublina je i v okně <b>Upravit seznam ručně</b> — na štítcích, "
+      + "co už máš, i na tom, co ti našeptávač nabízí.</li>"
+      + "<li><b>Seznam má dvě vrstvy.</b> <b>Pravidla</b> ho plní sama — "
+      + "známka z Maxů, pořadí v každé lize, raidoví útočníci, gymoví "
+      + "obránci, legendární a mytičtí. U ligy, raidů i gymů se nejdřív "
+      + "<b>zaškrtne, jestli je vůbec řešíš</b>, a teprve pak se vyplní "
+      + "pořadí — co neřešíš, nezabírá na stránce místo. <b>Ruční vrstva</b> je nad "
+      + "nimi: co přidáš, platí vždycky, a co vyškrtneš, zůstane "
+      + "vyškrtnuté, i když na to pravidlo pořád sedí — jinak by se ti to "
+      + "vracelo při každém obnovení žebříčků. Platí to na celou "
+      + "<b>evoluční řadu</b>, takže stačí jeden stupeň.</li>"
+      + "<li><b>Verdikty to nemění.</b> Ani pravidla, ani ruční vrstva "
+      + "nic nepřepisují — je to jen pohled na to, co už pouštíš. Dřív "
+      + "uměl krátký seznam „chci bonbóny“ držet kus v rosteru verdiktem "
+      + "<b>Trade</b>; to skončilo, protože dělal totéž co tahle stránka, "
+      + "jen dřív a bez rozhodnutí. Zbyl z něj <b>Seznam přání</b> "
+      + "(tlačítko u seznamu řad) — jména, která se posílají odkazem "
+      + "kamarádovi.</li>"
+      + "<li><b>Zahozené kusy se drží, dokud je nesmažeš.</b> Dřív se paměť "
+      + "smazaných kusů sama zahazovala po pár dnech — jenže právě z ní "
+      + "se bere <b>Na trade</b>. Oba příkazy stojí v hlavě okna: "
+      + "<b>Smazat zahozené</b> s počtem a <b>Vrátit smazané</b>, které "
+      + "rozbalí koš. Ten si pamatuje poslední tři dávky a vrátit jde "
+      + "i několik najednou (první a třetí klidně taky).</li>"
+      + "</ul></div>";
     h += "<h3>8. Jak číst kalendář akcí</h3>"
       + "<div class=\"docs-vzorec\"><ul>"
       + "<li><b>Řádek je akce, vodorovně běží čas, svislá červená čára je teď.</b> "
@@ -30452,7 +31646,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
      čištění — nikam se neukládají a s dalším čištěním jsou pryč. Kus
      takového druhu se nepustí hromadně a verdikt u něj řekne, že ho drží
      tahle volba, ne rozpočet. */
-  var bmTrade = {};
   /* Kdo spustil poslední přepočet (ruční změna u kusu) a co se o tom píše
      v pruhu s vypadlými kusy. Puštění kusu příčinu nenastavuje — tam je
      důvod zřejmý z toho, co člověk právě udělal. */
@@ -30464,10 +31657,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
   function bmTradeKlic(jm) {
     return dexKey(String(jm || "").trim());
-  }
-
-  function bmJeNaTrade(x) {
-    return !!(x && x.row && bmTrade[bmTradeKlic(x.row.pokemon)]);
   }
 
   /** Z napsaného seznamu udělá množinu druhů. Co appka nezná, vrátí zvlášť —
@@ -30569,8 +31758,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
        evoluce zdarma pozná aspoň podle druhu — jinak by se takový kus
        nabídl k puštění, i když se má vyměnit. */
     if (!v && TRADE_BY[dexKey(r.pokemon)]) return "trade";
-    // Druh ze seznamu na výměnu: taky se nepouští, jde na výměnu.
-    if (vymenaJeNaSeznamu(r)) return "trade";
     var duvod = proNejdeHromadne({ row: r, dex: dexEntry(r.pokemon),
       shiny: r.shiny === "Ano" });
     return duvod ? "pojednom" : "hromadne";
@@ -31096,8 +32283,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
    *  po jednom), spojením sekcí se jen zmenší čísla. */
   function bmSekceKusu(x, rezim) {
     if (rezim === 1) return 1;
-    // Kus držený na výměnu se nepouští, takže do hromadné sekce nepatří.
-    if (bmJeNaTrade(x)) return rezim === 3 ? 3 : 2;
     if (x.blok) return rezim === 3 ? 3 : 2;
     if (rezim === 3 && bmJeShadow(x)) return 2;
     return 1;
@@ -31321,8 +32506,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
   function bmZavritNatvrdo() {
     bmZapomenoutPrubeh();
-    // Výměny platily jen pro tohle čištění — jinak by držely kusy i potom.
-    if (Object.keys(bmTrade).length) { bmTrade = {}; refreshComputed(); }
     document.getElementById("bmSchovane").hidden = true;
     document.getElementById("boxMode").hidden = true;
     document.getElementById("bmZeptat").innerHTML = "";
@@ -31449,42 +32632,10 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var text = x.sekce + ". sekce — " + nazev + " · " + kusu(kolik)
       + "\n\n" + (BM_SEKCE_POPIS[x.sekce] || "");
     if (!prvni) { appHlaska(text); return; }
-    /* Na začátku čištění se ptáme na výměny — ale je to editor TRVALÉHO
-       seznamu, ne jednorázová výjimka. Pole je předvyplněné tím, co už
-       v seznamu je; co se tu změní, platí i příště a je to vidět i
-       v Transferu. */
-    appOknoOtevri(text + "\n\nDruhy, za které chceš bonbóny z výměny."
-      + " Jejich kusy se nepouštějí — dostanou verdikt Trade. Seznam platí"
-      + " trvale, tohle je jen místo, kde se dá upravit.",
-      { potvrdit: true, vstup: "",
-        okText: "Začít čistit", zrusitText: "Nechat beze změn",
-        cipy: { moznosti: appOknoDruhyKVyberu(), placeholder: "Např. Eevee",
-          vybrane: vymenaDruhyJmena(), pokryva: vymenaKdoPokryva },
-        ok: function (hodnota) {
-          var vyber = bmTradeZeSeznamu(hodnota);
-          // Co se v okně napsalo, je od téhle chvíle celý seznam.
-          vymenaDruhyUloz(Object.keys(vyber.druhy));
-          bmTrade = {};
-          if (!Object.keys(bmTrade).length && !vyber.nezname.length) return;
-          // Verdikt na výměnu je součást rozboru — bez přepočtu by zůstal starý.
-          refreshComputed();
-          // Sekce se musí přepočítat: chráněné kusy už nepatří do hromadné.
-          bmSekceZmrazene = null;
-          var volbyPred = bmVolby, indexPred = bmIndex;
-          bmList = bmSestavit();
-          bmSekceZmrazene = {};
-          bmList.forEach(function (y) { bmSekceZmrazene[y.row.id] = y.sekce; });
-          bmVolby = volbyPred;
-          bmIndex = Math.min(indexPred, bmList.length);
-          bmSekceNaposled = bmList.length && bmList[bmIndex] ? bmList[bmIndex].sekce : 0;
-          bmUlozitPrubeh();
-          bmVykreslit();
-          if (vyber.nezname.length) {
-            appHlaska("Tyhle druhy appka nezná, takže je nechrání: "
-              + vyber.nezname.join(", ") + ". Zkontroluj překlep — jméno musí"
-              + " být takové, jaké zná pokédex.");
-          }
-        } });
+    /* Na výměny se tu už neptáme: o tom, co se přetaguje na trade,
+       se rozhoduje až po čištění na stránce Na výměnu — ze seznamu
+       puštěných kusů. Dialog proto jen řekne, co ta sekce je. */
+    appHlaska(text);
   }
 
   function bmVykreslit() {
@@ -31530,10 +32681,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     var staty = [r.ivAtk, r.ivDef, r.ivSta].map(function (v) {
       return v === null || v === undefined || v === "" ? "?" : v;
     }).join("/");
-    /* Druh na výměnu se nepouští, i když ho rozpočet nedrží — tak zní
-       volba z úvodu čištění. Původní doporučení zůstává v bublině. */
-    var naTrade = bmJeNaTrade(x);
-    var doporuceno = !naTrade && String(c.keep || "").indexOf("Zahodit") === 0
+    var doporuceno = String(c.keep || "").indexOf("Zahodit") === 0
       ? "drop" : "keep";
 
     var rolePct = function (v) {
@@ -31597,9 +32745,9 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       + "</div>"
       + '<div class="bm-sub">' + (r.cp || "?") + " CP · L" + (r.level || "?")
       + " · " + iv + " (" + staty + ")</div></div></div>"
-      + '<div class="bm-verdikt ' + (naTrade ? "good" : (c.keepTone || "muted")) + '">'
-      + '<div class="bm-verdikt-sub">' + (naTrade ? "Tvoje volba" : "Doporučení") + "</div>"
-      + '<div class="bm-verdikt-text">' + (naTrade ? "Nechat na výměnu" : (c.keep || "?"))
+      + '<div class="bm-verdikt ' + (c.keepTone || "muted") + '">'
+      + '<div class="bm-verdikt-sub">Doporučení</div>'
+      + '<div class="bm-verdikt-text">' + (c.keep || "?")
       + (c.keepSub ? '<span class="bm-verdikt-sub">' + c.keepSub + "</span>" : "")
       + "</div></div>"
       + '<div class="bm-why" title="' + escHtml(c.keepTitle || "") + '">'
@@ -32535,60 +33683,13 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
 
   /** Druhy, za které chceš bonbóny z výměny, a hotový filtr na všechno,
    *  co se po výměně vyvine zdarma. */
-  function hledaniVymenaHtml() {
-    var klice = vymenaDruhyList();
-    var jmena = vymenaDruhyJmena();
+  /* Evoluce zdarma je něco jiného než „chci bonbóny": tohle appka ví
+     sama z herních dat a s tvým seznamem to nemá nic společného.
+     Seznam druhů na výměnu se spravuje na stránce Na výměnu — mít ho
+     na dvou místech znamenalo dvakrát totéž (Lukáš 18. 11. 2026). */
+  function hledaniEvoHtml() {
     var evo = tradeEvoDruhy();
-    return '<div class="hled-pred hled-vymena"><span class="hint"'
-      + ' title="Kusy těchhle druhů appka nenabídne k puštění — dostanou'
-      + ' verdikt Trade. Platí trvale, dokud je nesmažeš.">Druhy, za které'
-      + " chceš <b>bonbóny z výměny</b></span>"
-      + '<div class="hled-pred-sez">'
-      + (jmena.length
-          ? jmena.map(function (jm, i) {
-              /* Se spritem se druh pozn\u00e1 na prvn\u00ed pohled \u2014 stejn\u011b jako
-                 ve \u0161t\u00edtc\u00edch v okn\u011b, kde se seznam upravuje. */
-              /* Obrázek se staví stejně jako ve štítcích dialogu: bez
-                 třídy, ať nedostane velikost z jiného seznamu. */
-              var dd = dexByKey(klice[i]);
-              /* Co ten řádek doopravdy pokrývá. Jeden stupeň drží celou
-                 řadu, takže bez tohohle to vypadalo, že zbytek řady chybí. */
-              var rada = radaJmena(klice[i]);
-              var popis = rada.length > 1
-                ? "Platí na celou řadu: " + rada.join(", ") + "."
-                : "Platí na tenhle druh.";
-              /* Když člověk právě zkusil přidat jiný stupeň téže řady,
-                 seznam se nezmění — a bez probliknutí by to vypadalo, že
-                 se nestalo nic. */
-              var blik = vymenaPokryto.indexOf(klice[i]) !== -1;
-              return '<span class="hled-pred-kus hled-pred-druh"'
-                + (blik ? ' data-blik="1"' : "")
-                + ' title="' + escHtml(popis) + '">'
-                + (dd ? obrazekHtml(jm, dd, "") : "") + escHtml(jm)
-                + (rada.length > 1 ? ' <small>+' + (rada.length - 1) + "</small>" : "")
-                + '<button type="button" data-vymena-pryc="' + i
-                + '" title="Smazat ze seznamu">\u2715</button></span>';
-            }).join("")
-          : '<span class="hint">Zatím prázdný.</span>')
-      + '<button type="button" class="hled-vymena-pridat">Upravit seznam</button>'
-      + "</div>"
-      /* Probliknutí platí jen na tohle vykreslení. */
-      + (function () { vymenaPokryto = []; return ""; })()
-      /* Seznam jako text: pošli ho kamarádovi, ať ví, co sháníš. Kdo má
-         appku taky, vloží si ho rovnou do svého Upravit seznam. Nikam se
-         nic nenahrává a nic se nesdílí samo. */
-      + (jmena.length
-          ? '<div class="hled-radek"><span class="hled-cislo"></span>'
-            + '<textarea class="hled-text" readonly rows="1">'
-            + escHtml(jmena.join(", ")) + "</textarea>"
-            + '<button class="primary hled-kopie">Kopírovat</button>'
-            + '<span class="hled-pocet">na poslání</span></div>'
-          : "")
-      + "</div>"
-      /* Evoluce zdarma je něco jiného než „chci bonbóny": tohle appka ví
-         sama z herních dat a nemá to nic společného s tvým seznamem.
-         Proto vlastní rámeček. */
-      + '<div class="hled-pred hled-evo"><span class="hint"'
+    return '<div class="hled-pred hled-evo"><span class="hint"'
       + ' title="Appka je zná z herních dat, platí pro celou hru — filtr'
       + ' je proto pořád stejný.">Druhy, které se <b>po výměně vyvinou'
       + " zdarma</b>. Pozor, tenhle <b>není na pouštění</b>: najde i kusy,"
@@ -32821,7 +33922,7 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
           + (rucne.length > 15 ? " a další " + (rucne.length - 15) : "")
           + ".</span>"
         : "";
-      telo = uvod + hledaniVymenaHtml() + praniHtml()
+      telo = uvod + hledaniEvoHtml() + praniHtml()
         + hledaniPredponyHtml() + overeni
         + hledaniSekce("Nejdřív vyměnit",
             "Po výměně se vyvinou za nula bonbónů.", rT, "t")
@@ -32962,24 +34063,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         hledaniPredponyUloz(list);
         vykresliHledani();
       });
-    });
-    /* Seznam druhů na výměnu: smazání a přidání. Po změně se okno
-       překreslí — kusy těch druhů se přesunou mezi výměny. */
-    box.querySelectorAll("[data-vymena-pryc]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var list = vymenaDruhyList();
-        var i = +btn.getAttribute("data-vymena-pryc");
-        if (list[i] === undefined) return;
-        vymenaDruhOdeber(list[i]);
-        refreshComputed();
-        vykresliHledani();
-      });
-    });
-    /* Upravit seznam = totéž okno, které se ptá před čištěním: štítky se
-       sprity, našeptávání a počet kusů, které z toho druhu máš. */
-    var vymPridat = box.querySelector(".hled-vymena-pridat");
-    if (vymPridat) vymPridat.addEventListener("click", function () {
-      vymenaOknoUprav(function () { vykresliHledani(); });
     });
     var hotovoBtn = box.querySelector("#hledHotovo");
     if (hotovoBtn) hotovoBtn.addEventListener("click", function () {
@@ -33526,6 +34609,20 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
     /* Číslo verze appky (vzhledová vrstva ho píše do postranní lišty). */
     verze: function () { return VERZE; },
     getDiscarded: function () { return discarded.slice(); },
+    /* Stránka Na výměnu — seznam řad, průnik s hroby a koš na hroby. */
+    nvSeznam: function () {
+      var m = nvSeznamMapa();
+      return Object.keys(m).map(function (rk) {
+        return { rada: rk, klic: m[rk].klic, jmeno: nvJmenoRady(m[rk].klic).prvni,
+          zdroje: m[rk].zdroje.slice(), duvody: m[rk].duvody.slice() };
+      }).sort(function (a, b) { return poradiJmen(a.jmeno, b.jmeno); });
+    },
+    nvPrunik: function () { return nvPrunik(); },
+    nvKos: function () {
+      return hrobyKos.map(function (k) { return { kdy: k.kdy, pocet: k.polozky.length }; });
+    },
+    nvSmazatHroby: function () { return hrobyDoKose(); },
+    nvVratitZKose: function (indexy) { return hrobyZKose(indexy); },
     /* Pořadí kombinace IV v lize — totéž číslo, jaké ukazuje detail kusu.
        Testy ho porovnávají s pvpivs.com, kde se počítá ze stejného vzorce. */
     ivRank: function (jmeno, a, d, st, ligaKlic) {
@@ -34080,7 +35177,6 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
         VP: { trida: "rarity-chip r-verdikt r-VP", stitek: "PONECHAT" },
         VN: { trida: "rarity-chip r-verdikt r-VN", stitek: "NECHAT" },
         VZ: { trida: "rarity-chip r-verdikt r-VZ", stitek: "ZAHODIT" },
-        VT: { trida: "rarity-chip r-verdikt r-VZ", stitek: "TRADE" },
         SH: { trida: "rarity-chip r-SH", stitek: "SHADOW" },
         PU: { trida: "rarity-chip r-PU", stitek: "PURIFIED" },
         SKEN: { trida: "rarity-chip r-SKEN", stitek: "POSLEDNÍ SKEN" }
@@ -34483,6 +35579,8 @@ z kusů, které pouštíš — zkopíruješ je a ve hře označíš hromadně.">
       ["rozpocetCard", "Role"],
       ["dustCard", "Rozpočet"],
       ["prohlidkaCard", "Vyhledávání"],
+      // „Na výměnu" tu schválně není: otevírá se jako okno nad rosterem
+      // tlačítkem v liště, ne jako záložka.
       ["friendCard", "Výměna s kamarádem"],
       ["cheatCard", "Tahák"],
       ["catchCard", "Co chytat"],

@@ -2,7 +2,8 @@
   "_meta": {
     "popis": "Novinky pro uzivatele, jednou na verzi. Po preklopeni produkce se okno ukaze jednou samo; na testu jde otevrit tlacitkem.",
     "pravidlo": "Piseme to, co clovek pozna pri praci s appkou, ne co se zmenilo v kodu. Kratke vety, zadne nazvy funkci.",
-    "obrazky": "Bod muze byt veta, nebo {text, obrazek}. `obrazek` je jmeno souboru v data/novinky_obrazky bez pripony; snimky vyrabi tools/novinky_snimky.mjs, do WebP prevadi tools/novinky_obrazky.py."
+    "obrazky": "Bod muze byt veta, nebo {text, obrazek}. `obrazek` je jmeno souboru v data/novinky_obrazky bez pripony; snimky vyrabi tools/novinky_snimky.mjs, do WebP prevadi tools/novinky_obrazky.py.",
+    "delka": "Nejvys pet bodu na verzi, kazdy na par vet; co se nevejde, do novinek nepatri. Lukas 21. 11. 2026: dlouhy seznam nikdo necte."
   },
   "2.8": {
     "nadpis": "Co je nového",
@@ -440,32 +441,17 @@
     "nadpis": "Co je nového",
     "body": [
       {
-        "sekce": "Rozpočet rolí"
+        "text": "**Nová stránka Na výměnu.** Po čištění boxu z ní vyčteš, **které druhy z puštěných kusů patří na tvůj seznam na výměnu** — ty ve hře přetaguješ na `trade`, zbytek jde profesorovi. Otevírá ji tlačítko **Na výměnu** nahoře v liště a vyjede jako okno nad appkou: vlevo pravidla, vedle nich **Na trade** (to, co odklikáváš), pod tím seznam evolučních řad a v hlavě okna správa zahozených kusů.",
+        "obrazek": "navymenu-okno"
       },
-      "**Strop kopií počítá formy téhož druhu jako jednu řadu.** Kyurem, Kyurem (Black) a Kyurem (White) jsou v boxu tři různé kusy, ale ve hře je to jeden tvor ve třech podobách — a každá podoba si držela vlastní strop, takže šest Kyuremů obsadilo celý Ice. Teď se počítají dohromady. Nastavení se jmenuje **Kolik kusů z evoluční řady si nechat**, výchozí jsou dva a jde to přepsat.",
-      "**Kus 0/0/0 má vlastní značku a drží se jako stovka.** Nula ze všech je stejná vzácnost jako 15/15/15 — jeden kus ze 4096 —, jen ve hře neumí nic. Značka **0 %** u jména svítí vždycky; jestli se takový kus nepouští, si přepneš v nastavení (**Držet kus 0/0/0**, sekce Pojistky proti puštění). Zapnuté to je od začátku.",
       {
-        "sekce": "Seznam přání"
+        "text": "**Po najetí na druh vidíš celou evoluční řadu.** Řádek na každý stupeň i formu (i Shadow a Mega), za jménem odznáčky rolí s pořadím a známkou — tytéž ikony jako ve Vyhledávání. Vypisuje se jen to, co za něco stojí (známka **SS až B**). Z Beldumu v ruce tak poznáš, co umí Metagross. Stejná bublina je i v okně, kde seznam upravuješ, a v našeptávači ještě **než druh přidáš**.",
+        "obrazek": "navymenu-bublina"
       },
-      "**Seznam přání jde sdílet odkazem.** V Transferu přibyl příkaz **Vyrobit odkaz na můj seznam**: appka ho položí do své složky na OneDrivu a udělá k němu odkaz **jen pro čtení**. Ten pošleš kamarádovi jednou a jeho appka si pak sama stahuje, co zrovna sháníš. Je v něm jediná věc — jména druhů; žádný roster, žádná CP, žádná IV. Odkaz vzniká až na kliknutí, protože kdo ho má, přečte si ho.",
-      "**A naopak: „Co shání Anet“.** Vložíš odkaz, který ti někdo poslal, a jeho seznam se objeví jako vlastní blok — u každého druhu stojí, kolik kusů té řady v rosteru máš. Obnovuje se sám při otevření a pak po pár minutách.",
-      {
-        "sekce": "Detail kusu"
-      },
-      "**Jinou podobu téhož kusu jde přepnout přímo v detailu.** Zacian s Rusted Sword, Zamazenta se štítem, Kyurem na Black nebo White — klikneš na podobu v sekci **Jiné formy** a appka se zeptá stejně jako u evoluce. IV ani level se nemění, staty a typy ano, takže se přepočítá CP. Útoky se přeměnou přehodí, proto se vymažou. Zpátky to jde stejným klikem.",
-      "**Kyurem (White) je zpátky v nabídce.** S Blackem má na kus stejné typy i staty a liší se jen podpisovým útokem, takže ho appka brala za tutéž podobu a jednu z nich zahodila. Teď se u forem s vlastní sestavou počítá i ta — a kosmetické vzory (devětadvacet Unownů) se do nabídky pořád nesypou.",
-      "**U útoku, který se má nechat, už nestojí šipka na jiný.** U Freeze Shocku na Black Kyuremovi appka říká „tenhle nech“ a žádnou náhradu nenabízí — jenže pod ním svítilo **Outrage**, půjčené z doporučené sestavy pro jinou roli. Proti ledovým cílům je o pětinu slabší. Oranžový útok dostane šipku jen tehdy, když náhradu opravdu někdo našel; červený ji má dál.",
-      "**Bublina s kusy druhu se už nerozteče přes celou obrazovku.** U dvaceti Magikarpů se výpis usekne, zalomí do dvou sloupců a na poslední řádek přijde ten kus, o kterém bublina je — i když je dvacátý. Čísla řádků zůstávají pravdivá, takže je pořád vidět, kolikátý vlastně je.",
-      "**Gigantamax kusy stojí v čištění u legendárních.** Ve hře je to taky zvláštní kus — výměna je u něj speciální —, takže patří do stejné sekce „po jednom“ jako legendární, mytické a shiny, ne do hromadného výběru.",
-      "**CUTE už nepřebíjí zbytek karty.** U kusu, kterého drží jen ta značka, stálo místo verdiktu „CUTE · sbírka“ a místo role „Osobní sbírka — bez investičního cíle“, takže z karty zmizelo všechno ostatní. Teď je tam normální verdikt i pořadí a **CUTE stojí mezi štítky první** — je to jediná značka, kterou si nastavuješ sám.",
-      "**Bublina se seznamem je širší.** Řádek „Darumaka (Galarian) 642 CP 80 % ← tenhle kus až jako Darmanitan“ se lámal na dva řádky; teď se vejde na jeden.",
-      "**Útoky stojí na středu.** Popisek řady (ONIX, STEELIX) stál vedle horního chipu, jako by k tomu dolnímu nepatřil, a řádek ligy s pořadím a sestavou se lepil k levému kraji buňky. Obojí je teď vystředěné.",
-      {
-        "sekce": "Drobnosti"
-      },
-      "**V nadpisu karty Roster stojí, kolik kusů v něm máš.** Filtr s tím číslem nehýbe: je to odpověď na „kolik jich mám“, ne na „kolik jich zrovna vidím“.",
-      "**Hledání přežije přidání kusu.** Dřív se po přidání zrušily filtry celé, aby bylo vidět, že se kus přidal — kdo přidává kusy s hledáním v ruce, ho ale psal po každém kuse znovu. Teď hledání zůstává a projde jím jen ten jeden nově přidaný kus; zmizí, jakmile hledáním pohneš.",
-      "**Do hledání jde napsat CP.** Samotné číslo appka zkusí i jako CP (stačí jeho začátek — „27“ najde 2763) a jako číslo z pokédexu (to musí sedět celé). Jména s číslem fungují dál."
+      "**Seznam přání jde sdílet odkazem.** V Transferu si vyrobíš odkaz na svou složku na OneDrivu a pošleš ho kamarádce; její appka si pak sama stahuje, co zrovna sháníš. Opačným směrem to funguje taky. Upravuje se tlačítkem **Seznam přání…** na stránce Na výměnu a posílají se jen jména druhů. **Verdikt „Trade“ skončil:** držet kus v rosteru kvůli bonbónům dělalo totéž co stránka Na výměnu, jen dřív a bez rozhodnutí — teď kus odejde jako každý jiný a co přetagovat, poznáš až z puštěné hromady.",
+      "**Pořadí IV umí počítat s best buddy.** Kamarádský bonus posune kus o level výš, takže se do ligy vejde jiná kombinace IV. V nastavení se to dá zapnout a pořadí se pak počítá, jako by byl kus best buddy — jinak se appka rozchází s PvPoke přesně o ten jeden level.",
+      "**Štítky na kartě říkají víc.** Vzácnost (**100 %**, **0 %**, **CUTE**) se čte první, protože ji ostatní kusy jen tak nemají, a značka už nepřebíjí role: u kusu, kterého appka drží jen kvůli CUTE, je dál vidět, co umí. A co **hra pustit nenechá** (Mew, Celebi, Meloetta a spol., i jejich formy), se nenabízí k zahození vůbec.",
+      "*Drobnosti:* abeceda bere CH jako C + H (Chansey už nekončí za Hitmonleem) · okno na nového pokémona se otevírá prázdné · dva typy v dlaždici už se nerozdělí na dva řádky · šipky u pravidel dojedou na nulu · Max Battle zná o třináct druhů víc: **Eternatus** a korunovaní **Zacian** se **Zamazentou** v žebříčku chyběli kvůli tomu, jak je Hub píše, a u dalších deseti (Pikachu, Vespiquen…) si pořadí dopočítá appka a řekne to."
     ]
   }
 }

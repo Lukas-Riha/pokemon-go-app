@@ -74,7 +74,7 @@ je obojí jeho veřejnou součástí.
 | `atlasRozlozFormu(text)` | „Shadow Snorlax" → `{jmeno:"Snorlax", forma:"Shadow"}`; jedno místo pro motor i vrstvu |
 | `atlasMaShadow(jmeno)` | vede PvPoke pro ten druh shadow žebříček? jen tehdy má smysl nabízet přepnutí |
 | `prohlidkaModel(jmeno, forma?)` | model druhu pro vyhledávání; nese `forma`, `maShadow` a CELOU evoluční řadu |
-| `atlasDmax(jmeno)` | pořadí druhu mezi Dynamax útočníky po typech, nebo `null`. Čísla jsou model Pokémon GO Hubu, ne appky |
+| `atlasDmax(jmeno)` | pořadí druhu mezi Dynamax útočníky po typech, nebo `null`. Čísla jsou model Pokémon GO Hubu, ne appky — kromě rolí s `dopocitano:true`, které si u druhů mimo Hubův žebříček (Pikachu, Vespiquen…) spočítala appka z útoku a STAB; u těch se to musí napsat |
 | `atlasDmaxZdroj()` | odkud a k jakému dni Dmax čísla jsou — musí stát u každého místa, kde se ukazují |
 | `atlasStropLigy(jmeno, limit, iva, ivd, ivs)` | nejvyšší půllevel, kde se kus ještě vejde pod limit ligy |
 | `atlasRankLimit()` | do kolikátého místa v lize bere člověk druh vážně (z nastavení) |
@@ -193,6 +193,8 @@ tehdy, když existuje. Bez vrstvy appka funguje dál tak, jak fungovala.
 | `window.AtlasEnhanceDetail(box, radek, rozbor)` | po vykreslení detailu kusu | přeskládat detail do podoby vrstvy |
 | `window.AtlasDoplnitRoster()` | po přidání kusu do rosteru | překreslit seznam |
 | `window.AtlasSmazane(box, položky, info)` | místo tabulky smazaných kusů | nakreslit je jako dlaždice; `false` = nech tabulku |
+| `window.AtlasRoleIkona(klíč)` | bublina s hodnocením řady (`little`/`great`/`ultra`/`master`/`gym`/`max`) | vrátit HTML odznaku role; `""` = engine napíše jen popisek |
+| `window.AtlasMaxZnacka(forma)` | tamtéž, pro `Dynamax`/`Gigantamax` | vrátit HTML značky formy |
 
 Model smazaných kusů staví engine: ke každé položce patří kopie řádku,
 hotový rozbor, datum smazání a dvě funkce (`vratit`, `rozbor`). Vrstva

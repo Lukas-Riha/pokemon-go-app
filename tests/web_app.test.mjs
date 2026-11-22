@@ -2134,7 +2134,7 @@ try {
     // rozhodit to na nesmysly, včetně <select>, kde žádný atribut value není
     ids.forEach((i) => {
       const el = document.getElementById(i);
-      el.value = el.tagName === "SELECT" ? "0" : "7";
+      el.value = el.tagName === "SELECT" ? "90" : "7";
       el.dispatchEvent(new Event("input", { bubbles: true }));
     });
     const rozhozene = read();
@@ -2147,7 +2147,10 @@ try {
   eq("výchozí práh IV je 90 %", cfg.po.ivThresh, "90");
   eq("výchozí elitní rank je 100", cfg.po.rankThresh, "100");
   eq("výchozí práh užitečnosti role je 50 %", cfg.po.roleThresh, "50");
-  eq("select se vrátí na 3 dny, ne na prázdno", cfg.po.discardKeepDays, "3");
+  // Paměť smazaných se od stránky Na výměnu sama nemaže: bere se z ní
+  // průnik („tohle jsi pustil"), tak ať nezmizí dřív, než ji projdeš.
+  eq("select se vrátí na „dokud je nesmažu“, ne na prázdno", cfg.po.discardKeepDays, "0");
+  eq("…a předtím byl opravdu jinde", cfg.rozhozene.discardKeepDays, "90");
   check("…a předtím to opravdu bylo rozhozené", cfg.rozhozene.keepCopies === "7", JSON.stringify(cfg.rozhozene));
 
   console.log("\n47) prahy nastavené tak, že nic neprojde, appka pojmenuje");
@@ -3531,7 +3534,10 @@ try {
       // automatické doplnění středníku ten řetězec rozsekne a zbytek tabulky
       // se do stránky vůbec nedostane — tichá ztráta, kterou je vidět jen tady.
       zdrojeJmena: zdroje.map((tr) => tr.children[0].textContent.trim()),
-      otazniky: (t.match(/[?]/g) || []).length,
+      /* Otazník v textu = nedoplněný údaj (chybějící datum, prázdné číslo).
+         Jediná výjimka je herní značka `trade?`, kterou si do hry píšeš sám —
+         ta se před počítáním vyškrtne, jinak by hlásila chybu sama o sobě. */
+      otazniky: (t.replace(/trade\?/g, "trade").match(/[?]/g) || []).length,
       pocetObrancu: (t.match(/nad 50 % špičky — dnes (\d+) druhů/) || [])[1],
       pocetUtocniku: (t.match(/Dnes tím prochází (\d+) druhů/) || [])[1],
       zminujeCalcyRank: t.indexOf("Calcy IV rank se do rozhodování nepouští") > -1,
@@ -3550,8 +3556,9 @@ try {
   // a dokumentace to musí říct, jinak by popisovala něco, co uživatel nevidí.
   // Přibyl oddíl 7b (co refaktor odebral a proč), 7d (jeden druh, víc forem),
   // 7e/7f (stav kusu ve výpočtu a přesnost dvou vzorců), 7g (do čeho
-  // rozpočet prach nesype) a 7h (posudek u jednotlivého útoku).
-  eq("dokumentace má všech šestnáct oddílů", doku.nadpisy.length, 16);
+  // rozpočet prach nesype), 7h (posudek u jednotlivého útoku) a 7i
+  // (stránka Na výměnu).
+  eq("dokumentace má všech sedmnáct oddílů", doku.nadpisy.length, 17);
   check("…a je pod rosterem", doku.podRosterem);
   check("…a není to odbytý odstavec", doku.delka > 4000, String(doku.delka));
   check("datumy stažení jsou skutečné, ne otazníky",
@@ -5765,6 +5772,10 @@ try {
   check("…ale vyměnit ho pořád nejde, a už je to i řečeno",
     zyg.plny.trade === "Nejde" && /výměny nepustí/.test(zyg.plny.tradeTitle),
     zyg.plny.trade + " | " + zyg.plny.tradeTitle.slice(0, 140));
+  /* Meloetta se měří ve vrstvové sadě: seznam druhů, které hra pustit
+     nenechá, je ZAPEČENÝ (`POKEDEX.nelzePustit`) a enginový soubor nese
+     data z posledního produkčního buildu — ten seznam v nich ještě
+     není, takže by tu appka neměla čím zakazovat. */
   // A pojistka: legendárky se tím nesmí zamknout všechny zpátky.
   check("horší Lunala se pořád smí pustit",
     zyg.lunala.keep.indexOf("Zahodit") === 0, zyg.lunala.keep);
@@ -7127,6 +7138,25 @@ try {
      bobulí). Zůstala jen nabídka platných CP, kterou ověřuje test níž. */
   check("nabídne platná CP nad zadaným", gymCp.nabidka.includes("145")
     && gymCp.nabidka.includes("163"), gymCp.nabidka.join(","));
+  /* Okno zavřené křížkem nebo Zrušit si dřív nechávalo vyplněný kus
+     a po dalším otevření stačilo kliknout na Přidat (Lukáš 21. 11.
+     2026). Formulář se proto čistí při otevírání, ne až po přidání. */
+  const formPoZruseni = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.getElementById("rbCancel").click();
+    await cekej(200);
+    document.getElementById("addRowBtn").click();
+    await cekej(400);
+    return { jm: document.getElementById("rbName").value,
+      cp: document.getElementById("rbCp").value,
+      a: document.getElementById("rbA").value,
+      d: document.getElementById("rbD").value,
+      s: document.getElementById("rbS").value,
+      blok: document.getElementById("rbAdd").disabled };
+  });
+  check("okno na nového pokémona se otevírá prázdné",
+    ["jm", "cp", "a", "d", "s"].every((k) => formPoZruseni[k] === "")
+      && formPoZruseni.blok === true, JSON.stringify(formPoZruseni));
   check("klik na nabídnuté CP ho doplní a odemkne přidání",
     gymCp.poKliku === "145" && gymCp.blok === false && gymCp.vysledek.includes("Level 4,5")
       .valueOf() || (gymCp.poKliku === "145" && gymCp.blok === false),
@@ -16261,6 +16291,7 @@ try {
         duvody: (c.duvody || []).map((d) => ({ druh: d.druh, klic: d.klic, filtr: d.filtr, stitek: d.stitek })),
         maRadek: !!radek, sub: td && td.querySelector(".cell-sub") ? td.querySelector(".cell-sub").textContent : "",
         chipu: chipy.length, videt: videt.length,
+        podCarou: (c.podCarou || []).length,
         vic: vic && !vic.hidden ? Number(vic.textContent.replace("+", "")) : 0,
         vicTip: vic && !vic.hidden ? vic.getAttribute("data-tip") || "" : "",
         pretece: videt.length > 1 && videt.some((e) => e.getBoundingClientRect().right > pravy + 1),
@@ -16316,9 +16347,22 @@ try {
     JSON.stringify(stitky.kusy.map((k) => [k.jmeno, k.maRadek, k.sub])));
   check("pousteny kus ma dal vetu, proc jde pryc, a zadne stitky",
     !kus("Rattata").maRadek && /Zahodit/.test(kus("Rattata").keep), JSON.stringify(kus("Rattata")));
+  // Radek verdiktu nese duvody A u znackoveho kusu i cerchovane stitky
+  // „pod carou" — schovat se smi jen do „+N", ztratit se nesmi nic.
   check("vsechny duvody jsou videt nebo v „+N\" (nic se neztrati)",
-    stitky.kusy.filter((k) => k.maRadek).every((k) => k.videt + k.vic === k.duvody.length),
-    JSON.stringify(stitky.kusy.map((k) => [k.jmeno, k.videt, k.vic, k.duvody.length])));
+    stitky.kusy.filter((k) => k.maRadek)
+      .every((k) => k.videt + k.vic === k.duvody.length + k.podCarou),
+    JSON.stringify(stitky.kusy.map((k) =>
+      [k.jmeno, k.videt, k.vic, k.duvody.length, k.podCarou])));
+  /* Jedna znacka uz neprebije vsechno ostatni: u kusu, ktereho se appka
+     drzi jen kvuli znacce (CUTE, 100 %, pojistka, shiny), stoji vedle ni
+     i to, co kus umi. Konkretni poradi ze zebricku se sem nepise. */
+  check("znacka neprebije stitky o tom, co kus umi",
+    stitky.kusy.filter((k) => k.keepGood && k.maRadek
+        && k.duvody.every((d) => d.druh === "znacka") && k.podCarou > 0)
+      .every((k) => k.chipu === k.duvody.length + k.podCarou),
+    JSON.stringify(stitky.kusy.filter((k) => k.keepGood && k.podCarou > 0)
+      .map((k) => [k.jmeno, k.chipu, k.duvody.length, k.podCarou])));
   check("zadny viditelny stitek nepretece bunku",
     stitky.kusy.every((k) => !k.pretece), JSON.stringify(stitky.kusy.filter((k) => k.pretece).map((k) => k.jmeno)));
   const sVic = stitky.kusy.filter((k) => k.vic > 0)[0];
@@ -16708,9 +16752,14 @@ try {
     const comp = P.getComputed();
     const LIGA = { LC: 0, GL: 1, UL: 2, ML: 3 };
     const DRUH = { pvp: 1, raid: 2, gym: 3, dmax: 4, mega: 5 };
-    const ZN = { "Dynamax": 4, "Elitní útok": 6, "100 %": 7, "CUTE": 8 };
-    const rank = (d) => (d.druh === "znacka" ? (ZN[d.filtr] || 9) : (DRUH[d.druh] || 9)) * 10
-      + (d.druh === "pvp" ? (LIGA[d.filtr] || 0) : 0);
+    /* Vzácnost se čte první: 100 %, 0 % a CUTE stojí před rolemi —
+       roli si kus může vysloužit, stovku ne (Lukáš 18. 11. 2026). */
+    const ZN = { "100 %": 0, "0 %": 0, "CUTE": 0, "PvP stovka": 1,
+      "Pojistka na cupy": 1, "Dynamax": 4, "Gigantamax": 4, "Elitní útok": 6 };
+    // Nula je platne cislo (vzacnost), takze `|| 9` by ji poslalo dozadu.
+    const rank = (d) => (d.druh === "znacka"
+      ? (ZN[d.filtr] === undefined ? 9 : ZN[d.filtr])
+      : (DRUH[d.druh] || 9)) * 10 + (d.druh === "pvp" ? (LIGA[d.filtr] || 0) : 0);
     const out = { duvody: {}, spatne: [], tagy: [], ligyTip: [], roleTip: {} };
     P.getRows().forEach((r) => {
       const ds = comp[r.id].duvody || [];
@@ -16760,14 +16809,16 @@ try {
     box.remove();
     return out;
   });
-  check("štítky důvodů jdou vždy v pořadí ligy → raid → gym → Max → mega → elitní → 100 % → CUTE",
+  check("štítky důvodů jdou vždy v pořadí vzácnost → ligy → raid → gym → Max → mega → elitní",
     poradi255.spatne.length === 0, poradi255.spatne.join(" | ") + " " + JSON.stringify(poradi255.duvody));
   check("…a test má kusy s víc druhy důvodů",
     Object.values(poradi255.duvody).some((d) => new Set(d.map((x) => x.split(":")[0])).size >= 2),
     JSON.stringify(poradi255.duvody));
   const gyaDuvody = poradi255.duvody.Gyarados || [];
-  check("…Gyarados: 100 % před CUTE",
-    gyaDuvody.indexOf("znacka:100 %") > -1 && gyaDuvody.indexOf("znacka:100 %") < gyaDuvody.indexOf("znacka:CUTE"),
+  check("…Gyarados: 100 % před CUTE a obojí před rolemi",
+    gyaDuvody.indexOf("znacka:100 %") === 0
+      && gyaDuvody.indexOf("znacka:100 %") < gyaDuvody.indexOf("znacka:CUTE")
+      && gyaDuvody.indexOf("znacka:CUTE") < gyaDuvody.indexOf("pvp:ML"),
     JSON.stringify(gyaDuvody));
   // 100 % je až za přepínatelnými značkami — viz komentář u kontroly výš.
   const TAG_PORADI = ["SHADOW", "PURIFIED", "DMAX", "CUTE", "SHINY", "100%", "LUCKY"];
@@ -17368,6 +17419,85 @@ try {
         || /V celém rosteru je/.test(s262.dmax)),
     s262.dmax.replace(/<[^>]+>/g, " ").slice(0, 260));
 
+  /* 359) Dmax kus druhu, ktery neni raidovy utocnik.
+
+     Grookey do Max Battle patri (Hub ho vede v Grass), ale raidovou
+     roli nema — a tabulka v bubline se stavela jen z typu, kde nekdo
+     slot drzi. U obou Lukasovych Grookeyu tak bublina koncila vetou
+     o druhu a nevypsala ani jeden kus (21. 11. 2026). */
+  console.log("\n359) bublina Dynamax u druhu bez raidove role");
+  await page.goto(URL);
+  await nacteno(page);
+  const d359 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    P.setDiscarded([]);
+    P.setRows([
+      { pokemon: "Grookey", cp: 934, level: 20, ivAtk: 15, ivDef: 15,
+        ivSta: 10, dynamax: "Ano" },
+      { pokemon: "Grookey", cp: 610, level: 20, ivAtk: 11, ivDef: 13,
+        ivSta: 15, dynamax: "Ano" }
+    ]);
+    await cekej(2500);
+    const id = P.getRows()[0].id;
+    const box = document.createElement("div");
+    document.body.append(box);
+    P.atlasDetail(id, box);
+    const chip = [...box.querySelectorAll(".dv-chip")]
+      .find((e) => /Dynamax/.test(e.textContent));
+    const tip = chip ? chip.getAttribute("data-tip") || "" : "";
+    box.remove();
+    return { maChip: !!chip, tabulka: /Pořadí v Max Battle/.test(tip),
+      kusu: (tip.match(/Grookey/g) || []).length,
+      poznamka: /mezi tvými Dmax kusy/.test(tip),
+      text: tip.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 200) };
+  });
+  check("Dmax kus druhu bez raidove role ma v bubline poradi mezi tvymi kusy",
+    d359.maChip && d359.tabulka && d359.poznamka && d359.kusu >= 2,
+    JSON.stringify(d359));
+
+  /* 362) Plocha na pretazeni souboru.
+
+     Vybrany soubor ji zmensi na jeden radek (vedle nahledu dat by jinak
+     zabirala pul okna). Kdyz se ale okno zavrelo nedokoncene, zustala
+     zmacknuta i pri dalsim otevreni a nedalo se do ni trefit
+     (Lukas 21. 11. 2026). */
+  console.log("\n362) plocha na pretazeni souboru");
+  const d362 = await page.evaluate(async () => {
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    /* Plocha na import sedi na karte Roster. Kdyz drivejsi blok nechal
+       otevrenou jinou zalozku, je cela karta `display:none` a vysky by
+       se merily na nule. */
+    const zalozka = document.querySelector('.zal-lista [data-klic="roster"]');
+    if (zalozka) zalozka.click();
+    await cekej(300);
+    const box = document.getElementById("importBox");
+    const zona = document.getElementById("dropzone");
+    const vyska = () => Math.round(zona.getBoundingClientRect().height);
+    if (box.classList.contains("open")) {
+      document.getElementById("cancelImportBtn").click();
+      await cekej(200);
+    }
+    document.getElementById("toggleImportBtn").click();
+    await cekej(500);
+    const prvni = vyska();
+    box.classList.add("ma-soubor");   // jako by uzivatel vybral soubor
+    await cekej(200);
+    const sSouborem = vyska();
+    document.getElementById("cancelImportBtn").click();
+    await cekej(300);
+    document.getElementById("toggleImportBtn").click();
+    await cekej(500);
+    const znovu = vyska();
+    document.getElementById("cancelImportBtn").click();
+    return { prvni, sSouborem, znovu,
+      maSoubor: box.classList.contains("ma-soubor") };
+  });
+  check("plocha na pretazeni se po zavreni vrati do puvodni vysky",
+    d362.prvni > 40 && d362.sSouborem < d362.prvni
+      && d362.znovu === d362.prvni && d362.maSoubor === false,
+    JSON.stringify(d362));
+
   // ---------------------------------------------------------------- 263
   // Přepočet rosteru si pamatuje výsledek, dokud se nezmění data. Otisk musí
   // pokrýt VŠECHNO, na čem výpočet stojí — roster, nastavení (i přepínače,
@@ -17742,9 +17872,12 @@ try {
     const klicRamecku = klic.replace("tracker_v2", "sprite_ramecek");
     try { localStorage.setItem(klicRamecku, JSON.stringify(velky)); }
     catch (e) { out.ramecekChyba = e.name; }
-    // zbytek úložiště se zaplní, aby další velký zápis spadl na kvótu
+    /* Zbytek úložiště se zaplní, aby další velký zápis spadl na kvótu.
+       Dojíždí se po tisíci znacích: při hrubším kroku zůstalo volných
+       pár kilobajtů, roster se do nich vešel i bez uvolnění paměti
+       ikon — a test pak neměřil nic (21. 11. 2026). */
     let i = 0;
-    for (const velikost of [200000, 50000, 10000]) {
+    for (const velikost of [200000, 50000, 10000, 1000]) {
       const blok = "x".repeat(velikost);
       try { for (let n = 0; n < 6000; n++) localStorage.setItem("cizi_test_" + (i++), blok); }
       catch (e) { out.plno = e.name; }
@@ -17762,7 +17895,16 @@ try {
       const pr = (st.profiles || {})[st.active];
       out.ulozeno = pr && pr.rows ? pr.rows.length : -1;
     } catch (e) { out.ulozeno = -1; }
-    out.ramecekZbyl = localStorage.getItem(klicRamecku) !== null;
+    /* Velká paměť ikon musí jít stranou. Že po ní zbyde pár nově
+       doměřených ikon, je v pořádku — appka měří dál, jen co se
+       roster uloží. Měří se proto ZÁZNAMY a jeden konkrétní
+       nasazený klíč, ne přítomnost celé paměti (21. 11. 2026). */
+    const ram = localStorage.getItem(klicRamecku);
+    try {
+      const m = ram ? JSON.parse(ram) : {};
+      out.ramZaznamu = Object.keys(m).length;
+      out.ramNasazene = !!m["https://example.test/ikona-0.png"];
+    } catch (e) { out.ramZaznamu = -1; out.ramNasazene = true; }
     // po sobě uklidit, ať zbytek testů neběží v plném úložišti
     Object.keys(localStorage).forEach((k) => {
       if (k.indexOf("cizi_test_") === 0) localStorage.removeItem(k);
@@ -17771,7 +17913,8 @@ try {
   }, klicAppky);
   check("roster se uloží i do plného úložiště", s270.ulozeno === 120, JSON.stringify(s270));
   check("…a místo pro něj udělá paměť ikon, ne data",
-    s270.ramecekZbyl === false, JSON.stringify(s270));
+    s270.ramZaznamu >= 0 && s270.ramZaznamu < 500
+      && s270.ramNasazene === false, JSON.stringify(s270));
 
   // ---------------------------------------------------------------- 271
   // Úložiště plné na doraz: neprojde ani zkušební zápis jednoho znaku.
@@ -17821,10 +17964,17 @@ try {
     await page3.goto(URL);
     await page3.waitForTimeout(2200);
     const s271 = await page3.evaluate((klic) => {
+      /* Velká paměť ikon (10 000 záznamů) musí jít stranou. Že po ní
+         zbyde pár nově doměřených ikon, je v pořádku — appka měří dál,
+         takže se tu počítají ZÁZNAMY, ne přítomnost klíče. */
+      const ram = localStorage.getItem(klic.replace("tracker_v2", "sprite_ramecek"));
+      let ramZaznamu = -1;
+      try { ramZaznamu = ram ? Object.keys(JSON.parse(ram)).length : 0; }
+      catch (e) { ramZaznamu = -1; }
       const out = {
         vRosteru: window.__pgo ? window.__pgo.getRows().length : -1,
         okno: (document.getElementById("appOknoText") || {}).textContent || "",
-        ramecekZbyl: localStorage.getItem(klic.replace("tracker_v2", "sprite_ramecek")) !== null,
+        ramZaznamu: ramZaznamu,
       };
       try {
         const r = window.__pgo.getRows();
@@ -17835,7 +17985,8 @@ try {
       } catch (e) { out.zapis = false; }
       return out;
     }, klicAppky);
-    check("docela plné úložiště appka uklidí sama", s271.ramecekZbyl === false,
+    check("docela plné úložiště appka uklidí sama",
+      s271.ramZaznamu >= 0 && s271.ramZaznamu < 500,
       JSON.stringify(s271).slice(0, 200));
     check("…roster se načte", s271.vRosteru === 40, JSON.stringify(s271).slice(0, 200));
     check("…a změna se zase uloží", s271.zapis === true, JSON.stringify(s271).slice(0, 200));
@@ -18749,110 +18900,6 @@ try {
     s285.nad === null && s285.neznamy === null,
     JSON.stringify([s285.nad, s285.neznamy]));
 
-  console.log("\n286) Pole vymen pred cistenim naseptava jen moje druhy");
-  await page.goto(URL);
-  await nacteno(page);
-  const s286 = await page.evaluate(async () => {
-    const P = window.__pgo;
-    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-    /* Rozdelane cisteni z driveji by se jen obnovilo a uvodni dialog
-       (vcetne pole na vymeny) by vubec nepadl. Pruh nahore uz je vykresleny,
-       takze nestaci smazat ulozeny prubeh — musi se zavrit i on. */
-    try { localStorage.removeItem("pgo_box_rozdelano"); } catch (e) { /* nevadi */ }
-    {
-      const pruh = document.getElementById("bmSchovane");
-      if (pruh && !pruh.hidden) {
-        document.getElementById("bmSchovaneKonec").click();
-        await cekej(300);
-      }
-      /* Rozdeleni na sekce je NASTAVENI a drzi se mezi testy. Pri "vse
-         v jedne sekci" se uvodni dialog neohlasi (neni co oddelovat)
-         a pole na vymeny by nebylo kde hledat. */
-      const sek = document.getElementById("boxSekce");
-      if (sek) { sek.value = "3"; sek.dispatchEvent(new Event("change", { bubbles: true })); }
-      await cekej(200);
-    }
-    /* Dost slabych kusu na hromadnou sekci a jeden silny, ktery se drzi —
-       pri jedine sekci se uvodni dialog (a s nim pole na vymeny) neohlasi. */
-    P.setRows([
-      { pokemon: "Rattata", cp: 100, level: 5, ivAtk: 3, ivDef: 3, ivSta: 3 },
-      { pokemon: "Rattata", cp: 240, level: 15, ivAtk: 4, ivDef: 4, ivSta: 4 },
-      { pokemon: "Pidgey", cp: 180, level: 12, ivAtk: 2, ivDef: 2, ivSta: 2 },
-      { pokemon: "Pidgey", cp: 190, level: 13, ivAtk: 3, ivDef: 2, ivSta: 2 },
-      { pokemon: "Caterpie", cp: 90, level: 6, ivAtk: 2, ivDef: 3, ivSta: 2 },
-      { pokemon: "Weedle", cp: 95, level: 6, ivAtk: 3, ivDef: 2, ivSta: 3 },
-      { pokemon: "Zubat", cp: 120, level: 8, ivAtk: 4, ivDef: 3, ivSta: 3 },
-      { pokemon: "Metagross", cp: 3700, level: 40, ivAtk: 15, ivDef: 15, ivSta: 14 }
-    ]);
-    await cekej(1400);
-    document.getElementById("boxModeBtn").click();
-    await cekej(900);
-    const napoveda = document.getElementById("appOknoNapoveda");
-    const vstup = document.getElementById("appOknoVstup");
-    const out = {};
-    // Prazdne pole nabidku neotvira: rozbaleny seznam celeho rosteru prekryl
-    // pulku dialogu a nebylo v nem co vybirat.
-    out.prazdne = napoveda.hidden;
-    // Kdyby dialog nebyl ten uvodni (pole na vymeny ma jen prvni sekce),
-    // at je z vysledku poznat proc.
-    out.dialog = (document.getElementById("appOknoText") || {}).textContent || "";
-    out.maVstup = !(document.getElementById("appOknoVstupBox") || {}).hidden;
-    vstup.value = "rat";
-    vstup.dispatchEvent(new Event("input", { bubbles: true }));
-    await cekej(250);
-    /* Nabidka ma tvar naseptavace od "Pridat pokemona" — obrazek, jmeno,
-       typy a pocet, kazde ve svem prvku. Ctou se zvlast, aby test mluvil
-       o obsahu, ne o tom, jak se texty slepi za sebou. */
-    out.filtr = [...napoveda.querySelectorAll(".druh-polozka")].map((x) => ({
-      jm: ((x.querySelector(".dn-jmeno") || {}).textContent || "").trim(),
-      typy: ((x.querySelector(".dn-typy") || {}).textContent || "").trim(),
-      pocet: ((x.querySelector(".pocet") || {}).textContent || "").trim(),
-      obrazek: !!x.querySelector("img") }));
-    const prvni = napoveda.querySelector("button");
-    if (prvni) prvni.click();
-    await cekej(200);
-    out.cipy = [...document.querySelectorAll(".app-okno-cip")]
-      .map((x) => x.textContent.replace("\u00d7", "").trim());
-    // Enter v poli stitek PRIDA a dialog nechá otevreny.
-    vstup.value = "pidg";
-    vstup.dispatchEvent(new Event("input", { bubbles: true }));
-    await cekej(150);
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-    await cekej(250);
-    out.cipy2 = [...document.querySelectorAll(".app-okno-cip")]
-      .map((x) => x.textContent.replace("\u00d7", "").trim());
-    out.oknoOtevrene = !document.getElementById("appOkno").hidden;
-    document.getElementById("appOknoOk").click();
-    await cekej(1000);
-    const hlaska = document.getElementById("appOkno");
-    if (hlaska && !hlaska.hidden) { document.getElementById("appOknoOk").click(); await cekej(500); }
-    // Chraneny kus nepatri do hromadneho pusteni (sekce 2).
-    out.sekce = P.bmSeznam().map((x) => ({ jm: x.row.pokemon, sekce: x.sekce }));
-    return out;
-  });
-  check("prazdne pole nabidku neotvira",
-    s286.prazdne === true && s286.maVstup === true,
-    JSON.stringify([s286.prazdne, s286.maVstup, (s286.dialog || "").slice(0, 60)]));
-  /* Nabidka je z CELEHO pokedexu — na vymenu si clovek dava i druh,
-     ktery jeste nema (Ivysaura kvuli bonbonum). Moje ale patri napred
-     a nesou pocet kusu; ostatni maji „nemas". */
-  check("psani nabidne napred moje druhy, s poctem kusu",
-    s286.filtr.length > 0 && s286.filtr[0].jm === "Rattata"
-      && /2 kusy/.test(s286.filtr[0].pocet),
-    JSON.stringify(s286.filtr.slice(0, 3)));
-  check("...a za nimi i druhy, ktere clovek nema",
-    s286.filtr.length > 1 && s286.filtr.slice(1).every((x) => /nemáš/.test(x.pocet)),
-    JSON.stringify(s286.filtr.slice(0, 4)));
-  check("...a vedle jmena stoji obrazek a typy druhu",
-    s286.filtr[0].obrazek === true && /Normal/.test(s286.filtr[0].typy),
-    JSON.stringify(s286.filtr[0]));
-  check("vyber prida stitek, Enter dalsi a dialog nezavre",
-    s286.cipy.join(",") === "Rattata" && s286.cipy2.join(",") === "Rattata,Pidgey"
-      && s286.oknoOtevrene === true, JSON.stringify([s286.cipy, s286.cipy2]));
-  check("chranene kusy nespadnou do hromadneho pusteni",
-    s286.sekce.filter((x) => /Rattata|Pidgey/.test(x.jm)).every((x) => x.sekce !== 2),
-    JSON.stringify(s286.sekce));
-
   console.log("\n309) Kolik kusu drzi role, si rekne uzivatel");
   /* Liga mela „rezervu" a kopie druhu svoje cislo, ale raidove a gymove
      sloty byly napevno 6 / 3 / 8. Kdo ma v boxu misto navic, nemel kde to
@@ -19455,6 +19502,11 @@ try {
   const s295 = await page.evaluate(async () => {
     const P = window.__pgo;
     const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    /* Nastaveni prezije i reload, takze blok zacina s tim, co po sobe
+       nechaly drivejsi bloky (rozpocet rolí, dmaxKeep). Na jiném
+       rozpočtu padne do sekcí jiný počet kusů a sekce 2 nepřijde. */
+    document.getElementById("resetSettingsBtn").click();
+    await cekej(300);
     const rows = [];
     [[5, 5, 5], [8, 8, 8], [10, 10, 10], [12, 12, 12], [14, 14, 14], [15, 15, 15]]
       .forEach((iv, i) => rows.push({ pokemon: "Rhyhorn", cp: 800 + i * 40,
@@ -19465,7 +19517,12 @@ try {
       ivSta: 9, forma: "Shadow" });
     P.setRows(rows);
     await cekej(900);
+    // Zbytek po drivejsich blocich: otevrene okno polkne klikani.
+    { const z = document.getElementById("appOknoZrusit");
+      if (z && !document.getElementById("appOkno").hidden) z.click(); }
+    await cekej(200);
     P.boxOtevrit();
+    await cekej(300);
     { const o = document.getElementById("appOknoOk");
       if (o && !document.getElementById("appOkno").hidden) o.click(); }
     await cekej(400);
@@ -19547,8 +19604,12 @@ try {
        se tu testuje neco jineho, nez co je napsane v nazvu. */
     const vd = document.getElementById("vymenaDruhy");
     if (vd) { vd.value = "[]"; }
-    P.boxOtevrit();
-    await cekej(400);
+    /* Editor seznamu uz nevisi na cisteni boxu (dialog pred nim se
+       21. 11. zrusil) — otevira se ze stranky Na vymenu. */
+    document.getElementById("nvOtevritBtn").click();
+    await cekej(900);
+    document.getElementById("nvBonbonyBtn").click();
+    await cekej(600);
     const vstup = document.getElementById("appOknoVstup");
     vstup.value = "pid";
     vstup.dispatchEvent(new Event("input", { bubbles: true }));
@@ -19574,6 +19635,8 @@ try {
     out.cip = { text: cipy.textContent.replace(/\s+/g, " ").trim(),
       obrazek: !!cipy.querySelector("img") };
     document.getElementById("appOknoZrusit").click();
+    await cekej(200);
+    document.getElementById("nvZavritBtn").click();
     await cekej(200);
     return out;
   });
@@ -19732,97 +19795,6 @@ try {
   check("pridany kus si formu i znacku odnese do rosteru",
     s289.lzePridat === true && s289.pridany && s289.pridany.forma === "Shadow"
       && s289.pridany.cute === "Ano", JSON.stringify(s289.pridany));
-
-  console.log("\n288) Vymena pred cistenim prebije verdikt v celem rozboru");
-  await page.goto(URL);
-  await nacteno(page);
-  const s288 = await page.evaluate(async () => {
-    const P = window.__pgo;
-    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-    /* Rozdelane cisteni z driveji by se jen obnovilo a uvodni dialog
-       (vcetne pole na vymeny) by vubec nepadl. Pruh nahore uz je vykresleny,
-       takze nestaci smazat ulozeny prubeh — musi se zavrit i on. */
-    try { localStorage.removeItem("pgo_box_rozdelano"); } catch (e) { /* nevadi */ }
-    {
-      const pruh = document.getElementById("bmSchovane");
-      if (pruh && !pruh.hidden) {
-        document.getElementById("bmSchovaneKonec").click();
-        await cekej(300);
-      }
-      /* Rozdeleni na sekce je NASTAVENI a drzi se mezi testy. Pri "vse
-         v jedne sekci" se uvodni dialog neohlasi (neni co oddelovat)
-         a pole na vymeny by nebylo kde hledat. */
-      const sek = document.getElementById("boxSekce");
-      if (sek) { sek.value = "3"; sek.dispatchEvent(new Event("change", { bubbles: true })); }
-      await cekej(200);
-    }
-    /* Tri Xerneasove (treti uz je kopie navic) a par slabych kusu, aby
-       vznikla hromadna sekce — jinak se uvodni dialog neohlasi. */
-    P.setRows([
-      { pokemon: "Xerneas", cp: 3400, level: 30, ivAtk: 15, ivDef: 14, ivSta: 14 },
-      { pokemon: "Xerneas", cp: 2124, level: 20, ivAtk: 14, ivDef: 12, ivSta: 12 },
-      { pokemon: "Xerneas", cp: 1800, level: 18, ivAtk: 10, ivDef: 10, ivSta: 10 },
-      { pokemon: "Pidgey", cp: 180, level: 12, ivAtk: 2, ivDef: 2, ivSta: 2 },
-      { pokemon: "Caterpie", cp: 90, level: 6, ivAtk: 2, ivDef: 3, ivSta: 2 },
-      { pokemon: "Weedle", cp: 95, level: 6, ivAtk: 3, ivDef: 2, ivSta: 3 },
-      { pokemon: "Zubat", cp: 120, level: 8, ivAtk: 4, ivDef: 3, ivSta: 3 }
-    ]);
-    /* Seznam druhu na vymenu je NASTAVENI a prezije i reload — kdyby
-       v nem Xerneas zustal z drivejska, merilo by se to uz rozhodnute. */
-    P.vymenaDruhOdeber("xerneas");
-    await cekej(1400);
-    const verdikty = () => {
-      const c = P.getComputed();
-      return P.getRows().map((r) => r.pokemon + " " + r.cp + ": " + c[r.id].keep);
-    };
-    const out = { pred: verdikty() };
-    document.getElementById("boxModeBtn").click();
-    await cekej(1000);
-    const vstup = document.getElementById("appOknoVstup");
-    vstup.value = "xern";
-    vstup.dispatchEvent(new Event("input", { bubbles: true }));
-    await cekej(250);
-    const nab = document.getElementById("appOknoNapoveda").querySelector("button");
-    if (nab) nab.click();
-    await cekej(250);
-    document.getElementById("appOknoOk").click();
-    await cekej(1200);
-    if (!document.getElementById("appOkno").hidden) {
-      document.getElementById("appOknoOk").click();
-      await cekej(600);
-    }
-    out.po = verdikty();
-    // Po skonceni cisteni volba konci — verdikty se vrati k rozpoctu.
-    document.getElementById("bmClose").click();
-    await cekej(400);
-    const zahodit = document.getElementById("bmZahodit");
-    if (zahodit) { zahodit.click(); await cekej(800); }
-    out.potom = verdikty();
-    // …a odebranim druhu ze seznamu se verdikty vrati tam, kde byly.
-    P.vymenaDruhOdeber("xerneas");
-    await cekej(900);
-    out.poOdebrani = verdikty();
-    return out;
-  });
-  // Verdikt se jmenuje „Trade" (dřív „Nechat na výměnu"). Měří se to
-  // podstatné: před volbou o výměně u Xerneasů nikde nestojí, po ní ano.
-  check("kus druhu na vymenu ma verdikt o vymene v celem rozboru, ne jen v cisteni",
-    !s288.pred.some((x) => /Xerneas.*Trade/.test(x))
-      && s288.po.filter((x) => /Xerneas.*Trade/.test(x)).length >= 1,
-    JSON.stringify({ pred: s288.pred, po: s288.po }));
-  // Caterpie, ne Pidgey: Pidgey si appka nechává kvůli Mega Pidgeot
-  // a tahle kontrola je o tom, že volba v čištění platí jen na Xerneas.
-  check("...a ostatnich druhu se to netyka",
-    s288.po.some((x) => /Caterpie.*Zahodit/.test(x)), JSON.stringify(s288.po));
-  // Volba je SEZNAM DRUHŮ na výměnu, ne jednorázová věc v čištění:
-  // platí dál i po jeho zavření (a stejně ji vidí Transfer). Skončí až
-  // tím, že se druh ze seznamu odebere.
-  check("volba platí dál i po zavření čištění",
-    JSON.stringify(s288.potom) === JSON.stringify(s288.po),
-    JSON.stringify(s288.potom));
-  check("…a odebráním druhu ze seznamu skončí",
-    JSON.stringify(s288.poOdebrani) === JSON.stringify(s288.pred),
-    JSON.stringify(s288.poOdebrani));
 
   console.log("\n287) Cisteni jde schovat a kopie druhu jsou videt");
   await page.goto(URL);
@@ -20710,87 +20682,6 @@ try {
      (pořád odchází, jen k někomu jinému než k profesorovi) a v Transferu
      spadne mezi výměny, ne mezi pouštění. Formy se rozlišují — Graveler
      Alolan není totéž co Graveler. */
-  console.log("\n317) Trvaly seznam druhu na vymenu");
-  await page.goto(URL);
-  await nacteno(page);
-  const s317 = await page.evaluate(async () => {
-    const P = window.__pgo;
-    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-    const rows = [];
-    for (let i = 0; i < 5; i++) {
-      rows.push({ pokemon: "Eevee", cp: String(400 - i * 20), level: 15 - i,
-        ivAtk: i % 3, ivDef: (i + 1) % 3, ivSta: i % 2 });
-    }
-    for (let i = 0; i < 3; i++) {
-      rows.push({ pokemon: "Graveler Alolan", cp: String(900 - i * 50),
-        level: 18 - i, ivAtk: i % 2, ivDef: i % 3, ivSta: (i + 1) % 2 });
-    }
-    rows.push({ pokemon: "Graveler", cp: "1100", level: 21, ivAtk: 1, ivDef: 1, ivSta: 2 });
-    rows.push({ pokemon: "Rattata", cp: "120", level: 8, ivAtk: 3, ivDef: 4, ivSta: 5 });
-    P.setRows(rows);
-    await cekej(3500);
-    P.setDiscarded([]);
-    await cekej(300);
-    const out = { kusu: P.getRows().length };
-    const verdikty = () => {
-      const comp = P.getComputed();
-      return P.getRows().map((r) => ({ jm: r.pokemon, keep: (comp[r.id] || {}).keep,
-        good: !!(comp[r.id] || {}).keepGood }));
-    };
-    out.tradePred = verdikty().filter((x) => x.keep === "Trade").length;
-    // seznam: Eevee a Graveler Alolan (ne obyčejný Graveler)
-    out.klicEevee = P.vymenaDruhPridej("Eevee");
-    out.klicGraveler = P.vymenaDruhPridej("Graveler Alolan");
-    await cekej(1200);
-    const po = verdikty();
-    out.seznam = P.vymenaDruhy();
-    out.trade = po.filter((x) => x.keep === "Trade");
-    out.tradeJmena = [...new Set(out.trade.map((x) => x.jm))].sort();
-    // „Trade" není ponechání: kus pořád odchází
-    out.tradeZelene = out.trade.filter((x) => x.good).length;
-    // obyčejný Graveler se na seznam nechytil
-    out.obycejnyGraveler = po.filter((x) => x.jm === "Graveler").map((x) => x.keep);
-    // v Transferu patří mezi výměny, ne mezi pouštění
-    document.getElementById("hledaniBtn").click();
-    await cekej(1300);
-    const okno = document.getElementById("hledaniOkno");
-    out.sekce = [...okno.querySelectorAll(".hled-sekce h4")]
-      .map((h) => h.textContent.replace(/\s+/g, " ").trim());
-    const evoPole = okno.querySelector(".hled-evo-radek .hled-text");
-    out.evoFiltr = evoPole ? evoPole.value : "";
-    out.evoDruhu = P.tradeEvoDruhy().length;
-    okno.querySelector(".hled-krizek").click();
-    await cekej(300);
-    // odebrání vrátí původní verdikt
-    P.vymenaDruhOdeber(out.klicEevee);
-    await cekej(1000);
-    out.tradePoOdebrani = [...new Set(verdikty().filter((x) => x.keep === "Trade")
-      .map((x) => x.jm))];
-    return out;
-  });
-  check("druhy ze seznamu dostanou verdikt Trade, ne ponechání",
-    s317.tradePred === 0 && s317.trade.length > 0 && s317.tradeZelene === 0
-      && s317.tradeJmena.join(",") === "Eevee,Graveler Alolan",
-    JSON.stringify(s317).slice(0, 400));
-  check("…formy se rozlišují a seznam jde zase zrušit",
-    s317.seznam.indexOf("graveler-alola") !== -1
-      && s317.seznam.indexOf("graveler") === -1
-      && s317.obycejnyGraveler.every((v) => v !== "Trade")
-      && s317.tradePoOdebrani.join(",") === "Graveler Alolan",
-    JSON.stringify(s317).slice(0, 400));
-  check("…v Transferu jsou mezi výměnami a filtr na evoluce zdarma sedí",
-    /vym[ěe]nit/i.test(s317.sekce.join(" ")) && s317.evoDruhu > 0
-      && s317.evoFiltr.split(",").length === s317.evoDruhu,
-    JSON.stringify([s317.sekce, s317.evoFiltr, s317.evoDruhu]));
-
-  /* 318) Dávka smazaných kusů drží pohromadě celý den.
-
-     Stalo se to doopravdy: po čištění zmizelo z rosteru devět set kusů,
-     o osm hodin později se smazal jeden jediný další — a Transfer místo
-     čtrnácti filtrů nabídl jeden na ten poslední kus. Dávka se počítala
-     šest hodin zpátky od posledního smazání. Den ji udrží pohromadě
-     i tehdy, když se ke hře člověk dostane až večer; dvě čištění ob den
-     se pořád nespojí. */
   console.log("\n318) Davka smazanych drzi cely den");
   await page.goto(URL);
   await nacteno(page);
@@ -20895,7 +20786,7 @@ try {
      a ty mají jít do dávky první; pořadí podle CP je u nich jedno.
      K tomu „Trade" přestal být odrůdou „Zahodit": má vlastní značku,
      takže se podle něj dá filtrovat i našeptat v hledání. */
-  console.log("\n320) Davka bere nejdriv vymeny, Trade ma stitek");
+  console.log("\n320) Davka bere nejdriv vymeny");
   await page.goto(URL);
   await nacteno(page);
   const s320 = await page.evaluate(async () => {
@@ -20954,34 +20845,11 @@ try {
     if (el) { el.value = ""; }
     P.setDiscarded([]);
 
-    // --- štítek TRADE ---
-    const rows = [];
-    for (let i = 0; i < 4; i++) {
-      rows.push({ pokemon: "Eevee", cp: String(400 - i * 20), level: 15 - i,
-        ivAtk: i % 3, ivDef: (i + 1) % 3, ivSta: i % 2 });
-    }
-    rows.push({ pokemon: "Rattata", cp: "120", level: 8, ivAtk: 3, ivDef: 4, ivSta: 5 });
-    P.setRows(rows);
-    await cekej(2500);
-    P.vymenaDruhPridej("Eevee");
-    await cekej(1200);
-    const st = P.atlasStitky();
-    const trade = st.znacky.filter((z) => z.stitek === "TRADE")[0] || null;
-    out.stitekTrade = trade ? trade.pocet : -1;
-    const comp = P.getComputed();
-    out.sVerdiktem = P.getRows().filter((r) => (comp[r.id] || {}).keep === "Trade").length;
-    // a „Zahodit" se o ně nepřipočítá
-    const zahodit = st.znacky.filter((z) => z.stitek === "ZAHODIT")[0] || null;
-    out.stitekZahodit = zahodit ? zahodit.pocet : -1;
-    P.vymenaDruhOdeber("eevee");
     return out;
   });
   check("dávka na dnešek pustí napřed výměny a doplní se puštěním",
     s320.maPrepinac && s320.bez.vymeny === 30 && s320.bez.pousteni === 120
       && s320.s.vymeny === 30 && s320.s.pousteni === 70, JSON.stringify(s320));
-  check("…a verdikt Trade má vlastní štítek, ne „Zahodit“",
-    s320.stitekTrade > 0 && s320.stitekTrade === s320.sVerdiktem
-      && s320.stitekZahodit < s320.stitekTrade + 1, JSON.stringify(s320));
 
   /* 321) Zdroj Transferu si vybírá člověk, ne appka.
 
@@ -22043,34 +21911,6 @@ try {
   check("kusy pod čarou nemají stejné pořadí",
     d335.length > 1 && new Set(d335).size === d335.length, JSON.stringify(d335));
 
-  console.log("\n336) Lucky kus se na výměnu nenabízí ani jako druh ze seznamu");
-  const d336 = await page.evaluate(async () => {
-    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-    const P = window.__pgo;
-    P.setDiscarded([]);
-    P.setRows([
-      { pokemon: "Rattata", forma: "Lucky", cp: 200, level: 15, ivAtk: 4, ivDef: 4, ivSta: 4 },
-      { pokemon: "Rattata", cp: 198, level: 15, ivAtk: 4, ivDef: 4, ivSta: 5 }
-    ]);
-    await cekej(700);
-    P.vymenaDruhPridej("Rattata");
-    await cekej(900);
-    const c = P.getComputed();
-    const out = {};
-    P.getRows().forEach((r) => {
-      const x = c[r.id] || {};
-      out[(r.forma || "bezny")] = { keep: x.keep, trade: x.trade };
-    });
-    P.vymenaDruhOdeber("Rattata");
-    await cekej(500);
-    return out;
-  });
-  check("druh na seznamu dostane verdikt Trade",
-    (d336.bezny || {}).keep === "Trade", JSON.stringify(d336));
-  check("…ale lucky kus ne, ten se vyměnit nedá",
-    (d336.Lucky || {}).trade === "Nejde"
-      && String((d336.Lucky || {}).keep).indexOf("Trade") !== 0, JSON.stringify(d336));
-
   console.log("\n337) Nevyvinutý kus na megu se drží i pod prahem IV");
   /* Lukáš: „pokud nemám jiného pokémona než toho neevolvnutého, bylo by
      fajn ho mít nechaného kvůli meze i tak." Dřív ho tvrdá zeď na prahu
@@ -22422,28 +22262,6 @@ try {
   check("engine umi vyjmenovat utoky, co nejdou beznym TM",
     Array.isArray(d341.elitni) && d341.elitni.length > 0,
     JSON.stringify(d341.elitni));
-
-  /* ---------------------------------------------------------------- 342
-     Seznam prani na vymenu plati na celou evolucni radu. Jeden stupen
-     staci — bonbony jsou spolecne. */
-  const d342 = await page.evaluate(async () => {
-    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
-    const P = window.__pgo;
-    P.setDiscarded([]);
-    // Seznam prani drzi predchozi bloky — bez vycisteni je Rattata Trade uz pred.
-    (P.vymenaDruhy() || []).slice().forEach((k) => P.vymenaDruhOdeber(k));
-    P.setRows([{ pokemon: "Rattata", cp: 300, level: 15, ivAtk: 3, ivDef: 3, ivSta: 3 }]);
-    await cekej(900);
-    const pred = Object.values(P.getComputed())[0].keep;
-    P.vymenaDruhPridej("Raticate");
-    await cekej(900);
-    const po = Object.values(P.getComputed())[0].keep;
-    P.vymenaDruhOdeber("raticate");
-    await cekej(600);
-    return { pred: pred, po: po, seznam: P.vymenaDruhy ? P.vymenaDruhy() : null };
-  });
-  check("zapsany vyssi stupen da verdikt Trade i nizsimu",
-    d342.pred !== "Trade" && d342.po === "Trade", JSON.stringify(d342));
 
   /* ---------------------------------------------------------------- 343
      Vyhledavani bere poradi a znamku raidu a gymu od Pokemon GO Hubu.
@@ -23093,6 +22911,436 @@ try {
     d355.zpatky.keep === "Ponechat", JSON.stringify(d355.zpatky));
   await page.setViewportSize({ width: 1920, height: 1000 });
   await page.waitForTimeout(200);
+
+  /* -------------------------------------------------------------- 356
+     Pořadí IV s best buddy.
+
+     Kamarádský bonus dá kusu +1 level a v lize se stropem CP tím pořadím
+     zamíchá: kus s nižším útokem se pod strop vejde až na L51 a tam má
+     větší stat product. pvpivs s best buddy počítá, appka bez něj — obojí
+     je správně, je to jiná otázka, a proto je na to přepínač.
+
+     Čísla se sem NEPÍŠÍ natvrdo (viz pogo-testy-vs-drift): měří se
+     pravidlo, ne dnešní staty. */
+  console.log("\n356) pořadí IV s best buddy");
+  const d356 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const sel = document.getElementById("bbPoradi");
+    if (!sel) return { chybi: true };
+    const cti = (liga) => {
+      const iv = P.ivRank("Tinkaton", 14, 15, 15, liga);
+      return iv ? { rank: iv.rank, pct: iv.pct,
+        nejLevel: iv.nej ? iv.nej.level : null } : null;
+    };
+    const prepni = async (v) => {
+      sel.value = v;
+      sel.dispatchEvent(new Event("input", { bubbles: true }));
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      await cekej(600);
+    };
+    const out = { vychozi: sel.value };
+    out.bez = { ultra: cti("ultra"), great: cti("great") };
+    await prepni("1");
+    out.s = { ultra: cti("ultra"), great: cti("great") };
+    await prepni("0");
+    out.zpet = cti("ultra");
+    return out;
+  });
+  check("prepinac poradi IV s best buddy je ve vychozim stavu vypnuty",
+    d356.vychozi === "0", JSON.stringify(d356));
+  check("s best buddy neni poradi nikdy lepsi a procento nikdy vyssi",
+    d356.s.ultra.rank >= d356.bez.ultra.rank && d356.s.ultra.pct <= d356.bez.ultra.pct,
+    JSON.stringify({ bez: d356.bez.ultra, s: d356.s.ultra }));
+  // Tohle je ten rozdil, kvuli kteremu prepinac vznikl: v Ultra League se
+  // kus s nizsim utokem dostane az na L51 a predbehne.
+  check("v Ultra League se cislo opravdu lisi",
+    d356.s.ultra.rank > d356.bez.ultra.rank,
+    JSON.stringify({ bez: d356.bez.ultra, s: d356.s.ultra }));
+  check("nejlepsi kombinace je s best buddy nad L50, bez nej do L50",
+    d356.bez.ultra.nejLevel <= 50 && d356.s.ultra.nejLevel > 50,
+    JSON.stringify({ bez: d356.bez.ultra.nejLevel, s: d356.s.ultra.nejLevel }));
+  // Great League ma strop 1500 CP, tam se nikdo k padesatce nepriblizi.
+  check("v Great League prepinac cisly nehne",
+    d356.s.great.rank === d356.bez.great.rank && d356.s.great.pct === d356.bez.great.pct,
+    JSON.stringify({ bez: d356.bez.great, s: d356.s.great }));
+  check("vypnuti prepinace vrati puvodni cislo (cache se neplete)",
+    d356.zpet.rank === d356.bez.ultra.rank && d356.zpet.pct === d356.bez.ultra.pct,
+    JSON.stringify({ puvodni: d356.bez.ultra, zpet: d356.zpet }));
+
+  /* -------------------------------------------------------------- 357
+     Stránka Na výměnu.
+
+     Seznam evolučních řad, které sbíráš na výměnu (pravidla + ruční
+     vrstva), protnutý s hroby. Vypisují se DRUHY, ne kusy.
+
+     Konkrétní jména ze žebříčků se sem nepíšou (viz pogo-testy-vs-drift):
+     průnik se měří na řadě, kterou si blok sám přidá ručně, takže je
+     jedno, koho zrovna PvPoke nebo Hub vede nahoře. */
+  console.log("\n357) stránka Na výměnu");
+  const d357 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    const karta = document.getElementById("naVymenuCard");
+    const plachta = document.getElementById("nvPlachta");
+    if (!karta || !plachta) return { chybi: true };
+    /* Stranka je okno nad rosterem, ne zalozka: zavrene okno se
+       schvalne nekresli, takze se musi otevrit tlacitkem z listy. */
+    document.getElementById("nvOtevritBtn").click();
+    /* Nastavení přežije i reload, takže blok začíná s tím, co po sobě
+       nechaly dřívější bloky. Srovná se na doporučené hodnoty — jinak se
+       tu měří něco jiného. */
+    document.getElementById("resetSettingsBtn").click();
+    await cekej(500);
+    const nastav = (id, v) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === "checkbox") el.checked = !!v; else el.value = v;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const rucne = (o) => {
+      document.getElementById("nvRucni").value = JSON.stringify(o);
+      // Vykreslení si jinak nemá o čem říct — pošleme mu podnět.
+      nastav("nvRaid", document.getElementById("nvRaid").value);
+    };
+    const zdrojePocty = (list) => {
+      const o = {};
+      list.forEach((r) => r.zdroje.forEach((z) => { o[z] = (o[z] || 0) + 1; }));
+      return o;
+    };
+    const out = {};
+    out.okno = { videt: !plachta.hidden,
+      vyska: Math.round(karta.getBoundingClientRect().height) };
+    const ted = Date.now();
+    P.setDiscarded([
+      { k: "abra|300", n: "Abra", del: ted, r: { pokemon: "Abra", cp: 300 } },
+      { k: "abra|310", n: "Abra", del: ted, r: { pokemon: "Abra", cp: 310 } },
+      { k: "kadabra|900", n: "Kadabra", del: ted, r: { pokemon: "Kadabra", cp: 900 } },
+      { k: "magikarp|120", n: "Magikarp", del: ted, r: { pokemon: "Magikarp", cp: 120 } }
+    ]);
+    await cekej(500);
+    out.hrobu = P.getDiscarded().length;
+    const seznam = P.nvSeznam();
+    out.celkem = seznam.length;
+    out.zdroje = zdrojePocty(seznam);
+
+    // vypnutá pravidla seznam zkrátí a jejich zdroj z něj zmizí
+    ["nvLigaLC", "nvLigaGL", "nvLigaUL", "nvLigaML"].forEach((id) => nastav(id, "0"));
+    await cekej(400);
+    const bezLig = P.nvSeznam();
+    out.bezLig = bezLig.length;
+    out.bezLigZdroje = zdrojePocty(bezLig);
+
+    /* Průnik: řada se přidá ručně, ať blok nestojí na tom, koho zrovna
+       drží pravidlo. Abra, Kadabra i Alakazam jsou jedna řada — stačí
+       jeden stupeň a v hrobech se najdou oba. */
+    rucne({ pridane: ["abra"], odebrane: [] });
+    await cekej(400);
+    out.prunik = P.nvPrunik().map((r) => r.jmeno + "|" + r.pocet);
+    out.rada = (P.nvSeznam().filter((r) => r.klic === "abra")[0] || {}).zdroje;
+
+    // vyškrtnutí kusu, kterého drží pravidlo
+    const drzeny = P.nvSeznam().filter((r) => r.zdroje.indexOf("rucne") === -1)[0];
+    out.drzeny = drzeny ? drzeny.jmeno : null;
+    const x = karta.querySelector('[data-nv-ven="' + drzeny.klic + '"]');
+    out.maTlacitko = !!x;
+    if (x) x.click();
+    await cekej(400);
+    out.poVyskrtnuti = !P.nvSeznam().some((r) => r.klic === drzeny.klic);
+    // ...drží i potom, co se pravidla zase zapnou
+    ["nvLigaLC", "nvLigaGL", "nvLigaUL", "nvLigaML"].forEach((id) => nastav(id, "50"));
+    await cekej(400);
+    out.poradVyskrtnuty = !P.nvSeznam().some((r) => r.klic === drzeny.klic);
+    const zpet = karta.querySelector('[data-nv-zpet="' + drzeny.klic + '"]');
+    out.maVraceni = !!zpet;
+    if (zpet) zpet.click();
+    await cekej(400);
+    out.vraceny = P.nvSeznam().some((r) => r.klic === drzeny.klic);
+
+    // koš na hroby: dvě dávky a vrácení obou najednou
+    out.hrobuPred = P.getDiscarded().length;
+    P.nvSmazatHroby();
+    out.hrobuPo = P.getDiscarded().length;
+    out.kos1 = P.nvKos().length;
+    P.setDiscarded([{ k: "onix|700", n: "Onix", del: ted, r: { pokemon: "Onix", cp: 700 } }]);
+    await cekej(200);
+    P.nvSmazatHroby();
+    out.kos2 = P.nvKos().length;
+    out.vraceno = P.nvVratitZKose([0, 1]);
+    out.hrobuZpet = P.getDiscarded().length;
+    out.kosPoVraceni = P.nvKos().length;
+
+    /* „Nastavit doporučené" je o kalibraci, ne o mazání seznamů: pravidla
+       se srovnají, ale ruční vrstva (a stejně tak seznam přání v Transferu)
+       zůstane. Jinak by jedno tlačítko zahodilo práci, kterou nikdo
+       neukládá nikam jinam. */
+    nastav("nvLigaGL", "7");
+    document.getElementById("resetSettingsBtn").click();
+    await cekej(600);
+    out.poResetuPravidlo = document.getElementById("nvLigaGL").value;
+    out.poResetuRucni = document.getElementById("nvRucni").value;
+
+    P.setDiscarded([]);
+    rucne({ pridane: [], odebrane: [] });
+    await cekej(300);
+    /* Okno ma dve patra: nahore Pravidla a Na trade, pod tim Seznam rad
+       jako stitky. Sekce „Zahozene kusy" se zrusila a jeji prikazy stoji
+       v hlave okna vedle krizku (Lukas 18. 11. 2026). */
+    /* Abeceda je anglicka: „ch" je c + h, ne ceske pismeno za h.
+       S ceskym razenim koncil Chansey az za Hitmonleem. Konkretni
+       jmena se tu necekaji — seznam zalezi na zebriccich. */
+    const jmenaSeznamu = P.nvSeznam().map((r) => r.jmeno);
+    const indexy = (re) => jmenaSeznamu
+      .map((j, i) => (re.test(j) ? i : -1)).filter((i) => i >= 0);
+    const ch = indexy(/^Ch/), h = indexy(/^H/), d = indexy(/^D/);
+    out.abeceda = { ch: ch.length, h: h.length, d: d.length,
+      chPredH: !ch.length || !h.length || Math.max(...ch) < Math.min(...h),
+      chZaD: !ch.length || !d.length || Math.min(...ch) < Math.min(...d) };
+    const mriz = karta.querySelector(".nv-mriz");
+    const vlevoVpravo = [...mriz.children]
+      .map((e) => Math.round(e.getBoundingClientRect().left));
+    out.stavba = {
+      nadpisy: [...karta.querySelectorAll("h3")]
+        .map((h) => h.firstChild.textContent.trim()),
+      vedleSebe: vlevoVpravo.length === 2 && vlevoVpravo[1] > vlevoVpravo[0] + 100,
+      stitku: document.querySelectorAll("#nvSeznamBox .nv-rada").length,
+      radku: document.querySelectorAll("#nvSeznamBox .nv-radek").length,
+      znacek: document.querySelectorAll("#nvSeznamBox .nv-rada .nv-chip").length,
+      prvni: (document.querySelector("#nvSeznamBox .nv-rada") || {}).textContent || "",
+      prikazy: [...document.querySelectorAll("#nvPlachta .hled-hlava button")]
+        .map((b) => b.id)
+    };
+    /* Seznam „chci bonbony z vymeny" se spravuje tady, ne v Transferu:
+       tlacitko s poctem je u Seznamu rad. Znacku u rady Lukas nechtel,
+       duvod vymeny je u vsech stejny. */
+    P.vymenaDruhPridej("Abra");
+    await cekej(700);
+    out.bonbony = { tlacitko: !!document.getElementById("nvBonbonyBtn"),
+      pocet: document.getElementById("nvBonbonyPocet").textContent };
+    P.vymenaDruhOdeber("abra");
+    await cekej(600);
+    out.bonbony.poOdebrani = document.getElementById("nvBonbonyPocet").textContent;
+    /* Bublina u druhu v „Na trade" je rozpis cele rady, ne jeden radek
+       textu: radek na kazdy stupen a odznacky s poradim a znamkou.
+       Blok uz ma hroby vyprazdnene, takze si jeden kus musi vratit —
+       bez neho zadny druh v „Na trade" nestoji. */
+    P.setDiscarded([{ k: "abra|tip", n: "Abra", del: Date.now(),
+      r: { pokemon: "Abra", cp: 300 } }]);
+    await cekej(700);
+    const prvniDruh = document.querySelector("#nvPrunikBox .nv-druh");
+    const tip = prvniDruh ? prvniDruh.getAttribute("data-tip") || "" : "";
+    out.bublina = { jeHtml: /^<div class="nv-tip"/.test(tip),
+      radku: (tip.match(/nv-tip-radek/g) || []).length,
+      znacek: (tip.match(/nv-tip-znak"/g) || []).length,
+      maZnamku: /nv-tip-zn" data-znamka=/.test(tip),
+      // Do bubliny patri jen SS az B — Ceckem a horsim se to zaplevelilo.
+      slabeZnamky: /data-znamka="(C|D|E|F)"/.test(tip) };
+    P.setDiscarded([]);
+    await cekej(400);
+    /* Tataz bublina patri i na stitky v dialogu „Upravit seznam" —
+       jenze az na najeti: stitku je sto padesat a stavet hodnoceni
+       pro vsechny predem by dialog otevíralo vteriny. */
+    document.getElementById("nvUpravitBtn").click();
+    await cekej(1000);
+    const cipTip = document.querySelector(".app-okno-cip[data-nv-tip-druh]");
+    out.dialogTip = {
+      cipu: document.querySelectorAll(".app-okno-cip[data-nv-tip-druh]").length,
+      pred: !!(cipTip && cipTip.getAttribute("data-tip")) };
+    if (cipTip) {
+      cipTip.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      await cekej(300);
+      out.dialogTip.po = /^<div class="nv-tip"/
+        .test(cipTip.getAttribute("data-tip") || "");
+    }
+    /* Druh, ktery nema ani jednu roli nad znamku B (Cacnea je same
+       C az F), dostane odznacky stejne — jen z nouze ty nejlepsi, co
+       ma. Driv v takovem pripade zbyl holy text. */
+    const vstup357 = document.getElementById("appOknoVstup");
+    vstup357.value = "cacnea";
+    vstup357.dispatchEvent(new Event("input", { bubbles: true }));
+    await cekej(600);
+    const slaby = document.querySelector(
+      "#appOknoNapoveda .druh-polozka[data-nv-tip-druh]");
+    if (slaby) {
+      slaby.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      await cekej(350);
+    }
+    out.slabyDruh = { jmeno: slaby ? slaby.getAttribute("data-nv-tip-druh") : null,
+      jeHtml: /^<div class="nv-tip"/
+        .test((slaby && slaby.getAttribute("data-tip")) || "") };
+    document.getElementById("appOknoZrusit").click();
+    await cekej(400);
+    const kosPanel = document.getElementById("nvKosPanel");
+    out.kosPanel = { pred: kosPanel.hidden };
+    document.getElementById("nvKosBtn").click();
+    await cekej(300);
+    out.kosPanel.po = kosPanel.hidden;
+    document.getElementById("nvKosBtn").click();
+    await cekej(200);
+    out.kosPanel.zpet = kosPanel.hidden;
+    // Zavrit krizkem, at se okno pri kazde obnove rosteru nekresli dal.
+    document.getElementById("nvZavritBtn").click();
+    await cekej(200);
+    out.poZavreni = plachta.hidden;
+    return out;
+  });
+  check("karta Na vymenu existuje a seznam neni prazdny",
+    !d357.chybi && d357.celkem > 0, JSON.stringify({ celkem: d357.celkem }));
+  /* Okno nad rosterem, jako Transfer: jako karta mezi zalozkami se
+     stranka mackala vedle rosteru a nemela vlastni rolovani. */
+  check("stranka se otevre jako okno nad rosterem",
+    !!d357.okno && d357.okno.videt && d357.okno.vyska > 100,
+    JSON.stringify(d357.okno));
+  check("...a krizkem se zavre",
+    d357.poZavreni === true, JSON.stringify({ poZavreni: d357.poZavreni }));
+  check("seznam plni pravidla z Maxu i z lig",
+    d357.zdroje.max > 0 && d357.zdroje.liga > 0, JSON.stringify(d357.zdroje));
+  check("vypnute ligy ze seznamu zmizi, zbytek zustane",
+    d357.bezLig < d357.celkem && !d357.bezLigZdroje.liga && d357.bezLigZdroje.max > 0,
+    JSON.stringify({ celkem: d357.celkem, bezLig: d357.bezLig, zdroje: d357.bezLigZdroje }));
+  // Rucne pridana Abra plati na celou radu, takze se v hrobech najde
+  // i Kadabra — a kazdy druh stoji ve vypisu zvlast s poctem.
+  check("prunik vypise druhy z hrobu, ktere na seznam patri",
+    d357.prunik.indexOf("Abra|2") >= 0 && d357.prunik.indexOf("Kadabra|1") >= 0,
+    JSON.stringify({ prunik: d357.prunik, hrobu: d357.hrobu, rada: d357.rada }));
+  check("...a koho na seznamu nemas, ten se nevypise",
+    d357.prunik.length > 0 && !d357.prunik.some((x) => x.indexOf("Magikarp") === 0),
+    JSON.stringify(d357.prunik));
+  check("vyskrtnuty kus ze seznamu zmizi",
+    d357.maTlacitko && d357.poVyskrtnuti, JSON.stringify({ drzeny: d357.drzeny }));
+  check("...a zustane vyskrtnuty, i kdyz na nej pravidlo zase sedi",
+    d357.poradVyskrtnuty, JSON.stringify({ drzeny: d357.drzeny }));
+  check("vratit na seznam ho vrati",
+    d357.maVraceni && d357.vraceny, JSON.stringify({ drzeny: d357.drzeny }));
+  check("smazani zahozenych vyprazdni hroby a odlozi je do kose",
+    d357.hrobuPred === 4 && d357.hrobuPo === 0 && d357.kos1 === 1,
+    JSON.stringify(d357));
+  check("z kose jde vratit vic davek najednou",
+    d357.kos2 === 2 && d357.vraceno === 5 && d357.hrobuZpet === 5
+      && d357.kosPoVraceni === 0, JSON.stringify(d357));
+  check("„Nastavit doporucene\" srovna pravidla, ale rucni seznam nechá",
+    d357.poResetuPravidlo === "50" && /abra/.test(d357.poResetuRucni),
+    JSON.stringify({ pravidlo: d357.poResetuPravidlo, rucni: d357.poResetuRucni }));
+  check("abeceda bere CH jako C + H, ne jako ceske pismeno za H",
+    d357.abeceda.chPredH === true && d357.abeceda.chZaD === true,
+    JSON.stringify(d357.abeceda));
+  check("okno ma Pravidla, Na trade a Seznam rad — Zahozene uz ne",
+    d357.stavba.nadpisy.length === 3 && d357.stavba.nadpisy[1] === "Na trade"
+      && d357.stavba.nadpisy[2] === "Seznam řad"
+      && /^Pravidla/.test(d357.stavba.nadpisy[0]),
+    JSON.stringify(d357.stavba.nadpisy));
+  check("...a Pravidla stoji vedle Na trade",
+    d357.stavba.vedleSebe === true, JSON.stringify(d357.stavba));
+  /* Radek na kazdou radu zabiral celou sirku a sto padesat rad se nedalo
+     prehlednout. Stitek nese znacky, ktere radu na seznamu drzi. */
+  check("seznam rad je ze stitku se znackami, ne z radku",
+    d357.stavba.stitku > 50 && d357.stavba.radku === 0
+      && d357.stavba.znacek >= d357.stavba.stitku,
+    JSON.stringify({ stitku: d357.stavba.stitku, radku: d357.stavba.radku,
+      znacek: d357.stavba.znacek, prvni: d357.stavba.prvni }));
+  check("sprava zahozenych sedi v hlave okna vedle krizku",
+    d357.stavba.prikazy.join(",") === "nvSmazatHrobyBtn,nvKosBtn,nvZavritBtn",
+    JSON.stringify(d357.stavba.prikazy));
+  check("seznam „chci bonbony“ se spravuje na strance Na vymenu",
+    d357.bonbony.tlacitko === true && d357.bonbony.pocet === "1"
+      && d357.bonbony.poOdebrani === "", JSON.stringify(d357.bonbony));
+  check("bublina u druhu je rozpis cele rady, ne radek textu",
+    d357.bublina.jeHtml && d357.bublina.radku >= 2
+      && d357.bublina.znacek >= 2 && d357.bublina.maZnamku,
+    JSON.stringify(d357.bublina));
+  check("...a zadna role pod znamku B se v ni neobjevi",
+    d357.bublina.slabeZnamky === false, JSON.stringify(d357.bublina));
+  check("stitky v dialogu seznamu maji tutez bublinu, ale az na najeti",
+    d357.dialogTip.cipu > 0 && d357.dialogTip.pred === false
+      && d357.dialogTip.po === true, JSON.stringify(d357.dialogTip));
+  check("...a odznacky dostane i druh, ktery nema nic nad znamku B",
+    d357.slabyDruh.jmeno === "Cacnea" && d357.slabyDruh.jeHtml === true,
+    JSON.stringify(d357.slabyDruh));
+  check("kos se z hlavy okna rozbali a zase sbali",
+    d357.kosPanel.pred === true && d357.kosPanel.po === false
+      && d357.kosPanel.zpet === true, JSON.stringify(d357.kosPanel));
+  /* Esc zavira okno, ale ne kdyz nad nim stoji dialog „Upravit seznam":
+     klavesa patri tomu, co je nejvys. Masi se opravdovou klavesou —
+     vyrobena udalost neni `cancelable` a chovala by se jinak. */
+  await page.evaluate(() => { document.getElementById("nvOtevritBtn").click(); });
+  await page.waitForTimeout(500);
+  await page.evaluate(() => { document.getElementById("nvUpravitBtn").click(); });
+  await page.waitForTimeout(700);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const d357esc = await page.evaluate(() => ({
+    dialog: document.getElementById("appOkno").hidden,
+    okno: document.getElementById("nvPlachta").hidden }));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const d357esc2 = await page.evaluate(() =>
+    document.getElementById("nvPlachta").hidden);
+  check("Esc zavre nejdriv dialog, okno teprve potom",
+    d357esc.dialog === true && d357esc.okno === false && d357esc2 === true,
+    JSON.stringify({ prvni: d357esc, druhy: d357esc2 }));
+  /* -------------------------------------------------------------- 358
+     Kus držený jen značkou ukazuje i to, co umí.
+
+     Dřív jedna značka přebila všechny ostatní štítky: u stoprocentního
+     Conkeldurra svítilo pod verdiktem jediné „100 %", zatímco u jeho horší
+     kopie stálo „ML #112" a „Fighting 25/8" — a to je přesně ta informace,
+     podle které se kus porovnává okem.
+
+     Konkrétní pořadí ze žebříčku se sem nepíše (viz pogo-testy-vs-drift).
+     Měří se vztah: kolik má kus štítků „pod čarou", tolik jich je vidět,
+     značka stojí až za nimi a všechno je v jednom řádku. */
+  console.log("\n358) značkový kus ukazuje i štítky pod čarou");
+  const d358 = await page.evaluate(async () => {
+    const P = window.__pgo;
+    const cekej = (ms) => new Promise((r) => setTimeout(r, ms));
+    document.getElementById("resetSettingsBtn").click();
+    await cekej(500);
+    const utoky = { fastMove: "Counter", charged1: "Dynamic Punch" };
+    P.setRows([
+      Object.assign({ pokemon: "Machamp", cp: 2900, level: 35, ivAtk: 15, ivDef: 15, ivSta: 15 }, utoky),
+      Object.assign({ pokemon: "Machamp", cp: 2800, level: 34, ivAtk: 14, ivDef: 14, ivSta: 14 }, utoky),
+      Object.assign({ pokemon: "Machamp", cp: 2700, level: 33, ivAtk: 13, ivDef: 13, ivSta: 13, cute: "Ano" }, utoky),
+      Object.assign({ pokemon: "Machamp", cp: 2600, level: 32, ivAtk: 12, ivDef: 12, ivSta: 12 }, utoky)
+    ]);
+    await cekej(1200);
+    const c = P.getComputed();
+    const rozbor = (r) => {
+      const x = c[r.id] || {};
+      const t = document.createElement("div");
+      t.innerHTML = P.atlasDuvody(x);
+      const chipy = [...t.querySelectorAll(".dv-chip:not(.dv-vic)")].map((e) => ({
+        text: e.textContent, pod: e.classList.contains("dv-pod") }));
+      return { cp: r.cp, keep: x.keep, keepGood: !!x.keepGood, cute: !!x.cute,
+        role: (x.duvody || []).filter((d) => d.druh !== "znacka").length,
+        znacek: (x.duvody || []).length, podCarou: (x.podCarou || []).length,
+        radku: t.querySelectorAll(".dv-radek").length,
+        pod: chipy.filter((y) => y.pod).length,
+        texty: chipy.map((y) => y.text),
+        prvniPod: chipy.map((y) => y.pod).indexOf(true),
+        kdeCute: chipy.map((y) => y.text).indexOf("CUTE") };
+    };
+    const vse = P.getRows().map(rozbor);
+    return { cutovy: vse.filter((x) => x.cute)[0] || null,
+      nejlepsi: vse.filter((x) => !x.cute && x.role > 0)[0] || null,
+      pousteny: vse.filter((x) => !x.cute && !x.keepGood)[0] || null };
+  });
+  check("kus drzeny jen znackou dostane stitky pod carou",
+    !!d358.cutovy && d358.cutovy.keepGood && d358.cutovy.role === 0
+      && d358.cutovy.podCarou > 0 && d358.cutovy.pod === d358.cutovy.podCarou,
+    JSON.stringify(d358.cutovy));
+  // CUTE (stejne jako 100 % a 0 %) stoji PRVNI: je to vzacnost, kterou
+  // ostatni kusy jen tak nemaji, a cte se driv nez role (Lukas 18. 11.).
+  check("...znacka u nej stoji prvni a vsechno je v jednom radku",
+    !!d358.cutovy && d358.cutovy.radku === 1 && d358.cutovy.kdeCute === 0
+      && d358.cutovy.prvniPod === 1,
+    JSON.stringify(d358.cutovy));
+  check("kus, ktery roli drzi, zadne stitky pod carou nema",
+    !!d358.nejlepsi && d358.nejlepsi.podCarou === 0 && d358.nejlepsi.pod === 0,
+    JSON.stringify(d358.nejlepsi));
+  check("pousteny kus ma stitky pod carou jako driv",
+    !!d358.pousteny && d358.pousteny.pod === d358.pousteny.podCarou
+      && d358.pousteny.podCarou > 0, JSON.stringify(d358.pousteny));
 } finally {
   await browser.close();
   server.close();

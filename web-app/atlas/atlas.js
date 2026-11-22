@@ -52,7 +52,8 @@ window.AtlasVerdict=c=>({
 });
 window.AtlasPohlavi=(r={})=>{const g=__pgo.atlasPohlavi?__pgo.atlasPohlavi(r):null;
  return g?` <span class="atlas-pohlavi atlas-pohlavi-${g}" aria-label="${g==='f'?'Samice':'Samec'}">${g==='f'?'♀':'♂'}</span>`:''};
-window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+/* CUTE prvni: je to jedina znacka, kterou si clovek nastavuje sam,
+/* Dva typy patri na jeden radek cele. Drive se sem vesly jen tak tak a „Normal / Fighting" se se znackou LUCKY zlomilo pod sebe; schovavat jmena a nechat ikonu se neosvedcilo (Lukas 21. 11. 2026), takze dvojice drzi pohromade a zalomi se cela. */
+window.AtlasTags=(c,r={})=>'<span class="atlas-tag-typy" style="display:inline-flex;flex-wrap:nowrap;align-items:center;vertical-align:middle">'+String(c.types||'').split(' / ').filter(t=>t&&t!=='–').map(t=>{const color=__pgo.typeColors()[t];return color?'<span class="d-type atlas-roster-type" style="background:'+color+'">'+__pgo.typIkona(t)+t+'</span>':''}).join('')+'</span>'+/* CUTE prvni: je to jedina znacka, kterou si clovek nastavuje sam,
    a chce ji videt driv nez to, co appka dopocitala (Lukas 16. 11.). */
 [['C','CUTE',c.cute],['SH','SHADOW',r.forma==='Shadow'],['PU','PURIFIED',r.forma==='Purified'],[c.gmax?'GM':'D',c.gmax?'GMAX':'DMAX',c.dynamax],['S','SHINY',c.shiny],['H','100%',c.stoProcent],['N','0%',c.nulaProcent],['L2','LUCKY',c.lucky]].filter(([, ,enabled])=>enabled).map(([key,text])=>'<span class="rarity-chip r-'+key+' atlas-roster-tag">'+text+'</span>').join('')
   .replace(/^(.+)$/,'<span class="atlas-tag-vlastni">$1</span>');
@@ -72,7 +73,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   const P=window.__pgo,$=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   if(!P)return;
   const fmt=n=>new Intl.NumberFormat('cs-CZ').format(Number(n)||0);
-  const paths={home:'M3 10 12 3l9 7v10h-6v-7H9v7H3Z',box:'M3 7h18v14H3ZM3 7l3-4h12l3 4M9 12h6',team:'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6ZM9 12l2 2 4-4',invest:'M4 20h16M7 16v-5m5 5V7m5 9V3',calendar:'M4 5h16v16H4ZM8 3v4m8-4v4M4 10h16',arrow:'M4 12h16m-6-6 6 6-6 6',next:'m9 5 7 7-7 7',lock:'M5 10h14v11H5Zm3 0V6a4 4 0 0 1 8 0v4',settings:'M4 7h16M4 17h16M8 4v6m8 4v6',moon:'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z',spark:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z',upload:'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',edit:'M4 20h4L19 9l-4-4L4 16Zm11-15 4 4',transfer:'M4 9h14m-4-4 4 4-4 4M20 15H6m4 4-4-4 4-4',close:'m6 6 12 12M6 18 18 6',check:'m5 12 4 4L19 6'};
+  const paths={home:'M3 10 12 3l9 7v10h-6v-7H9v7H3Z',box:'M3 7h18v14H3ZM3 7l3-4h12l3 4M9 12h6',team:'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6ZM9 12l2 2 4-4',invest:'M4 20h16M7 16v-5m5 5V7m5 9V3',calendar:'M4 5h16v16H4ZM8 3v4m8-4v4M4 10h16',arrow:'M4 12h16m-6-6 6 6-6 6',next:'m9 5 7 7-7 7',lock:'M5 10h14v11H5Zm3 0V6a4 4 0 0 1 8 0v4',settings:'M4 7h16M4 17h16M8 4v6m8 4v6',moon:'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z',spark:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z',upload:'M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5',download:'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',edit:'M4 20h4L19 9l-4-4L4 16Zm11-15 4 4',transfer:'M4 9h14m-4-4 4 4-4 4M20 15H6m4 4-4-4 4-4',swap:'M8 3v18m-4-4 4 4 4-4M16 21V3m-4 4 4-4 4 4',close:'m6 6 12 12M6 18 18 6',check:'m5 12 4 4L19 6'};
   const icon=k=>`<svg class="atlas-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[k]||paths.spark}"/></svg>`;
   const fallback='data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="43" fill="#eaf0fa" stroke="#9bb2d4" stroke-width="3"/><path d="M17 60h86" stroke="#9bb2d4" stroke-width="3"/><circle cx="60" cy="60" r="12" fill="white" stroke="#9bb2d4" stroke-width="3"/></svg>');
   const art=r=>{const key=P.dexKeyOf(r.pokemon);if(/^(shellos|gastrodon)/i.test(key)){const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')||fallback}return window.ATLAS_ART[key]||(/^pumpkaboo/i.test(r.pokemon)?window.ATLAS_ART['pumpkaboo-average']:null)||(/^shellos east sea/i.test(r.pokemon)?window.ATLAS_ART['shellos-eastsea']:null)||(()=>{const t=document.createElement('template');t.innerHTML=P.atlasImage(r.pokemon);return t.content.querySelector('img')?.getAttribute('src')})()||fallback;};
@@ -118,7 +119,7 @@ window.AtlasJourneyHTML=(c,r,full=false)=>{const j=AtlasJourney(c,r),esc=s=>Stri
   //  hledá v souboru prostý výskyt, viz sync_reference.py.)
   if(window.__ATLAS_TEST_BUILD)requestAnimationFrame(()=>document.querySelectorAll('[data-atlas-test-badge]').forEach(e=>{e.hidden=false}));
   const navHTML=()=>nav.map(([g,i,t])=>`<button data-atlas-nav="${g}" aria-label="${t}">${icon(i)}<span>${t}</span></button>`).join('');
-  const shell=document.createElement('div');shell.id='atlasShell';shell.innerHTML=`<aside class="atlas-side"><div class="atlas-brand"><span class="atlas-brand-mark">${icon('box')}</span><span>GO</span><span>Atlas</span></div><div class="atlas-nav-label">TVŮJ HERNÍ PLÁN</div><nav class="atlas-nav" aria-label="Hlavní navigace">${navHTML()}<button data-atlas-nav="settings">${icon('settings')}<span>Data a pravidla</span></button></nav><div class="atlas-side-foot"><span class="atlas-test-badge" data-atlas-test-badge hidden>TESTOVACÍ VERZE</span><strong id="atlasProfile"></strong><p id="atlasCount"></p><p id="atlasVerze"></p></div></aside><header class="atlas-top"><div class="atlas-crumb">GO Atlas <span id="atlasCrumbVerze" class="atlas-verze-znacka"></span> <b id="atlasCrumb">/ Přehled</b></div><div class="atlas-top-actions"><span class="atlas-test-badge atlas-status" data-atlas-test-badge hidden>LOKÁLNÍ TEST</span><button data-click="novinkyBtn" title="Co se v appce změnilo v téhle verzi">${icon('spark')} Novinky</button><button data-click="hledaniBtn" title="Filtry do herního vyhledávání z kusů, které pouštíš">${icon('transfer')} Transfer</button><button data-click="toggleImportBtn">${icon('download')} Import CSV</button><button data-click="exportBtn">${icon('upload')} Export</button><button class="atlas-icon-btn" data-atlas-action="theme" aria-label="Přepnout světlý nebo tmavý vzhled">${icon('moon')}</button><button class="atlas-icon-btn" data-atlas-nav="settings" aria-label="Nastavení">${icon('settings')}</button></div></header><nav class="atlas-bottom" aria-label="Mobilní navigace">${navHTML()}</nav><div class="atlas-modal" id="atlasModal" hidden><div class="atlas-backdrop" data-atlas-action="close"></div><section class="atlas-drawer" role="dialog" aria-modal="true" aria-labelledby="atlasDetailTitle"><div class="atlas-drawer-header"><span>KONKRÉTNÍ KUS · TVŮJ PLÁN</span><button data-atlas-action="close" aria-label="Zavřít detail">${icon('close')}</button></div><div id="atlasIdentity"></div><div class="atlas-detail-content" id="atlasDetailContent"></div><div style="padding:0 22px 28px"><button class="atlas-mini-btn" data-atlas-action="edit">Upravit údaje tohoto kusu ${icon('arrow')}</button></div></section></div>`;document.body.appendChild(shell);
+  const shell=document.createElement('div');shell.id='atlasShell';shell.innerHTML=`<aside class="atlas-side"><div class="atlas-brand"><span class="atlas-brand-mark">${icon('box')}</span><span>GO</span><span>Atlas</span></div><div class="atlas-nav-label">TVŮJ HERNÍ PLÁN</div><nav class="atlas-nav" aria-label="Hlavní navigace">${navHTML()}<button data-atlas-nav="settings">${icon('settings')}<span>Data a pravidla</span></button></nav><div class="atlas-side-foot"><span class="atlas-test-badge" data-atlas-test-badge hidden>TESTOVACÍ VERZE</span><strong id="atlasProfile"></strong><p id="atlasCount"></p><p id="atlasVerze"></p></div></aside><header class="atlas-top"><div class="atlas-crumb">GO Atlas <span id="atlasCrumbVerze" class="atlas-verze-znacka"></span> <b id="atlasCrumb">/ Přehled</b></div><div class="atlas-top-actions"><span class="atlas-test-badge atlas-status" data-atlas-test-badge hidden>LOKÁLNÍ TEST</span><button data-click="novinkyBtn" title="Co se v appce změnilo v téhle verzi">${icon('spark')} Novinky</button><button data-click="hledaniBtn" title="Filtry do herního vyhledávání z kusů, které pouštíš">${icon('transfer')} Transfer</button><button data-click="nvOtevritBtn" title="Druhy z puštěných kusů, které patří na tvůj seznam na výměnu">${icon('swap')} Na výměnu</button><button data-click="toggleImportBtn">${icon('download')} Import CSV</button><button data-click="exportBtn">${icon('upload')} Export</button><button class="atlas-icon-btn" data-atlas-action="theme" aria-label="Přepnout světlý nebo tmavý vzhled">${icon('moon')}</button><button class="atlas-icon-btn" data-atlas-nav="settings" aria-label="Nastavení">${icon('settings')}</button></div></header><nav class="atlas-bottom" aria-label="Mobilní navigace">${navHTML()}</nav><div class="atlas-modal" id="atlasModal" hidden><div class="atlas-backdrop" data-atlas-action="close"></div><section class="atlas-drawer" role="dialog" aria-modal="true" aria-labelledby="atlasDetailTitle"><div class="atlas-drawer-header"><span>KONKRÉTNÍ KUS · TVŮJ PLÁN</span><button data-atlas-action="close" aria-label="Zavřít detail">${icon('close')}</button></div><div id="atlasIdentity"></div><div class="atlas-detail-content" id="atlasDetailContent"></div><div style="padding:0 22px 28px"><button class="atlas-mini-btn" data-atlas-action="edit">Upravit údaje tohoto kusu ${icon('arrow')}</button></div></section></div>`;document.body.appendChild(shell);
   const heading=document.createElement('div');heading.id='atlasHeading';heading.className='atlas-heading';
   const subnav=document.createElement('nav');subnav.id='atlasSubnav';subnav.className='atlas-subnav';subnav.setAttribute('aria-label','Nástroje sekce');
   const home=document.createElement('section');home.id='atlasHome';
@@ -3370,6 +3371,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    +(r.bestBuddy?` Master League limit CP nem\u00e1, tak\u017ee se po\u010d\u00edt\u00e1`
      +` na nejvy\u0161\u0161\u00edm levelu \u2014 rozhoduje prost\u011b s\u00edla.`:'')
    +` Na tenhle druh by ses s n\u00ed dostal na L${cislo(r.level)} a ${r.cp} CP.`
+   +(r.level>50?` Je to s best buddy (+1 level) \u2014 tak to po\u010d\u00edt\u00e1 i pvpivs.`:'')
    +` Zn\u00e1mka vedle \u0159\u00edk\u00e1, jak vz\u00e1cn\u00e1 takov\u00e1 kombinace je (SS = nejlep\u0161\u00ed`
    +` procento, S p\u011bt, A deset, B \u010dtvrtina, C polovina) \u2014 se zn\u00e1mkou druhu`
    +` nem\u00e1 nic spole\u010dn\u00e9ho.`;
@@ -3432,7 +3434,10 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     /* U lig je `pct` skóre PvPoke (nejlepší má 93,9, ne 100), takže se
        jako procento vypsat nedá — engine k němu pošle i `podil`. */
     +`${(r.podil!=null?r.podil:r.pct)!=null
-      ?` <small>${String(r.podil!=null?r.podil:r.pct).replace('.',',')} % nejlepšího</small>`:''}`;
+      ?` <small>${String(r.podil!=null?r.podil:r.pct).replace('.',',')} % nejlepšího</small>`:''}`
+    /* Poradi, ktere si appka dopocitala sama (druh mimo Hubuv
+       zebricek), to u sebe musi mit napsane — je to jiny model. */
+    +`${r.dopocitano?' <small class="atlas-vysledek-dopocet">dopočítala appka</small>':''}`;
   /* Známka má vlastní sloupec před pořadím: čte se jako první a poznáš
      podle ní sílu dřív, než začneš porovnávat čísla. Bublina u ní není —
      co stupně znamenají a odkud jsou, stojí v „Odkud se to bere". */
@@ -3717,6 +3722,30 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
  /* Co appka o druhu ví dřív, než se člověk rozhodne jít na raid: jestli
     z něj může padnout shiny, jaké CP má dokonalý kus (běžně a v boostu)
     a jaké počasí ho boostuje. */
+ /* Odznaky roli staví vrstva, ale ptá se na ně i engine: bublina
+    „Na výměnu" má mít tytéž ikony jako hlavička Vyhledávání. Kdyby
+    vrstva nebyla, engine si vystačí s popiskem role. */
+   // A053: smaltované odznaky Atlasu. Každý má vlastní siluetu i znak.
+   const roleIcon=k=>{
+    // A054: tři praporky stupňované barvou a počtem stuh, Little má vlastní motiv.
+    const league={great:['#4172dc','#182e79','#fa625c',1],ultra:['#464d59','#171c26','#f5cf50',2],master:['#78449e','#34134f','#f268d5',3]}[k];
+    if(league){
+     const [light,dark,ribbon,n]=league,id='atlas-pennant-'+k;
+     const bands=Array.from({length:n},(_,i)=>`<path d="M4 ${26+i*6} 45 ${3+i*6}" stroke="${ribbon}" stroke-width="${n===1?4:3.2}"/>`).join('');
+     return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="${id}" x2=".5" y2="1"><stop stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient><clipPath id="${id}-cut"><path d="M4 5h40L24 44Z"/></clipPath></defs><path d="M4 5h40L24 44Z" fill="url(#${id})" stroke="#d4dbec" stroke-width="2"/><g clip-path="url(#${id}-cut)">${bands}<path d="M6 6h35L9 11Z" fill="#fff" opacity=".15"/></g><path d="m15 9 3 3-3 3-3-3Z" fill="#fff8df"/></svg>`;
+    }
+    if(k==='little')return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><g stroke-width="1.3" stroke-linejoin="round"><path d="m3 22 5-6 5 2 5-2 4 7-3 5 1 8-6 1-3-3-5 1-2-6Z" fill="#f7a29d" stroke="#d97e82"/><path d="m16 13 6 4 4-1 7-5-1 10 3 6-5 5-1 5-5-2-5 1-1-6-3-5 3-5Z" fill="#ffda67" stroke="#e0af49"/><path d="m31 18 4-8 3 8 5-6 1 9-2 4 3 7-4 5-6-1-5 1-1-6 3-6Z" fill="#64b9ed" stroke="#4096d0"/></g></svg>`;
+    const art={
+     gym:['#d3fff0','#45af9b','#165653','M24 3c6 4 12 5 18 6v12c0 11-7 18-18 24C13 39 6 32 6 21V9c6-1 12-2 18-6Z','M16 15h4v5h2v-7h4v7h2v-5h4v10l-2 2v6H18v-6l-2-2Z'],
+     max:['#ffd5f5','#e63687','#81184e','m7 5 12 5 5 7 6-9 12-4-6 15 7 4-10 4 8 15-13-5-5-8-7 10-12 4 7-17-6-4 9-4Z','m16 14 8 7 8-9-4 11 5 8-9-5-10 10 6-13Z']
+    };
+    const a=art[k];if(!a)return '';const [light,mid,dark,shape,glyph]=a,id='atlas-enamel-'+k;
+    return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="${id}" x2=".65" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="${light}"/><stop offset=".36" stop-color="${mid}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs><path d="${shape}" fill="${dark}" stroke="${dark}" stroke-width="3"/><path d="${shape}" fill="url(#${id})" stroke="${light}" stroke-width="1.5"/><path d="${shape}" transform="translate(4.3 4.3) scale(.82)" fill="none" stroke="${light}" stroke-opacity=".53" stroke-width="1.2"/><path d="${glyph}" transform="translate(0 1.6)" fill="${dark}"/><path d="${glyph}" fill="#fff8e9"/></svg>`;
+   };
+ const maxZnacka=f=>`<img class="atlas-role-icon atlas-max-mark" alt="" src="atlas/assets/${f==='Gigantamax'?'gmax':'dmax'}-mark.svg">`;
+ window.AtlasRoleIkona=k=>roleIcon(k)||'';
+ window.AtlasMaxZnacka=f=>maxZnacka(f);
+
  function vykresli(){
   const syrove=jmeno.value.trim();
   /* Do pole se da napsat i forma ("Shadow Snorlax"). Co je druh a co forma,
@@ -3778,23 +3807,6 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     `<span class="atlas-hodnoceni-kus" title="${esc(popis)}"`
     +` aria-label="${esc(popis)}, pořadí ${esc(String(rank))}, známka ${esc(znamka||'neuvedena')}"`
     +`>${ik}<b>#${rank}</b>${znamkaHtml(znamka)}</span>`;
-   // A053: smaltované odznaky Atlasu. Každý má vlastní siluetu i znak.
-   const roleIcon=k=>{
-    // A054: tři praporky stupňované barvou a počtem stuh, Little má vlastní motiv.
-    const league={great:['#4172dc','#182e79','#fa625c',1],ultra:['#464d59','#171c26','#f5cf50',2],master:['#78449e','#34134f','#f268d5',3]}[k];
-    if(league){
-     const [light,dark,ribbon,n]=league,id='atlas-pennant-'+k;
-     const bands=Array.from({length:n},(_,i)=>`<path d="M4 ${26+i*6} 45 ${3+i*6}" stroke="${ribbon}" stroke-width="${n===1?4:3.2}"/>`).join('');
-     return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="${id}" x2=".5" y2="1"><stop stop-color="${light}"/><stop offset="1" stop-color="${dark}"/></linearGradient><clipPath id="${id}-cut"><path d="M4 5h40L24 44Z"/></clipPath></defs><path d="M4 5h40L24 44Z" fill="url(#${id})" stroke="#d4dbec" stroke-width="2"/><g clip-path="url(#${id}-cut)">${bands}<path d="M6 6h35L9 11Z" fill="#fff" opacity=".15"/></g><path d="m15 9 3 3-3 3-3-3Z" fill="#fff8df"/></svg>`;
-    }
-    if(k==='little')return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><g stroke-width="1.3" stroke-linejoin="round"><path d="m3 22 5-6 5 2 5-2 4 7-3 5 1 8-6 1-3-3-5 1-2-6Z" fill="#f7a29d" stroke="#d97e82"/><path d="m16 13 6 4 4-1 7-5-1 10 3 6-5 5-1 5-5-2-5 1-1-6-3-5 3-5Z" fill="#ffda67" stroke="#e0af49"/><path d="m31 18 4-8 3 8 5-6 1 9-2 4 3 7-4 5-6-1-5 1-1-6 3-6Z" fill="#64b9ed" stroke="#4096d0"/></g></svg>`;
-    const art={
-     gym:['#d3fff0','#45af9b','#165653','M24 3c6 4 12 5 18 6v12c0 11-7 18-18 24C13 39 6 32 6 21V9c6-1 12-2 18-6Z','M16 15h4v5h2v-7h4v7h2v-5h4v10l-2 2v6H18v-6l-2-2Z'],
-     max:['#ffd5f5','#e63687','#81184e','m7 5 12 5 5 7 6-9 12-4-6 15 7 4-10 4 8 15-13-5-5-8-7 10-12 4 7-17-6-4 9-4Z','m16 14 8 7 8-9-4 11 5 8-9-5-10 10 6-13Z']
-    };
-    const a=art[k];if(!a)return '';const [light,mid,dark,shape,glyph]=a,id='atlas-enamel-'+k;
-    return `<svg class="atlas-role-icon atlas-enamel" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="${id}" x2=".65" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="${light}"/><stop offset=".36" stop-color="${mid}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs><path d="${shape}" fill="${dark}" stroke="${dark}" stroke-width="3"/><path d="${shape}" fill="url(#${id})" stroke="${light}" stroke-width="1.5"/><path d="${shape}" transform="translate(4.3 4.3) scale(.82)" fill="none" stroke="${light}" stroke-opacity=".53" stroke-width="1.2"/><path d="${glyph}" transform="translate(0 1.6)" fill="${dark}"/><path d="${glyph}" fill="#fff8e9"/></svg>`;
-   };
    const ven=[];
    /* Raidů může být víc typů; tady stačí tři nejlepší, zbytek je
       v tabulce. Ikona je typ, ne meče — bez ní by tři stejné odznáčky
@@ -3814,8 +3826,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
     .slice().sort((a,b)=>((b.maxForma==='Gigantamax')-(a.maxForma==='Gigantamax'))
       ||(a.rank-b.rank))
     .slice(0,3).forEach(mx=>{
-     const zn=`<img class="atlas-role-icon atlas-max-mark" alt="" src="atlas/assets/`
-      +`${mx.maxForma==='Gigantamax'?'gmax':'dmax'}-mark.svg">`;
+     const zn=maxZnacka(mx.maxForma);
      ven.push(kus(zn+((P.typIkona&&mx.typ?P.typIkona(mx.typ):'')||''),
       `${mx.maxForma==='Gigantamax'?'Gigantamax':'Max Battle'} — ${mx.typ}`
       +' (žebříček Pokémon GO Hub)',mx.rank,mx.znamka));
@@ -4639,7 +4650,7 @@ const fit=()=>{if(document.body.dataset.atlasView!=='roster'||!document.body.cla
    section.querySelectorAll('.atlas-setting-row').forEach(field=>{
     const label=field.querySelector('label'),input=field.querySelector('input,select');if(!label||!input)return;
     // Krátké názvy a jednotky převzaté z Claudova návrhu A034.
-    const names={ivThresh:['Práh „vysoké IV“','%'],spThresh:['Práh PvP potenciálu','%'],prahSleva:['Sleva za umístění v lize','bodů'],rankThresh:['Práh „elitní“ PvP rank','pořadí'],ligaRezerva:['Rezerva v lize','kusů'],ligaVaha:['Liga, která se zrovna nehraje','%'],hledaniDelka:['Délka jednoho filtru pro transfer','znaků']};
+    const names={ivThresh:['Práh „vysoké IV“','%'],spThresh:['Práh PvP potenciálu','%'],prahSleva:['Sleva za umístění v lize','bodů'],rankThresh:['Práh „elitní“ PvP rank','pořadí'],ligaRezerva:['Rezerva v lize','kusů'],ligaVaha:['Liga, která se zrovna nehraje','%'],hledaniDelka:['Délka jednoho filtru pro transfer','znaků'],bbPoradi:['Pořadí IV s best buddy','']};
     if(names[input.id])label.textContent=names[input.id][0];
 const top=document.createElement('div');top.className='atlas-setting-top';field.prepend(top);top.append(label);
     const help=field.querySelector('.atlas-setting-help');if(help){const body=help.querySelector('.atlas-setting-help-body');const btn=document.createElement('button');btn.type='button';btn.className='atlas-help-button';btn.textContent='?';btn.setAttribute('aria-label','Vysvětlení: '+label.textContent.trim());btn.setAttribute('aria-expanded','false');body.hidden=true;body.id='atlasHelp-'+input.id;btn.setAttribute('aria-controls',body.id);btn.onclick=()=>{body.hidden=!body.hidden;btn.setAttribute('aria-expanded',String(!body.hidden))};top.append(btn);field.append(body);help.remove()}
@@ -4653,7 +4664,7 @@ const top=document.createElement('div');top.className='atlas-setting-top';field.
     }else if(input.tagName==='SELECT'||input.type==='checkbox'){
      control.classList.add('atlas-segments');input.hidden=true;field.append(input);
      const choices=input.type==='checkbox'?[['1','Ano'],['0','Ne']]:[...input.options].map(o=>[o.value,o.textContent]);
-     const short={pvpStovka:['Ano','Ne'],nulaDrzet:['Ano','Ne'],boxSekce:['Tři','Dvě','Jedna']};
+     const short={pvpStovka:['Ano','Ne'],nulaDrzet:['Ano','Ne'],bbPoradi:['Ne','Ano'],boxSekce:['Tři','Dvě','Jedna']};
      const buttons=choices.map(([value,text],i)=>{const btn=document.createElement('button');btn.type='button';btn.textContent=short[input.id]?.[i]||text;btn.title=text;btn.onclick=()=>{if(input.type==='checkbox')input.checked=value==='1';else input.value=value;input.dispatchEvent(new Event(input.type==='checkbox'?'change':'input',{bubbles:true}));if(input.type!=='checkbox')input.dispatchEvent(new Event('change',{bubbles:true}));sync()};control.append(btn);return btn});
      const sync=()=>buttons.forEach((b,i)=>{b.disabled=input.disabled;b.setAttribute('aria-pressed',String(choices[i][0]===(input.type==='checkbox'?(input.checked?'1':'0'):input.value)))});syncs.push(sync);sync();
     }else control.append(input);
